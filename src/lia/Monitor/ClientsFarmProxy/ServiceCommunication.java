@@ -1,5 +1,5 @@
 /*
- * $Id: ServiceCommunication.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: ServiceCommunication.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.ClientsFarmProxy;
 
@@ -50,7 +50,7 @@ import net.jini.core.lookup.ServiceItem;
  */
 public class ServiceCommunication {
 
-    private static final transient Logger logger = Logger.getLogger(ServiceCommunication.class.getName());
+    private static final Logger logger = Logger.getLogger(ServiceCommunication.class.getName());
 
     private static final ProxyTCPServer proxyTCPServer;
 
@@ -141,6 +141,7 @@ public class ServiceCommunication {
         serviceName = tmpServiceName;
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
                 // TODO Auto-generated method stub
                 reloadConf();
@@ -164,15 +165,24 @@ public class ServiceCommunication {
         return proxyTCPServer.getPorts();
     } // getPorts
 
+    public static final String[] getExternalAddresses() {
+        return proxyTCPServer.getExternalAddresses();
+    }
+
+    public static final String getHostname() {
+        return proxyTCPServer.getHostname();
+    }
+
     public static final void notifyNewFarm(final ServiceItem si) {
-        if (si == null)
+        if (si == null) {
             return;
+        }
 
         Entry[] attr = si.attributeSets;
 
-        for (int i = 0; i < attr.length; i++) {
-            if (attr[i] instanceof MonaLisaEntry) {
-                MonaLisaEntry mle = (MonaLisaEntry) attr[i];
+        for (Entry element : attr) {
+            if (element instanceof MonaLisaEntry) {
+                MonaLisaEntry mle = (MonaLisaEntry) element;
 
                 if (mle.Name != null) {
                     Integer aparitii = newFarmsMailInterval.get(mle.Name);
@@ -186,8 +196,8 @@ public class ServiceCommunication {
 
                 if (mle.Group != null) {
                     String[] grps = mle.Group.split(",");
-                    for (int j = 0; j < grps.length; j++) {
-                        newGroupsMailInterval.add(grps[j]);
+                    for (String grp : grps) {
+                        newGroupsMailInterval.add(grp);
                     } // for
                 } // if
                 break;
@@ -274,7 +284,7 @@ public class ServiceCommunication {
 
         final String filtru = mmessage.tag;
 
-        if(filtru.startsWith(monMessage.ML_TIME_TAG) || filtru.startsWith(monMessage.ML_VERSION_TAG)) {
+        if (filtru.startsWith(monMessage.ML_TIME_TAG) || filtru.startsWith(monMessage.ML_VERSION_TAG)) {
             final Collection<ClientWorker> clients = ClientsCommunication.getClients();
             for (final ClientWorker w : clients) {
                 if (w != null) {
@@ -286,18 +296,20 @@ public class ServiceCommunication {
             } // while
             return;
         }
-        
+
         // Check if it's a configuration message or if it's a local time message
         // or MonALISA version
-        if (filtru != null && filtru.startsWith(monMessage.ML_CONFIG_TAG)) {
+        if ((filtru != null) && filtru.startsWith(monMessage.ML_CONFIG_TAG)) {
             if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, "Got CONFIG MSG for SID == " + mmessage.farmID + " " + ((MFarm) mmessage.result).name);
+                logger.log(Level.FINE, "Got CONFIG MSG for SID == " + mmessage.farmID + " "
+                        + ((MFarm) mmessage.result).name);
             }
 
             // Save configuratiOon for future clients that will come use
             final MFarm[] confDiff = ClientsCommunication.addFarmConfiguration(mmessage.farmID, mmessage);
 
-            final MonMessageClientsProxy diffMesg = (confDiff == ClientsCommunication.NO_DIFF_CONF)?mmessage:new MonMessageClientsProxy(mmessage.tag, mmessage.ident, confDiff, mmessage.farmID);
+            final MonMessageClientsProxy diffMesg = (confDiff == ClientsCommunication.NO_DIFF_CONF) ? mmessage
+                    : new MonMessageClientsProxy(mmessage.tag, mmessage.ident, confDiff, mmessage.farmID);
 
             // Send the configuration or time/version to all clients
             final Collection<ClientWorker> clients = ClientsCommunication.getClients();
@@ -316,7 +328,8 @@ public class ServiceCommunication {
                     }
 
                     if (logger.isLoggable(Level.FINEST)) {
-                        logger.log(Level.FINEST, " [ ServiceCommunication ] sending entire conf for for SID == " + mmessage.farmID + " " + ((MFarm) mmessage.result).name + " to client: " + w);
+                        logger.log(Level.FINEST, " [ ServiceCommunication ] sending entire conf for for SID == "
+                                + mmessage.farmID + " " + ((MFarm) mmessage.result).name + " to client: " + w);
                     }
 
                     w.sendMsg(mmessage);
@@ -338,7 +351,7 @@ public class ServiceCommunication {
                 return;
             }
 
-            if (!mic.isHistory && mmessage.result == null) {
+            if (!mic.isHistory && (mmessage.result == null)) {
                 return;
             } // if
 
@@ -351,13 +364,15 @@ public class ServiceCommunication {
                         try {
 
                             final ClientWorker cw = ClientsCommunication.getClient(entry.getKey());
-                            if (cw == null)
+                            if (cw == null) {
                                 continue;
+                            }
                             final ConcurrentSkipListSet<Integer> regMsgs = entry.getValue();
 
                             for (final Integer messageID : regMsgs) {
                                 try {
-                                    MonMessageClientsProxy mm = new MonMessageClientsProxy(mmessage.tag, messageID, mmessage.result, mmessage.farmID);
+                                    MonMessageClientsProxy mm = new MonMessageClientsProxy(mmessage.tag, messageID,
+                                            mmessage.result, mmessage.farmID);
                                     cw.sendMsg(mm);
                                 } catch (Throwable ex) {
                                     logger.log(Level.WARNING, " [ ServiceCommunication ] ex ", ex);
@@ -379,11 +394,11 @@ public class ServiceCommunication {
 
         // Results from Filters
         if (ident instanceof String) {
-            if (ident != null && ident.equals(monMessage.ML_SID_TAG)) {
+            if ((ident != null) && ident.equals(monMessage.ML_SID_TAG)) {
                 return;
             }
             ConcurrentHashMap<ServiceID, ConcurrentSkipListSet<Integer>> hash = FilterSave.get(ident);
-            if (hash != null && mmessage.farmID != null) {
+            if ((hash != null) && (mmessage.farmID != null)) {
                 ConcurrentSkipListSet<Integer> vect = hash.get(mmessage.farmID);
                 if (vect != null) {
                     for (final Integer clientID : vect) {
@@ -397,8 +412,6 @@ public class ServiceCommunication {
                         }
                     } // for
                 }
-            } else {
-
             }
             return;
         } // if
@@ -406,7 +419,8 @@ public class ServiceCommunication {
         // We should not normaly reach so far ... there is nothing specified in
         // the protcol ...
 
-        logger.log(Level.SEVERE, "\n\n [ ServiceCommunication ] Hmm ... strange ident [ " + ident + " ] for message [ " + mmessage + " ] \n\n");
+        logger.log(Level.SEVERE, "\n\n [ ServiceCommunication ] Hmm ... strange ident [ " + ident + " ] for message [ "
+                + mmessage + " ] \n\n");
     }
 
     public static final long getNrSentM() {
@@ -445,7 +459,8 @@ public class ServiceCommunication {
                 criticalSectionIDSaveLock.lock();
                 try {
 
-                    for (Iterator<Map.Entry<Integer, PredicatesInfoCache>> itIDSave = IDSave.entrySet().iterator(); itIDSave.hasNext();) {
+                    for (Iterator<Map.Entry<Integer, PredicatesInfoCache>> itIDSave = IDSave.entrySet().iterator(); itIDSave
+                            .hasNext();) {
                         final Map.Entry<Integer, PredicatesInfoCache> entryIDSave = itIDSave.next();
 
                         final Integer messNewID = entryIDSave.getKey();
@@ -467,17 +482,20 @@ public class ServiceCommunication {
                                 if (regC.size() == 0) {
                                     itIDSave.remove();
                                     reusedIDs.offer(messNewID);
-                                    MonMessageClientsProxy unreg = new MonMessageClientsProxy(mmessage.tag, messNewID, mmessage.result, mmessage.farmID);
+                                    MonMessageClientsProxy unreg = new MonMessageClientsProxy(mmessage.tag, messNewID,
+                                            mmessage.result, mmessage.farmID);
                                     msgToSend.add(unreg);
                                     if (logger.isLoggable(Level.FINE)) {
-                                        logger.log(Level.FINE, " Removed a predicate for FARM ! " + mmessage.farmID + "/      " + messNewID);
+                                        logger.log(Level.FINE, " Removed a predicate for FARM ! " + mmessage.farmID
+                                                + "/      " + messNewID);
                                     }
                                 }
                             }
                         }
                     }// for - IDSave.entrySet()
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ ServiceCommunication ] Unregister predicate got exception in CRITICAL_SECTION", t);
+                    logger.log(Level.WARNING,
+                            " [ ServiceCommunication ] Unregister predicate got exception in CRITICAL_SECTION", t);
                 } finally {
                     criticalSectionIDSaveLock.unlock();
                 }
@@ -503,7 +521,7 @@ public class ServiceCommunication {
                 } else {
                     int len = monPred.parameters.length;
                     for (int p = 0; p < len; p++) {
-                        keyBuilder.append(monPred.parameters[p]).append((p < len - 1) ? KEY_SEPARATOR : "");
+                        keyBuilder.append(monPred.parameters[p]).append((p < (len - 1)) ? KEY_SEPARATOR : "");
                     } // for
                 }
 
@@ -516,18 +534,21 @@ public class ServiceCommunication {
 
                 try {
                     boolean isAlready = false;
-                    if (tmin == 0 && tmax == -1) {
+                    if ((tmin == 0) && (tmax == -1)) {
                         for (final PredicatesInfoCache pred : IDSave.values()) {
 
                             if (!pred.isHistory && key.equals(pred.key) && pred.farmID.equals(mmessage.farmID)) {
-                                ConcurrentSkipListSet<Integer> regmsgs = pred.msgs.putIfAbsent(clientID, new ConcurrentSkipListSet<Integer>());
+                                ConcurrentSkipListSet<Integer> regmsgs = pred.msgs.putIfAbsent(clientID,
+                                        new ConcurrentSkipListSet<Integer>());
                                 if (regmsgs == null) {
                                     regmsgs = pred.msgs.get(clientID);
                                 }
 
                                 regmsgs.add((Integer) mmessage.ident);
                                 if (logger.isLoggable(Level.FINER)) {
-                                    logger.log(Level.FINER, "Predicate already registered ... adding it " + pred.msgs.size() + "    " + clientID + "     " + mmessage.ident);
+                                    logger.log(Level.FINER,
+                                            "Predicate already registered ... adding it " + pred.msgs.size() + "    "
+                                                    + clientID + "     " + mmessage.ident);
                                 }
                                 isAlready = true;
                                 break;
@@ -537,12 +558,13 @@ public class ServiceCommunication {
 
                     if (!isAlready) { // a new predicate; register it
                         boolean isHistory = true;
-                        if (tmin == 0 && tmax == -1) {
+                        if ((tmin == 0) && (tmax == -1)) {
                             isHistory = false;
                         } // if
 
                         if (logger.isLoggable(Level.FINEST)) {
-                            logger.log(Level.FINER, "Registering predicate with key: " + key + " for farm " + mmessage.farmID + " and client " + clientID + "   and history " + isHistory);
+                            logger.log(Level.FINER, "Registering predicate with key: " + key + " for farm "
+                                    + mmessage.farmID + " and client " + clientID + "   and history " + isHistory);
                         }
 
                         PredicatesInfoCache mic = new PredicatesInfoCache(key, mmessage.farmID, isHistory);
@@ -557,17 +579,20 @@ public class ServiceCommunication {
                                 newID = Integer.valueOf(ID_SEQ.getAndIncrement());
                             }
                             monPred.id = newID.intValue();
-                            
-                            final MonMessageClientsProxy newMsg = new MonMessageClientsProxy(mmessage.tag, newID, monPred, mmessage.farmID);
+
+                            final MonMessageClientsProxy newMsg = new MonMessageClientsProxy(mmessage.tag, newID,
+                                    monPred, mmessage.farmID);
                             mic.result = newMsg;
                             if (IDSave.put(newID, mic) != null) {
-                                logger.log(Level.WARNING, " [ ProtocolException ] [ SyncExcVerif ] IDSave already contains ID = " + newID);
+                                logger.log(Level.WARNING,
+                                        " [ ProtocolException ] [ SyncExcVerif ] IDSave already contains ID = " + newID);
                             }
                             msgToSend.add(newMsg);
                         } // if
                     } // if
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ ServiceCommunication ] Register predicate got exception in CRITICAL_SECTION");
+                    logger.log(Level.WARNING,
+                            " [ ServiceCommunication ] Register predicate got exception in CRITICAL_SECTION");
                 } finally {
                     criticalSectionIDSaveLock.unlock();
                 }
@@ -575,8 +600,9 @@ public class ServiceCommunication {
             } // else - register
         } else if (ident instanceof String) {
             // sendIt = true;
-            if (mmessage.farmID == null)
+            if (mmessage.farmID == null) {
                 return;
+            }
 
             ConcurrentHashMap<ServiceID, ConcurrentSkipListSet<Integer>> h = FilterSave.get(ident);
             final ServiceID farm = mmessage.farmID;
@@ -590,7 +616,8 @@ public class ServiceCommunication {
                         if (clients != null) {
                             clients.remove(clientID);
                             if (logger.isLoggable(Level.FINER)) {
-                                logger.log(Level.FINER, " Removing client [ " + clientID + " ] for FILTER = " + ident + " farm " + farm);
+                                logger.log(Level.FINER, " Removing client [ " + clientID + " ] for FILTER = " + ident
+                                        + " farm " + farm);
                             }
                             if (clients.size() == 0) {
                                 // make sure that there wasn't another add in between
@@ -615,10 +642,13 @@ public class ServiceCommunication {
                 // a register message
                 h = FilterSave.get(ident);
                 if (h == null) {
-                    h = FilterSave.putIfAbsent((String) ident, new ConcurrentHashMap<ServiceID, ConcurrentSkipListSet<Integer>>());
+                    h = FilterSave.putIfAbsent((String) ident,
+                            new ConcurrentHashMap<ServiceID, ConcurrentSkipListSet<Integer>>());
                     if (h != null) {
                         // it should neveeeer go this faarrrr, only if there is a problem in the synch mechanism
-                        logger.log(Level.WARNING, " [ ServiceCommunication ] Register FILTER CRITICAL_SECTION the hashmap has gone way too long... h: " + h);
+                        logger.log(Level.WARNING,
+                                " [ ServiceCommunication ] Register FILTER CRITICAL_SECTION the hashmap has gone way too long... h: "
+                                        + h);
                     } else {
                         h = FilterSave.get(ident);
                     }
@@ -629,7 +659,9 @@ public class ServiceCommunication {
                     clients = h.putIfAbsent(farm, new ConcurrentSkipListSet<Integer>());
                     if (clients != null) {
                         // it should neveeeer go this faarrrr, only if there is a problem in the synch mechanism
-                        logger.log(Level.WARNING, " [ ServiceCommunication ] Register FILTER CRITICAL_SECTION the clientsmap has gone way too long... clients: " + clients);
+                        logger.log(Level.WARNING,
+                                " [ ServiceCommunication ] Register FILTER CRITICAL_SECTION the clientsmap has gone way too long... clients: "
+                                        + clients);
                     } else {
                         clients = h.get(farm);
                     }
@@ -637,15 +669,18 @@ public class ServiceCommunication {
 
                 if (clients.add(clientID)) {
                     if (logger.isLoggable(Level.FINER)) {
-                        logger.log(Level.FINER, " Adding client [ " + clientID + " ] for Filter = " + ident + " Farm = " + farm);
+                        logger.log(Level.FINER, " Adding client [ " + clientID + " ] for Filter = " + ident
+                                + " Farm = " + farm);
                     }
                 } else {
                     if (logger.isLoggable(Level.FINER)) {
-                        logger.log(Level.FINER, " Already in cache client [ " + clientID + " ] for Filter = " + ident + " Farm = " + farm);
+                        logger.log(Level.FINER, " Already in cache client [ " + clientID + " ] for Filter = " + ident
+                                + " Farm = " + farm);
                     }
                 }
             } catch (Throwable t) {
-                logger.log(Level.WARNING, " [ ServiceCommunication ] [ HANDLED ] Register FILTER CRITICAL_SECTION got exception: ", t);
+                logger.log(Level.WARNING,
+                        " [ ServiceCommunication ] [ HANDLED ] Register FILTER CRITICAL_SECTION got exception: ", t);
             } finally {
                 criticalSectionFilterSaveSaveLock.unlock();
             }
@@ -656,7 +691,7 @@ public class ServiceCommunication {
         }
 
         for (final MonMessageClientsProxy mMessage : msgToSend) {
-            if (mMessage != null && mMessage.farmID != null) {
+            if ((mMessage != null) && (mMessage.farmID != null)) {
                 FarmCommunication.addMessageToSend(mMessage.farmID, mMessage);
             }
         } // for
@@ -699,7 +734,8 @@ public class ServiceCommunication {
                 cli.remove(unregisterClientID);
 
                 if (cli.size() == 0) {
-                    MonMessageClientsProxy mmcp = new MonMessageClientsProxy(monMessage.PREDICATE_UNREGISTER_TAG, newID, null, mic.farmID);
+                    MonMessageClientsProxy mmcp = new MonMessageClientsProxy(monMessage.PREDICATE_UNREGISTER_TAG,
+                            newID, null, mic.farmID);
                     FarmCommunication.addMessageToSend(mic.farmID, mmcp);
                     it.remove();
                     reusedIDs.offer(newID);
@@ -707,7 +743,8 @@ public class ServiceCommunication {
             } // for
 
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ ServiceCommunication ] [ HANDLED ] Unregister client [ " + unregisterClientID + " ] CRITICAL_SECTION predicates got exception: ", t);
+            logger.log(Level.WARNING, " [ ServiceCommunication ] [ HANDLED ] Unregister client [ " + unregisterClientID
+                    + " ] CRITICAL_SECTION predicates got exception: ", t);
         } finally {
             criticalSectionIDSaveLock.unlock();
         }
@@ -716,7 +753,8 @@ public class ServiceCommunication {
 
         try {
             // unregister filters from farm
-            for (final Map.Entry<String, ConcurrentHashMap<ServiceID, ConcurrentSkipListSet<Integer>>> entry : FilterSave.entrySet()) {
+            for (final Map.Entry<String, ConcurrentHashMap<ServiceID, ConcurrentSkipListSet<Integer>>> entry : FilterSave
+                    .entrySet()) {
                 final String filter = entry.getKey();
                 ConcurrentHashMap<ServiceID, ConcurrentSkipListSet<Integer>> v = entry.getValue();
 
@@ -726,7 +764,8 @@ public class ServiceCommunication {
                         final ConcurrentSkipListSet<Integer> hmID = iEntry.getValue();
                         hmID.remove(unregisterClientID);
                         if (hmID.size() == 0) {
-                            MonMessageClientsProxy mess = new MonMessageClientsProxy(monMessage.FILTER_UNREGISTER_TAG, filter, null, farmID);
+                            MonMessageClientsProxy mess = new MonMessageClientsProxy(monMessage.FILTER_UNREGISTER_TAG,
+                                    filter, null, farmID);
                             logger.log(Level.INFO, " Proxy will NOT LISTEN for FILTER = " + filter);
                             FarmCommunication.addMessageToSend(farmID, mess);
                         }
@@ -734,7 +773,8 @@ public class ServiceCommunication {
                 } // if
             } // for
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ ServiceCommunication ] [ HANDLED ] Unregister client [ " + unregisterClientID + " ] CRITICAL_SECTION filters got exception: ", t);
+            logger.log(Level.WARNING, " [ ServiceCommunication ] [ HANDLED ] Unregister client [ " + unregisterClientID
+                    + " ] CRITICAL_SECTION filters got exception: ", t);
         } finally {
             criticalSectionFilterSaveSaveLock.unlock();
         }
@@ -742,7 +782,8 @@ public class ServiceCommunication {
     } // unregisterMessages
 
     private static final void sendUnregisterMessage(Integer messageID, ServiceID farmID) {
-        MonMessageClientsProxy mmcp = new MonMessageClientsProxy(monMessage.PREDICATE_UNREGISTER_TAG, messageID, null, farmID);
+        MonMessageClientsProxy mmcp = new MonMessageClientsProxy(monMessage.PREDICATE_UNREGISTER_TAG, messageID, null,
+                farmID);
         FarmCommunication.addMessageToSend(farmID, mmcp);
     } // sendUnregisterMessage
 
@@ -763,7 +804,8 @@ public class ServiceCommunication {
             final TreeSet<String> lastMailSentGroups = lastMailSent.get("groups");
 
             StringBuilder sb = new StringBuilder(16384);
-            sb.append("\n\nMLProxy Version: ").append(Service.MonaLisa_version).append(" [ ").append(Service.MonaLisa_vdate).append(" ]");
+            sb.append("\n\nMLProxy Version: ").append(Service.MonaLisa_version).append(" [ ")
+                    .append(Service.MonaLisa_vdate).append(" ]");
 
             // add the uptime to the report
             sb.append("\nMLProxy Uptime: ");
@@ -796,8 +838,9 @@ public class ServiceCommunication {
 
             sb.append("Number of ML Services in the current report: ");
             TreeSet<String> v = null;
-            if (h != null)
+            if (h != null) {
                 v = h.get("names");
+            }
 
             if (v != null) {
 
@@ -808,14 +851,15 @@ public class ServiceCommunication {
                     newFarms = new HashMap<String, Integer>();
                     deadFarms = new HashMap<String, Integer>();
                     passedByGroups = new ArrayList<String>();
-                    sb.append(" / No of ML Services in the previous report: ").append(lastMailSentNames.size()).append(" \n");
+                    sb.append(" / No of ML Services in the previous report: ").append(lastMailSentNames.size())
+                            .append(" \n");
                 } // if
 
                 sb.append("\n------------------------------------------------------------------\n");
 
                 for (final String name : v) {
                     sb.append(name).append("  ");
-                    if (newFarms != null && !(lastMailSentNames.contains(name))) {
+                    if ((newFarms != null) && !(lastMailSentNames.contains(name))) {
                         Integer x = newFarmsMailInterval.get(name);
                         if (x == null) {
                             x = 0;
@@ -863,8 +907,9 @@ public class ServiceCommunication {
 
             TreeSet<String> g = null;
 
-            if (h != null)
+            if (h != null) {
                 g = h.get("groups");
+            }
 
             if (g != null) {
 
@@ -878,7 +923,7 @@ public class ServiceCommunication {
 
                 for (final String group : g) {
                     sb.append(group).append(" ");
-                    if (newGroups != null && !lastMailSentGroups.contains(group)) {
+                    if ((newGroups != null) && !lastMailSentGroups.contains(group)) {
                         newGroups.add(group);
                     } // if
                 } // for
@@ -917,8 +962,7 @@ public class ServiceCommunication {
             if (deadFarms != null) {
                 sb.append("Disapeared services (").append(deadFarms.size()).append(") :\n");
                 sb.append("------------------------------------------------------------------\n");
-                for (Iterator<Map.Entry<String, Integer>> it = deadFarms.entrySet().iterator(); it.hasNext();) {
-                    final Map.Entry<String, Integer> entry = it.next();
+                for (java.util.Map.Entry<String, Integer> entry : deadFarms.entrySet()) {
                     final String farmN = entry.getKey();
                     sb.append(farmN);
                     final int val = entry.getValue();
@@ -940,7 +984,7 @@ public class ServiceCommunication {
                 sb.append("\n\n");
             } // if
 
-            if (passedByGroups != null && passedByGroups.size() > 0) {
+            if ((passedByGroups != null) && (passedByGroups.size() > 0)) {
                 sb.append("Passed by groups (").append(passedByGroups.size()).append(") :\n");
                 sb.append("------------------------------------------------------------------\n");
                 for (final String group : passedByGroups) {
@@ -959,25 +1003,28 @@ public class ServiceCommunication {
             return sb.toString();
         } // composeMail.
 
+        @Override
         public void run() {
             String[] RCPTS = null;
             try {
                 RCPTS = AppConfig.getVectorProperty("mlproxy_mail.RCPTs", "developers@monalisa.cern.ch");
                 final long startRaportTime = System.currentTimeMillis();
                 final String composedMail = composeMail();
-                String mailBody = "\n\nThis report was generated in: " + (System.currentTimeMillis() - startRaportTime) + " ms\n\n" + composedMail;
-                MailFactory.getMailSender().sendMessage("proxystatus@monalisa.cern.ch", RCPTS, "[proxy(" + serviceName + ")] status", mailBody);
+                String mailBody = "\n\nThis report was generated in: " + (System.currentTimeMillis() - startRaportTime)
+                        + " ms\n\n" + composedMail;
+                MailFactory.getMailSender().sendMessage("proxystatus@monalisa.cern.ch", RCPTS,
+                        "[proxy(" + serviceName + ")] status", mailBody);
             } catch (Throwable t) {
                 logger.log(Level.WARNING, "Got exception sending mail", t);
-                final String finalMail = new Date() + "\n\n Got exception processing mail. Cause:\n" + Utils.getStackTrace(t);
+                final String finalMail = new Date() + "\n\n Got exception processing mail. Cause:\n"
+                        + Utils.getStackTrace(t);
 
                 try {
                     if (RCPTS == null) {
-                        RCPTS = new String[] {
-                            "ramiro.voicu@gmail.com"
-                        };
+                        RCPTS = new String[] { "ramiro.voicu@gmail.com" };
                     }
-                    MailFactory.getMailSender().sendMessage("proxystatus@monalisa.cern.ch", RCPTS, "[proxy(" + serviceName + ")] ERROR", finalMail);
+                    MailFactory.getMailSender().sendMessage("proxystatus@monalisa.cern.ch", RCPTS,
+                            "[proxy(" + serviceName + ")] ERROR", finalMail);
                 } catch (Throwable t1) {
                     logger.log(Level.WARNING, "Got exception sending FINAL mail, giving up ...", t1);
                 }
@@ -987,31 +1034,37 @@ public class ServiceCommunication {
             try {
                 RCPTS = AppConfig.getVectorProperty("mlproxy_devel_mail.RCPTs");
 
-                if (RCPTS == null || RCPTS.length == 0)
+                if ((RCPTS == null) || (RCPTS.length == 0)) {
                     return;
+                }
 
                 final long startRaportTime = System.currentTimeMillis();
                 final long IDSaveDeepSize = getIDSaveDeepSize();
                 final long FilterSaveDeepSize = getFilterSaveDeepSize();
 
                 StringBuilder sb = new StringBuilder(8192);
-                sb.append("\n\n IDSave.size() = ").append(IDSave.size()).append(" IDSave.deepSize() = ").append(IDSaveDeepSize);
-                sb.append("\n FilterSave.size() = ").append(FilterSave.size()).append(" FilterSave.deepSize() = ").append(FilterSaveDeepSize);
-                sb.append("\n\n StringFactory HitRatio ").append(StringFactory.getHitRatio()).append(" size: ").append(StringFactory.getCacheSize());
-                sb.append("\n\n This mail was generated in: ").append(System.currentTimeMillis() - startRaportTime).append(" ms");
+                sb.append("\n\n IDSave.size() = ").append(IDSave.size()).append(" IDSave.deepSize() = ")
+                        .append(IDSaveDeepSize);
+                sb.append("\n FilterSave.size() = ").append(FilterSave.size()).append(" FilterSave.deepSize() = ")
+                        .append(FilterSaveDeepSize);
+                sb.append("\n\n StringFactory HitRatio ").append(StringFactory.getHitRatio()).append(" size: ")
+                        .append(StringFactory.getCacheSize());
+                sb.append("\n\n This mail was generated in: ").append(System.currentTimeMillis() - startRaportTime)
+                        .append(" ms");
 
-                MailFactory.getMailSender().sendMessage("proxystatus@monalisa.cern.ch", RCPTS, "[proxy(" + serviceName + ")] devel status", sb.toString());
+                MailFactory.getMailSender().sendMessage("proxystatus@monalisa.cern.ch", RCPTS,
+                        "[proxy(" + serviceName + ")] devel status", sb.toString());
             } catch (Throwable t) {
                 logger.log(Level.WARNING, "Got exception sending mail", t);
-                final String finalMail = new Date() + "\n\n Got exception processing mail. Cause:\n" + Utils.getStackTrace(t);
+                final String finalMail = new Date() + "\n\n Got exception processing mail. Cause:\n"
+                        + Utils.getStackTrace(t);
 
                 try {
                     if (RCPTS == null) {
-                        RCPTS = new String[] {
-                            "ramiro.voicu@gmail.com"
-                        };
+                        RCPTS = new String[] { "ramiro.voicu@gmail.com" };
                     }
-                    MailFactory.getMailSender().sendMessage("proxystatus@monalisa.cern.ch", RCPTS, "[proxy(" + serviceName + ")] ERROR devel status", finalMail);
+                    MailFactory.getMailSender().sendMessage("proxystatus@monalisa.cern.ch", RCPTS,
+                            "[proxy(" + serviceName + ")] ERROR devel status", finalMail);
                 } catch (Throwable t1) {
                     logger.log(Level.WARNING, "Got exception sending FINAL mail, giving up ...", t1);
                 }

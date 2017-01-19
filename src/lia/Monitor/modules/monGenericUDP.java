@@ -1,5 +1,5 @@
 /*
- * $Id: monGenericUDP.java 7260 2012-05-22 06:50:59Z ramiro $
+ * $Id: monGenericUDP.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.modules;
 
@@ -31,7 +31,7 @@ public abstract class monGenericUDP extends SchJob implements MonitoringModule, 
      */
     private static final long serialVersionUID = 3158836250458493949L;
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(monGenericUDP.class.getName());
+    private static final Logger logger = Logger.getLogger(monGenericUDP.class.getName());
     public MNode Node;
     public String TaskName;
     public MonModuleInfo info;
@@ -59,12 +59,10 @@ public abstract class monGenericUDP extends SchJob implements MonitoringModule, 
     }
 
     @Override
-	public MonModuleInfo init(MNode Node, String arg) {
+    public MonModuleInfo init(MNode Node, String arg) {
         this.Node = Node;
         init_args(arg);
         info = new MonModuleInfo();
-
-
 
         try {
             udpLS = new GenericUDPListener(gPort, this, null);
@@ -82,17 +80,17 @@ public abstract class monGenericUDP extends SchJob implements MonitoringModule, 
     }
 
     void init_args(String list) {
-        if (list == null || list.length() == 0) {
+        if ((list == null) || (list.length() == 0)) {
             return;
         }
         String params[] = list.split("(\\s)*,(\\s)*");
-        if (params == null || params.length == 0) {
+        if ((params == null) || (params.length == 0)) {
             return;
         }
-        for (int i = 0; i < params.length; i++) {
-            int itmp = params[i].indexOf("ListenPort");
+        for (String param : params) {
+            int itmp = param.indexOf("ListenPort");
             if (itmp != -1) {
-                String tmp = params[i].substring(itmp + "ListenPort".length()).trim();
+                String tmp = param.substring(itmp + "ListenPort".length()).trim();
                 int iq = tmp.indexOf("=");
                 String port = tmp.substring(iq + 1).trim();
                 try {
@@ -103,16 +101,16 @@ public abstract class monGenericUDP extends SchJob implements MonitoringModule, 
                 continue;
             }
 
-            itmp = params[i].indexOf("AppendIPToNodeName");
+            itmp = param.indexOf("AppendIPToNodeName");
             if (itmp != -1) {
-                String tmp = params[i].substring(itmp + "AppendIPToNodeName".length()).trim();
+                String tmp = param.substring(itmp + "AppendIPToNodeName".length()).trim();
                 int iq = tmp.indexOf("=");
 
                 String val = "";
 
                 if (iq > 0) {
                     val = tmp.substring(iq + 1).trim().toLowerCase();
-                // if the parameter exists the default value is true unless an explicit value of false is specified
+                    // if the parameter exists the default value is true unless an explicit value of false is specified
                 }
                 if (val.startsWith("f") || val.startsWith("0")) {
                     bAppendIPToNodeName = false;
@@ -122,16 +120,16 @@ public abstract class monGenericUDP extends SchJob implements MonitoringModule, 
                 continue;
             }
 
-            itmp = params[i].indexOf("ReportSenderID");
+            itmp = param.indexOf("ReportSenderID");
             if (itmp != -1) {
-                String tmp = params[i].substring(itmp + "ReportSenderID".length()).trim();
+                String tmp = param.substring(itmp + "ReportSenderID".length()).trim();
                 int iq = tmp.indexOf("=");
 
                 String val = "";
 
                 if (iq > 0) {
                     val = tmp.substring(iq + 1).trim().toLowerCase();
-                // if the parameter exists the default value is true unless an explicit value of false is specified
+                    // if the parameter exists the default value is true unless an explicit value of false is specified
                 }
                 if (val.startsWith("f") || val.startsWith("0")) {
                     bReportSenderID = false;
@@ -141,9 +139,9 @@ public abstract class monGenericUDP extends SchJob implements MonitoringModule, 
                 continue;
             }
 
-            itmp = params[i].indexOf("MaxMsgRate");
+            itmp = param.indexOf("MaxMsgRate");
             if (itmp != -1) {
-                String tmp = params[i].substring(itmp + "MaxMsgRate".length()).trim();
+                String tmp = param.substring(itmp + "MaxMsgRate".length()).trim();
                 int iq = tmp.indexOf("=");
                 String rate = tmp.substring(iq + 1).trim();
                 try {
@@ -154,23 +152,26 @@ public abstract class monGenericUDP extends SchJob implements MonitoringModule, 
 
             }
 
-            itmp = params[i].indexOf("AccessConfFile");
+            itmp = param.indexOf("AccessConfFile");
             if (itmp != -1) {
 
                 File accessConfFile = null;
 
-                String tmp = params[i].substring(itmp + "AccessConfFile".length()).trim();
+                String tmp = param.substring(itmp + "AccessConfFile".length()).trim();
                 int iq = tmp.indexOf("=");
                 String sCFile = tmp.substring(iq + 1).trim();
-                if (sCFile != null && sCFile.length() > 0) {
+                if ((sCFile != null) && (sCFile.length() > 0)) {
                     try {
                         accessConfFile = new File(sCFile);
                     } catch (Throwable tt) {
-                        logger.log(Level.WARNING, "[ monGenericUDP ] Got exception while initializing AccessConFile", tt);
+                        logger.log(Level.WARNING, "[ monGenericUDP ] Got exception while initializing AccessConFile",
+                                tt);
                         accessConfFile = null;
                     }
                 } else {
-                    logger.log(Level.WARNING, "[ monGenericUDP ] Please make sure that you have defined a valid file name after AccessConfFile = [ " + sCFile + " ] ");
+                    logger.log(Level.WARNING,
+                            "[ monGenericUDP ] Please make sure that you have defined a valid file name after AccessConfFile = [ "
+                                    + sCFile + " ] ");
                     return;
                 }
 
@@ -186,53 +187,53 @@ public abstract class monGenericUDP extends SchJob implements MonitoringModule, 
     }
 
     @Override
-	public String[] ResTypes() {
+    public String[] ResTypes() {
         return resTypes;
     }
 
     @Override
-	public String getOsName() {
+    public String getOsName() {
         return OsName;
     }
 
     @Override
-	public MNode getNode() {
+    public MNode getNode() {
         return Node;
     }
 
     @Override
-	public String getClusterName() {
+    public String getClusterName() {
         return Node.getClusterName();
     }
 
     @Override
-	public String getFarmName() {
+    public String getFarmName() {
         return Node.getFarmName();
     }
 
     @Override
-	public String getTaskName() {
+    public String getTaskName() {
         return ModuleName;
     }
 
     @Override
-	public boolean isRepetitive() {
+    public boolean isRepetitive() {
         return isRepetitive;
     }
 
     @Override
-	public MonModuleInfo getInfo() {
+    public MonModuleInfo getInfo() {
         return info;
     }
 
     @Override
-	abstract public void notifyData(int len, byte[] data, InetAddress source);
+    abstract public void notifyData(int len, byte[] data, InetAddress source);
 
     public List<GenericUDPResult> getResults() {
-        if (genResults == null || genResults.size() == 0) {
+        if ((genResults == null) || (genResults.size() == 0)) {
             return null;
         }
-        
+
         List<GenericUDPResult> rList = null;
 
         synchronized (genResults) {

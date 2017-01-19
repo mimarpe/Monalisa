@@ -31,7 +31,7 @@ import java.util.Date;
  * 
  * @see Result 
  */
-public class eResult implements java.io.Serializable {
+public class eResult implements java.io.Serializable, TimestampedResult {
 
     /**
      * @since ML 1.5.8
@@ -141,4 +141,7 @@ public class eResult implements java.io.Serializable {
         param_name = nparam_name;
     }
 
+    public long getTime() {
+    	return time;
+    }
 }

@@ -29,7 +29,7 @@ import org.xbill.DNS.Type;
 public class DirectMailSender extends MailSender implements Runnable, AppConfigChangeListener {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger("lia.util.mail.DirectMailSender");
+    private static final Logger logger = Logger.getLogger(DirectMailSender.class.getName());
 
     private static volatile int MAX_EMAIL_MSGS = 500;
 
@@ -41,7 +41,7 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
 
     private final ArrayBlockingQueue<EMsg> mailq;
 
-    private boolean hasToRun = true;
+    private final boolean hasToRun = true;
 
     private static int CONNECT_TIMEOUT;
 
@@ -62,6 +62,7 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
         mailq = new ArrayBlockingQueue<EMsg>(MAX_EMAIL_MSGS);
     }
 
+    @Override
     public void notifyAppConfigChanged() {
         reloadConfig();
     }
@@ -85,7 +86,8 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
 
         boolean useLocalMail = false;
         try {
-            useLocalMail = Boolean.valueOf(AppConfig.getProperty("lia.util.mail.USE_LOCAL_MAIL", "false")).booleanValue();
+            useLocalMail = Boolean.valueOf(AppConfig.getProperty("lia.util.mail.USE_LOCAL_MAIL", "false"))
+                    .booleanValue();
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, " [ DMS ] Got ex parsing lia.util.mail.USE_LOCAL_MAIL", t);
@@ -123,8 +125,8 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
         mailServerPort = iMailServerPort;
 
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, " [ DMS ] Config params" + " DEVEL_STATION = " + DEVEL_STATION + " USE_LOCAL_MAIL " + USE_LOCAL_MAIL
-                    + " LOCAL_MAIL_COMMAND " + LOCAL_MAIL_COMMAND);
+            logger.log(Level.FINER, " [ DMS ] Config params" + " DEVEL_STATION = " + DEVEL_STATION + " USE_LOCAL_MAIL "
+                    + USE_LOCAL_MAIL + " LOCAL_MAIL_COMMAND " + LOCAL_MAIL_COMMAND);
         }
 
     }
@@ -197,19 +199,23 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
         }
     }
 
-    public static final void sendMessageFromThread(String from, String[] to, String Subject, String message) throws Exception {
-        if (DEVEL_STATION)
+    public static final void sendMessageFromThread(String from, String[] to, String Subject, String message)
+            throws Exception {
+        if (DEVEL_STATION) {
             return;
+        }
         sendMessageFromThread(from, from, to, Subject, message);
     }
 
     private static final SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");
 
-    public static final void sendMessageFromThread(String realFrom, String from, String[] to, String Subject, String message) throws Exception {
-        if (DEVEL_STATION)
+    public static final void sendMessageFromThread(String realFrom, String from, String[] to, String Subject,
+            String message) throws Exception {
+        if (DEVEL_STATION) {
             return;
+        }
         int port = 25;
-        if (to == null || to.length == 0) {
+        if ((to == null) || (to.length == 0)) {
             logger.log(Level.WARNING, "Cannot send to Nobody!? to " + ((to == null) ? "== null" : " length == 0"));
             return;
         }
@@ -223,8 +229,8 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
                 }
                 mailProcCMD.append("echo \\\"").append(message).append("\\\" | ").append(mailCmd);
                 mailProcCMD.append(" -s \\\"").append(Subject).append("\\\"");
-                for (int i = 0; i < to.length; i++) {
-                    mailProcCMD.append(" ").append(to[i]);
+                for (String element : to) {
+                    mailProcCMD.append(" ").append(element);
                 }
                 // Process p = MLProcess.exec(new String[] {"/bin/sh", "-c", mailProcCMD.toString()});
                 Process p = MLProcess.exec(mailProcCMD.toString());
@@ -240,11 +246,10 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
 
         String toAddr = "";
         for (int i = 0; i < to.length; i++) {
-            toAddr += to[i] + ((i < to.length - 1) ? "," : "");
+            toAddr += to[i] + ((i < (to.length - 1)) ? "," : "");
         }
 
-        for (int i = 0; i < to.length; i++) {
-            String toc = to[i];
+        for (String toc : to) {
             try {
                 String host = null;
 
@@ -257,7 +262,7 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
 
                 String d[] = toc.split("@");
 
-                if (d == null || d.length == 0) {
+                if ((d == null) || (d.length == 0)) {
                     logger.log(Level.WARNING, "Wrong email address " + toc);
                     continue;
                 }
@@ -266,15 +271,14 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
 
                 String dp[] = pd.split("\\.");
 
-                if (dp == null || dp.length == 0) {
+                if ((dp == null) || (dp.length == 0)) {
                     logger.log(Level.WARNING, "Wrong email address " + toc);
                     continue;
                 }
 
                 String pdomain = null;
-                for (int di = 0; di < dp.length; di++) {
-                    String dtk = dp[di];
-                    if (dtk != null && dtk.length() > 0) {
+                for (String dtk : dp) {
+                    if ((dtk != null) && (dtk.length() > 0)) {
                         if (pdomain == null) {
                             pdomain = dtk;
                         } else {
@@ -283,7 +287,7 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
                     }
                 }
 
-                if (pdomain == null || pdomain.length() == 0 || pdomain.indexOf(".") == -1) {
+                if ((pdomain == null) || (pdomain.length() == 0) || (pdomain.indexOf(".") == -1)) {
                     logger.log(Level.WARNING, "Wrong email address " + toc);
                     continue;
                 }
@@ -291,14 +295,14 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
                 String domain = pdomain.substring(0, lpi + 1);
                 String lastp = pdomain.substring(lpi + 1);
 
-                if (lastp == null || lastp.length() == 0 || lastp.endsWith("-")) {
+                if ((lastp == null) || (lastp.length() == 0) || lastp.endsWith("-")) {
                     logger.log(Level.WARNING, "Wrong email address " + toc);
                     continue;
                 }
 
                 String clastp = lastp.replaceAll("[^((\\w)+(\\-)*)]", "");
 
-                if (clastp == null || clastp.length() == 0) {
+                if ((clastp == null) || (clastp.length() == 0)) {
                     logger.log(Level.WARNING, "Wrong email address " + toc);
                     continue;
                 }
@@ -319,16 +323,17 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
 
                     Record[] records;
 
-                    if (lookup.getResult() == Lookup.SUCCESSFUL && (records = lookup.getAnswers()) != null) {
-                        for (int j = 0; j < records.length && mailNotSent; j++) {
+                    if ((lookup.getResult() == Lookup.SUCCESSFUL) && ((records = lookup.getAnswers()) != null)) {
+                        for (int j = 0; (j < records.length) && mailNotSent; j++) {
                             try {
                                 host = records[j].getAdditionalName().toString();
 
                                 if (logger.isLoggable(Level.FINEST)) {
                                     logger.log(Level.FINEST, "Trying Hostname " + host + " for " + toc);
                                 }
-                                if (host == null)
+                                if (host == null) {
                                     continue;
+                                }
                                 StringBuilder hm = new StringBuilder();
                                 hm.append("From: ").append(from).append("\r\n");
                                 hm.append("To: ").append(toAddr).append("\r\n");
@@ -411,9 +416,11 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
         }
     }
 
+    @Override
     public void sendMessage(String from, String[] to, String Subject, String message) throws Exception {
-        if (DEVEL_STATION)
+        if (DEVEL_STATION) {
             return;
+        }
         if (mailq.size() > MAX_EMAIL_MSGS) {
             if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, "MAX_EMAILS_MSGS [ " + MAX_EMAIL_MSGS + " ] reached! Dropping mails....");
@@ -423,9 +430,11 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
         mailq.add(new EMsg(from, to, Subject, message));
     }
 
+    @Override
     public void sendMessage(String mailFrom, String from, String[] to, String Subject, String message) throws Exception {
-        if (DEVEL_STATION)
+        if (DEVEL_STATION) {
             return;
+        }
         if (mailq.size() > MAX_EMAIL_MSGS) {
             if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, "MAX_EMAILS_MSGS [ " + MAX_EMAIL_MSGS + " ] reached! Dropping mails....");
@@ -435,7 +444,8 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
         mailq.add(new EMsg(mailFrom, from, to, Subject, message));
     }
 
-    private static final void directSend(String host, int port, String sender, String receiver, String msg) throws Exception {
+    private static final void directSend(String host, int port, String sender, String receiver, String msg)
+            throws Exception {
 
         Socket s = null;
         PrintStream p = null;
@@ -483,10 +493,12 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
             BufferedReader brs = new BufferedReader(new StringReader(msg));
             for (;;) {
                 String ln = brs.readLine();
-                if (ln == null)
+                if (ln == null) {
                     break;
-                if (ln.equals(".")) // don't send as is
+                }
+                if (ln.equals(".")) {
                     ln = ".."; // to avoid premature truncation
+                }
                 p.print(ln + "\r\n");
             }
 
@@ -503,14 +515,16 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
             Utils.closeIgnoringException(p);
             Utils.closeIgnoringException(br);
             try {
-                if (s != null)
+                if (s != null) {
                     s.close();
+                }
             } catch (Throwable t) {
                 // ignore socket close exception
             }
         }
     }
 
+    @Override
     public void sendMessage(EMsg eMsg, boolean enqueue) throws Exception {
         if (enqueue) {
             mailq.add(eMsg);
@@ -523,8 +537,9 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
         // this method reads the mailhost reply and checks that it is as
         // expected
         lastline = br.readLine();
-        if (lastline != null && lastline.indexOf(expected) == -1)
+        if ((lastline != null) && (lastline.indexOf(expected) == -1)) {
             throw new Exception(msg + ":" + lastline);
+        }
     }
 
     private static final long getRandomPositiveLong() {
@@ -553,9 +568,9 @@ public class DirectMailSender extends MailSender implements Runnable, AppConfigC
 
         for (;;) {
             System.out.println(new Date() + "... Sending mail ... ");
-            DirectMailSender.getInstance().sendMessage("ramiro@cern.ch", new String[] {
-                "ramiro@hep.caltech.edu"
-            }, "Test ML HEP ID - " + Long.toString(getRandomPositiveLong(), Character.MAX_RADIX), "HEP test mail - Ignore it!\n\nRamiro");
+            DirectMailSender.getInstance().sendMessage("ramiro@cern.ch", new String[] { "ramiro@hep.caltech.edu" },
+                    "Test ML HEP ID - " + Long.toString(getRandomPositiveLong(), Character.MAX_RADIX),
+                    "HEP test mail - Ignore it!\n\nRamiro");
             System.out.println(new Date() + "... mail queued ... ");
 
             try {

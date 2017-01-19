@@ -1,5 +1,5 @@
 /*
- * $Id: monCienaAlm.java 7232 2012-02-20 15:50:22Z ramiro $
+ * $Id: monCienaAlm.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.modules;
 
@@ -66,7 +66,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
     private static final long serialVersionUID = -7004222448425042098L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(monCienaAlm.class.getName());
+    private static final Logger logger = Logger.getLogger(monCienaAlm.class.getName());
 
     private static final String TL1_CTAG = "ralm";
 
@@ -74,9 +74,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
     public MNode Node;
 
-    static String[] ResTypes = {
-        "Port-Conn"
-    };
+    static String[] ResTypes = { "Port-Conn" };
 
     public MonModuleInfo info;
 
@@ -111,7 +109,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
     private volatile File alarmsLogDir = null;
 
-    private Properties stateProps;
+    private final Properties stateProps;
 
     private boolean shouldSaveState = false;
 
@@ -123,15 +121,13 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
     private boolean ignoreAlmTime = false;
 
-    private static final AtomicBoolean shouldMonitorPerformance = new AtomicBoolean(AppConfig.getb("lia.Monitor.modules.monCienaAlm.shouldMonitorPerformance", false));
+    private static final AtomicBoolean shouldMonitorPerformance = new AtomicBoolean(AppConfig.getb(
+            "lia.Monitor.modules.monCienaAlm.shouldMonitorPerformance", false));
 
-    private static volatile String[] alarmRCPTs = new String[] {
-            "ramiro@roedu.net", "ramiro.voicu@cern.ch"
-    };
+    private static volatile String[] alarmRCPTs = new String[] { "ramiro@roedu.net", "ramiro.voicu@cern.ch" };
 
-    private static volatile String[] smallAlmRCPTs = new String[] {
-            "ramiro@roedu.net", "ramiro.voicu@cern.ch", "Artur.Barczyk@cern.ch"
-    };
+    private static volatile String[] smallAlmRCPTs = new String[] { "ramiro@roedu.net", "ramiro.voicu@cern.ch",
+            "Artur.Barczyk@cern.ch" };
 
     private static final class OC192AlmEntry {
 
@@ -142,7 +138,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
         private long lastMailSent;
 
         private final Integer alarmCode;
-        
+
         private OC192AlmEntry(final String alarmLine, final long startTime, final Integer alarmCode) {
             if (alarmLine == null) {
                 throw new NullPointerException("alarmLine cannot be null");
@@ -152,8 +148,10 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
             this.alarmCode = alarmCode;
         }
 
+        @Override
         public String toString() {
-            return "{OC192AlmEntry} TL1AlmLine: " + alarmLine + "; startTime: " + new Date(startTime) + "; lastMailNotif: " + new Date(lastMailSent);
+            return "{OC192AlmEntry} TL1AlmLine: " + alarmLine + "; startTime: " + new Date(startTime)
+                    + "; lastMailNotif: " + new Date(lastMailSent);
         }
     }
 
@@ -161,6 +159,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
         reloadConfig();
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
                 reloadConfig();
             }
@@ -169,9 +168,13 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
     private static final void reloadConfig() {
         try {
-            shouldMonitorPerformance.set(AppConfig.getb("lia.Monitor.modules.monCienaAlm.shouldMonitorPerformance", false));
+            shouldMonitorPerformance.set(AppConfig.getb("lia.Monitor.modules.monCienaAlm.shouldMonitorPerformance",
+                    false));
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ monCienaAlm ] got exception looking for lia.Monitor.modules.monCienaAlm.shouldMonitorPerformance ", t);
+            logger.log(
+                    Level.WARNING,
+                    " [ monCienaAlm ] got exception looking for lia.Monitor.modules.monCienaAlm.shouldMonitorPerformance ",
+                    t);
             shouldMonitorPerformance.set(false);
         }
 
@@ -179,20 +182,19 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
             final String[] s = AppConfig.getVectorProperty("lia.Monitor.modules.monCienaAlm.alarmRCPTs", alarmRCPTs);
             alarmRCPTs = s;
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ monCienaAlm ] got exception looking for lia.Monitor.modules.monCienaAlm.alarmRCPTs ", t);
-            alarmRCPTs = new String[] {
-                    "ramiro@roedu.net", "ramiro.voicu@cern.ch"
-            };
+            logger.log(Level.WARNING,
+                    " [ monCienaAlm ] got exception looking for lia.Monitor.modules.monCienaAlm.alarmRCPTs ", t);
+            alarmRCPTs = new String[] { "ramiro@roedu.net", "ramiro.voicu@cern.ch" };
         }
 
         try {
-            final String[] s = AppConfig.getVectorProperty("lia.Monitor.modules.monCienaAlm.smallAlmRCPTs", smallAlmRCPTs);
+            final String[] s = AppConfig.getVectorProperty("lia.Monitor.modules.monCienaAlm.smallAlmRCPTs",
+                    smallAlmRCPTs);
             smallAlmRCPTs = s;
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ monCienaAlm ] got exception looking for lia.Monitor.modules.monCienaAlm.smallAlmRCPTs ", t);
-            smallAlmRCPTs = new String[] {
-                    "ramiro@roedu.net", "ramiro.voicu@cern.ch"
-            };
+            logger.log(Level.WARNING,
+                    " [ monCienaAlm ] got exception looking for lia.Monitor.modules.monCienaAlm.smallAlmRCPTs ", t);
+            smallAlmRCPTs = new String[] { "ramiro@roedu.net", "ramiro.voicu@cern.ch" };
         }
     }
 
@@ -204,9 +206,11 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
         canLogAlarms = true;
     }
 
+    @Override
     public MonModuleInfo init(MNode Node, String arg) {
         this.Node = Node;
-        logger.log(Level.INFO, "monCienaAlm: farmName=" + Node.getFarmName() + " clusterName= " + Node.getClusterName() + " nodeName=" + Node.getName() + " arg = " + arg);
+        logger.log(Level.INFO, "monCienaAlm: farmName=" + Node.getFarmName() + " clusterName= " + Node.getClusterName()
+                + " nodeName=" + Node.getName() + " arg = " + arg);
 
         if (arg.startsWith("\"")) {
             arg = arg.substring(1);
@@ -218,27 +222,30 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
         String[] args = arg.split("(\\s)*;(\\s)*");
         if (args != null) {
-            for (int i = 0; i < args.length; i++) {
+            for (String arg2 : args) {
                 try {
-                    final String argT = args[i].trim();
+                    final String argT = arg2.trim();
                     if (argT.startsWith("lastAlarmsStateFile")) {
                         String[] fileTks = argT.split("(\\s)*=(\\s)*");
-                        if (fileTks == null || fileTks.length != 2) {
-                            logger.log(Level.WARNING, "monCienaAlm cannot parse lastAlarmsStateFile param [ " + argT + " ]  ... ");
+                        if ((fileTks == null) || (fileTks.length != 2)) {
+                            logger.log(Level.WARNING, "monCienaAlm cannot parse lastAlarmsStateFile param [ " + argT
+                                    + " ]  ... ");
                             continue;
                         }
                         lastAlarmsStateFile = new File(fileTks[1]);
                     } else if (argT.startsWith("lastAlarmsSerFile")) {
                         String[] fileTks = argT.split("(\\s)*=(\\s)*");
-                        if (fileTks == null || fileTks.length != 2) {
-                            logger.log(Level.WARNING, "monCienaAlm cannot parse lastAlarmsSerFile param [ " + argT + " ]  ... ");
+                        if ((fileTks == null) || (fileTks.length != 2)) {
+                            logger.log(Level.WARNING, "monCienaAlm cannot parse lastAlarmsSerFile param [ " + argT
+                                    + " ]  ... ");
                             continue;
                         }
                         lastAlarmsSerFile = new File(fileTks[1]);
                     } else if (argT.startsWith("alarmsLogDir")) {
                         String[] fileTks = argT.split("(\\s)*=(\\s)*");
-                        if (fileTks == null || fileTks.length != 2) {
-                            logger.log(Level.WARNING, "monCienaAlm cannot parse lastAlarmsSerFile param [ " + argT + " ]  ... ");
+                        if ((fileTks == null) || (fileTks.length != 2)) {
+                            logger.log(Level.WARNING, "monCienaAlm cannot parse lastAlarmsSerFile param [ " + argT
+                                    + " ]  ... ");
                             continue;
                         }
                         alarmsLogDir = new File(fileTks[1]);
@@ -246,8 +253,9 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                         ignoreAlmTime = true;
                     } else if (argT.startsWith("OC192ConfFile")) {
                         String[] fileTks = argT.split("(\\s)*=(\\s)*");
-                        if (fileTks == null || fileTks.length != 2) {
-                            logger.log(Level.WARNING, "monCienaAlm cannot parse OC192ConfFile param [ " + argT + " ]  ... ");
+                        if ((fileTks == null) || (fileTks.length != 2)) {
+                            logger.log(Level.WARNING, "monCienaAlm cannot parse OC192ConfFile param [ " + argT
+                                    + " ]  ... ");
                             continue;
                         }
                         oc192ConfFile = new File(fileTks[1]);
@@ -256,10 +264,15 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                             try {
                                 DateFileWatchdog.getInstance(oc192ConfFile, 5 * 1000).addObserver(this);
                             } catch (Throwable t) {
-                                logger.log(Level.WARNING, " monCienaAlm - Unable to instantiate watchdog for " + oc192ConfFile + ". Cause: ", t);
+                                logger.log(Level.WARNING, " monCienaAlm - Unable to instantiate watchdog for "
+                                        + oc192ConfFile + ". Cause: ", t);
                             }
                         } else {
-                            logger.log(Level.WARNING, "\n\n monCienaAlm - No OC192ConfFile defined or the file " + oc192ConfFile + " cannot be accessed. The module WILL NOT REPORT status on Sonet Intetrfaces!\n\n");
+                            logger.log(
+                                    Level.WARNING,
+                                    "\n\n monCienaAlm - No OC192ConfFile defined or the file "
+                                            + oc192ConfFile
+                                            + " cannot be accessed. The module WILL NOT REPORT status on Sonet Intetrfaces!\n\n");
                             oc192ConfFile = null;
                         }
                     }
@@ -277,7 +290,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
             if (lastAlarmsStateFile == null) {// nothing defined as module param
                 String farmHome = AppConfig.getProperty("lia.Monitor.Farm.HOME");
                 if (farmHome == null) {
-                    logger.log(Level.WARNING, "[monCienaAlm] Cannot determine lia.Monitor.Farm.HOME .... I will use the local direcotry");
+                    logger.log(Level.WARNING,
+                            "[monCienaAlm] Cannot determine lia.Monitor.Farm.HOME .... I will use the local direcotry");
                     farmHome = ".";
                 }
                 lastAlarmsStateFile = new File(farmHome + File.separator + "monCienaAlm_lastAlarmsStateFile.properties");
@@ -292,7 +306,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                         statePropsLoaded = true;
                         logger.log(Level.INFO, "monCienaAlm - lastAlarmsStateFile loaded successfully");
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, "monCienaAlm - exception loading lastAlarmsStateFile: " + lastAlarmsStateFile, t);
+                        logger.log(Level.WARNING, "monCienaAlm - exception loading lastAlarmsStateFile: "
+                                + lastAlarmsStateFile, t);
                     } finally {
                         if (fis != null) {
                             try {
@@ -303,10 +318,12 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                     }
 
                     if (!lastAlarmsStateFile.canWrite()) {
-                        logger.log(Level.WARNING, "monCienaAlm - lastAlarmsStateFile: " + lastAlarmsStateFile + " does not have write access");
+                        logger.log(Level.WARNING, "monCienaAlm - lastAlarmsStateFile: " + lastAlarmsStateFile
+                                + " does not have write access");
                     }
                 } else {
-                    logger.log(Level.WARNING, "monCienaAlm lastAlarmsStateFile: " + lastAlarmsStateFile + " exists but cannot be read");
+                    logger.log(Level.WARNING, "monCienaAlm lastAlarmsStateFile: " + lastAlarmsStateFile
+                            + " exists but cannot be read");
                 }
             } else {
                 if (!lastAlarmsStateFile.createNewFile()) {
@@ -314,7 +331,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                 }
             }
         } catch (Throwable t1) {
-            logger.log(Level.WARNING, " monCienaAlm - exception initializing the lastAlarmsStateFile: " + lastAlarmsStateFile, t1);
+            logger.log(Level.WARNING, " monCienaAlm - exception initializing the lastAlarmsStateFile: "
+                    + lastAlarmsStateFile, t1);
         }
 
         // Init lastAlarmsStateFile
@@ -322,7 +340,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
             if (lastAlarmsSerFile == null) {// nothing defined as module param
                 String farmHome = AppConfig.getProperty("lia.Monitor.Farm.HOME");
                 if (farmHome == null) {
-                    logger.log(Level.WARNING, " Cannot determine lia.Monitor.Farm.HOME .... I will use the local direcotry");
+                    logger.log(Level.WARNING,
+                            " Cannot determine lia.Monitor.Farm.HOME .... I will use the local direcotry");
                     farmHome = ".";
                 }
                 lastAlarmsSerFile = new File(farmHome + "/monCienaAlm_lastAlarmsSerFile.ser");
@@ -342,7 +361,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                             lastAlarms = (TreeSet<String>) ois.readObject();
                             logger.log(Level.INFO, "[monCienaAlm] - lastAlarms loaded successfully");
                         } catch (Throwable t) {
-                            logger.log(Level.WARNING, "[monCienaAlm] - exception loading lastAlarmsSerFile: " + lastAlarmsSerFile, t);
+                            logger.log(Level.WARNING, "[monCienaAlm] - exception loading lastAlarmsSerFile: "
+                                    + lastAlarmsSerFile, t);
                         } finally {
                             if (ois != null) {
                                 try {
@@ -360,14 +380,17 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
                         }
                     } else {
-                        logger.log(Level.WARNING, "[monCienaAlm] - did not load lastAlarmsSerFile because lastAlarmsStateFile failed to load!");
+                        logger.log(Level.WARNING,
+                                "[monCienaAlm] - did not load lastAlarmsSerFile because lastAlarmsStateFile failed to load!");
                     }
 
                     if (!lastAlarmsSerFile.canWrite()) {
-                        logger.log(Level.WARNING, "[monCienaAlm] - lastAlarmsSerFile: " + lastAlarmsSerFile + " does not have write access");
+                        logger.log(Level.WARNING, "[monCienaAlm] - lastAlarmsSerFile: " + lastAlarmsSerFile
+                                + " does not have write access");
                     }
                 } else {
-                    logger.log(Level.WARNING, "[monCienaAlm] lastAlarmsSerFile: " + lastAlarmsSerFile + " exists but cannot be read");
+                    logger.log(Level.WARNING, "[monCienaAlm] lastAlarmsSerFile: " + lastAlarmsSerFile
+                            + " exists but cannot be read");
                 }
             } else {
                 if (!lastAlarmsSerFile.createNewFile()) {
@@ -375,7 +398,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                 }
             }
         } catch (Throwable t1) {
-            logger.log(Level.WARNING, " monCienaAlm - exception initializing the lastAlarmsSerFile: " + lastAlarmsSerFile, t1);
+            logger.log(Level.WARNING, " monCienaAlm - exception initializing the lastAlarmsSerFile: "
+                    + lastAlarmsSerFile, t1);
         }
 
         // Init alarmsLogDir
@@ -383,7 +407,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
             if (alarmsLogDir == null) {// nothing defined as module param
                 String farmHome = AppConfig.getProperty("lia.Monitor.Farm.HOME");
                 if (farmHome == null) {
-                    logger.log(Level.WARNING, "[monCienaAlm] Cannot determine lia.Monitor.Farm.HOME .... I will use the local direcotry");
+                    logger.log(Level.WARNING,
+                            "[monCienaAlm] Cannot determine lia.Monitor.Farm.HOME .... I will use the local direcotry");
                     farmHome = ".";
                 }
                 alarmsLogDir = new File(farmHome + "/monCienaAlm_alarmsLogDir");
@@ -392,20 +417,24 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
             if (alarmsLogDir.exists()) {
 
                 if (!alarmsLogDir.isDirectory()) {
-                    logger.log(Level.WARNING, "monCienaAlm - alarmsLogDir: " + alarmsLogDir + " exists but is not a directory. Alarms will not be logged!!");
+                    logger.log(Level.WARNING, "monCienaAlm - alarmsLogDir: " + alarmsLogDir
+                            + " exists but is not a directory. Alarms will not be logged!!");
                     canLogAlarms = false;
                 } else if (!alarmsLogDir.canWrite()) {
-                    logger.log(Level.WARNING, "monCienaAlm - alarmsLogDir: " + alarmsLogDir + " exists but dows not have write access. Alarms will not be logged!!");
+                    logger.log(Level.WARNING, "monCienaAlm - alarmsLogDir: " + alarmsLogDir
+                            + " exists but dows not have write access. Alarms will not be logged!!");
                     canLogAlarms = false;
                 }
             } else {
                 if (!alarmsLogDir.mkdirs()) {
-                    logger.log(Level.WARNING, "monCienaAlm Cannot create alarmsLogDir: " + alarmsLogDir + ". Alarms will not be logged!!");
+                    logger.log(Level.WARNING, "monCienaAlm Cannot create alarmsLogDir: " + alarmsLogDir
+                            + ". Alarms will not be logged!!");
                     canLogAlarms = false;
                 }
             }
         } catch (Throwable t1) {
-            logger.log(Level.WARNING, " monCienaAlm - exception initializing the alarmsLogDir: " + alarmsLogDir + ". Alarms will not be logged!!", t1);
+            logger.log(Level.WARNING, " monCienaAlm - exception initializing the alarmsLogDir: " + alarmsLogDir
+                    + ". Alarms will not be logged!!", t1);
             canLogAlarms = false;
         }
 
@@ -429,6 +458,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
      *
      *
      */
+    @Override
     public Object doProcess() throws Exception {
 
         final long perfStartTime = Utils.nanoNow();
@@ -521,19 +551,19 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
             Set<String> currentOC192Alarms = null;
 
             String prevLine = null;
-            
+
             String cdciName = null;
-            
+
             while (line != null) {
                 line = line.trim();
                 if (!started) {
                     if (line.startsWith("M ")) {
                         try {
                             cdciName = prevLine.trim().split("(\\s)+")[0];
-                        }catch(Throwable t) {
+                        } catch (Throwable t) {
                             cdciName = null;
                         }
-                        if(logger.isLoggable(Level.FINER)) {
+                        if (logger.isLoggable(Level.FINER)) {
                             logger.log(Level.FINER, "[ monCienaAlm ] cdciName: " + cdciName + "; start parsing");
                         }
                         started = true;
@@ -547,7 +577,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                     logger.log(Level.FINEST, " [ monCienaAlm ] Processing line: [" + line + "]");
                 }
 
-                if (line.startsWith("\"") && line.endsWith("\"") && line.length() >= 2) {
+                if (line.startsWith("\"") && line.endsWith("\"") && (line.length() >= 2)) {
                     try {
                         final ParsedCienaTl1Alarm tl1Response = CienaUtils.parseTL1ResponseLine(line);
 
@@ -556,7 +586,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                             final Integer alarmCode = internalNotifAlarms.get(condType);
                             if (alarmCode != null) {
                                 // nice - Borat
-                                logger.log(Level.INFO, "\n\n [ monCienaAlm ]  notif alarm condType: " + condType + " code: " + alarmCode + " line: " + line + " \n\n");
+                                logger.log(Level.INFO, "\n\n [ monCienaAlm ]  notif alarm condType: " + condType
+                                        + " code: " + alarmCode + " line: " + line + " \n\n");
 
                                 if (currentOC192Alarms == null) {
                                     currentOC192Alarms = new TreeSet<String>();
@@ -567,11 +598,14 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                                 final String aid = tl1Response.aid;
                                 final String aidType = tl1Response.aidType;
                                 if (aid != null) {
-                                    if (aidType != null 
-                                            && ( aidType.equalsIgnoreCase(OC192_TAG) || aidType.equalsIgnoreCase(OCN_TAG) ) 
+                                    if ((aidType != null)
+                                            && (aidType.equalsIgnoreCase(OC192_TAG) || aidType
+                                                    .equalsIgnoreCase(OCN_TAG))
                                             && oc192InterfacesMap.keySet().contains(aid)) {
-                                        logger.log(Level.WARNING, "\n\n [ monCienaAlm ] OC192 ERROR ?!? Got from CD/CI. Defined state [ " + alarmCode + " ] ! " + tl1Response.TL1Line);
-                                        if(currentOC192ErrorStatus == null) {
+                                        logger.log(Level.WARNING,
+                                                "\n\n [ monCienaAlm ] OC192 ERROR ?!? Got from CD/CI. Defined state [ "
+                                                        + alarmCode + " ] ! " + tl1Response.TL1Line);
+                                        if (currentOC192ErrorStatus == null) {
                                             currentOC192ErrorStatus = new HashMap<String, Integer>();
                                         }
                                         currentOC192ErrorStatus.put(aid, alarmCode);
@@ -594,39 +628,51 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                                         StringBuilder sbMsg = new StringBuilder(8192);
                                         final String linkName = oc192InterfacesMap.get(tl1Response.aid);
 
-                                        sbSubj.append("Ciena Alm: ").append((cdciName == null)?Node.getFarmName():cdciName).append(": ").append(aidType).append(" - ").append(aid);
+                                        sbSubj.append("Ciena Alm: ")
+                                                .append((cdciName == null) ? Node.getFarmName() : cdciName)
+                                                .append(": ").append(aidType).append(" - ").append(aid);
                                         if (linkName != null) {
                                             sbSubj.append(" - link: ").append(linkName);
                                         }
-                                        sbSubj.append(" ").append(tl1Response.dateTL1).append(",").append(tl1Response.timeTL1);
-                                        sbMsg.append(" TL1 Alarm on port: ")
-                                             .append(tl1Response.aid)
-                                             .append(" - link: ")
-                                             .append((linkName == null) ? "UNDEFINED" : linkName)
-                                             .append(" alarm:\n ")
-                                             .append(tl1Response.TL1Line);
+                                        sbSubj.append(" ").append(tl1Response.dateTL1).append(",")
+                                                .append(tl1Response.timeTL1);
+                                        sbMsg.append(" TL1 Alarm on port: ").append(tl1Response.aid)
+                                                .append(" - link: ")
+                                                .append((linkName == null) ? "UNDEFINED" : linkName)
+                                                .append(" alarm:\n ").append(tl1Response.TL1Line);
                                         Date date = new Date(now);
                                         DateFormat df = new SimpleDateFormat("yyyy-MM-dd,HH:mm:ss z");
                                         sbMsg.append("\n\n Start Time: ").append(df.format(date));
 
                                         try {
-                                            MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch", alarmRCPTs, sbSubj.toString(), sbMsg.toString());
+                                            MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch",
+                                                    alarmRCPTs, sbSubj.toString(), sbMsg.toString());
                                             if (alarmCode.intValue() == 2) {
-                                                MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch", smallAlmRCPTs, sbSubj.toString(), tl1Response.dateTL1 + "," + tl1Response.timeTL1);
+                                                MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch",
+                                                        smallAlmRCPTs, sbSubj.toString(),
+                                                        tl1Response.dateTL1 + "," + tl1Response.timeTL1);
                                             }
                                             if (logger.isLoggable(Level.FINE)) {
-                                                logger.log(Level.FINE, "\n\n\n ************ \n\n  [ monCienaAlm ] OC192 Alarm SET *** PROBLEM ALERT *** : " + almEntry + "\n ****** MAIL SENT! ******* \n Mail subj: "
-                                                        + sbSubj.toString() + "\n Mail data: " + sbMsg.toString() + " \n\n ******************* \n");
+                                                logger.log(
+                                                        Level.FINE,
+                                                        "\n\n\n ************ \n\n  [ monCienaAlm ] OC192 Alarm SET *** PROBLEM ALERT *** : "
+                                                                + almEntry
+                                                                + "\n ****** MAIL SENT! ******* \n Mail subj: "
+                                                                + sbSubj.toString() + "\n Mail data: "
+                                                                + sbMsg.toString() + " \n\n ******************* \n");
                                             }
                                         } catch (Throwable t) {
-                                            logger.log(Level.WARNING, "\n\n [ monCienaAlm ] cannot notify OC192 errors by mail. Cause", t);
+                                            logger.log(Level.WARNING,
+                                                    "\n\n [ monCienaAlm ] cannot notify OC192 errors by mail. Cause", t);
                                         }
 
                                     } else {
-                                        logger.log(Level.INFO, " [ monCienaAlm ] OC192 Alarm active: " + almEntry + " but mail was sent");
+                                        logger.log(Level.INFO, " [ monCienaAlm ] OC192 Alarm active: " + almEntry
+                                                + " but mail was sent");
                                     }
                                 } else {
-                                    logger.log(Level.WARNING, "\n\n [ monCienaAlm ] Null tl1Response.aid for line " + line + " ??????");
+                                    logger.log(Level.WARNING, "\n\n [ monCienaAlm ] Null tl1Response.aid for line "
+                                            + line + " ??????");
                                 }
 
                             } else {
@@ -643,7 +689,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
                         hasAlms = true;
 
-                        if (almTime >= lastReportedAlarm && !lastAlarms.contains(line)) {
+                        if ((almTime >= lastReportedAlarm) && !lastAlarms.contains(line)) {
 
                             if (maxIterTime < almTime) {
                                 maxIterTime = almTime;
@@ -666,7 +712,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                             }
 
                             logsToSave.append(new Date());
-                            logsToSave.append(" - Alarm date: ").append(new Date(er.time)).append(" - Alarm Entry: ").append(line);
+                            logsToSave.append(" - Alarm date: ").append(new Date(er.time)).append(" - Alarm Entry: ")
+                                    .append(line);
                             logsToSave.append("\n");
                             er.Module = moduleName;
 
@@ -708,17 +755,18 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                         status = iStatus.doubleValue();
                     }
                 }
-                
+
                 boolean bStateFound = false;
-                if(status == 1) {
+                if (status == 1) {
                     //try the rtrv-ocn
-                    final StringBuilder sbCheck = cienaTL1Conn.doCmd("rtrv-ocn::" + intfPortName + ":" + TL1_CTAG + ";\n", TL1_CTAG);
+                    final StringBuilder sbCheck = cienaTL1Conn.doCmd("rtrv-ocn::" + intfPortName + ":" + TL1_CTAG
+                            + ";\n", TL1_CTAG);
                     final BufferedReader readerCheck = new BufferedReader(new StringReader(sbCheck.toString()));
                     boolean bStarted = false;
                     try {
-                        for(;!bStateFound;) {
+                        for (; !bStateFound;) {
                             String li = readerCheck.readLine();
-                            if(li == null) {
+                            if (li == null) {
                                 break;
                             }
                             if (!bStarted) {
@@ -729,16 +777,18 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                                 continue;
                             }
                             final String pLine = li.trim();
-                            if (pLine.startsWith("\"") && pLine.endsWith("\"") && pLine.length() >= 2) {
+                            if (pLine.startsWith("\"") && pLine.endsWith("\"") && (pLine.length() >= 2)) {
                                 final String[] pSplit = pLine.split("(\\s)*,(\\s)*");
-                                for(final String s: pSplit) {
-                                    if(s.indexOf("PST=") >= 0) {
+                                for (final String s : pSplit) {
+                                    if (s.indexOf("PST=") >= 0) {
                                         final String ssState = s.substring(4);
-                                        if(!ssState.equalsIgnoreCase("IS-NR")) {
-                                            logger.log(Level.WARNING, "\n\n Rewriting state for: " + intfPortName + " / " + intfMLParamName + " from 1 to 5");
+                                        if (!ssState.equalsIgnoreCase("IS-NR")) {
+                                            logger.log(Level.WARNING, "\n\n Rewriting state for: " + intfPortName
+                                                    + " / " + intfMLParamName + " from 1 to 5");
                                             status = 5;
                                         } else {
-                                            logger.log(Level.WARNING, "\n\n SAME state for: " + intfPortName + " / " + intfMLParamName + " 1");
+                                            logger.log(Level.WARNING, "\n\n SAME state for: " + intfPortName + " / "
+                                                    + intfMLParamName + " 1");
                                         }
                                         bStateFound = true;
                                         break;
@@ -759,22 +809,26 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
             // check for cleared OC192 alarms
 
             if (logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, "\n\n previousReportedAlarms: \n" + previousReportedAlarms + "\n\n currentOC192Alarms: \n" + currentOC192Alarms);
+                logger.log(Level.FINER, "\n\n previousReportedAlarms: \n" + previousReportedAlarms
+                        + "\n\n currentOC192Alarms: \n" + currentOC192Alarms);
             }
 
-            if (currentOC192Alarms == null || currentOC192Alarms.size() == 0) {
-                logger.log(Level.INFO, " [ monCienaAlm ] No OC192 alarms in current iteration; clearing previousOC192AlmMap ");
+            if ((currentOC192Alarms == null) || (currentOC192Alarms.size() == 0)) {
+                logger.log(Level.INFO,
+                        " [ monCienaAlm ] No OC192 alarms in current iteration; clearing previousOC192AlmMap ");
                 previousReportedAlarms.clear();
             } else {
                 logger.log(Level.INFO, " [ monCienaAlm ] Current OC192 alarms not null; checking for cleared alarms ");
 
-                for (Iterator<Map.Entry<String, Map<String, OC192AlmEntry>>> itPrevAlm = previousReportedAlarms.entrySet().iterator(); itPrevAlm.hasNext();) {
+                for (Iterator<Map.Entry<String, Map<String, OC192AlmEntry>>> itPrevAlm = previousReportedAlarms
+                        .entrySet().iterator(); itPrevAlm.hasNext();) {
                     final Map.Entry<String, Map<String, OC192AlmEntry>> entry = itPrevAlm.next();
 
                     final String oc192Intf = entry.getKey();
                     final Map<String, OC192AlmEntry> almMap = entry.getValue();
 
-                    for (Iterator<Map.Entry<String, OC192AlmEntry>> itMap = almMap.entrySet().iterator(); itMap.hasNext();) {
+                    for (Iterator<Map.Entry<String, OC192AlmEntry>> itMap = almMap.entrySet().iterator(); itMap
+                            .hasNext();) {
                         final Map.Entry<String, OC192AlmEntry> ientry = itMap.next();
 
                         final String tl1Alm = ientry.getKey();
@@ -799,7 +853,9 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
                             final String linkName = oc192InterfacesMap.get(oc192Intf);
 
-                            sbSubj.append("Ciena Recovery: ").append((cdciName == null)?Node.getFarmName():cdciName).append(" ").append(oc192Intf);
+                            sbSubj.append("Ciena Recovery: ")
+                                    .append((cdciName == null) ? Node.getFarmName() : cdciName).append(" ")
+                                    .append(oc192Intf);
                             if (linkName != null) {
                                 sbSubj.append(" - link: ").append(linkName);
                             }
@@ -812,21 +868,28 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                             sbMsg.append("\n End Time: ").append(df.format(date));
                             sbMsg.append("\n Downtime: ").append(dtStr);
                             try {
-                                MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch", alarmRCPTs, sbSubj.toString(), sbMsg.toString());
-                                if(clearedAlmEntry.alarmCode.intValue() == 2) {
-                                    MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch", smallAlmRCPTs, sbSubj.toString(), "Downtime: " + dtStr);
+                                MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch", alarmRCPTs,
+                                        sbSubj.toString(), sbMsg.toString());
+                                if (clearedAlmEntry.alarmCode.intValue() == 2) {
+                                    MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch", smallAlmRCPTs,
+                                            sbSubj.toString(), "Downtime: " + dtStr);
                                 }
                                 if (logger.isLoggable(Level.FINE)) {
-                                    logger.log(Level.FINE, "\n\n\n ************ \n\n  [ monCienaAlm ] OC192 Alarm CLEARED *** RECOVERY NOTIFICATION ****: " + ientry.getValue()
-                                            + "\n ****** MAIL SENT! ******* \n Mail subj: " + sbSubj.toString() + "\n Mail data: " + sbMsg.toString() + " \n\n ******************* \n");
+                                    logger.log(Level.FINE,
+                                            "\n\n\n ************ \n\n  [ monCienaAlm ] OC192 Alarm CLEARED *** RECOVERY NOTIFICATION ****: "
+                                                    + ientry.getValue() + "\n ****** MAIL SENT! ******* \n Mail subj: "
+                                                    + sbSubj.toString() + "\n Mail data: " + sbMsg.toString()
+                                                    + " \n\n ******************* \n");
                                 }
                             } catch (Throwable t) {
-                                logger.log(Level.WARNING, "\n\n [ monCienaAlm ] cannot notify OC192 errors by mail. Cause", t);
+                                logger.log(Level.WARNING,
+                                        "\n\n [ monCienaAlm ] cannot notify OC192 errors by mail. Cause", t);
                             }
 
                         } else {
                             // check for renotif
-                            logger.log(Level.WARNING, " [ monCienaAlm ] OC192 alarm: " + ientry.getValue() + " still active");
+                            logger.log(Level.WARNING, " [ monCienaAlm ] OC192 alarm: " + ientry.getValue()
+                                    + " still active");
                         }
                     }
 
@@ -842,7 +905,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                 stateProps.put("lastReportedAlarm", "" + lastReportedAlarm);
             }
 
-            if (!hasAlms && lastAlarms.size() > 0) {
+            if (!hasAlms && (lastAlarms.size() > 0)) {
                 logger.log(Level.INFO, "monCienaAlm clearing last alarms");
                 lastAlarms.clear();
                 shouldSaveAlarms = true;
@@ -854,7 +917,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                 FileOutputStream fos = null;
 
                 try {
-                    final String msg = "Last reported alarm Time: [ " + new Date(lastReportedAlarm).toString() + " / " + lastReportedAlarm + "]. Saved at: " + new Date().toString();
+                    final String msg = "Last reported alarm Time: [ " + new Date(lastReportedAlarm).toString() + " / "
+                            + lastReportedAlarm + "]. Saved at: " + new Date().toString();
                     fos = new FileOutputStream(lastAlarmsStateFile);
                     stateProps.store(fos, msg);
                     logger.log(Level.INFO, "monCienaAlm - Saved state file with the following msg: " + msg);
@@ -880,7 +944,9 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                         oos = new ObjectOutputStream(fos);
                         oos.writeObject(lastAlarms);
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, " monCienaAlm - Exception serialize lastAlarms to lastAlarmsSerFile [ " + lastAlarmsSerFile + " ]", t);
+                        logger.log(Level.WARNING,
+                                " monCienaAlm - Exception serialize lastAlarms to lastAlarmsSerFile [ "
+                                        + lastAlarmsSerFile + " ]", t);
                     } finally {
 
                         // close the streams
@@ -901,11 +967,12 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
                 }
             }
 
-            if (canLogAlarms && logsToSave != null) {
+            if (canLogAlarms && (logsToSave != null)) {
                 try {
                     saveLogs(logsToSave);
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, "\n\nmonCienaAlm - Cannot save last logs:\n" + logsToSave.toString() + "\n >>>> Exception:", t);
+                    logger.log(Level.WARNING, "\n\nmonCienaAlm - Cannot save last logs:\n" + logsToSave.toString()
+                            + "\n >>>> Exception:", t);
                 }
             }
 
@@ -962,7 +1029,8 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
         int month = cDate.get(Calendar.MONTH);
         int day = cDate.get(Calendar.DAY_OF_MONTH);
 
-        return alarmsLogDir + "/" + year + "_" + ((month <= 9) ? "0" + month : "" + month) + "_" + ((day <= 9) ? "0" + day : "" + day) + ".log";
+        return alarmsLogDir + "/" + year + "_" + ((month <= 9) ? "0" + month : "" + month) + "_"
+                + ((day <= 9) ? "0" + day : "" + day) + ".log";
     }
 
     private void saveLogs(final StringBuilder sb) throws Exception {
@@ -995,38 +1063,47 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
         }// end - finally
     }
 
+    @Override
     public MonModuleInfo getInfo() {
         return info;
     }
 
+    @Override
     public String[] ResTypes() {
         return ResTypes;
     }
 
+    @Override
     public String getOsName() {
         return "linux";
     }
 
+    @Override
     public MNode getNode() {
         return Node;
     }
 
+    @Override
     public String getClusterName() {
         return Node.getClusterName();
     }
 
+    @Override
     public String getFarmName() {
         return Node.getFarmName();
     }
 
+    @Override
     public String getTaskName() {
         return moduleName;
     }
 
+    @Override
     public boolean isRepetitive() {
         return isRepetitive;
     }
 
+    @Override
     public boolean stop() {
         logger.log(Level.INFO, " monCienaAlm stop() Request . SHOULD NOT!!!");
         return true;
@@ -1057,12 +1134,12 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
             }
 
             final String intLine = p.getProperty("SonetInterfaces");
-            if (intLine == null || intLine.trim().length() < 1) {
+            if ((intLine == null) || (intLine.trim().length() < 1)) {
                 throw new Exception(" [ OC192ConfFile ]  No SonetInterfaces defined");
             }
 
             final String clusterName = p.getProperty("MLClusterName_SonetStatus", "SonetIntf_Status");
-            if (clusterName == null || clusterName.length() < 1) {
+            if ((clusterName == null) || (clusterName.length() < 1)) {
                 throw new Exception(" [ OC192ConfFile ]  No MLClusterName_SonetStatus defined");
             }
 
@@ -1070,7 +1147,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
             final String intf[] = intLine.trim().split(splitter);
 
-            if (intf == null || intf.length < 1) {
+            if ((intf == null) || (intf.length < 1)) {
                 throw new Exception(" [ OC192ConfFile ]  No interfaces defined");
             }
 
@@ -1100,8 +1177,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
             Arrays.sort(intf);
             Set<String> newPorts = new TreeSet<String>();
-            for (int i = 0; i < intf.length; i++) {
-                final String oc192Entry = intf[i];
+            for (final String oc192Entry : intf) {
                 if (oc192Entry.indexOf("=") > 1) {
                     String[] tks = oc192Entry.split("(\\s)*=(\\s)*");
                     oc192InterfacesMap.put(tks[0], tks[1]);
@@ -1115,16 +1191,19 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
             oc192InterfacesMap.keySet().retainAll(newPorts);
 
             StringBuilder sb = new StringBuilder();
-            sb.append("\n\n [ monCienaAlm ] (re)Loaded config from oc192ConfFile: ").append(oc192ConfFile).append(".\n ");
+            sb.append("\n\n [ monCienaAlm ] (re)Loaded config from oc192ConfFile: ").append(oc192ConfFile)
+                    .append(".\n ");
             sb.append("\n\nOC192Interfaces: ").append(oc192InterfacesMap.toString());
             sb.append("\n\nOC192AlarmMap: ").append(internalNotifAlarms.toString()).append("\n\n");
             if (logger.isLoggable(Level.FINER)) {
-                sb.append("\n MLClusterName_SonetStatus: ").append(clusterName).append("\n used splitter: ").append(splitter);
+                sb.append("\n MLClusterName_SonetStatus: ").append(clusterName).append("\n used splitter: ")
+                        .append(splitter);
             }
             logger.log(Level.INFO, sb.toString());
 
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ monCienaAlm ] Exception (re)loading config from oc192ConfFile:" + oc192ConfFile + ". Cause: ", t);
+            logger.log(Level.WARNING, " [ monCienaAlm ] Exception (re)loading config from oc192ConfFile:"
+                    + oc192ConfFile + ". Cause: ", t);
         } finally {
             // do not leak FDs
             try {
@@ -1148,6 +1227,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
      * @param o
      * @param arg
      */
+    @Override
     public void update(Observable o, Object arg) {
         try {
             reloadConf();
@@ -1173,7 +1253,7 @@ public class monCienaAlm extends cmdExec implements MonitoringModule, Observer {
 
         try {
             for (int k = 0; k < 10000; k++) {
-                Collection<Object> bb = (Collection<Object>)aa.doProcess();
+                Collection<Object> bb = (Collection<Object>) aa.doProcess();
                 for (final Object o : bb) {
                     System.out.println(o);
                 }

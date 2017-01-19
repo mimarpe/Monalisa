@@ -1,5 +1,5 @@
 /*
- * $Id: monProcLoad.java 7013 2010-12-01 14:59:21Z costing $
+ * $Id: monProcLoad.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.modules;
 
@@ -27,19 +27,19 @@ import lia.util.threads.MonALISAExecutors;
  * @author Iosif Legrand
  * @author ramiro
  */
-public class monProcLoad extends monProcReader  {
+public class monProcLoad extends monProcReader {
 
     /**
      * @since ML 1.5.4
      */
     private static final long serialVersionUID = -3195248260332505852L;
 
-    /** The Logger */ 
-    static final Logger logger = Logger.getLogger(monProcLoad.class.getCanonicalName());
+    /** The Logger */
+    private static final Logger logger = Logger.getLogger(monProcLoad.class.getCanonicalName());
 
-    static private final String ModuleName="monProcLoad";
-    
-    static private final String[]  ResTypes = {"Load1", "Load5", "Load15", "Tasks_running", "Tasks_total" };
+    static private final String ModuleName = "monProcLoad";
+
+    static private final String[] ResTypes = { "Load1", "Load5", "Load15", "Tasks_running", "Tasks_total" };
 
     static private final String OsName = "linux";
 
@@ -47,7 +47,7 @@ public class monProcLoad extends monProcReader  {
      * 
      */
     double load5;
-    
+
     private static final AtomicBoolean alreadyStarted = new AtomicBoolean(false);
     /**
      * 
@@ -57,31 +57,31 @@ public class monProcLoad extends monProcReader  {
     /**
      * @throws Exception
      */
-    public monProcLoad () throws Exception { 
+    public monProcLoad() throws Exception {
         super(ModuleName);
-        
+
         final File f = new File("/proc/loadavg");
-        if(!f.exists() || !f.canRead()) {
+        if (!f.exists() || !f.canRead()) {
             throw new MLModuleInstantiationException("Cannot read /proc/loadavg");
         }
-        
+
         PROC_FILE_NAMES = new String[] { "/proc/loadavg" };
         info.ResTypes = ResTypes;
-        info.name = ModuleName ;
+        info.name = ModuleName;
         isRepetitive = true;
-        
-        if(alreadyStarted.compareAndSet(false, true)){
+
+        if (alreadyStarted.compareAndSet(false, true)) {
             initPublishTimer();
         }
     }
 
-    private void initPublishTimer(){
+    private void initPublishTimer() {
         final Runnable ttAttribUpdate = new Runnable() {
             @Override
-			public void run() {
+            public void run() {
                 try {
                     publisher.publish("Load5", Double.valueOf(load5));
-                }catch(Throwable t){
+                } catch (Throwable t) {
                     logger.log(Level.WARNING, "monProcLoad LUS Publisher: Got Exception", t);
                 }
             }
@@ -92,14 +92,17 @@ public class monProcLoad extends monProcReader  {
     }
 
     @Override
-	public String[] ResTypes () {
-        return ResTypes;  
+    public String[] ResTypes() {
+        return ResTypes;
     }
-    @Override
-	public String getOsName() { return OsName; }
 
     @Override
-	protected Object processProcModule() throws Exception {
+    public String getOsName() {
+        return OsName;
+    }
+
+    @Override
+    protected Object processProcModule() throws Exception {
         return process_load(bufferedReaders[0]);
     }
 
@@ -108,47 +111,45 @@ public class monProcLoad extends monProcReader  {
      * @return the new Result
      * @throws Exception
      */
-    private Result  process_load( BufferedReader br ) throws Exception {
-        final Result res  = new Result ( Node.getFarmName(),Node.getClusterName(),Node.getName(), ModuleName, ResTypes );
+    private Result process_load(BufferedReader br) throws Exception {
+        final Result res = new Result(Node.getFarmName(), Node.getClusterName(), Node.getName(), ModuleName, ResTypes);
 
         res.time = NTPDate.currentTimeMillis();
         final String lin = br.readLine();
 
-        if (lin!=null){
-        	final StringTokenizer tz = new StringTokenizer ( lin, " \t/" );
+        if (lin != null) {
+            final StringTokenizer tz = new StringTokenizer(lin, " \t/");
 
-        	res.param[0] = load5 = Double.parseDouble(tz.nextToken()); 
-        	res.param[1] = Double.parseDouble(tz.nextToken());
-        	res.param[2] = Double.parseDouble(tz.nextToken());
-        	res.param[3] = Double.parseDouble(tz.nextToken());
-        	res.param[4] = Double.parseDouble(tz.nextToken());
+            res.param[0] = load5 = Double.parseDouble(tz.nextToken());
+            res.param[1] = Double.parseDouble(tz.nextToken());
+            res.param[2] = Double.parseDouble(tz.nextToken());
+            res.param[3] = Double.parseDouble(tz.nextToken());
+            res.param[4] = Double.parseDouble(tz.nextToken());
         }
 
         br.close();
         cleanup();
-        
-        return lin!=null ? res : null; 
+
+        return lin != null ? res : null;
     }
 
     @Override
-	public MonModuleInfo getInfo(){
+    public MonModuleInfo getInfo() {
         return info;
     }
-
 
     /**
      * @param args
      * @throws Exception
      */
-    static public void main ( String [] args ) throws Exception {
+    static public void main(String[] args) throws Exception {
         String host = "localhost"; // args[0] ;
         monProcLoad aa = new monProcLoad();
-        LogManager.getLogManager().readConfiguration(new ByteArrayInputStream(
-        		("handlers= java.util.logging.ConsoleHandler\n" +
-                 "java.util.logging.ConsoleHandler.level = FINEST\n" +
-                 "java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter\n" +
-                 "").getBytes()
-        ));
+        LogManager.getLogManager().readConfiguration(
+                new ByteArrayInputStream(("handlers= java.util.logging.ConsoleHandler\n"
+                        + "java.util.logging.ConsoleHandler.level = FINEST\n"
+                        + "java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter\n" + "")
+                        .getBytes()));
         String ad = null;
         logger.setLevel(Level.ALL);
         try {
@@ -161,7 +162,7 @@ public class monProcLoad extends monProcReader  {
         aa.init(new MNode(host, ad, null, null), null, null);
 
         try {
-            for(;;) {
+            for (;;) {
                 Thread.sleep(5000);
                 logger.log(Level.INFO, ":- bb :-\n" + aa.doProcess());
             }
@@ -169,6 +170,5 @@ public class monProcLoad extends monProcReader  {
             e.printStackTrace();
         }
     }
-
 
 }

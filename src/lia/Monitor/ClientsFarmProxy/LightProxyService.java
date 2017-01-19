@@ -1,8 +1,3 @@
-/*
- * $Id: LightProxyService.java 6865 2010-10-10 10:03:16Z ramiro $
- * Created on Aug 7, 2007
- * 
- */
 package lia.Monitor.ClientsFarmProxy;
 
 import java.io.Serializable;
@@ -25,19 +20,31 @@ public class LightProxyService implements ProxyServiceI, Serializable {
      * If this is not changed Jini will give the same SID
      */
     public String _key = "N/A";
-    
+
+    /**
+     * @throws RemoteException  
+     */
     public Vector getFarms() throws RemoteException {
         return null;
     }
 
+    /**
+     * @throws RemoteException  
+     */
     public Vector getFarmsByGroup(String[] groups) throws RemoteException {
         return null;
     }
 
+    /**
+     * @throws RemoteException  
+     */
     public Vector getFarmsIDs() throws RemoteException {
         return null;
     }
 
+    /**
+     * @throws RemoteException  
+     */
     public Integer getNumberOfClients() throws RemoteException {
         return null;
     }

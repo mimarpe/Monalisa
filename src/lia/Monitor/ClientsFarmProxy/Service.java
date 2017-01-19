@@ -1,5 +1,5 @@
 /*
- * $Id: Service.java 7112 2011-03-05 12:36:26Z ramiro $
+ * $Id: Service.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 
 package lia.Monitor.ClientsFarmProxy;
@@ -61,7 +61,7 @@ import com.sun.jini.tool.ClassServer;
  */
 public class Service implements ServiceI, ServiceIDListener {
 
-    private static final transient Logger logger = Logger.getLogger(Service.class.getName());
+    private static final Logger logger = Logger.getLogger(Service.class.getName());
 
     private LookupDiscoveryManager ldm;
 
@@ -75,12 +75,12 @@ public class Service implements ServiceI, ServiceIDListener {
 
     private final boolean canReceiveLogs;
     private final boolean canSendMails;
-    
+
     private static final AtomicLong sleepTime = new AtomicLong(60 * 1000);// in seconds
 
-    private long time_refresh = TimeUnit.MINUTES.toNanos(2); // in millisec.
+    private final long time_refresh = TimeUnit.MINUTES.toNanos(2); // in millisec.
 
-    private long time_refresh_apMon = TimeUnit.MINUTES.toNanos(1);
+    private final long time_refresh_apMon = TimeUnit.MINUTES.toNanos(1);
 
     private long last_entry_refresh;
 
@@ -96,10 +96,12 @@ public class Service implements ServiceI, ServiceIDListener {
 
     private static final long lProxyStarted = Utils.nanoNow();
 
-    private static transient String urlFS = AppConfig.getProperty("lia.Monitor.serviceidfile", "${lia.Monitor.monitor.proxy_home}/.proxyService.sid").trim();
+    private static transient String urlFS = AppConfig.getProperty("lia.Monitor.serviceidfile",
+            "${lia.Monitor.monitor.proxy_home}/.proxyService.sid").trim();
 
     // in seconds
-    private static transient long errorTime = Long.valueOf(AppConfig.getProperty("lia.Monitor.serviceid.errortime", "10").trim()).longValue() * 1000;
+    private static transient long errorTime = Long.valueOf(
+            AppConfig.getProperty("lia.Monitor.serviceid.errortime", "10").trim()).longValue() * 1000;
 
     // otherwise got "java.rmi.NoSuchObjectException: no such object in table"
     // ?!??!
@@ -115,6 +117,7 @@ public class Service implements ServiceI, ServiceIDListener {
 
     Runnable shutdownThread = new Runnable() {
 
+        @Override
         public void run() {
             logger.log(Level.INFO, "TERMINATE - unregister proxy ");
             unregister();
@@ -124,13 +127,14 @@ public class Service implements ServiceI, ServiceIDListener {
     static {
         _thisInstance = new Service();
         reloadConfig();
-        
-        AppConfig.addNotifier( new AppConfigChangeListener() {
+
+        AppConfig.addNotifier(new AppConfigChangeListener() {
+            @Override
             public void notifyAppConfigChanged() {
                 reloadConfig();
             }
         });
-        
+
     }
 
     public class LookupThread extends Thread {
@@ -141,6 +145,7 @@ public class Service implements ServiceI, ServiceIDListener {
             this.serviceTemplate = serviceTemplate;
         }
 
+        @Override
         public void run() {
 
             setName("(ML) Services LookupThread");
@@ -150,10 +155,12 @@ public class Service implements ServiceI, ServiceIDListener {
                     try {
                         Thread.sleep(sleepTime.get());
                     } catch (InterruptedException ie) {
-                        logger.log(Level.WARNING, " LookupThread " + getName() + " got interrupted exception while sleeping", ie);
+                        logger.log(Level.WARNING, " LookupThread " + getName()
+                                + " got interrupted exception while sleeping", ie);
                         Thread.interrupted();
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, " LookupThread " + getName() + " got interrupted exception while sleeping", t);
+                        logger.log(Level.WARNING, " LookupThread " + getName()
+                                + " got interrupted exception while sleeping", t);
                     }
 
                     final long sTime = Utils.nanoNow();
@@ -169,22 +176,25 @@ public class Service implements ServiceI, ServiceIDListener {
 
                         farmsServiceItemReference.set(si);
                     } else {
-                        logger.log(Level.WARNING, " [ Service ] [ LookupThread ] SDM is null. No Jini lookup available yet!");
+                        logger.log(Level.WARNING,
+                                " [ Service ] [ LookupThread ] SDM is null. No Jini lookup available yet!");
                     }
 
                     final long now = Utils.nanoNow();
                     final long lookupDT = now - sTime;
 
                     // modify generic attributes from time to time
-                    if (now - last_entry_refresh > time_refresh) {
+                    if ((now - last_entry_refresh) > time_refresh) {
                         refreshGenericEntry();
                     } // if
 
-                    if (now - last_entry_refresh_apMon >= time_refresh_apMon) {
+                    if ((now - last_entry_refresh_apMon) >= time_refresh_apMon) {
                         sendApMonParams();
                     }// if
 
-                    logger.log(Level.INFO, " [ LookupThread ] lookup took: " + TimeUnit.NANOSECONDS.toMillis(lookupDT) + " ( " + TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - sTime) + ") ms. Total services: " + ((si == null) ? "N/A" : si.length));
+                    logger.log(Level.INFO, " [ LookupThread ] lookup took: " + TimeUnit.NANOSECONDS.toMillis(lookupDT)
+                            + " ( " + TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - sTime) + ") ms. Total services: "
+                            + ((si == null) ? "N/A" : si.length));
 
                 } catch (Throwable t) {
                     logger.log(Level.WARNING, " LookupThread " + getName() + " got ex Main Loop", t);
@@ -209,7 +219,7 @@ public class Service implements ServiceI, ServiceIDListener {
 
         canReceiveLogs = AppConfig.getb("lia.Monitor.ClientsFarmProxy.Service.canReceiveLogs", false);
         canSendMails = AppConfig.getb("lia.Monitor.ClientsFarmProxy.Service.canSendMails", false);
-        
+
         String mgroup = AppConfig.getProperty("lia.Monitor.group", "ml");
         logger.log(Level.INFO, "Proxy ML Service group(s)" + mgroup);
 
@@ -246,6 +256,7 @@ public class Service implements ServiceI, ServiceIDListener {
 
     } // Service
 
+    @Override
     public void unregisterMessages(int clientID) {
         unregisterMessages(Integer.valueOf(clientID));
     }
@@ -254,14 +265,17 @@ public class Service implements ServiceI, ServiceIDListener {
         ServiceCommunication.unregisterMessages(clientID);
     }
 
+    @Override
     public Vector<ServiceItem> getFarms() {
         return FarmCommunication.getFarms();
     } // getFarms
 
+    @Override
     public Vector<ServiceItem> getFarmsByGroup(String[] groups) {
         return FarmCommunication.getFarmsByGroup(groups);
     } // getFarmsByGroup
 
+    @Override
     public Vector<ServiceID> getFarmsIDs() {
         return ServiceCommunication.getFarmsIDs();
     }
@@ -291,8 +305,9 @@ public class Service implements ServiceI, ServiceIDListener {
             }
         }
 
-        if (i == count)
+        if (i == count) {
             return locators;
+        }
 
         LookupLocator[] nlocators = new LookupLocator[i];
         for (int j = 0; j < i; j++) {
@@ -387,6 +402,8 @@ public class Service implements ServiceI, ServiceIDListener {
             } // AS
 
             gmle.hash.put("proxyPorts", ServiceCommunication.getPorts());
+            gmle.hash.put("proxyExtAddrs", ServiceCommunication.getExternalAddresses());
+            gmle.hash.put("proxyExtHostname", ServiceCommunication.getHostname());
 
             entry[0] = serviceEntry;
             entry[1] = gmle;
@@ -408,9 +425,9 @@ public class Service implements ServiceI, ServiceIDListener {
 
         Entry[] attrs = jm.getAttributes();
         if (attrs != null) {
-            for (int i = 0; i < attrs.length; i++) {
-                if (attrs[i] instanceof GenericMLEntry) {
-                    gml = (GenericMLEntry) attrs[i];
+            for (Entry attr : attrs) {
+                if (attr instanceof GenericMLEntry) {
+                    gml = (GenericMLEntry) attr;
                     break;
                 } // if
             } // for
@@ -436,20 +453,16 @@ public class Service implements ServiceI, ServiceIDListener {
 
         gmle.hash.put(FarmWorker.MLLOG_MSG_ID, Boolean.valueOf(canReceiveLogs));
 
-
         final double load5 = collectMon.getMediatedLoad();
         gmle.hash.put("Load5", Double.valueOf(load5));
 
-        jm.modifyAttributes(new GenericMLEntry[] {
-            new GenericMLEntry()
-        }, new GenericMLEntry[] {
-            gmle
-        });
+        jm.modifyAttributes(new GenericMLEntry[] { new GenericMLEntry() }, new GenericMLEntry[] { gmle });
 
         lastVal = val;
         last_entry_refresh = Utils.nanoNow();
     } // refreshGenercEntry
 
+    @Override
     public void serviceIDNotify(ServiceID serviceID) {
 
         proxyID = serviceID;
@@ -464,13 +477,16 @@ public class Service implements ServiceI, ServiceIDListener {
 
     private ServiceID read() throws Exception {
 
-        if (urlFS == null)
+        if (urlFS == null) {
             return null;
+        }
         File SIDFile = null;
         try {
             SIDFile = new File(urlFS);
             if (!SIDFile.exists() || !SIDFile.canRead() || !SIDFile.canWrite() || !SIDFile.isFile()) {
-                logger.log(Level.INFO, "[BasicService] [HANDLED] Cannot read SIDFile [ " + urlFS + "] [" + "[ Exists: " + SIDFile.exists() + " isFile: " + SIDFile.isFile() + " canRead: " + SIDFile.canRead() + " canWrite: " + SIDFile.canWrite() + " ]");
+                logger.log(Level.INFO, "[BasicService] [HANDLED] Cannot read SIDFile [ " + urlFS + "] [" + "[ Exists: "
+                        + SIDFile.exists() + " isFile: " + SIDFile.isFile() + " canRead: " + SIDFile.canRead()
+                        + " canWrite: " + SIDFile.canWrite() + " ]");
                 return null;
             }
         } catch (Throwable t) {
@@ -493,9 +509,7 @@ public class Service implements ServiceI, ServiceIDListener {
             Date lastWrite = (Date) ois.readObject();
 
             // Write i-node info
-            Process p = MLProcess.exec(new String[] {
-                    "ls", "-i", urlFS
-            });
+            Process p = MLProcess.exec(new String[] { "ls", "-i", urlFS });
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = null;
             String iNode = null;
@@ -508,17 +522,22 @@ public class Service implements ServiceI, ServiceIDListener {
             p.waitFor();
 
             long lastSIDWrite = lastWrite.getTime();
-            if (lastSIDWrite == lastModified || (lastSIDWrite < lastModified && lastSIDWrite + errorTime > lastModified) || (lastSIDWrite > lastModified && lastSIDWrite - errorTime < lastModified)) {// it's
+            if ((lastSIDWrite == lastModified)
+                    || ((lastSIDWrite < lastModified) && ((lastSIDWrite + errorTime) > lastModified))
+                    || ((lastSIDWrite > lastModified) && ((lastSIDWrite - errorTime) < lastModified))) {// it's
                 // OK
-                if (iNodeF != null && iNode != null && iNode.equals(iNodeF)) {
+                if ((iNodeF != null) && (iNode != null) && iNode.equals(iNodeF)) {
                     if (logger.isLoggable(Level.FINE)) {
-                        logger.log(Level.FINE, "Got SID [ " + sid + " ] " + "from file [ " + urlFS + " ] \n" + "[ fTime = " + new Date(lastModified) + " SIDTime = " + new Date(lastSIDWrite) + " iNode = " + iNode + " ]");
+                        logger.log(Level.FINE, "Got SID [ " + sid + " ] " + "from file [ " + urlFS + " ] \n"
+                                + "[ fTime = " + new Date(lastModified) + " SIDTime = " + new Date(lastSIDWrite)
+                                + " iNode = " + iNode + " ]");
                     }
                 } else {
                     sid = null;
                 }
             } else {
-                logger.log(Level.INFO, "Different SID time. [ fTime = " + new Date(lastModified) + " SIDTime = " + new Date(lastSIDWrite) + " ]");
+                logger.log(Level.INFO, "Different SID time. [ fTime = " + new Date(lastModified) + " SIDTime = "
+                        + new Date(lastSIDWrite) + " ]");
                 sid = null;
             }
         } catch (Throwable t) {
@@ -546,7 +565,8 @@ public class Service implements ServiceI, ServiceIDListener {
                 status = SIDFile.delete();
             } catch (Throwable t) {
             }
-            logger.log(Level.INFO, "Reading NULL SID from SIDFile [ " + urlFS + " ] (maybe first time ... ?) DLT_STATUS = " + status);
+            logger.log(Level.INFO, "Reading NULL SID from SIDFile [ " + urlFS
+                    + " ] (maybe first time ... ?) DLT_STATUS = " + status);
         }
         return sid;
 
@@ -557,11 +577,13 @@ public class Service implements ServiceI, ServiceIDListener {
         if (logger.isLoggable(Level.FINE)) {
             logger.log(Level.FINE, "Trying to save() [ " + proxyID + " to " + urlFS + " ] ");
         }
-        if (urlFS == null)
+        if (urlFS == null) {
             return;
+        }
 
-        if (proxyID == null)
+        if (proxyID == null) {
             throw new Exception(" mysid == null ");
+        }
 
         FileOutputStream fos = null;
         ObjectOutputStream oos = null;
@@ -573,9 +595,7 @@ public class Service implements ServiceI, ServiceIDListener {
             oos.writeObject(proxyID);
             oos.flush();
 
-            Process p = MLProcess.exec(new String[] {
-                    "/bin/sh", "-c", "ls -i " + urlFS
-            });
+            Process p = MLProcess.exec(new String[] { "/bin/sh", "-c", "ls -i " + urlFS });
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = null;
             String iNode = null;
@@ -620,7 +640,11 @@ public class Service implements ServiceI, ServiceIDListener {
         try {
             SIDFile = new File(urlFS);
             if (!SIDFile.exists() || !SIDFile.canRead() || !SIDFile.canWrite() || !SIDFile.isFile()) {
-                logger.log(Level.INFO, "Problems writing SIDFile [ " + urlFS + "] [" + "[ Exists: " + SIDFile.exists() + " isFile: " + SIDFile.isFile() + " canRead: " + SIDFile.canRead() + " canWrite: " + SIDFile.canWrite() + " ]");
+                logger.log(
+                        Level.INFO,
+                        "Problems writing SIDFile [ " + urlFS + "] [" + "[ Exists: " + SIDFile.exists() + " isFile: "
+                                + SIDFile.isFile() + " canRead: " + SIDFile.canRead() + " canWrite: "
+                                + SIDFile.canWrite() + " ]");
                 return;
             }
         } catch (Throwable t) {
@@ -634,7 +658,8 @@ public class Service implements ServiceI, ServiceIDListener {
                 status = SIDFile.delete();
             } catch (Throwable t) {
             }
-            logger.log(Level.FINE, "WRStatus == false ...trying to invalidate SIDFile [ " + urlFS + " ] DLT_STATUS = " + status);
+            logger.log(Level.FINE, "WRStatus == false ...trying to invalidate SIDFile [ " + urlFS + " ] DLT_STATUS = "
+                    + status);
         } else {
             if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, "Write SID ... ok!!");
@@ -682,6 +707,7 @@ public class Service implements ServiceI, ServiceIDListener {
         logger.log(Level.SEVERE, "Proxy Service JoinManager TERMINATE FINISHED!");
     } // unregister
 
+    @Override
     public boolean register() {
 
         try {
@@ -698,11 +724,12 @@ public class Service implements ServiceI, ServiceIDListener {
             } // if
             System.setProperty("java.rmi.server.codebase", codebase);
 
-            logger.log(Level.INFO, "\n [ Service ] [ register ] Using CODEBASE:  " + System.getProperty("java.rmi.server.codebase"));
+            logger.log(Level.INFO,
+                    "\n [ Service ] [ register ] Using CODEBASE:  " + System.getProperty("java.rmi.server.codebase"));
 
             LookupLocator[] locators = getLUDSs();
 
-            if (locators == null || locators.length == 0) {
+            if ((locators == null) || (locators.length == 0)) {
                 logger.log(Level.WARNING, "Unable to create any lookup locators ...");
                 return false;
             }
@@ -748,7 +775,8 @@ public class Service implements ServiceI, ServiceIDListener {
                 final Entry[] attrs = getAttributes();
                 final LightProxyService proxy = new LightProxyService();
 
-                proxy._key = "" + System.currentTimeMillis() + "&Up since: " + lProxyStarted + " Up: " + (Utils.nanoNow() - lProxyStarted);
+                proxy._key = "" + System.currentTimeMillis() + "&Up since: " + lProxyStarted + " Up: "
+                        + (Utils.nanoNow() - lProxyStarted);
 
                 if (proxyOldSid != null) {
                     logger.log(Level.INFO, " Service registering with a previous known SID: " + proxyOldSid);
@@ -767,11 +795,12 @@ public class Service implements ServiceI, ServiceIDListener {
                 MLJiniManagersProvider.setManagers(ldm, sdm, jm);
 
                 for (int i = 0; i < 120; i++) {
-                    if (proxyID != null)
+                    if (proxyID != null) {
                         break;
+                    }
                     if (proxyOldSid != null) {
                         ServiceItem[] sis = MLLUSHelper.getInstance().getServiceItemBySID(proxyOldSid);
-                        if (sis != null && sis.length > 0) {
+                        if ((sis != null) && (sis.length > 0)) {
                             if (sis[0].serviceID.equals(proxyOldSid)) {
                                 proxyID = proxyOldSid;
                                 break;
@@ -815,13 +844,15 @@ public class Service implements ServiceI, ServiceIDListener {
         return true;
     } // register
 
+    @Override
     public ServiceItem[] getFarmServices() {
         return farmsServiceItemReference.get();
     } // getFarmServices
 
     public void addParam(String param, Integer type, Object value) {
-        if (collectMon != null)
+        if (collectMon != null) {
             collectMon.addParam(param, type, value);
+        }
     } // addParam
 
     private void sendApMonParams() {
@@ -837,27 +868,33 @@ public class Service implements ServiceI, ServiceIDListener {
         int receivedAgentsMsg = (int) ServiceCommunication.getNrAgentsMsg();
         collectMon.addParam("nrAgentsMsg", Integer.valueOf(ApMon.XDR_INT32), Integer.valueOf(receivedAgentsMsg));
 
-        collectMon.addParam("FreeMemory", Integer.valueOf(ApMon.XDR_REAL64), Double.valueOf(Runtime.getRuntime().freeMemory()));
-        collectMon.addParam("TotalMemory", Integer.valueOf(ApMon.XDR_REAL64), Double.valueOf(Runtime.getRuntime().totalMemory()));
+        collectMon.addParam("FreeMemory", Integer.valueOf(ApMon.XDR_REAL64),
+                Double.valueOf(Runtime.getRuntime().freeMemory()));
+        collectMon.addParam("TotalMemory", Integer.valueOf(ApMon.XDR_REAL64),
+                Double.valueOf(Runtime.getRuntime().totalMemory()));
 
-        collectMon.addParam("Uptime", Integer.valueOf(ApMon.XDR_REAL64), Double.valueOf(TimeUnit.NANOSECONDS.toSeconds((Utils.nanoNow() - lProxyStarted))));
+        collectMon.addParam("Uptime", Integer.valueOf(ApMon.XDR_REAL64),
+                Double.valueOf(TimeUnit.NANOSECONDS.toSeconds((Utils.nanoNow() - lProxyStarted))));
 
         int farmsNr = ServiceCommunication.getFarmsNr();
         collectMon.addParam("farmsNr", Integer.valueOf(ApMon.XDR_INT32), Integer.valueOf(farmsNr));
 
-        final Map<Integer, ClientsCommunication.ClientAccountingInfo> clientsRate = ClientsCommunication.getClienAccountingInfo();
+        final Map<Integer, ClientsCommunication.ClientAccountingInfo> clientsRate = ClientsCommunication
+                .getClienAccountingInfo();
         double totalClientsTraffic = 0;
 
         for (Map.Entry<Integer, ClientsCommunication.ClientAccountingInfo> entry : clientsRate.entrySet()) {
 
             final String clientName = ClientsCommunication.getClientName(entry.getKey());
-            if (clientName == null)
+            if (clientName == null) {
                 continue;
+            }
             ClientsCommunication.ClientAccountingInfo cInfo = entry.getValue();
             totalClientsTraffic += cInfo.totalRate;
 
             collectMon.addParam("client_" + clientName + "_rate", Integer.valueOf(ApMon.XDR_REAL64), cInfo.totalRate);
-            collectMon.addParam("client_" + clientName + "_confsrate", Integer.valueOf(ApMon.XDR_REAL64), cInfo.confRate);
+            collectMon.addParam("client_" + clientName + "_confsrate", Integer.valueOf(ApMon.XDR_REAL64),
+                    cInfo.confRate);
         } // for
 
         collectMon.addParam("total_clients_traffic", Integer.valueOf(ApMon.XDR_REAL64), totalClientsTraffic);
@@ -893,10 +930,12 @@ public class Service implements ServiceI, ServiceIDListener {
         last_entry_refresh_apMon = Utils.nanoNow();
     }
 
+    @Override
     public Integer getNumberOfClients() {
         return ClientsCommunication.getNumberOfClients();
     }
 
+    @Override
     public ServiceID getProxyID() {
         return proxyID;
     }
@@ -905,27 +944,32 @@ public class Service implements ServiceI, ServiceIDListener {
 
         try {
 
-            if (args != null && args.length == 1) {
-                if (args[0] != null && (args[0].equalsIgnoreCase("-version") || args[0].equalsIgnoreCase("-v"))) {
-                    System.out.println("\nMonALISA Proxy Version: " + MonaLisa_version + " [ " + MonaLisa_vdate + " ]\n");
+            if ((args != null) && (args.length == 1)) {
+                if ((args[0] != null) && (args[0].equalsIgnoreCase("-version") || args[0].equalsIgnoreCase("-v"))) {
+                    System.out.println("\nMonALISA Proxy Version: " + MonaLisa_version + " [ " + MonaLisa_vdate
+                            + " ]\n");
                     System.exit(0);
                 }
             }
 
-            logger.log(Level.INFO, " \n\nMonALISA Proxy STARTED: " + MonaLisa_version + " [ " + MonaLisa_vdate + " ]\n\n ");
+            logger.log(Level.INFO, " \n\nMonALISA Proxy STARTED: " + MonaLisa_version + " [ " + MonaLisa_vdate
+                    + " ]\n\n ");
 
             //disable StringFactory intern() inside service
             try {
                 final String sIntern = AppConfig.getProperty("lia.util.StringFactory.use_intern", null);
-                
+
                 if (sIntern == null) {
                     System.setProperty("lia.util.StringFactory.use_intern", "false");
                     logger.log(Level.FINER, " [ RegFarmMonitor ] set lia.util.StringFactory.use_intern = false");
                 } else {
                     logger.log(Level.FINER, " [ RegFarmMonitor ] lia.util.StringFactory.use_intern = " + sIntern);
                 }
-                
-                logger.log(Level.INFO, " [ RegFarmMonitor ] StringFactory useIntern() is " + AppConfig.getProperty("lia.util.StringFactory.use_intern", null));
+
+                logger.log(
+                        Level.INFO,
+                        " [ RegFarmMonitor ] StringFactory useIntern() is "
+                                + AppConfig.getProperty("lia.util.StringFactory.use_intern", null));
             } catch (Throwable t) {
                 logger.log(Level.SEVERE, " [ RegFarmMonitor ] Unable to set lia.util.StringFactory.use_intern", t);
             }
@@ -952,9 +996,7 @@ public class Service implements ServiceI, ServiceIDListener {
 
             logger.log(Level.FINE, "Start registering the service");
             String CONFIG_FILE = "jeri.config";
-            String[] configArgs = new String[] {
-                CONFIG_FILE
-            };
+            String[] configArgs = new String[] { CONFIG_FILE };
 
             // get the configuration (by default a FileConfiguration)
             service.config = ConfigurationProvider.getInstance(configArgs);
@@ -977,12 +1019,15 @@ public class Service implements ServiceI, ServiceIDListener {
      */
     public void init() throws Exception {
 
-        LoginContext loginContext = (LoginContext) config.getEntry("lia.Monitor.ClientsFarmProxy.ProxyService", "loginContext", LoginContext.class, null);
+        LoginContext loginContext = (LoginContext) config.getEntry("lia.Monitor.ClientsFarmProxy.ProxyService",
+                "loginContext", LoginContext.class, null);
 
         logger.log(Level.INFO, "[CREDENTIALS] Login finished: " + loginContext);
 
         if (loginContext == null) {
-            logger.log(Level.SEVERE, "[CREDENTIALS] Login failed.Could not find a loginContext entry in <jeri.config>. I won't be able to register in secure LUSs");
+            logger.log(
+                    Level.SEVERE,
+                    "[CREDENTIALS] Login failed.Could not find a loginContext entry in <jeri.config>. I won't be able to register in secure LUSs");
             initAsSubject();
         } else {
             // credentialas loaded, so register the service using the specified
@@ -1006,9 +1051,7 @@ public class Service implements ServiceI, ServiceIDListener {
 
         collectMon = ExportStatistics.getInstance();
 
-        final ServiceTemplate ST = new ServiceTemplate(null, new Class[] {
-            lia.Monitor.monitor.DataStore.class
-        }, null);
+        final ServiceTemplate ST = new ServiceTemplate(null, new Class[] { lia.Monitor.monitor.DataStore.class }, null);
 
         new LookupThread(ST).start();
 
@@ -1017,6 +1060,7 @@ public class Service implements ServiceI, ServiceIDListener {
 
     class PrivilegedExceptionActionImpl implements PrivilegedExceptionAction<Object> {
 
+        @Override
         public Object run() throws Exception {
             initAsSubject();
             return null;
@@ -1032,4 +1076,4 @@ public class Service implements ServiceI, ServiceIDListener {
         }
     }
 
-} 
+}

@@ -50,9 +50,18 @@ import lia.util.ntp.NTPDate;
 public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer {
 
     /**
+     * 
+     */
+    private static final long serialVersionUID = 8079426069042234980L;
+
+    /** Logger used by this class */
+    private static final Logger logger = Logger.getLogger(monDiskIOStat.class.getName());
+
+    /**
      * Proc entry where the disk IO statistics are published
      */
-    public static final String LINUX_PROC_DISK_STATS = AppConfig.getProperty("LINUX_PROC_DISK_STATS", "/proc/diskstats");
+    public static final String LINUX_PROC_DISK_STATS = AppConfig
+            .getProperty("LINUX_PROC_DISK_STATS", "/proc/diskstats");
 
     /**
      * Sysfs virtual entry for block devices
@@ -63,14 +72,6 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
      * Default block size, in bytes
      */
     public static final long DEFAULT_SECTOR_SIZE = AppConfig.getl("DEFAULT_SECTOR_SIZE", 512L);
-
-    /**
-     * 
-     */
-    private static final long serialVersionUID = 8079426069042234980L;
-
-    /** Logger used by this class */
-    static final transient Logger logger = Logger.getLogger(monDiskIOStat.class.getName());
 
     private static final String OS_NAME = System.getProperty("os.name");
 
@@ -112,19 +113,21 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
+            if (this == obj) {
                 return true;
+            }
             if (obj instanceof DevKey) {
                 final DevKey oKey = (DevKey) obj;
-                return (this.major == oKey.major && this.minor == oKey.minor);
+                return ((this.major == oKey.major) && (this.minor == oKey.minor));
             }
             return false;
         }
 
         @Override
-		public int compareTo(DevKey o) {
-            if (this == o)
+        public int compareTo(DevKey o) {
+            if (this == o) {
                 return 0;
+            }
             final int majDiff = major - o.major;
             return (majDiff != 0) ? majDiff : (minor - o.minor);
         }
@@ -135,7 +138,7 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
         }
 
         public static DevKey newInstance(int major, int minor, String devPartName) {
-            final Long key = Long.valueOf((long) major << 32 ^ minor);
+            final Long key = Long.valueOf(((long) major << 32) ^ minor);
             DevKey rVal = devCache.get(key);
             if (rVal == null) {
                 rVal = new DevKey(major, minor, devPartName);
@@ -217,17 +220,10 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
          */
         final BigInteger weightedIO;
 
-        RawIOStats(final BigInteger readReqs,
-                final BigInteger mergedReadReq,
-                final BigInteger readSectors,
-                final BigInteger millisRead,
-                final BigInteger writeReqs,
-                final BigInteger mergedWriteReq,
-                final BigInteger writeSectors,
-                final BigInteger millisWrite,
-                final long concurrentIO,
-                final BigInteger millisIO,
-                final BigInteger weightedIO) {
+        RawIOStats(final BigInteger readReqs, final BigInteger mergedReadReq, final BigInteger readSectors,
+                final BigInteger millisRead, final BigInteger writeReqs, final BigInteger mergedWriteReq,
+                final BigInteger writeSectors, final BigInteger millisWrite, final long concurrentIO,
+                final BigInteger millisIO, final BigInteger weightedIO) {
             nanoTimeStamp = Utils.nanoNow();
             this.readReqs = readReqs;
             this.mergedReadReq = mergedReadReq;
@@ -244,8 +240,11 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
 
         @Override
         public String toString() {
-            return "RawIOStats [nanoTimeStamp=" + nanoTimeStamp + ", readReqs=" + readReqs + ", mergedReadReq=" + mergedReadReq + ", readSectors=" + readSectors + ", millisRead=" + millisRead + ", writeReqs=" + writeReqs + ", mergedWriteReq=" + mergedWriteReq + ", writeSectors=" + writeSectors + ", millisWrite="
-                    + millisWrite + ", concurrentIO=" + concurrentIO + ", millisIO=" + millisIO + ", weightedIO=" + weightedIO + "]";
+            return "RawIOStats [nanoTimeStamp=" + nanoTimeStamp + ", readReqs=" + readReqs + ", mergedReadReq="
+                    + mergedReadReq + ", readSectors=" + readSectors + ", millisRead=" + millisRead + ", writeReqs="
+                    + writeReqs + ", mergedWriteReq=" + mergedWriteReq + ", writeSectors=" + writeSectors
+                    + ", millisWrite=" + millisWrite + ", concurrentIO=" + concurrentIO + ", millisIO=" + millisIO
+                    + ", weightedIO=" + weightedIO + "]";
         }
 
     }
@@ -271,7 +270,7 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
          * read IOPS
          */
         final double readIOPS;
-        
+
         /**
          * merged read IOPS
          */
@@ -281,11 +280,12 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
          * write IOPS
          */
         final double writeIOPS;
-        
+
         /**
          * merged write IOPS
          */
         final double mergedWriteIOPS;
+
         /**
          * @param oldStats
          * @param newStats
@@ -296,19 +296,22 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
         DerivedIOStats(final RawIOStats oldStats, final RawIOStats newStats, final long sectorSize) {
             final long dtNanos = newStats.nanoTimeStamp - oldStats.nanoTimeStamp;
             if (dtNanos <= 0) {
-                throw new IllegalArgumentException("[ monDiskIOStat ] [ DerivedIOStats ] time is going back(issue with nano time?) or too fast polling" + dtNanos);
+                throw new IllegalArgumentException(
+                        "[ monDiskIOStat ] [ DerivedIOStats ] time is going back(issue with nano time?) or too fast polling"
+                                + dtNanos);
             }
 
             readSpeed = computeSpeed(oldStats.readSectors, newStats.readSectors, dtNanos, NANOS_IN_A_SECOND);
             writeSpeed = computeSpeed(oldStats.writeSectors, newStats.writeSectors, dtNanos, NANOS_IN_A_SECOND);
-            
+
             readIOPS = computeSpeed(oldStats.readReqs, newStats.readReqs, dtNanos, NANOS_IN_A_SECOND);
             mergedReadIOPS = computeSpeed(oldStats.mergedReadReq, newStats.mergedReadReq, dtNanos, NANOS_IN_A_SECOND);
-            
+
             writeIOPS = computeSpeed(oldStats.writeReqs, newStats.writeReqs, dtNanos, NANOS_IN_A_SECOND);
             mergedWriteIOPS = computeSpeed(oldStats.mergedWriteReq, newStats.mergedWriteReq, dtNanos, NANOS_IN_A_SECOND);
-            
-            utilization = (newStats.millisIO.subtract(oldStats.millisIO).longValue() * 100d) / TimeUnit.NANOSECONDS.toMillis(newStats.nanoTimeStamp - oldStats.nanoTimeStamp);
+
+            utilization = (newStats.millisIO.subtract(oldStats.millisIO).longValue() * 100d)
+                    / TimeUnit.NANOSECONDS.toMillis(newStats.nanoTimeStamp - oldStats.nanoTimeStamp);
         }
 
         /**
@@ -318,14 +321,16 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
          *            - in nano seconds
          * @return
          */
-        private static final double computeSpeed(final BigInteger oldValue, final BigInteger newValue, final long delay, final double factor) {
+        private static final double computeSpeed(final BigInteger oldValue, final BigInteger newValue,
+                final long delay, final double factor) {
             final double diff = newValue.subtract(oldValue).doubleValue();
-            return diff * factor / delay;
+            return (diff * factor) / delay;
         }
 
         @Override
         public String toString() {
-            return "DerivedIOStats [readSpeed=" + readSpeed + " sect/s, writeSpeed=" + writeSpeed + " sect/s, utilization=" + utilization + "]";
+            return "DerivedIOStats [readSpeed=" + readSpeed + " sect/s, writeSpeed=" + writeSpeed
+                    + " sect/s, utilization=" + utilization + "]";
         }
 
     }
@@ -349,8 +354,9 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
             boolean isDevice = false;
             if (devKey.name.indexOf("/") >= 0) {
                 final String sysBName = LINUX_SYSFS_BLOCK + "/" + devKey.name.replace("/", "!");
-                if(logger.isLoggable(Level.FINEST)) {
-                    logger.log(Level.FINEST, " [ monDiskIOStat ] Strange devName: " + devKey + " will check for: " + sysBName);
+                if (logger.isLoggable(Level.FINEST)) {
+                    logger.log(Level.FINEST, " [ monDiskIOStat ] Strange devName: " + devKey + " will check for: "
+                            + sysBName);
                 }
                 isDevice = (new File(sysBName).exists());
             } else {
@@ -405,14 +411,14 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
-            builder.append("BlockDevice [deviceKey=").append(deviceKey).append(", rawIOStats=").append(rawIOStats).append(", sectorSize=").append(sectorSize).append("]");
+            builder.append("BlockDevice [deviceKey=").append(deviceKey).append(", rawIOStats=").append(rawIOStats)
+                    .append(", sectorSize=").append(sectorSize).append("]");
             return builder.toString();
         }
 
     }
 
     private static final class Config {
-
 
         final Pattern[] allowedDevices;
 
@@ -429,16 +435,16 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
         /**
          * When no configuration file is specified 
          */
-        Config(){
-        	hasAllowed = false;
-    		hasDenied = true;
-    		
-    		allowedDevices = null;
-    		deniedDevices = fromProperty("dm-\\d+;md\\d+");
-    		
-    		return;
+        Config() {
+            hasAllowed = false;
+            hasDenied = true;
+
+            allowedDevices = null;
+            deniedDevices = fromProperty("dm-\\d+;md\\d+");
+
+            return;
         }
-        
+
         /**
          * @param configFile 
          * @throws IOException
@@ -457,8 +463,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                 tAllowedDevices = fromProperty(p.getProperty("allowedDevices"));
                 tDeniedDevices = fromProperty(p.getProperty("deniedDevices", "dm-\\d+;md\\d+"));
             } finally {
-                hasAllowed = (tAllowedDevices != null && tAllowedDevices.length > 0);
-                hasDenied = (tDeniedDevices != null && tDeniedDevices.length > 0);
+                hasAllowed = ((tAllowedDevices != null) && (tAllowedDevices.length > 0));
+                hasDenied = ((tDeniedDevices != null) && (tDeniedDevices.length > 0));
                 allowedDevices = tAllowedDevices;
                 deniedDevices = tDeniedDevices;
                 Utils.closeIgnoringException(fis);
@@ -471,18 +477,17 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
             }
 
             final String[] propPatternsSplit = property.split("(\\s)*;(\\s)*");
-            if (propPatternsSplit == null || propPatternsSplit.length <= 0) {
+            if ((propPatternsSplit == null) || (propPatternsSplit.length <= 0)) {
                 return null;
             }
 
             final List<Pattern> pList = new ArrayList<Pattern>(propPatternsSplit.length);
             for (final String s : propPatternsSplit) {
-            	try{
-            		pList.add(Pattern.compile(s));
-            	}
-            	catch (PatternSyntaxException pse){
-            		logger.log(Level.WARNING, "Pattern syntax error for `"+s+"`: "+pse); 
-            	}
+                try {
+                    pList.add(Pattern.compile(s));
+                } catch (PatternSyntaxException pse) {
+                    logger.log(Level.WARNING, "Pattern syntax error for `" + s + "`: " + pse);
+                }
             }
 
             return pList.toArray(new Pattern[0]);
@@ -527,66 +532,59 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
             allowedDevicesCache.add(deviceKey);
             return true;
         }
-        
+
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
-            builder.append("Config [allowedDevices=")
-                   .append(Arrays.toString(allowedDevices))
-                   .append(", deniedDevices=")
-                   .append(Arrays.toString(deniedDevices))
-                   .append(", hasAllowed=")
-                   .append(hasAllowed)
-                   .append(", hasDenied=")
-                   .append(hasDenied)
-                   .append(", allowedDevicesCache=")
-                   .append(allowedDevicesCache)
-                   .append(", deniedDevicesCache=")
-                   .append(deniedDevicesCache)
-                   .append("]");
+            builder.append("Config [allowedDevices=").append(Arrays.toString(allowedDevices))
+                    .append(", deniedDevices=").append(Arrays.toString(deniedDevices)).append(", hasAllowed=")
+                    .append(hasAllowed).append(", hasDenied=").append(hasDenied).append(", allowedDevicesCache=")
+                    .append(allowedDevicesCache).append(", deniedDevicesCache=").append(deniedDevicesCache).append("]");
             return builder.toString();
         }
 
     }
 
     @Override
-	public MonModuleInfo initArgs(final String argStr) {
+    public MonModuleInfo initArgs(final String argStr) {
         if (argStr != null) {
             final String[] args = Utils.getSplittedListFields(argStr);
             for (String arg : args) {
                 if (arg.indexOf("=") >= 0) {
                     final String[] sArgs = arg.split("(\\s)*=(\\s)*");
-                    if (sArgs[0].compareToIgnoreCase("ConfFile") == 0 || sArgs[0].compareToIgnoreCase("ConfigFile") == 0) {
+                    if ((sArgs[0].compareToIgnoreCase("ConfFile") == 0)
+                            || (sArgs[0].compareToIgnoreCase("ConfigFile") == 0)) {
                         configFile = new File(sArgs[1].trim());
                     }
                 }
             }
-            
-            if(configFile == null) {
+
+            if (configFile == null) {
                 final String appConfConfigFile = AppConfig.getProperty("monDiskIOStat.configFile", null);
-                if(appConfConfigFile != null) {
+                if (appConfConfigFile != null) {
                     configFile = new File(appConfConfigFile);
                 }
             }
-            
-            if(configFile != null) {
+
+            if (configFile != null) {
                 DateFileWatchdog dfw = null;
                 try {
                     dfw = DateFileWatchdog.getInstance(configFile, 5 * 1000);
                     dfw.addObserver(this);
                     configReference.set(new Config(configFile));
-                    logger.log(Level.INFO, "[ monDiskIOStat ] loading conf: " + configReference.get() + " from: " + configFile);
+                    logger.log(Level.INFO, "[ monDiskIOStat ] loading conf: " + configReference.get() + " from: "
+                            + configFile);
                 } catch (Throwable t) {
                     logger.log(Level.WARNING, "[ monDiskIOStat ]  Unable to parse or load the config. Cause: ", t);
                     if (dfw != null) {
-                        logger.log(Level.INFO, "[ monDiskIOStat ] The file: " + configFile + " will not be monitored for future changes", t);
+                        logger.log(Level.INFO, "[ monDiskIOStat ] The file: " + configFile
+                                + " will not be monitored for future changes", t);
                         dfw.stopIt();
                     }
                     throw new InstantiationError(t.getMessage());
                 }
-            }
-            else{
-            	configReference.set(new Config());
+            } else {
+                configReference.set(new Config());
                 logger.log(Level.INFO, "[ monDiskIOStat ] loading default conf: " + configReference.get());
             }
         } else {
@@ -597,15 +595,14 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
     }
 
     @Override
-	public boolean isRepetitive() {
+    public boolean isRepetitive() {
         return true;
     }
 
     @Override
-	public String getTaskName() {
+    public String getTaskName() {
         return "monDiskIOStat";
     }
-
 
     /**
      * Computes the IO params based on /proc/diskstat and sysfs (by default assumes it's mounted in /sys). For more
@@ -626,29 +623,31 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
             fr = new FileReader(LINUX_PROC_DISK_STATS);
             br = new BufferedReader(fr, 2048);
             int lineNo = 0;
-            double totalReadSpeed  = 0;
-            double totalReadIOPS  = 0;
-            double totalMergedReadIOPS  = 0;
-            double totalWriteIOPS  = 0;
-            double totalMergedWriteIOPS  = 0;
+            double totalReadSpeed = 0;
+            double totalReadIOPS = 0;
+            double totalMergedReadIOPS = 0;
+            double totalWriteIOPS = 0;
+            double totalMergedWriteIOPS = 0;
 
             double totalWriteSpeed = 0;
             double totalIOUtil = 0;
             int totalDevices = 0;
-            
-        	double maxIOUsage = -1;
-        	double maxIOUsageRead = -1;
-        	double maxIOUsageWrite = -1;
-        	String maxIOUsageDevice = null;
-        	double maxIOUsageReadIOPS = -1;
-        	double maxIOUsageReadIOPSMerged = -1;
-        	double maxIOUsageWriteIOPS = -1;
-        	double maxIOUsageWriteIOPSMerged = -1;
-        	
-        	final boolean sumIOPSPerDevice = AppConfig.getb("lia.Monitor.modules.monDiskIOStat.sum_iops_per_device", false);
-        	final boolean sumTrafficPerDevice = AppConfig.getb("lia.Monitor.modules.monDiskIOStat.sum_traffic_per_device", false);
-            if(isFINEST) {
-                if(config == null) {
+
+            double maxIOUsage = -1;
+            double maxIOUsageRead = -1;
+            double maxIOUsageWrite = -1;
+            String maxIOUsageDevice = null;
+            double maxIOUsageReadIOPS = -1;
+            double maxIOUsageReadIOPSMerged = -1;
+            double maxIOUsageWriteIOPS = -1;
+            double maxIOUsageWriteIOPSMerged = -1;
+
+            final boolean sumIOPSPerDevice = AppConfig.getb("lia.Monitor.modules.monDiskIOStat.sum_iops_per_device",
+                    false);
+            final boolean sumTrafficPerDevice = AppConfig.getb(
+                    "lia.Monitor.modules.monDiskIOStat.sum_traffic_per_device", false);
+            if (isFINEST) {
+                if (config == null) {
                     logger.log(Level.FINEST, "[ monDiskIOStat ] The conf is null ... ");
                 } else {
                     logger.log(Level.FINEST, "[ monDiskIOStat ] The conf is ... \n" + config);
@@ -661,7 +660,7 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     break;
                 }
                 lineNo++;
-                try {                	
+                try {
                     // final Scanner sc = new Scanner(line);
                     StringTokenizer st = new StringTokenizer(line);
                     int iTmp;
@@ -669,7 +668,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         iTmp = Integer.parseInt(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, "[ monDiskIOStat ] Major number not found. Ignoring line [ " + lineNo + " ]:\n" + line);
+                        logger.log(Level.WARNING, "[ monDiskIOStat ] Major number not found. Ignoring line [ " + lineNo
+                                + " ]:\n" + line);
                         continue;
                     }
                     final int major = iTmp;
@@ -678,14 +678,17 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         iTmp = Integer.parseInt(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, "[ monDiskIOStat ] Minor number not found. Ignoring line [ " + lineNo + " ]:\n" + line);
+                        logger.log(Level.WARNING, "[ monDiskIOStat ] Minor number not found. Ignoring line [ " + lineNo
+                                + " ]:\n" + line);
                         continue;
                     }
                     final int minor = iTmp;
 
                     // device or partition name
                     if (!st.hasMoreTokens()) {
-                        logger.log(Level.WARNING, "[ monDiskIOStat ] Device or partition name not found. Ignoring line [ " + lineNo + " ]:\n" + line);
+                        logger.log(Level.WARNING,
+                                "[ monDiskIOStat ] Device or partition name not found. Ignoring line [ " + lineNo
+                                        + " ]:\n" + line);
                         continue;
                     }
                     final String devPartName = StringFactory.get(st.nextToken());
@@ -694,7 +697,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     if (config != null) {
                         if (!config.isAllowed(devKey)) {
                             if (isFINE) {
-                                logger.log(Level.FINE, "[ monDiskIOStat ] The device: " + devPartName + " is filtered in the config");
+                                logger.log(Level.FINE, "[ monDiskIOStat ] The device: " + devPartName
+                                        + " is filtered in the config");
                             }
                             continue;
                         }
@@ -703,7 +707,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     // check if is really a device
                     if (!isDevice(devKey)) {
                         if (isFINEST) {
-                            logger.log(Level.FINEST, "[ monDiskIOStat ] Ignoring device/partition " + devPartName + ". Not a device.");
+                            logger.log(Level.FINEST, "[ monDiskIOStat ] Ignoring device/partition " + devPartName
+                                    + ". Not a device.");
                         }
                         continue;
                     }
@@ -713,7 +718,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         bi = new BigInteger(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unable to parse field 1 - # of reads completed");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unable to parse field 1 - # of reads completed");
                         continue;
                     }
                     final BigInteger readReqs = bi;
@@ -722,7 +728,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         bi = new BigInteger(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unable to parse field 2 - # of merged read req");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unable to parse field 2 - # of merged read req");
                         continue;
                     }
                     final BigInteger mergedReadReq = bi;
@@ -731,7 +738,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         bi = new BigInteger(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unalbe to parse field 3 - # of sectors read successfully");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unalbe to parse field 3 - # of sectors read successfully");
                         continue;
                     }
                     final BigInteger readSectors = bi;
@@ -740,7 +748,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         bi = new BigInteger(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unalbe to parse field 4 - # of milliseconds spent reading");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unalbe to parse field 4 - # of milliseconds spent reading");
                         continue;
                     }
                     final BigInteger millisRead = bi;
@@ -749,7 +758,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         bi = new BigInteger(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unalbe to parse field 5 - # of writes completed");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unalbe to parse field 5 - # of writes completed");
                         continue;
                     }
                     final BigInteger writeReqs = bi;
@@ -758,7 +768,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         bi = new BigInteger(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unalbe to parse field 6 - # of merged write req");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unalbe to parse field 6 - # of merged write req");
                         continue;
                     }
                     final BigInteger mergedWriteReq = bi;
@@ -767,7 +778,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         bi = new BigInteger(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unalbe to parse field 7 - # of sectors written successfully");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unalbe to parse field 7 - # of sectors written successfully");
                         continue;
                     }
                     final BigInteger writeSectors = bi;
@@ -776,7 +788,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         bi = new BigInteger(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unalbe to parse field 8 - # of milliseconds spent writing");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unalbe to parse field 8 - # of milliseconds spent writing");
                         continue;
                     }
                     final BigInteger millisWrite = bi;
@@ -786,7 +799,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         tlong = Long.parseLong(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unalbe to parse field 9 - # of I/Os currently in progress");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unalbe to parse field 9 - # of I/Os currently in progress");
                         continue;
                     }
                     final long concurrentIO = tlong;
@@ -795,7 +809,8 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         bi = new BigInteger(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unalbe to parse field 10 - # of milliseconds spent doing I/Os");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unalbe to parse field 10 - # of milliseconds spent doing I/Os");
                         continue;
                     }
                     final BigInteger millisIO = bi;
@@ -804,12 +819,14 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     try {
                         bi = new BigInteger(st.nextToken());
                     } catch (Throwable t) {
-                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName + " Unalbe to parse field 11 - weighted # of milliseconds spent doing I/Os");
+                        logger.log(Level.FINE, "[ monDiskIOStat ] Ignoring device " + devPartName
+                                + " Unalbe to parse field 11 - weighted # of milliseconds spent doing I/Os");
                         continue;
                     }
                     final BigInteger weightedIO = bi;
 
-                    final RawIOStats cStats = new RawIOStats(readReqs, mergedReadReq, readSectors, millisRead, writeReqs, mergedWriteReq, writeSectors, millisWrite, concurrentIO, millisIO, weightedIO);
+                    final RawIOStats cStats = new RawIOStats(readReqs, mergedReadReq, readSectors, millisRead,
+                            writeReqs, mergedWriteReq, writeSectors, millisWrite, concurrentIO, millisIO, weightedIO);
 
                     final DerivedIOStats dio = processAndUpdateDevice(devKey, cStats);
                     if (dio == null) {
@@ -817,118 +834,123 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
                     }
                     final BlockDevice bdev = devicesMap.get(devKey);
 
-                    if(readSectors.equals(BigInteger.ZERO) && writeSectors.equals(BigInteger.ZERO)) {
+                    if (readSectors.equals(BigInteger.ZERO) && writeSectors.equals(BigInteger.ZERO)) {
                         continue;
                     }
-                    final Result r = new Result(node.getFarmName(), node.getClusterName(), node.getName(), getTaskName());
+                    final Result r = new Result(node.getFarmName(), node.getClusterName(), node.getName(),
+                            getTaskName());
                     r.time = rTime;
-                    
-                    double cDevRead = dio.readSpeed * bdev.sectorSize / 1024 / 1024;
-                    double cDevWrite = dio.writeSpeed * bdev.sectorSize / 1024 / 1024;
+
+                    double cDevRead = (dio.readSpeed * bdev.sectorSize) / 1024 / 1024;
+                    double cDevWrite = (dio.writeSpeed * bdev.sectorSize) / 1024 / 1024;
                     double cUtil = (dio.utilization <= 100) ? dio.utilization : 100;
-                    
+
                     String newPName = devPartName;
                     if (devPartName.indexOf("/") >= 0) {
                         newPName = devPartName.replace("/", "!");
                     }
-                    
-                    if (cUtil > maxIOUsage){
-                    	maxIOUsage = cUtil;
-                    	maxIOUsageDevice = newPName;
-                    	maxIOUsageRead = cDevRead;
-                    	maxIOUsageWrite = cDevWrite;
-                    	
-                    	maxIOUsageReadIOPS = dio.readIOPS;
-                    	maxIOUsageReadIOPSMerged = dio.mergedReadIOPS;
-                    	maxIOUsageWriteIOPS = dio.writeIOPS;
-                    	maxIOUsageWriteIOPSMerged = dio.mergedWriteIOPS;
+
+                    if (cUtil > maxIOUsage) {
+                        maxIOUsage = cUtil;
+                        maxIOUsageDevice = newPName;
+                        maxIOUsageRead = cDevRead;
+                        maxIOUsageWrite = cDevWrite;
+
+                        maxIOUsageReadIOPS = dio.readIOPS;
+                        maxIOUsageReadIOPSMerged = dio.mergedReadIOPS;
+                        maxIOUsageWriteIOPS = dio.writeIOPS;
+                        maxIOUsageWriteIOPSMerged = dio.mergedWriteIOPS;
                     }
-                    
+
                     r.addSet(newPName + "_ReadMBps", cDevRead);
                     r.addSet(newPName + "_ReadIOPS", dio.readIOPS);
                     r.addSet(newPName + "_ReadIOPSMerged", dio.mergedReadIOPS);
-                    
+
                     r.addSet(newPName + "_WriteMBps", cDevWrite);
                     r.addSet(newPName + "_WriteIOPS", dio.writeIOPS);
                     r.addSet(newPName + "_WriteIOPSMerged", dio.mergedWriteIOPS);
-                    
-                    if (sumTrafficPerDevice){
-                    	r.addSet(newPName + "_TotalMBps", cDevRead + cDevWrite);
+
+                    if (sumTrafficPerDevice) {
+                        r.addSet(newPName + "_TotalMBps", cDevRead + cDevWrite);
                     }
-                    
-                    if (sumIOPSPerDevice){
-                    	r.addSet(newPName + "_IOPS", dio.readIOPS + dio.writeIOPS);
-                    	r.addSet(newPName + "_IOPSMerged", dio.mergedReadIOPS + dio.mergedWriteIOPS);
+
+                    if (sumIOPSPerDevice) {
+                        r.addSet(newPName + "_IOPS", dio.readIOPS + dio.writeIOPS);
+                        r.addSet(newPName + "_IOPSMerged", dio.mergedReadIOPS + dio.mergedWriteIOPS);
                     }
-                    
+
                     r.addSet(newPName + "_IOUtil", cUtil);
                     r.Module = getTaskName();
-                    
+
                     totalDevices++;
                     totalIOUtil += cUtil;
-                    
+
                     totalReadSpeed += cDevRead;
                     totalReadIOPS += dio.readIOPS;
                     totalMergedReadIOPS += dio.mergedReadIOPS;
-                    
-                    totalWriteSpeed += cDevWrite; 
+
+                    totalWriteSpeed += cDevWrite;
                     totalWriteIOPS += dio.writeIOPS;
                     totalMergedWriteIOPS += dio.mergedWriteIOPS;
-                    
+
                     lRet.add(r);
 
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ monDiskIOStat ] exception parsing " + LINUX_PROC_DISK_STATS + " file at line [ " + lineNo + " ]:\n" + line + "\n", t);
+                    logger.log(Level.WARNING, " [ monDiskIOStat ] exception parsing " + LINUX_PROC_DISK_STATS
+                            + " file at line [ " + lineNo + " ]:\n" + line + "\n", t);
                 }
 
             }
-            
+
             final Result r = new Result(node.getFarmName(), node.getClusterName(), node.getName(), getTaskName());
-            final eResult er = new eResult(node.getFarmName(), node.getClusterName(), node.getName(), getTaskName(), null);
-            
+            final eResult er = new eResult(node.getFarmName(), node.getClusterName(), node.getName(), getTaskName(),
+                    null);
+
             er.time = r.time = rTime;
-            
+
             r.addSet("TOTAL_devices", totalDevices);
 
-            if(totalDevices > 0) {
+            if (totalDevices > 0) {
                 r.addSet("TOTAL_ReadMBps", totalReadSpeed);
                 r.addSet("TOTAL_ReadIOPS", totalReadIOPS);
                 r.addSet("TOTAL_ReadIOPSMerged", totalMergedReadIOPS);
-                
+
                 r.addSet("TOTAL_WriteMBps", totalWriteSpeed);
                 r.addSet("TOTAL_WriteIOPS", totalWriteIOPS);
                 r.addSet("TOTAL_WriteIOPSMerged", totalMergedWriteIOPS);
-                
+
                 r.addSet("TOTAL_TotalMBps", totalReadSpeed + totalWriteSpeed);
                 r.addSet("TOTAL_IOPS", totalReadIOPS + totalWriteIOPS);
                 r.addSet("TOTAL_IOPSMerged", totalMergedReadIOPS + totalMergedWriteIOPS);
-                
-                r.addSet("AVG_IOUtil", totalIOUtil/totalDevices);
-            }
-            
-            if (maxIOUsage >= 0){
-            	r.addSet("MAXIOUTIL_ReadMBps", maxIOUsageRead);
-            	r.addSet("MAXIOUTIL_ReadIOPS", maxIOUsageReadIOPS);
-            	r.addSet("MAXIOUTIL_ReadIOPSMerged", maxIOUsageReadIOPSMerged);
 
-            	r.addSet("MAXIOUTIL_WriteMBps", maxIOUsageWrite);
-            	r.addSet("MAXIOUTIL_WriteIOPS", maxIOUsageWriteIOPS);
-            	r.addSet("MAXIOUTIL_WriteIOPSMerged", maxIOUsageWriteIOPSMerged);
-            	
-            	r.addSet("MAXIOUTIL_TotalMBps", maxIOUsageRead + maxIOUsageWrite);
-            	r.addSet("MAXIOUTIL_IOPS", maxIOUsageReadIOPS + maxIOUsageWriteIOPS);
-            	r.addSet("MAXIOUTIL_IOPSMerged", maxIOUsageReadIOPSMerged + maxIOUsageWriteIOPSMerged);
-            	
-            	r.addSet("MAXIOUTIL_IOUtil", maxIOUsage);
-            	
-            	er.addSet("MAXIOUTIL_Device", maxIOUsageDevice);
+                r.addSet("AVG_IOUtil", totalIOUtil / totalDevices);
             }
-            
-            if (r.param!=null && r.param.length>0)
-            	lRet.add(r);
-            
-            if (er.param!=null && er.param.length>0)
-            	lRet.add(er);
+
+            if (maxIOUsage >= 0) {
+                r.addSet("MAXIOUTIL_ReadMBps", maxIOUsageRead);
+                r.addSet("MAXIOUTIL_ReadIOPS", maxIOUsageReadIOPS);
+                r.addSet("MAXIOUTIL_ReadIOPSMerged", maxIOUsageReadIOPSMerged);
+
+                r.addSet("MAXIOUTIL_WriteMBps", maxIOUsageWrite);
+                r.addSet("MAXIOUTIL_WriteIOPS", maxIOUsageWriteIOPS);
+                r.addSet("MAXIOUTIL_WriteIOPSMerged", maxIOUsageWriteIOPSMerged);
+
+                r.addSet("MAXIOUTIL_TotalMBps", maxIOUsageRead + maxIOUsageWrite);
+                r.addSet("MAXIOUTIL_IOPS", maxIOUsageReadIOPS + maxIOUsageWriteIOPS);
+                r.addSet("MAXIOUTIL_IOPSMerged", maxIOUsageReadIOPSMerged + maxIOUsageWriteIOPSMerged);
+
+                r.addSet("MAXIOUTIL_IOUtil", maxIOUsage);
+
+                er.addSet("MAXIOUTIL_Device", maxIOUsageDevice);
+            }
+
+            if ((r.param != null) && (r.param.length > 0)) {
+                lRet.add(r);
+            }
+
+            if ((er.param != null) && (er.param.length > 0)) {
+                lRet.add(er);
+            }
         } finally {
             Utils.closeIgnoringException(fr);
             Utils.closeIgnoringException(br);
@@ -959,7 +981,7 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
         if (isLinuxOS()) {
             return processLinuxProcFS(configReference.get());
         }
-        
+
         return null;
     }
 
@@ -967,8 +989,12 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
      * @param args
      * @throws Exception 
      */
-	public static void main(String[] args) throws Exception {
-        LogManager.getLogManager().readConfiguration(new ByteArrayInputStream(("handlers= java.util.logging.ConsoleHandler\n" + "java.util.logging.ConsoleHandler.level = FINEST\n" + "java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter\n" + "").getBytes()));
+    public static void main(String[] args) throws Exception {
+        LogManager.getLogManager().readConfiguration(
+                new ByteArrayInputStream(("handlers= java.util.logging.ConsoleHandler\n"
+                        + "java.util.logging.ConsoleHandler.level = FINEST\n"
+                        + "java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter\n" + "")
+                        .getBytes()));
         logger.setLevel(Level.INFO);
         logger.log(Level.INFO, " Running on OS: " + OS_NAME + "; VERSION: " + OS_VER + "; ARCH: " + OS_ARCH);
 
@@ -982,19 +1008,21 @@ public class monDiskIOStat extends AbstractSchJobMonitoring implements Observer 
             Collection<?> cr = (Collection<?>) mdIOStat.doProcess();
             final long endTime = Utils.nanoNow();
             StringBuilder sb = new StringBuilder();
-            for(final Object r: cr) {
+            for (final Object r : cr) {
                 sb.append(r).append("\n");
             }
-            logger.log(Level.INFO, " DT " + TimeUnit.NANOSECONDS.toMillis(endTime - sTime) + " ms. \n\n Returning \n" + sb.toString());
+            logger.log(Level.INFO, " DT " + TimeUnit.NANOSECONDS.toMillis(endTime - sTime) + " ms. \n\n Returning \n"
+                    + sb.toString());
         }
     }
 
     @Override
-	public void update(Observable o, Object arg) {
+    public void update(Observable o, Object arg) {
         try {
             DevNameCache.clearCache();
-            configReference.set(configFile!=null ? new Config(configFile) : new Config());
-            logger.log(Level.INFO, "[ monDiskIOStat ] loading conf: " + configReference.get() + ((configFile != null)?(" from: " + configFile):""));
+            configReference.set(configFile != null ? new Config(configFile) : new Config());
+            logger.log(Level.INFO, "[ monDiskIOStat ] loading conf: " + configReference.get()
+                    + ((configFile != null) ? (" from: " + configFile) : ""));
         } catch (Throwable t) {
             logger.log(Level.WARNING, " [ monDiskIOStat ] Unable to reload new config", t);
         }

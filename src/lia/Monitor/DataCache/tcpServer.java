@@ -1,5 +1,5 @@
 /*
- * $Id: tcpServer.java 7265 2012-06-25 22:50:55Z ramiro $
+ * $Id: tcpServer.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.DataCache;
 
@@ -25,7 +25,7 @@ import lia.util.exporters.TCPRangePortExporter;
 public class tcpServer extends Thread {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(tcpServer.class.getName());
+    private static final Logger logger = Logger.getLogger(tcpServer.class.getName());
 
     Cache cache;
 
@@ -39,12 +39,12 @@ public class tcpServer extends Thread {
 
     public tcpServer(Cache cache) throws Exception {
         super();
-        
+
         final boolean bStartServer = AppConfig.getb("lia.Monitor.DataCache.startTcpServer", true);
         this.cache = cache;
         active = false;
-        
-        if(bStartServer) {
+
+        if (bStartServer) {
             final String forceIP = AppConfig.getProperty("lia.Monitor.useIPaddress");
 
             try {
@@ -58,8 +58,9 @@ public class tcpServer extends Thread {
                 throw new Exception(t);
             }
 
-            if (listen_socket == null) // this...should not happen
-            throw new Exception("ServerSocket == null in TCP Server!!!");
+            if (listen_socket == null) {
+                throw new Exception("ServerSocket == null in TCP Server!!!");
+            }
             lis_port = listen_socket.getLocalPort();
             active = true;
 
@@ -67,7 +68,7 @@ public class tcpServer extends Thread {
         } else {
             active = false;
         }
-        
+
         this.setName("(ML) tcpServer @ " + cache.getIPAddress() + ":" + lis_port);
 
         try {
@@ -111,7 +112,9 @@ public class tcpServer extends Thread {
     }
 
     void newResult(Object o) {
-        if(connections.size() == 0) return;
+        if (connections.size() == 0) {
+            return;
+        }
         for (final tcpClientWorker lw : connections.values()) {
             lw.addNewResult(o);
         }
@@ -126,7 +129,9 @@ public class tcpServer extends Thread {
     }
 
     void updateConfig(MFarm farm) {
-        if(connections.size() == 0) return;
+        if (connections.size() == 0) {
+            return;
+        }
         monMessage msg = new monMessage(monMessage.ML_CONFIG_TAG, null, farm);
         for (final tcpClientWorker lw : connections.values()) {
             lw.WriteObject(msg, tcpClientWorker.ML_CONFIG_MESSAGE);

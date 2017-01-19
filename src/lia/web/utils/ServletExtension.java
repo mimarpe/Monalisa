@@ -1,14 +1,14 @@
 package lia.web.utils;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
@@ -25,51 +25,50 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import lazyj.cache.ExpirationCache;
 import lia.Monitor.Store.Cache;
 import lia.Monitor.Store.Fast.DB;
 import lia.Monitor.monitor.ExtResult;
 import lia.Monitor.monitor.Result;
 import lia.Monitor.monitor.eResult;
 import lia.Monitor.monitor.monPredicate;
-import lia.util.ntp.NTPDate;
 
 /**
  * Useful servlet shortcuts
- * 
+ *
  * @author costing
  * @since Jul 17, 2009
  */
-@SuppressWarnings("deprecation")
 public abstract class ServletExtension extends HttpServlet implements SingleThreadModel {
 	private static final long serialVersionUID = 5848728412056154453L;
+
+	private static final Logger logger = Logger.getLogger(ServletExtension.class.getName());
 
 	/**
 	 * the request
 	 */
-	protected HttpServletRequest	request		= null;
+	protected HttpServletRequest request = null;
 
 	/**
 	 * the response
 	 */
-	protected HttpServletResponse	response	= null;
+	protected HttpServletResponse response = null;
 
 	/**
 	 * servlet output stream
 	 */
-	protected OutputStream			osOut		= null;
+	protected OutputStream osOut = null;
 
 	/**
 	 * a print writer as alternative to output stream
 	 */
-	protected PrintWriter			pwOut		= null;
+	protected PrintWriter pwOut = null;
 
-	private static final transient Logger	logger		= Logger.getLogger("lia.web.utils.ServletExtension");
-	
 	// package protected access
 	/**
 	 * is it a redirect?
 	 */
-	boolean							bRedirect	= false;
+	boolean bRedirect = false;
 
 	/**
 	 * Get a string parameter's value
@@ -91,14 +90,13 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	public String gets(final String sParam, final String sDefault) {
 		try {
 			String s;
-			if (sParam != null && (s = request.getParameter(sParam)) != null)
+			if ((sParam != null) && ((s = request.getParameter(sParam)) != null))
 				return s;
-		}
-		catch (Exception e) {
+		} catch (final Exception e) {
 			System.err.println("gets: Exception: " + e + "(" + e.getMessage() + ")");
 			e.printStackTrace();
 		}
-		
+
 		return sDefault;
 	}
 
@@ -114,10 +112,10 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 			final String s = gets(sParam);
 			if (s.length() > 0)
 				return Integer.parseInt(s);
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			// ignore;
 		}
-		
+
 		return defaultVal;
 	}
 
@@ -132,11 +130,11 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 		try {
 			final String s = gets(sParam);
 			if (s.length() > 0)
-				return Long.parseLong(s);				
-		} catch (Exception e) {
+				return Long.parseLong(s);
+		} catch (final Exception e) {
 			// ignore
 		}
-		
+
 		return defaultVal;
 	}
 
@@ -159,7 +157,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	public long getl(final String sParam) {
 		return getl(sParam, 0L);
 	}
-	
+
 	/**
 	 * get the value of a float parameter
 	 * 
@@ -167,11 +165,10 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @param defaultVal
 	 * @return value
 	 */
-	public float getf(final String sParam, final float defaultVal){
-		try{
+	public float getf(final String sParam, final float defaultVal) {
+		try {
 			return Float.parseFloat(gets(sParam));
-		}
-		catch (NumberFormatException nfe){
+		} catch (final NumberFormatException nfe) {
 			return defaultVal;
 		}
 	}
@@ -183,11 +180,10 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @param defaultVal
 	 * @return value
 	 */
-	public double getd(final String sParam, final double defaultVal){
-		try{
+	public double getd(final String sParam, final double defaultVal) {
+		try {
 			return Double.parseDouble(gets(sParam));
-		}
-		catch (NumberFormatException nfe){
+		} catch (final NumberFormatException nfe) {
 			return defaultVal;
 		}
 	}
@@ -195,7 +191,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	/**
 	 * ?
 	 */
-	public static final String	sDefaultPage	= "/";
+	public static final String sDefaultPage = "/";
 
 	/**
 	 * Encode a value so that it's safe to build an URL with it
@@ -223,13 +219,13 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @param sURL
 	 * @return true if possible
 	 */
-	protected boolean redirect(String sURL) {
+	protected boolean redirect(final String sURL) {
 		bRedirect = true;
 
 		try {
 			response.sendRedirect(sURL);
 			return true;
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			return false;
 		}
 	}
@@ -267,12 +263,12 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * Get a two-(or more-) digit string, with leading 0 if necessary
 	 * 
 	 * @param i
-	 * @return a string at least two digit long 
+	 * @return a string at least two digit long
 	 */
 	public static final String show0(final int i) {
 		if (i < 10)
 			return "0" + i;
-		
+
 		return "" + i;
 	}
 
@@ -287,7 +283,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	}
 
 	private static final SimpleDateFormat sdfDottedDate = new SimpleDateFormat("dd.MM.yyyy");
-	
+
 	/**
 	 * Get the date in dd.MM.yyyy notation
 	 * 
@@ -295,11 +291,11 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @return formatted date
 	 */
 	public static final String showDottedDate(final Date d) {
-		synchronized (sdfDottedDate){
+		synchronized (sdfDottedDate) {
 			return sdfDottedDate.format(d);
 		}
 	}
-	
+
 	private static final SimpleDateFormat sdfNamedDate = new SimpleDateFormat("dd MMM yyyy");
 
 	/**
@@ -309,11 +305,11 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @return formatted date
 	 */
 	public static final String showNamedDate(final Date d) {
-		synchronized (sdfNamedDate){
+		synchronized (sdfNamedDate) {
 			return sdfNamedDate.format(d);
 		}
 	}
-	
+
 	private static final SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm");
 
 	/**
@@ -323,7 +319,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @return time in "HH:mm" format
 	 */
 	public static final String showTime(final Date d) {
-		synchronized (sdfTime){
+		synchronized (sdfTime) {
 			return sdfTime.format(d);
 		}
 	}
@@ -336,15 +332,15 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 */
 	public String getCookie(final String sName) {
 		try {
-			Cookie vc[] = request.getCookies();
+			final Cookie vc[] = request.getCookies();
 			Cookie c;
 
-			for (int i = 0; i < vc.length; i++) {
-				c = vc[i];
+			for (final Cookie element : vc) {
+				c = element;
 				if (c.getName().equals(sName))
 					return decode(c.getValue());
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			// ignore
 		}
 
@@ -358,33 +354,34 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @param sValue
 	 * @return true if set
 	 */
-	public boolean setCookie(String sName, String sValue) {
+	public boolean setCookie(final String sName, final String sValue) {
 		return setCookie(sName, sValue, -1);
 	}
 
 	/**
-	 * Set a persistent cookie 
+	 * Set a persistent cookie
 	 * 
 	 * @param sName
 	 * @param sValue
 	 * @param iAge
 	 * @return true if set
 	 */
-	public boolean setCookie(String sName, String sValue, int iAge) {
+	public boolean setCookie(final String sName, final String sValue, final int iAge) {
 		try {
-			Cookie c = new Cookie(sName, sValue);
+			final Cookie c = new Cookie(sName, sValue);
 
 			c.setMaxAge(iAge);
 
-			//c.setDomain(getDomain());
+			// c.setDomain(getDomain());
 			c.setPath("/");
 			c.setSecure(false);
+			c.setHttpOnly(true);
 
 			response.addCookie(c);
 
 			return true;
-		} catch (Exception e) {
-			System.err.println("setCookie exception : "+e+" ("+e.getMessage()+")");
+		} catch (final Exception e) {
+			System.err.println("setCookie exception : " + e + " (" + e.getMessage() + ")");
 			return false;
 		}
 	}
@@ -395,7 +392,152 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @return server address
 	 */
 	protected String getDomain() {
-		return request.getServerName()+ (request.getServerPort()!=80 ? (":"+request.getServerPort()) : "");
+		return request.getServerName() + (request.getServerPort() != 80 ? (":" + request.getServerPort()) : "");
+	}
+
+	/**
+	 * Write a response, respecting the byte range requests
+	 * 
+	 * @param content
+	 * @param request
+	 * @param response
+	 * @param os
+	 * @return written bytes
+	 * @throws IOException
+	 */
+	public static int writeResponse(final String content, final HttpServletRequest request, final HttpServletResponse response, final OutputStream os) throws IOException {
+		return writeResponse(content.getBytes(Charset.forName("UTF-8")), request, response, os);
+	}
+
+	/**
+	 * Write a response, respecting the byte range requests
+	 * 
+	 * @param vs
+	 * @param request
+	 * @param response
+	 * @param os
+	 * @return written bytes
+	 * @throws IOException
+	 */
+	public static int writeResponse(final byte[] vs, final HttpServletRequest request, final HttpServletResponse response, final OutputStream os) throws IOException {
+		final OutputStream responseOS = os != null ? os : response.getOutputStream();
+
+		final String range = request.getHeader("Range");
+
+		if ((range == null) || (range.length() == 0)) {
+			response.setHeader("Content-Length", String.valueOf(vs.length));
+
+			responseOS.write(vs);
+
+			return vs.length;
+		}
+
+		if (!range.startsWith("bytes=")) {
+			response.sendError(416);
+			return -1;
+		}
+
+		StringTokenizer st = new StringTokenizer(range.substring(6), ",");
+
+		final StringBuilder responseRange = new StringBuilder();
+
+		int first = -1;
+		int last = -1;
+		int count = 0;
+
+		while (st.hasMoreTokens()) {
+			final String s = st.nextToken();
+
+			final int idx = s.indexOf('-');
+
+			int start;
+			int end;
+
+			if (idx > 0) {
+				start = Integer.parseInt(s.substring(0, idx));
+
+				if (idx < (s.length() - 1)) {
+					end = Integer.parseInt(s.substring(idx + 1));
+
+					if (end >= vs.length)
+						end = vs.length - 1;
+				}
+				else
+					end = vs.length - 1;
+
+				if (start > end) {
+					response.sendError(416);
+					return -1;
+				}
+			}
+			else {
+				start = Integer.parseInt(s.substring(idx + 1));
+				end = vs.length - 1;
+
+				start = end - start;
+
+				if (start < 0)
+					start = 0;
+			}
+
+			if ((first < 0) || (first > start))
+				first = start;
+
+			if ((last < 0) || (last < end))
+				last = end;
+
+			count += (end - start) + 1;
+		}
+
+		responseRange.append('/').append(vs.length);
+
+		response.setHeader("Content-Length", String.valueOf(count));
+		response.setHeader("Content-Range", "bytes " + first + "-" + last + "/" + vs.length);
+		response.setStatus(206); // partial content
+
+		st = new StringTokenizer(range.substring(6), ",");
+
+		while (st.hasMoreTokens()) {
+			final String s = st.nextToken();
+
+			final int idx = s.indexOf('-');
+
+			int start;
+			int end;
+
+			if (idx > 0) {
+				start = Integer.parseInt(s.substring(0, idx));
+
+				if (idx < (s.length() - 1)) {
+					end = Integer.parseInt(s.substring(idx + 1));
+
+					if (end >= vs.length)
+						end = vs.length - 1;
+				}
+				else
+					end = vs.length - 1;
+
+				if (start > end) {
+					response.sendError(416);
+					return -1;
+				}
+			}
+			else {
+				start = Integer.parseInt(s.substring(idx + 1));
+				end = vs.length - 1;
+
+				start = end - start;
+
+				if (start < 0)
+					start = 0;
+			}
+
+			responseOS.write(vs, start, (end - start) + 1);
+		}
+
+		responseOS.flush();
+
+		return count;
 	}
 
 	/**
@@ -410,6 +552,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 
 	/**
 	 * Human-readable double formatting, with groups of 3 digits separated by comma
+	 * 
 	 * @param d
 	 * @return formatted double
 	 */
@@ -441,19 +584,20 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 
 		double d = dValue;
 		int dotplaces = dots;
-		
+
 		String append = "";
-		if (aproximated) {
+		if (aproximated)
 			if (Math.abs(d) > 1000000000) {
 				d /= 1000000000.0;
 				dotplaces = (dotplaces == 0) ? 2 : dotplaces;
 				append = " bilion";
-			} else if (Math.abs(d) > 1000000) {
-				d /= 1000000.0;
-				dotplaces = (dotplaces == 0) ? 2 : dotplaces;
-				append = " milion";
 			}
-		}
+			else
+				if (Math.abs(d) > 1000000) {
+					d /= 1000000.0;
+					dotplaces = (dotplaces == 0) ? 2 : dotplaces;
+					append = " milion";
+				}
 
 		long l = (long) d;
 		double f = Math.abs(d) - Math.abs(l);
@@ -469,11 +613,11 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 
 				if (i < 0)
 					i = sRez.length();
-				
-				if (i==1)
+
+				if (i == 1)
 					sRez = "00" + sRez;
 
-				if (i==2)
+				if (i == 2)
 					sRez = "0" + sRez;
 
 				sRez = "," + sRez;
@@ -518,7 +662,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	}
 
 	/**
-	 * Get the properties value for the given key 
+	 * Get the properties value for the given key
 	 * 
 	 * @param prop
 	 * @param sKey
@@ -539,111 +683,50 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	public static final String pgets(final Properties prop, final String sKey, final String sDefault) {
 		return pgets(prop, sKey, sDefault, true);
 	}
-	
-	/**
-	 * Query cache
-	 */
-	static final HashMap<String, QueryCacheEntry> hmQueryCache = new HashMap<String, QueryCacheEntry>();
-	
-	private static class QueryCacheEntry {
-		final ArrayList<String> value;
-		final long lExpires;
-		
-		QueryCacheEntry(final ArrayList<String> _value, final long _lExpires){
-			value = _value;
-			lExpires = _lExpires;
-		}
-	}
-	
-	private static class QueryCacheCleaner extends Thread {
-		public QueryCacheCleaner(){
-			try{
-				setDaemon(true);
-			}
-			catch (Exception e){
-				// ignore
-			}
-		}
-		
-		@Override
-		public void run(){
-			while (true){
-				final long lNow = NTPDate.currentTimeMillis();
-			
-				synchronized (hmQueryCache){
-					final Iterator<Map.Entry<String, QueryCacheEntry>> it = hmQueryCache.entrySet().iterator();
-					
-					while (it.hasNext()){
-						final Map.Entry<String, QueryCacheEntry> me = it.next();
-						
-						final QueryCacheEntry qce = me.getValue();
-						
-						if (lNow > qce.lExpires)
-							it.remove();
-					}
-				}	
-				
-				try{
-					sleep(5000);
-				}
-				catch (final InterruptedException e){
-					//ignore
-				}
-			}
-		}
-	}
-	
-	static {
-		(new QueryCacheCleaner()).start();
-	}
-	
-	private static final ArrayList<String> getCachedQueryResult(final String sQuery, final boolean bUseQueryCache) {
-		if (bUseQueryCache){
-			QueryCacheEntry qce;
-		
-			synchronized (hmQueryCache){
-				qce = hmQueryCache.get(sQuery);
-			}
 
-			if (qce != null && NTPDate.currentTimeMillis() < qce.lExpires)
-				return qce.value;
+	private static final ExpirationCache<String, ArrayList<String>> queryCache = new ExpirationCache<String, ArrayList<String>>();
+
+	private static final ArrayList<String> getCachedQueryResult(final String sQuery, final boolean bUseQueryCache) {
+		if (bUseQueryCache) {
+			final ArrayList<String> cached = queryCache.get(sQuery);
+
+			if (cached != null)
+				return cached;
 		}
-		
+
 		final ArrayList<String> alValues = new ArrayList<String>();
-		
-		if (!sQuery.toLowerCase().startsWith("select ")){
-			logger.log(Level.WARNING, "Somebody tried to execute an illegal query: "+sQuery);
-			
+
+		if (!sQuery.toLowerCase().startsWith("select ")) {
+			logger.log(Level.WARNING, "Somebody tried to execute an illegal query: " + sQuery);
+
 			return alValues;
 		}
-		
-		final DB db = new DB(sQuery);		
-		
+
+		final DB db = new DB();
+
+		db.setReadOnly(true);
+
+		db.query(sQuery);
+
 		if (logger.isLoggable(Level.FINEST))
 			logger.log(Level.FINEST, sQuery);
-		
-		while (db.moveNext()){
+
+		while (db.moveNext())
 			alValues.add(db.gets(1));
-		}
-		
-		if (bUseQueryCache){
-			final QueryCacheEntry qce = new QueryCacheEntry(alValues, NTPDate.currentTimeMillis() + 1000*30);
-		
-			synchronized (hmQueryCache){
-				hmQueryCache.put(sQuery, qce);
-			}
-		}
+
+		if (bUseQueryCache)
+			queryCache.put(sQuery, alValues, 1000 * 30);
 
 		return alValues;
 	}
-	
+
 	/**
 	 * Get the number of elements in the query cache
 	 * 
 	 * @return number of elements
 	 */
-	public static final int getQueryCacheSize(){
-		return hmQueryCache.size();
+	public static final int getQueryCacheSize() {
+		return queryCache.size();
 	}
 
 	/**
@@ -656,10 +739,10 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @param bProcessQueries
 	 * @return evaluated value
 	 */
-	public static final String parseOption(final Properties prop, final String sKey, String sVal, final String sDefault, final boolean bProcessQueries) {
+	public static final String parseOption(final Properties prop, final String sKey, final String sVal, final String sDefault, final boolean bProcessQueries) {
 		return parseOption(prop, sKey, sVal, sDefault, bProcessQueries, true);
 	}
-	
+
 	/**
 	 * Evaluate the given key
 	 * 
@@ -674,45 +757,46 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	public static final String parseOption(final Properties prop, final String sKey, final String sValDefault, final String sDefault, final boolean bProcessQueries, final boolean bUseQueryCache) {
 		int i = 0;
 
-		//System.err.println("---------");
-		//System.err.println("At the begining there was: sKey='"+sKey+"', sVal='"+sVal+"'");
-		
+		// System.err.println("---------");
+		// System.err.println("At the begining there was: sKey='"+sKey+"', sVal='"+sVal+"'");
+
 		String sVal = sValDefault;
-		
+
 		StringBuilder sbVal = new StringBuilder();
 		String sValSuffix = "";
-		
+
 		while ((i = sVal.indexOf("${")) >= 0) {
-			int i2 = sVal.indexOf("}", i);
+			final int i2 = sVal.indexOf("}", i);
 
 			if (i2 > 0) {
-				String s = sVal.substring(i + 2, i2);
+				final String s = sVal.substring(i + 2, i2);
 
 				if (s.equals(sKey))
 					return sDefault;
-				
+
 				sbVal.append(sVal.substring(0, i));
 				sbVal.append(pgets(prop, s));
 
 				sVal = sVal.substring(i2 + 1);
-			} else
+			}
+			else
 				break;
 		}
-		
-		if (sbVal.length()>0){
+
+		if (sbVal.length() > 0) {
 			// some processing occured here
-			if (sVal.length()>0)
+			if (sVal.length() > 0)
 				sbVal.append(sVal);
-		
+
 			sVal = sbVal.toString();
 			sbVal = new StringBuilder();
 		}
-		
-		//System.err.println("After the {} processing : sVal='"+sVal+"'");
+
+		// System.err.println("After the {} processing : sVal='"+sVal+"'");
 
 		int q;
 
-		while (bProcessQueries && (q = sVal.indexOf("$Q")) >= 0) {
+		while (bProcessQueries && ((q = sVal.indexOf("$Q")) >= 0)) {
 			if (q > 0) {
 				String sValPrefix = sVal.substring(0, q);
 				if (sValPrefix.endsWith(","))
@@ -733,36 +817,36 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 
 			sValSuffix = sVal.substring(p);
 
-			String sQuery = sVal.substring(q + 2, p);
+			final String sQuery = sVal.substring(q + 2, p);
 
 			final ArrayList<String> alValues = getCachedQueryResult(sQuery, bUseQueryCache);
-			
-			for (int j=0; j<alValues.size(); j++){
-				if (j>0)
+
+			for (int j = 0; j < alValues.size(); j++) {
+				if (j > 0)
 					sbVal.append(',');
-				
+
 				sbVal.append(alValues.get(j));
 			}
-			
+
 			sVal = sValSuffix;
 		}
 
-		if (sbVal.length()>0){
+		if (sbVal.length() > 0) {
 			// some processing occurred here
-			if (sVal.length()>0){
+			if (sVal.length() > 0) {
 				if (sbVal.length() > 0)
-					sbVal.append(',');			
-				
+					sbVal.append(',');
+
 				sbVal.append(sVal);
 			}
-		
+
 			sVal = sbVal.toString();
 			sbVal = new StringBuilder();
 		}
 
-		//System.err.println("After the $Q processing : sVal='"+sVal+"'");
+		// System.err.println("After the $Q processing : sVal='"+sVal+"'");
 
-		while (bProcessQueries && (q = sVal.indexOf("$C")) >= 0) {
+		while (bProcessQueries && ((q = sVal.indexOf("$C")) >= 0)) {
 			if (q > 0) {
 				String sValPrefix = sVal.substring(0, q);
 				if (sValPrefix.endsWith(","))
@@ -786,18 +870,18 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 			sVal = sVal.substring(q + 2, p).trim();
 
 			if (sVal.endsWith(";"))
-				sVal = sVal.substring(0, sVal.length()-1);
-			
-			final TreeMap<String, String> tm = new TreeMap<String, String>(); //it's a sorted map
+				sVal = sVal.substring(0, sVal.length() - 1);
+
+			final TreeMap<String, String> tm = new TreeMap<String, String>(); // it's a sorted map
 
 			if (sVal.length() >= 2) {
-				char c = sVal.charAt(0);
+				final char c = sVal.charAt(0);
 
 				sVal = sVal.substring(1).trim();
 
-				monPredicate pred = toPred(sVal);
+				final monPredicate pred = toPred(sVal);
 
-				Vector<?> v = Cache.getLastValues(pred);
+				final Vector<?> v = Cache.getLastValues(pred);
 
 				String s = null;
 
@@ -809,11 +893,11 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 					String sValue;
 
 					long lTime;
-					
-					Object o = v.get(i);
+
+					final Object o = v.get(i);
 
 					if (o instanceof Result) {
-						Result r = (Result) o;
+						final Result r = (Result) o;
 
 						sFarmName = r.FarmName;
 						sClusterName = r.ClusterName;
@@ -821,48 +905,53 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 						sParamName = r.param_name[0];
 						sValue = "" + r.param[0];
 						lTime = r.time;
-					} else if (o instanceof eResult) {
-						eResult r = (eResult) o;
+					}
+					else
+						if (o instanceof eResult) {
+							final eResult r = (eResult) o;
 
-						sFarmName = r.FarmName;
-						sClusterName = r.ClusterName;
-						sNodeName = r.NodeName;
-						sParamName = r.param_name[0];
-						sValue = r.param[0].toString();
-						lTime = r.time;
-					} else if (o instanceof ExtResult) {
-						ExtResult r = (ExtResult) o;
+							sFarmName = r.FarmName;
+							sClusterName = r.ClusterName;
+							sNodeName = r.NodeName;
+							sParamName = r.param_name[0];
+							sValue = r.param[0].toString();
+							lTime = r.time;
+						}
+						else
+							if (o instanceof ExtResult) {
+								final ExtResult r = (ExtResult) o;
 
-						sFarmName = r.FarmName;
-						sClusterName = r.ClusterName;
-						sNodeName = r.NodeName;
-						sParamName = r.param_name[0];
+								sFarmName = r.FarmName;
+								sClusterName = r.ClusterName;
+								sNodeName = r.NodeName;
+								sParamName = r.param_name[0];
 
-						sValue = "" + r.param[0];
-						
-						lTime = r.time;
-					} else	
-						continue;
+								sValue = "" + r.param[0];
+
+								lTime = r.time;
+							}
+							else
+								continue;
 
 					switch (c) {
-						case 'C':
-							s = sClusterName;
-							break;
-						case 'N':
-							s = sNodeName;
-							break;
-						case 'f':
-							s = sParamName;
-							break;
-						case 'v':
-							s = sValue;
-							break;
-						case 't':
-							s = ""+lTime;
-							break;
-						case 'F':
-						default:
-							s = sFarmName;
+					case 'C':
+						s = sClusterName;
+						break;
+					case 'N':
+						s = sNodeName;
+						break;
+					case 'f':
+						s = sParamName;
+						break;
+					case 'v':
+						s = sValue;
+						break;
+					case 't':
+						s = "" + lTime;
+						break;
+					case 'F':
+					default:
+						s = sFarmName;
 					}
 
 					tm.put(s, s);
@@ -879,20 +968,20 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 
 			sVal = sValSuffix;
 		}
-		
-		if (sbVal.length()>0){
+
+		if (sbVal.length() > 0) {
 			// some processing occured here
-			if (sVal.length()>0){
+			if (sVal.length() > 0) {
 				if (sbVal.length() > 0)
-					sbVal.append(',');			
-				
+					sbVal.append(',');
+
 				sbVal.append(sVal);
 			}
-		
+
 			sVal = sbVal.toString();
 		}
-		
-		//System.err.println("After the $C processing : sVal='"+sVal+"'");
+
+		// System.err.println("After the $C processing : sVal='"+sVal+"'");
 
 		return sVal;
 	}
@@ -903,7 +992,8 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @param prop
 	 * @param sKey
 	 * @param sDefault
-	 * @param bProcessQueries whether or not to evaluate the expressions
+	 * @param bProcessQueries
+	 *            whether or not to evaluate the expressions
 	 * @return the value
 	 */
 	public static final String pgets(final Properties prop, final String sKey, final String sDefault, final boolean bProcessQueries) {
@@ -921,26 +1011,26 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @return value
 	 */
 	public static final String pgets(final Properties prop, final String sKey, final String sDefault, final boolean bProcessQueries, final boolean bUseQueryCache) {
-		if (sKey == null || prop==null)
+		if ((sKey == null) || (prop == null))
 			return sDefault;
 
-		final String sPropValue = prop.getProperty(sKey); 
-		
+		final String sPropValue = prop.getProperty(sKey);
+
 		if (sPropValue != null) {
 			final String sVal = sPropValue.trim();
 
 			final String sTemp = parseOption(prop, sKey, sVal, sDefault, bProcessQueries, bUseQueryCache);
 
-			//if (sKey.equals("pivot0_3"))
-			//	System.err.println("sKey="+sKey+", sVal="+sVal+", sTemp="+sTemp+", bProcessQueries="+bProcessQueries);
+			// if (sKey.equals("pivot0_3"))
+			// System.err.println("sKey="+sKey+", sVal="+sVal+", sTemp="+sTemp+", bProcessQueries="+bProcessQueries);
 
 			// cache the compiled value
-			//if (sVal!=null && sTemp!=null && !sVal.equals(sTemp))
-			//    prop.setProperty(sKey, sTemp);
+			// if (sVal!=null && sTemp!=null && !sVal.equals(sTemp))
+			// prop.setProperty(sKey, sTemp);
 
 			return sTemp;
 		}
-		
+
 		return sDefault;
 	}
 
@@ -954,14 +1044,14 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 */
 	public static final boolean pgetb(final Properties prop, final String sKey, final boolean bDefault) {
 		final String s = pgets(prop, sKey);
-		
-		if (s.length()>0){
+
+		if (s.length() > 0) {
 			final char c = s.charAt(0);
-			
-			if (c=='t' || c=='T' || c=='y' || c=='Y' || c=='1')
+
+			if ((c == 't') || (c == 'T') || (c == 'y') || (c == 'Y') || (c == '1'))
 				return true;
-			
-			if (c=='f' || c=='F' || c=='n' || c=='N' || c=='0')
+
+			if ((c == 'f') || (c == 'F') || (c == 'n') || (c == 'N') || (c == '0'))
 				return false;
 		}
 
@@ -979,7 +1069,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	public static final int pgeti(final Properties prop, final String sKey, final int iDefault) {
 		try {
 			return Integer.parseInt(pgets(prop, sKey));
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			return iDefault;
 		}
 	}
@@ -995,7 +1085,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	public static final long pgetl(final Properties prop, final String sKey, final long lDefault) {
 		try {
 			return Long.parseLong(pgets(prop, sKey));
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			return lDefault;
 		}
 	}
@@ -1011,13 +1101,13 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	public static final double pgetd(final Properties prop, final String sKey, final double dDefault) {
 		try {
 			return Double.parseDouble(pgets(prop, sKey));
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			return dDefault;
 		}
 	}
 
-	private static final TimeZone	defaultTimeZone = TimeZone.getTimeZone("GMT");
-	
+	private static final TimeZone defaultTimeZone = TimeZone.getTimeZone("GMT");
+
 	/**
 	 * Get the configured timezone
 	 * 
@@ -1030,7 +1120,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 
 		try {
 			return TimeZone.getTimeZone(pgets(prop, "timezone", "GMT"));
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			System.err.println("Exception converting timezone '" + pgets(prop, "timezone", "GMT") + " : " + e + "(" + e.getMessage() + ")");
 			return defaultTimeZone;
 		}
@@ -1058,9 +1148,9 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @return values
 	 */
 	public static final Vector<String> toVector(final Properties prop, final String sProp1, final String sProp2, final boolean bProcessQueries) {
-		return toVector(prop, sProp1, sProp2, bProcessQueries, true);		
+		return toVector(prop, sProp1, sProp2, bProcessQueries, true);
 	}
-	
+
 	/**
 	 * Get the list of values for a given key
 	 * 
@@ -1079,6 +1169,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 
 	/**
 	 * Convert the value into a list of strings
+	 * 
 	 * @param sVal
 	 * @return list
 	 */
@@ -1091,7 +1182,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 		int i;
 
 		String s = sVal;
-		
+
 		while ((i = s.indexOf(",")) >= 0) {
 			boolean bWasQ = false;
 
@@ -1119,7 +1210,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 			}
 		}
 
-		if (s != null && s.length() > 0)
+		if ((s != null) && (s.length() > 0))
 			v.add(s);
 
 		return v;
@@ -1130,7 +1221,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * 
 	 * @param args
 	 */
-	public static void main(String args[]) {
+	public static void main(final String args[]) {
 		System.err.println(toVector("1,2,3,$Qselect 1,2,3;,4,5,6,12345,$Qanother select(a,b,c)"));
 	}
 
@@ -1145,7 +1236,7 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	}
 
 	/**
-	 * Convert a simple time formatting into an interval in milliseconds 
+	 * Convert a simple time formatting into an interval in milliseconds
 	 * 
 	 * @param s
 	 * @return interval
@@ -1156,42 +1247,42 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 		int i = 0;
 
 		for (; i < s.length(); i++) {
-			char c = s.charAt(i);
+			final char c = s.charAt(i);
 
-			if (c >= '0' && c <= '9') {
-				lRez = lRez * 10 + (c - '0');
-			} else
+			if ((c >= '0') && (c <= '9'))
+				lRez = (lRez * 10) + (c - '0');
+			else
 				break;
 		}
 
 		char cMod = 'm';
 
 		for (; i < s.length(); i++) {
-			char c = s.charAt(i);
+			final char c = s.charAt(i);
 
-			if (c == 's' || c == 'm' || c == 'h' || c == 'd' || c == 'M' || c == 'Y')
+			if ((c == 's') || (c == 'm') || (c == 'h') || (c == 'd') || (c == 'M') || (c == 'Y'))
 				cMod = c;
 		}
 
 		switch (cMod) {
-			case 'Y':
-				lRez *= 365L * 24 * 60 * 60 * 1000;
-				break;
-			case 'M':
-				lRez *= 30L * 24 * 60 * 60 * 1000;
-				break;
-			case 'd':
-				lRez *= 24L * 60 * 60 * 1000;
-				break;
-			case 'h':
-				lRez *= 60 * 60 * 1000;
-				break;
-			case 'm':
-				lRez *= 60 * 1000;
-				break;
-			case 's':
-				lRez *= 1000;
-				break;
+		case 'Y':
+			lRez *= 365L * 24 * 60 * 60 * 1000;
+			break;
+		case 'M':
+			lRez *= 30L * 24 * 60 * 60 * 1000;
+			break;
+		case 'd':
+			lRez *= 24L * 60 * 60 * 1000;
+			break;
+		case 'h':
+			lRez *= 60 * 60 * 1000;
+			break;
+		case 'm':
+			lRez *= 60 * 1000;
+			break;
+		case 's':
+			lRez *= 1000;
+			break;
 		}
 
 		return lRez;
@@ -1217,10 +1308,10 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 */
 	public static final void fillPageFromProperties(final Page p, final Properties prop) {
 		final Iterator<String> it = p.getTagsSet().iterator();
-		
-		while (it.hasNext()){
-			final String sKey =  it.next();
-			
+
+		while (it.hasNext()) {
+			final String sKey = it.next();
+
 			if (prop.containsKey(sKey) && pgetb(prop, sKey + ".visible", true))
 				p.modify(sKey, pgets(prop, sKey));
 		}
@@ -1281,19 +1372,20 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 		int iNumber = 0;
 
 		for (int i = 0; i < s.length(); i++) {
-			char c = s.charAt(i);
+			final char c = s.charAt(i);
 
-			if (c >= '0' && c <= '9')
-				iNumber = iNumber * 16 + (c - '0');
-			else if (c >= 'a' && c <= 'f')
-				iNumber = iNumber * 16 + (c - 'a' + 10);
+			if ((c >= '0') && (c <= '9'))
+				iNumber = (iNumber * 16) + (c - '0');
 			else
-				break;
+				if ((c >= 'a') && (c <= 'f'))
+					iNumber = (iNumber * 16) + ((c - 'a') + 10);
+				else
+					break;
 		}
 
 		return iNumber;
 	}
-	
+
 	/**
 	 * Get the color for a given series as set in the properties
 	 * 
@@ -1312,58 +1404,64 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @param sColorDef
 	 * @return the color
 	 */
-	public static final int[] getRGB(final String sColorDef){
-		if (sColorDef==null)
+	public static final int[] getRGB(final String sColorDef) {
+		if (sColorDef == null)
 			return null;
-		
+
 		String sColor = sColorDef;
-		
+
 		if (sColor.startsWith("#"))
 			sColor = sColor.substring(1);
-	
+
 		sColor = sColor.trim();
-		
-		if (sColor.length()<5)
+
+		if (sColor.length() < 5)
 			return null;
-		
+
 		int red = 0;
 		int green = 0;
 		int blue = 0;
-		
-		if (sColor.matches("[0-9a-fA-F]{6}")){
+
+		if (sColor.matches("[0-9a-fA-F]{6}")) {
 			final int iColor = fromHex(sColor);
 
 			blue = iColor % 256;
-			green = (iColor>>8) % 256;
-			red = (iColor>>16) % 256;
+			green = (iColor >> 8) % 256;
+			red = (iColor >> 16) % 256;
 		}
-		else if (sColor.indexOf(" ") > 0) {
-			final StringTokenizer st = new StringTokenizer(sColor);
+		else
+			if (sColor.indexOf(" ") > 0) {
+				final StringTokenizer st = new StringTokenizer(sColor);
 
-			try {
-				red = Integer.parseInt(st.nextToken());
-				green = Integer.parseInt(st.nextToken());
-				blue = Integer.parseInt(st.nextToken());
-				
-				if (red>255) red=255;
-				if (red<0) red=0;
-				
-				if (green>255) green=255;
-				if (green<0) green=0;
-				
-				if (blue>255) blue=255;
-				if (blue<0) blue=0;
-			} catch (Exception e) {
-				return null;
+				try {
+					red = Integer.parseInt(st.nextToken());
+					green = Integer.parseInt(st.nextToken());
+					blue = Integer.parseInt(st.nextToken());
+
+					if (red > 255)
+						red = 255;
+					if (red < 0)
+						red = 0;
+
+					if (green > 255)
+						green = 255;
+					if (green < 0)
+						green = 0;
+
+					if (blue > 255)
+						blue = 255;
+					if (blue < 0)
+						blue = 0;
+				} catch (final Exception e) {
+					return null;
+				}
 			}
-		}
-		else{
-			return null;
-		}		
-		
-		return new int[]{red, green, blue};
+			else
+				return null;
+
+		return new int[] { red, green, blue };
 	}
-	
+
 	/**
 	 * Convert a string into a color
 	 * 
@@ -1372,11 +1470,11 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @return the color
 	 */
 	public static final java.awt.Color getColor(final String sColor, final java.awt.Color cDefault) {
-		int[] rgb = getRGB(sColor);
-		
-		if (rgb!=null)
+		final int[] rgb = getRGB(sColor);
+
+		if (rgb != null)
 			return ColorFactory.getColor(rgb[0], rgb[1], rgb[2]);
-		
+
 		return cDefault;
 	}
 
@@ -1386,18 +1484,18 @@ public abstract class ServletExtension extends HttpServlet implements SingleThre
 	 * @param cert
 	 * @return the first name of the user, or null
 	 */
-	public static final String getUser(final X509Certificate[] cert){
+	public static final String getUser(final X509Certificate[] cert) {
 		String sUser = null;
 
-	    if (cert!=null && cert.length>0){
-	        final StringTokenizer st = new StringTokenizer(cert[0].getSubjectDN().getName(), " ,=");
+		if ((cert != null) && (cert.length > 0)) {
+			final StringTokenizer st = new StringTokenizer(cert[0].getSubjectDN().getName(), " ,=");
 
-	        if (st.countTokens()>=2){
-	        	st.nextToken();
-	        	sUser = st.nextToken();
-	        }
-	    }
-	    
-	    return sUser;
+			if (st.countTokens() >= 2) {
+				st.nextToken();
+				sUser = st.nextToken();
+			}
+		}
+
+		return sUser;
 	}
 }

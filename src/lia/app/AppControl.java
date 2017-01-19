@@ -1,5 +1,5 @@
 /*
- * $Id: AppControl.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: AppControl.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 
 package lia.app;
@@ -57,7 +57,7 @@ import lia.util.security.FarmMonitorTrustManager;
 public final class AppControl {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(AppControl.class.getName());
+    private static final Logger logger = Logger.getLogger(AppControl.class.getName());
 
     // holds a list with class names for available modules (found in Control/lib )
     static final ConcurrentSkipListSet<String> modules = new ConcurrentSkipListSet<String>();
@@ -113,7 +113,9 @@ public final class AppControl {
             Control_HOME = MonaLisa_HOME + File.separator + "Control";
             initialize();
             _theInstance = new AppControl();
-            if (startMainLoop) startServerSocket();
+            if (startMainLoop) {
+                startServerSocket();
+            }
         }
         return _theInstance;
     }
@@ -123,7 +125,10 @@ public final class AppControl {
         try {
             shouldStartServer = AppConfig.getb("lia.app.AppControl.startLocalServer", false);
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ AppConfig ] [ HANDLED ] lia.app.AppControl.startLocalServer cannot be understand ... will not start listening server", t);
+            logger.log(
+                    Level.WARNING,
+                    " [ AppConfig ] [ HANDLED ] lia.app.AppControl.startLocalServer cannot be understand ... will not start listening server",
+                    t);
         }
         return getInstance(shouldStartServer);
     }
@@ -174,7 +179,7 @@ public final class AppControl {
 
             kmf.init(ks, storepswd);
             tmf.init(ks);
-            ctx.init(kmf.getKeyManagers(), new TrustManager[] { new FarmMonitorTrustManager(ks)}, null);
+            ctx.init(kmf.getKeyManagers(), new TrustManager[] { new FarmMonitorTrustManager(ks) }, null);
             ssf = ctx.getServerSocketFactory();
             ss = (SSLServerSocket) ssf.createServerSocket();
             appControlPort = TCPRangePortExporter.bind(ss);
@@ -201,8 +206,11 @@ public final class AppControl {
             super("( ML ) AppControl SSL Server Thread");
         }
 
+        @Override
         public final void run() {
-            if (ss == null || appControlPort == -1) hasToRun = false;
+            if ((ss == null) || (appControlPort == -1)) {
+                hasToRun = false;
+            }
             while (hasToRun) {
                 try {
                     Socket s = null;
@@ -241,7 +249,7 @@ public final class AppControl {
 
         final ArrayList vurls = new ArrayList();
 
-        for (int i = 0; vf != null && i < vf.length; i++) {
+        for (int i = 0; (vf != null) && (i < vf.length); i++) {
             if (vf[i].isFile() && vf[i].getName().endsWith(".jar")) {
 
                 URL url = null;
@@ -260,7 +268,7 @@ public final class AppControl {
                     // end very nice hack :)
 
                     url = new URL("file://" + vf[i].getAbsolutePath());
-                    ucl = new URLClassLoader(new URL[] { url});
+                    ucl = new URLClassLoader(new URL[] { url });
                 } catch (Throwable t) {
                     logger.log(Level.WARNING, "exception in urlclassloader", t);
                     continue;
@@ -286,8 +294,8 @@ public final class AppControl {
 
                             Class[] vc = c.getInterfaces();
 
-                            for (int j = 0; j < vc.length; j++) {
-                                if (vc[j].getName().equals("lia.app.AppInt")) {
+                            for (Class element : vc) {
+                                if (element.getName().equals("lia.app.AppInt")) {
                                     modules.add(s);
                                     bFound = true;
                                     break;
@@ -329,10 +337,11 @@ public final class AppControl {
 
             // hack only for lia.app.bash.AppBash
             try {
-                if (s != null && s.length() > 0) {
+                if ((s != null) && (s.length() > 0)) {
                     String className = p.getProperty(s);
 
-                    if (className != null && className.length() > 0 && className.indexOf("lia.app.bash.AppBash") != -1) {
+                    if ((className != null) && (className.length() > 0)
+                            && (className.indexOf("lia.app.bash.AppBash") != -1)) {
                         continue;
                     }
                 }
@@ -430,8 +439,8 @@ public final class AppControl {
             if (sCommand.equals("loadedmodules")) {
                 StringBuilder sb = new StringBuilder();
                 sb.append("+OK loaded modules").append(LINE_SEPARATOR);
-                for (final Iterator it = loadedModules.values().iterator(); it.hasNext();) {
-                    final AppInt appInt = (AppInt) it.next();
+                for (Object element : loadedModules.values()) {
+                    final AppInt appInt = (AppInt) element;
                     String appName = null;
                     String confFile = null;
                     int status = -1;
@@ -439,9 +448,11 @@ public final class AppControl {
                         appName = appInt.getName();
                         confFile = appInt.getConfigFile();
                         status = appInt.status();
-                        sb.append(appName).append(" : ").append(confFile).append(" : ").append(status).append(LINE_SEPARATOR);
+                        sb.append(appName).append(" : ").append(confFile).append(" : ").append(status)
+                                .append(LINE_SEPARATOR);
                     } catch (Throwable t) {
-                        exceptionErr = "[ AppCtrl :- dispatch ] got exception processing command  \"loadedmodules\" appName: " + appName + " confFile: " + confFile + " status: " + status;
+                        exceptionErr = "[ AppCtrl :- dispatch ] got exception processing command  \"loadedmodules\" appName: "
+                                + appName + " confFile: " + confFile + " status: " + status;
                         logger.log(Level.WARNING, exceptionErr, t);
                         exceptionErr += " Cause: \n" + Utils.getStackTrace(t);
                         return;
@@ -459,7 +470,7 @@ public final class AppControl {
                 sFile = AppUtils.dec(sFile);
 
                 if (modules.contains(sModule)) {
-                    if (sFile.indexOf("/") >= 0 || sFile.indexOf("\\") >= 0) {
+                    if ((sFile.indexOf("/") >= 0) || (sFile.indexOf("\\") >= 0)) {
                         pw.println("-ERR illegal file name");
                     } else {
                         File f = new File(Control_HOME + File.separator + "conf" + File.separator + sFile);
@@ -504,8 +515,8 @@ public final class AppControl {
                 sModule = AppUtils.dec(sModule);
                 sFile = AppUtils.dec(sFile);
 
-                final AppInt ai = (AppInt) loadedModules.get(sFile);
-                if (ai != null && ai.getName().equals(sModule)) {
+                final AppInt ai = loadedModules.get(sFile);
+                if ((ai != null) && ai.getName().equals(sModule)) {
 
                     loadedModules.remove(sFile);
 
@@ -536,7 +547,9 @@ public final class AppControl {
                 return;
             }
 
-            if (sCommand.equals("start") || sCommand.equals("stop") || sCommand.equals("restart") || sCommand.equals("status") || sCommand.equals("info") || sCommand.equals("exec") || sCommand.equals("update") || sCommand.equals("getconfig") || sCommand.equals("updateconfig")) {
+            if (sCommand.equals("start") || sCommand.equals("stop") || sCommand.equals("restart")
+                    || sCommand.equals("status") || sCommand.equals("info") || sCommand.equals("exec")
+                    || sCommand.equals("update") || sCommand.equals("getconfig") || sCommand.equals("updateconfig")) {
 
                 String sModules = sParams;
                 if (sModules.indexOf(" ") > 0) {
@@ -551,23 +564,26 @@ public final class AppControl {
                 String sName = sModules.substring(0, sModules.indexOf(":")).trim();
                 String sConf = sModules.substring(sModules.indexOf(":") + 1).trim();
 
-                AppInt ai = (AppInt) loadedModules.get(sConf);
-                if (ai != null && ai.getName().equals(sName)) {
+                AppInt ai = loadedModules.get(sConf);
+                if ((ai != null) && ai.getName().equals(sName)) {
                     if (sCommand.equals("start")) {
                         if (ai.start()) {
                             pw.println("+OK started");
-                        } else
+                        } else {
                             pw.println("-ERR cannot start");
+                        }
                     } else if (sCommand.equals("restart")) {
                         if (ai.restart()) {
                             pw.println("+OK restarted");
-                        } else
+                        } else {
                             pw.println("-ERR cannot restart");
+                        }
                     } else if (sCommand.equals("stop")) {
                         if (ai.stop()) {
                             pw.println("+OK stopped");
-                        } else
+                        } else {
                             pw.println("-ERR cannot stop");
+                        }
                     } else if (sCommand.equals("status")) {
                         pw.println("+OK status is");
                         pw.println("" + ai.status());
@@ -580,7 +596,8 @@ public final class AppControl {
                         String ex = ai.exec(AppUtils.dec(sParams));
                         if (ex != null) {
                             while (ex.indexOf("\n.\n") >= 0) {
-                                ex = ex.substring(0, ex.indexOf("\n.\n")) + "\n..\n" + ex.substring(ex.indexOf("\n.\n") + "\n.\n".length());
+                                ex = ex.substring(0, ex.indexOf("\n.\n")) + "\n..\n"
+                                        + ex.substring(ex.indexOf("\n.\n") + "\n.\n".length());
                             }
                         }
                         pw.println(ex);
@@ -593,7 +610,7 @@ public final class AppControl {
                             list.add(AppUtils.dec(st.nextToken()));
                         }
 
-                        if (list.size() > 0 && ai.update((String[]) list.toArray(new String[list.size()]))) {
+                        if ((list.size() > 0) && ai.update((String[]) list.toArray(new String[list.size()]))) {
                             pw.println("+OK update ok");
                         } else {
                             pw.println("-ERR error updating");
@@ -622,11 +639,17 @@ public final class AppControl {
                 sFile = AppUtils.dec(sFile);
                 sContents = AppUtils.dec(sContents);
 
-                if (sFile == null || sFile.length() <= 0 || !sFile.endsWith(".jar") || sContents == null || sContents.length() <= 0) { throw new IOException(""); }
+                if ((sFile == null) || (sFile.length() <= 0) || !sFile.endsWith(".jar") || (sContents == null)
+                        || (sContents.length() <= 0)) {
+                    throw new IOException("");
+                }
 
-                if (sFile.indexOf("/") >= 0 || sFile.indexOf("\\") >= 0) { throw new IOException(""); }
+                if ((sFile.indexOf("/") >= 0) || (sFile.indexOf("\\") >= 0)) {
+                    throw new IOException("");
+                }
 
-                FileOutputStream fos = new FileOutputStream(Control_HOME + File.separator + "lib" + File.separator + sFile);
+                FileOutputStream fos = new FileOutputStream(Control_HOME + File.separator + "lib" + File.separator
+                        + sFile);
                 StringReader sr = new StringReader(sContents);
 
                 char vc[] = new char[1024];
@@ -636,8 +659,9 @@ public final class AppControl {
                 do {
                     r = sr.read(vc, 0, vc.length);
 
-                    for (int i = 0; i < r; i++)
+                    for (int i = 0; i < r; i++) {
                         vb[i] = (byte) vc[i];
+                    }
 
                     fos.write(vb, 0, r);
                 } while (r == vc.length);
@@ -666,7 +690,8 @@ public final class AppControl {
                     pw.println("-ERR error parsing your query");
                     pw.println(exceptionErr);
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ AppControl :- dispatch FINALLY !! ] " + "error trying to send exceptionErr", t);
+                    logger.log(Level.WARNING, " [ AppControl :- dispatch FINALLY !! ] "
+                            + "error trying to send exceptionErr", t);
                 }
             }
 
@@ -746,6 +771,7 @@ public final class AppControl {
             }
         }
 
+        @Override
         public final void run() {
             if (!binit) {
                 logger.log(Level.WARNING, "handler : cannot run, init failed");
@@ -769,5 +795,3 @@ public final class AppControl {
     }
 
 }
-
-

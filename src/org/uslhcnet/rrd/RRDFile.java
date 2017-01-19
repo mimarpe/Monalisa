@@ -20,7 +20,7 @@ import org.uslhcnet.rrd.config.RRDConfigManager;
  */
 public class RRDFile {
 
-    private static final transient Logger logger = Logger.getLogger(RRDFile.class.getName());
+    private static final Logger logger = Logger.getLogger(RRDFile.class.getName());
 
     private final File rrdFile;
 
@@ -95,7 +95,8 @@ public class RRDFile {
             Process p = MLProcess.exec(RRDConfigManager.getInstance().rrdToolCmd() + " " + updateCmd);
             int exitStatus = p.waitFor();
             if (exitStatus != 0) {
-                logger.log(Level.SEVERE, " [ RRDFile ] [ rrdupdate ERROR ] exist status for: " + updateCmd + " was " + exitStatus);
+                logger.log(Level.SEVERE, " [ RRDFile ] [ rrdupdate ERROR ] exist status for: " + updateCmd + " was "
+                        + exitStatus);
             }
         } catch (Throwable t) {
             throw new IOException("Unable to rrdupdate " + rrdFile + ". Cause: ", t);

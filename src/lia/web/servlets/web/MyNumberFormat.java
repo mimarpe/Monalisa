@@ -10,15 +10,15 @@ import lia.web.utils.DoubleFormat;
  *
  */
 public class MyNumberFormat extends java.text.NumberFormat {
-	private static final long	serialVersionUID	= 4361303265954156701L;
+	private static final long serialVersionUID = 4361303265954156701L;
 
-	private boolean	isSize;
+	private boolean isSize;
 
-	private String	sizeIn;
+	private String sizeIn;
 
-	private String	suffix;
+	private String suffix;
 
-	private boolean	bBit;
+	private boolean bBit;
 
 	/**
 	 * @param bSize
@@ -26,19 +26,28 @@ public class MyNumberFormat extends java.text.NumberFormat {
 	 * @param sSuffix
 	 */
 	public MyNumberFormat(final boolean bSize, final String sSizeIn, final String sSuffix) {
+		this(bSize, sSizeIn, sSuffix, sSuffix != null && sSuffix.trim().toLowerCase().indexOf("bps") >= 0);
+	}
+
+	/**
+	 * @param bSize
+	 * @param sSizeIn
+	 * @param sSuffix
+	 * @param inBits 
+	 */
+	public MyNumberFormat(final boolean bSize, final String sSizeIn, final String sSuffix, final boolean inBits) {
 		isSize = bSize;
 		sizeIn = sSizeIn;
 		suffix = sSuffix;
-
-		bBit = sSuffix != null && sSuffix.trim().toLowerCase().indexOf("bps") >= 0;
+		bBit = inBits;
 	}
 
 	@Override
 	public StringBuffer format(final double number, final StringBuffer buffer, final FieldPosition pos) {
 		String sVal = isSize ? (bBit ? DoubleFormat.size_bit(number, sizeIn) : DoubleFormat.size(number, sizeIn)) : DoubleFormat.point(number);
 
-		final StringBuffer toAppendTo = buffer==null ? new StringBuffer() : buffer;
-		
+		final StringBuffer toAppendTo = buffer == null ? new StringBuffer() : buffer;
+
 		if (sVal.toLowerCase().endsWith("b") && (suffix.toLowerCase().startsWith("b") || suffix.length() == 0))
 			sVal = sVal.substring(0, sVal.length() - 1);
 

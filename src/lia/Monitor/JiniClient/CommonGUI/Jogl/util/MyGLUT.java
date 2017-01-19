@@ -7,27 +7,27 @@
 package lia.Monitor.JiniClient.CommonGUI.Jogl.util;
 
 import javax.media.opengl.GL;
+import javax.media.opengl.GL2;
 import javax.media.opengl.GLException;
-
 
 /*
  * Copyright (c) 2003 Sun Microsystems, Inc. All Rights Reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  * - Redistribution of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
- * 
+ *
  * - Redistribution in binary form must reproduce the above copyright
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the distribution.
- * 
+ *
  * Neither the name of Sun Microsystems, Inc. or the names of
  * contributors may be used to endorse or promote products derived from
  * this software without specific prior written permission.
- * 
+ *
  * This software is provided "AS IS," without a warranty of any kind. ALL
  * EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
  * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
@@ -40,11 +40,11 @@ import javax.media.opengl.GLException;
  * DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE THEORY OF LIABILITY,
  * ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE, EVEN IF
  * SUN HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
- * 
+ *
  * You acknowledge that this software is not designed or intended for use
  * in the design, construction, operation or maintenance of any nuclear
  * facility.
- * 
+ *
  * Sun gratefully acknowledges that this software was originally authored
  * and developed by Kenneth Bradley Russell and Christopher John Kline.
  */
@@ -101,7 +101,7 @@ public class MyGLUT {
     94039-7311. <P>
 
     OpenGL(TM) is a trademark of Silicon Graphics, Inc. <P>
-*/
+     */
     /**
      * STROKE fonts variables
      */
@@ -109,7 +109,7 @@ public class MyGLUT {
     public static final int STROKE_MONO_ROMAN = 1;
 
     private static final StrokeFontRec[] strokeFonts = new StrokeFontRec[9];
-    
+
     /**
      * BITMAP fonts variables
      */
@@ -127,316 +127,285 @@ public class MyGLUT {
      * STROKE fonts functions
      */
 
-    public void glutStrokeCharacter(GL gl, int font, char character) {
-      StrokeFontRec fontinfo = getStrokeFont(font);
-      int c = character & 0xFFFF;
-      if (c < 0 || c >= fontinfo.num_chars)
-        return;
-      StrokeCharRec ch = fontinfo.ch[c];
-      if (ch != null) {
-        for (int i = 0; i < ch.num_strokes; i++) {
-          StrokeRec stroke = ch.stroke[i];
-          gl.glBegin(GL.GL_LINE_STRIP);
-          for (int j = 0; j < stroke.num_coords; j++) {
-            CoordRec coord = stroke.coord[j];
-            gl.glVertex2f(coord.x, coord.y);
-          }
-          gl.glEnd();
+    public void glutStrokeCharacter(GL2 gl, int font, char character) {
+        StrokeFontRec fontinfo = getStrokeFont(font);
+        int c = character & 0xFFFF;
+        if ((c < 0) || (c >= fontinfo.num_chars)) {
+            return;
         }
-        gl.glTranslatef(ch.right, 0.0f, 0.0f);
-      }
-    }
-
-    public void glutStrokeString(GL gl, int font, String string) {
-      StrokeFontRec fontinfo = getStrokeFont(font);
-      int len = string.length();
-      for (int pos = 0; pos < len; pos++) {
-        int c = string.charAt(pos) & 0xFFFF;
-        if (c < 0 || c >= fontinfo.num_chars)
-          continue;
         StrokeCharRec ch = fontinfo.ch[c];
         if (ch != null) {
-          for (int i = 0; i < ch.num_strokes; i++) {
-            StrokeRec stroke = ch.stroke[i];
-            gl.glBegin(GL.GL_LINE_STRIP);
-            for (int j = 0; j < stroke.num_coords; j++) {
-              CoordRec coord = stroke.coord[j];
-              gl.glVertex2f(coord.x, coord.y);
+            for (int i = 0; i < ch.num_strokes; i++) {
+                StrokeRec stroke = ch.stroke[i];
+                gl.glBegin(GL.GL_LINE_STRIP);
+                for (int j = 0; j < stroke.num_coords; j++) {
+                    CoordRec coord = stroke.coord[j];
+                    gl.glVertex2f(coord.x, coord.y);
+                }
+                gl.glEnd();
             }
-            gl.glEnd();
-          }
-          gl.glTranslatef(ch.right, 0.0f, 0.0f);
+            gl.glTranslatef(ch.right, 0.0f, 0.0f);
         }
-      }
     }
 
-    public float  glutStrokeWidth( int font, char character) {
-      StrokeFontRec fontinfo = getStrokeFont(font);
-      int c = character & 0xFFFF;
-      if (c < 0 || c >= fontinfo.num_chars)
-        return 0;
-      StrokeCharRec ch = fontinfo.ch[c];
-      if (ch != null)
-        return ch.right;
-      else
-        return 0;
+    public void glutStrokeString(GL2 gl, int font, String string) {
+        StrokeFontRec fontinfo = getStrokeFont(font);
+        int len = string.length();
+        for (int pos = 0; pos < len; pos++) {
+            int c = string.charAt(pos) & 0xFFFF;
+            if ((c < 0) || (c >= fontinfo.num_chars)) {
+                continue;
+            }
+            StrokeCharRec ch = fontinfo.ch[c];
+            if (ch != null) {
+                for (int i = 0; i < ch.num_strokes; i++) {
+                    StrokeRec stroke = ch.stroke[i];
+                    gl.glBegin(GL.GL_LINE_STRIP);
+                    for (int j = 0; j < stroke.num_coords; j++) {
+                        CoordRec coord = stroke.coord[j];
+                        gl.glVertex2f(coord.x, coord.y);
+                    }
+                    gl.glEnd();
+                }
+                gl.glTranslatef(ch.right, 0.0f, 0.0f);
+            }
+        }
     }
-    
-    public float glutStrokeHeightTop( int font)
-    {
+
+    public float glutStrokeWidth(int font, char character) {
+        StrokeFontRec fontinfo = getStrokeFont(font);
+        int c = character & 0xFFFF;
+        if ((c < 0) || (c >= fontinfo.num_chars)) {
+            return 0;
+        }
+        StrokeCharRec ch = fontinfo.ch[c];
+        if (ch != null) {
+            return ch.right;
+        } else {
+            return 0;
+        }
+    }
+
+    public float glutStrokeHeightTop(int font) {
         StrokeFontRec fontinfo = getStrokeFont(font);
         return fontinfo.top;
     }
-    
-    public float glutStrokeHeightBottom( int font)
-    {
+
+    public float glutStrokeHeightBottom(int font) {
         StrokeFontRec fontinfo = getStrokeFont(font);
         return fontinfo.bottom;
     }
-    
-    public float glutStrokeHeight( int font)
-    {
+
+    public float glutStrokeHeight(int font) {
         StrokeFontRec fontinfo = getStrokeFont(font);
-        return fontinfo.top-fontinfo.bottom;
+        return fontinfo.top - fontinfo.bottom;
     }
-    
-    public float glutStrokeHeightInit( int font)
-    {
+
+    public float glutStrokeHeightInit(int font) {
         StrokeFontRec fontinfo = getStrokeFont(font);
         return fontinfo.bottom;
     }
 
     private static StrokeFontRec getStrokeFont(int font) {
-      StrokeFontRec rec = strokeFonts[font];
-      if (rec == null) {
-        switch (font) {
-          case STROKE_ROMAN:
-            rec = GLUTStrokeRoman.glutStrokeRoman;
-            break;
-          case STROKE_MONO_ROMAN:
-            rec = GLUTStrokeMonoRoman.glutStrokeMonoRoman;
-            break;
-          default:
-            throw new GLException("Unknown stroke font number " + font);
+        StrokeFontRec rec = strokeFonts[font];
+        if (rec == null) {
+            switch (font) {
+            case STROKE_ROMAN:
+                rec = GLUTStrokeRoman.glutStrokeRoman;
+                break;
+            case STROKE_MONO_ROMAN:
+                rec = GLUTStrokeMonoRoman.glutStrokeMonoRoman;
+                break;
+            default:
+                throw new GLException("Unknown stroke font number " + font);
+            }
         }
-      }
-      return rec;
+        return rec;
     }
 
-    public float  glutStrokeLength( int font, String string) {
-      StrokeFontRec fontinfo = getStrokeFont(font);
-      float length = 0;
-      int len = string.length();
-      for (int i = 0; i < len; i++) {
-        char c = string.charAt(i);
-        if (c >= 0 && c < fontinfo.num_chars) {
-          StrokeCharRec ch = fontinfo.ch[c];
-          if (ch != null)
-            length += ch.right;
+    public float glutStrokeLength(int font, String string) {
+        StrokeFontRec fontinfo = getStrokeFont(font);
+        float length = 0;
+        int len = string.length();
+        for (int i = 0; i < len; i++) {
+            char c = string.charAt(i);
+            if ((c >= 0) && (c < fontinfo.num_chars)) {
+                StrokeCharRec ch = fontinfo.ch[c];
+                if (ch != null) {
+                    length += ch.right;
+                }
+            }
         }
-      }
-      return length;
+        return length;
     }
-    
+
     /**
      * BITMAP fonts functions
      */
 
-    public void glutBitmapCharacter(GL gl, int font, char character) {
-        int[] swapbytes  = new int[1];
-        int[] lsbfirst   = new int[1];
-        int[] rowlength  = new int[1];
-        int[] skiprows   = new int[1];
+    public void glutBitmapCharacter(GL2 gl, int font, char character) {
+        int[] swapbytes = new int[1];
+        int[] lsbfirst = new int[1];
+        int[] rowlength = new int[1];
+        int[] skiprows = new int[1];
         int[] skippixels = new int[1];
-        int[] alignment  = new int[1];
-        beginBitmap(gl, 
-                    swapbytes,
-                    lsbfirst,
-                    rowlength,
-                    skiprows,
-                    skippixels,
-                    alignment);
+        int[] alignment = new int[1];
+        beginBitmap(gl, swapbytes, lsbfirst, rowlength, skiprows, skippixels, alignment);
         bitmapCharacterImpl(gl, font, character);
-        endBitmap(gl, 
-                  swapbytes,
-                  lsbfirst,
-                  rowlength,
-                  skiprows,
-                  skippixels,
-                  alignment);
-      }
+        endBitmap(gl, swapbytes, lsbfirst, rowlength, skiprows, skippixels, alignment);
+    }
 
-      public void glutBitmapString   (GL gl, int font, String string) {
-        int[] swapbytes  = new int[1];
-        int[] lsbfirst   = new int[1];
-        int[] rowlength  = new int[1];
-        int[] skiprows   = new int[1];
+    public void glutBitmapString(GL2 gl, int font, String string) {
+        int[] swapbytes = new int[1];
+        int[] lsbfirst = new int[1];
+        int[] rowlength = new int[1];
+        int[] skiprows = new int[1];
         int[] skippixels = new int[1];
-        int[] alignment  = new int[1];
-        beginBitmap(gl, 
-                    swapbytes,
-                    lsbfirst,
-                    rowlength,
-                    skiprows,
-                    skippixels,
-                    alignment);
+        int[] alignment = new int[1];
+        beginBitmap(gl, swapbytes, lsbfirst, rowlength, skiprows, skippixels, alignment);
         int len = string.length();
         for (int i = 0; i < len; i++) {
-          bitmapCharacterImpl(gl, font, string.charAt(i));
+            bitmapCharacterImpl(gl, font, string.charAt(i));
         }
-        endBitmap(gl, 
-                  swapbytes,
-                  lsbfirst,
-                  rowlength,
-                  skiprows,
-                  skippixels,
-                  alignment);
-      }
+        endBitmap(gl, swapbytes, lsbfirst, rowlength, skiprows, skippixels, alignment);
+    }
 
-      public int  glutBitmapWidth    (int font, char character) {
+    public int glutBitmapWidth(int font, char character) {
         BitmapFontRec fontinfo = getBitmapFont(font);
         int c = character & 0xFFFF;
-        if (c < fontinfo.first || c >= fontinfo.first + fontinfo.num_chars)
-          return 0;
+        if ((c < fontinfo.first) || (c >= (fontinfo.first + fontinfo.num_chars))) {
+            return 0;
+        }
         BitmapCharRec ch = fontinfo.ch[c - fontinfo.first];
-        if (ch != null)
-          return (int) ch.advance;
-        else
-          return 0;
-      }
+        if (ch != null) {
+            return (int) ch.advance;
+        } else {
+            return 0;
+        }
+    }
 
-      public int  glutBitmapLength   (int font, String string) {
+    public int glutBitmapLength(int font, String string) {
         BitmapFontRec fontinfo = getBitmapFont(font);
         int length = 0;
         int len = string.length();
         for (int pos = 0; pos < len; pos++) {
-          int c = string.charAt(pos) & 0xFFFF;
-          if (c >= fontinfo.first && c < fontinfo.first + fontinfo.num_chars) {
-            BitmapCharRec ch = fontinfo.ch[c - fontinfo.first];
-            if (ch != null)
-              length += ch.advance;
-          }
+            int c = string.charAt(pos) & 0xFFFF;
+            if ((c >= fontinfo.first) && (c < (fontinfo.first + fontinfo.num_chars))) {
+                BitmapCharRec ch = fontinfo.ch[c - fontinfo.first];
+                if (ch != null) {
+                    length += ch.advance;
+                }
+            }
         }
         return length;
-      }
-      
-      public float glutBitmapHeightTop( int font)
-      {
-          float top=0, ch_top;
-          BitmapFontRec fontinfo = getBitmapFont(font);
-//          int length = 0;
-          for (int c = fontinfo.first; c < fontinfo.first + fontinfo.num_chars; c++) {
-              BitmapCharRec ch = fontinfo.ch[c - fontinfo.first];
-              if (ch != null) {
-                ch_top = ch.height-ch.yorig;
-                if ( ch_top > top )
-                    top = ch_top;
-            }
-          }
-          return top;
-      }
-      
-      public float glutBitmapHeightBottom( int font)
-      {
-          float bottom=0, ch_bot;
-          BitmapFontRec fontinfo = getBitmapFont(font);
-//          int length = 0;
-          for (int c = fontinfo.first; c < fontinfo.first + fontinfo.num_chars; c++) {
-              BitmapCharRec ch = fontinfo.ch[c - fontinfo.first];
-              if (ch != null) {
-                ch_bot = -ch.yorig;
-                if ( ch_bot < bottom )
-                    bottom = ch_bot;
-            }
-          }
-          return bottom;
-      }
+    }
 
-      private static void bitmapCharacterImpl(GL gl, int font, char cin) {
+    public float glutBitmapHeightTop(int font) {
+        float top = 0, ch_top;
+        BitmapFontRec fontinfo = getBitmapFont(font);
+        //          int length = 0;
+        for (int c = fontinfo.first; c < (fontinfo.first + fontinfo.num_chars); c++) {
+            BitmapCharRec ch = fontinfo.ch[c - fontinfo.first];
+            if (ch != null) {
+                ch_top = ch.height - ch.yorig;
+                if (ch_top > top) {
+                    top = ch_top;
+                }
+            }
+        }
+        return top;
+    }
+
+    public float glutBitmapHeightBottom(int font) {
+        float bottom = 0, ch_bot;
+        BitmapFontRec fontinfo = getBitmapFont(font);
+        //          int length = 0;
+        for (int c = fontinfo.first; c < (fontinfo.first + fontinfo.num_chars); c++) {
+            BitmapCharRec ch = fontinfo.ch[c - fontinfo.first];
+            if (ch != null) {
+                ch_bot = -ch.yorig;
+                if (ch_bot < bottom) {
+                    bottom = ch_bot;
+                }
+            }
+        }
+        return bottom;
+    }
+
+    private static void bitmapCharacterImpl(GL2 gl, int font, char cin) {
         BitmapFontRec fontinfo = getBitmapFont(font);
         int c = cin & 0xFFFF;
-        if (c < fontinfo.first ||
-            c >= fontinfo.first + fontinfo.num_chars)
-          return;
+        if ((c < fontinfo.first) || (c >= (fontinfo.first + fontinfo.num_chars))) {
+            return;
+        }
         BitmapCharRec ch = fontinfo.ch[c - fontinfo.first];
         if (ch != null) {
-          gl.glBitmap(ch.width, ch.height, ch.xorig, ch.yorig,
-                      ch.advance, 0, ch.bitmap, 0);
+            gl.glBitmap(ch.width, ch.height, ch.xorig, ch.yorig, ch.advance, 0, ch.bitmap, 0);
         }
-      }
+    }
 
-      private static BitmapFontRec getBitmapFont(int font) {
+    private static BitmapFontRec getBitmapFont(int font) {
         BitmapFontRec rec = bitmapFonts[font];
         if (rec == null) {
-          switch (font) {
+            switch (font) {
             case BITMAP_9_BY_15:
-              rec = GLUTBitmap9x15.glutBitmap9By15;
-              break;
+                rec = GLUTBitmap9x15.glutBitmap9By15;
+                break;
             case BITMAP_8_BY_13:
-              rec = GLUTBitmap8x13.glutBitmap8By13;
-              break;
+                rec = GLUTBitmap8x13.glutBitmap8By13;
+                break;
             case BITMAP_TIMES_ROMAN_10:
-              rec = GLUTBitmapTimesRoman10.glutBitmapTimesRoman10;
-              break;
+                rec = GLUTBitmapTimesRoman10.glutBitmapTimesRoman10;
+                break;
             case BITMAP_TIMES_ROMAN_24:
-              rec = GLUTBitmapTimesRoman24.glutBitmapTimesRoman24;
-              break;
+                rec = GLUTBitmapTimesRoman24.glutBitmapTimesRoman24;
+                break;
             case BITMAP_HELVETICA_10:
-              rec = GLUTBitmapHelvetica10.glutBitmapHelvetica10;
-              break;
+                rec = GLUTBitmapHelvetica10.glutBitmapHelvetica10;
+                break;
             case BITMAP_HELVETICA_12:
-              rec = GLUTBitmapHelvetica12.glutBitmapHelvetica12;
-              break;
+                rec = GLUTBitmapHelvetica12.glutBitmapHelvetica12;
+                break;
             case BITMAP_HELVETICA_18:
-              rec = GLUTBitmapHelvetica18.glutBitmapHelvetica18;
-              break;
+                rec = GLUTBitmapHelvetica18.glutBitmapHelvetica18;
+                break;
             default:
-              throw new GLException("Unknown bitmap font number " + font);
-          }
-          bitmapFonts[font] = rec;
+                throw new GLException("Unknown bitmap font number " + font);
+            }
+            bitmapFonts[font] = rec;
         }
         return rec;
-      }
+    }
 
-      private static void beginBitmap(GL gl,
-                                      int[] swapbytes,
-                                      int[] lsbfirst,
-                                      int[] rowlength,
-                                      int[] skiprows,
-                                      int[] skippixels,
-                                      int[] alignment) {
-        gl.glGetIntegerv(GL.GL_UNPACK_SWAP_BYTES, swapbytes,0);
-        gl.glGetIntegerv(GL.GL_UNPACK_LSB_FIRST, lsbfirst,0);
-        gl.glGetIntegerv(GL.GL_UNPACK_ROW_LENGTH, rowlength,0);
-        gl.glGetIntegerv(GL.GL_UNPACK_SKIP_ROWS, skiprows,0);
-        gl.glGetIntegerv(GL.GL_UNPACK_SKIP_PIXELS, skippixels,0);
-        gl.glGetIntegerv(GL.GL_UNPACK_ALIGNMENT, alignment,0);
+    private static void beginBitmap(GL gl, int[] swapbytes, int[] lsbfirst, int[] rowlength, int[] skiprows,
+            int[] skippixels, int[] alignment) {
+        gl.glGetIntegerv(GL2.GL_UNPACK_SWAP_BYTES, swapbytes, 0);
+        gl.glGetIntegerv(GL2.GL_UNPACK_LSB_FIRST, lsbfirst, 0);
+        gl.glGetIntegerv(GL2.GL_UNPACK_ROW_LENGTH, rowlength, 0);
+        gl.glGetIntegerv(GL2.GL_UNPACK_SKIP_ROWS, skiprows, 0);
+        gl.glGetIntegerv(GL2.GL_UNPACK_SKIP_PIXELS, skippixels, 0);
+        gl.glGetIntegerv(GL2.GL_UNPACK_ALIGNMENT, alignment, 0);
         /* Little endian machines (DEC Alpha for example) could
            benefit from setting GL_UNPACK_LSB_FIRST to GL_TRUE
            instead of GL_FALSE, but this would require changing the
            generated bitmaps too. */
-        gl.glPixelStorei(GL.GL_UNPACK_SWAP_BYTES, GL.GL_FALSE);
-        gl.glPixelStorei(GL.GL_UNPACK_LSB_FIRST, GL.GL_FALSE);
-        gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, 0);
-        gl.glPixelStorei(GL.GL_UNPACK_SKIP_ROWS, 0);
-        gl.glPixelStorei(GL.GL_UNPACK_SKIP_PIXELS, 0);
-        gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1);
-      }
+        gl.glPixelStorei(GL2.GL_UNPACK_SWAP_BYTES, GL.GL_FALSE);
+        gl.glPixelStorei(GL2.GL_UNPACK_LSB_FIRST, GL.GL_FALSE);
+        gl.glPixelStorei(GL2.GL_UNPACK_ROW_LENGTH, 0);
+        gl.glPixelStorei(GL2.GL_UNPACK_SKIP_ROWS, 0);
+        gl.glPixelStorei(GL2.GL_UNPACK_SKIP_PIXELS, 0);
+        gl.glPixelStorei(GL2.GL_UNPACK_ALIGNMENT, 1);
+    }
 
-      private static void endBitmap(GL gl,
-                                    int[] swapbytes,
-                                    int[] lsbfirst,
-                                    int[] rowlength,
-                                    int[] skiprows,
-                                    int[] skippixels,
-                                    int[] alignment) {
+    private static void endBitmap(GL gl, int[] swapbytes, int[] lsbfirst, int[] rowlength, int[] skiprows,
+            int[] skippixels, int[] alignment) {
         /* Restore saved modes. */
-        gl.glPixelStorei(GL.GL_UNPACK_SWAP_BYTES, swapbytes[0]);
-        gl.glPixelStorei(GL.GL_UNPACK_LSB_FIRST, lsbfirst[0]);
-        gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, rowlength[0]);
-        gl.glPixelStorei(GL.GL_UNPACK_SKIP_ROWS, skiprows[0]);
-        gl.glPixelStorei(GL.GL_UNPACK_SKIP_PIXELS, skippixels[0]);
-        gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, alignment[0]);
-      }
-    
+        gl.glPixelStorei(GL2.GL_UNPACK_SWAP_BYTES, swapbytes[0]);
+        gl.glPixelStorei(GL2.GL_UNPACK_LSB_FIRST, lsbfirst[0]);
+        gl.glPixelStorei(GL2.GL_UNPACK_ROW_LENGTH, rowlength[0]);
+        gl.glPixelStorei(GL2.GL_UNPACK_SKIP_ROWS, skiprows[0]);
+        gl.glPixelStorei(GL2.GL_UNPACK_SKIP_PIXELS, skippixels[0]);
+        gl.glPixelStorei(GL2.GL_UNPACK_ALIGNMENT, alignment[0]);
+    }
+
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: RSSF.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: RSSF.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.util.security;
 
@@ -35,12 +35,13 @@ public class RSSF implements RMIServerSocketFactory, Serializable {
     private static final long serialVersionUID = 4659681386033348356L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(RSSF.class.getName());
+    private static final Logger logger = Logger.getLogger(RSSF.class.getName());
 
     public static final int CUSTOM_TM = 0;
 
     public static final int DEFAULT_TM = 1;
 
+    @Override
     public int hashCode() {
         int retHash = 0;
 
@@ -65,6 +66,7 @@ public class RSSF implements RMIServerSocketFactory, Serializable {
         return super.hashCode();
     }
 
+    @Override
     public boolean equals(Object o) {
         return this.getClass() == o.getClass();
     }
@@ -131,9 +133,9 @@ public class RSSF implements RMIServerSocketFactory, Serializable {
                 logger.log(Level.FINER, "Tryng to init CTX!");
             }
             if (iTrustManageType == CUSTOM_TM) {
-                ctx.init(kmf.getKeyManagers(), new TrustManager[] { new FarmMonitorTrustManager(ks)}, null);
+                ctx.init(kmf.getKeyManagers(), new TrustManager[] { new FarmMonitorTrustManager(ks) }, null);
             } else {// DEFAULT
-            // default tust-manager (SUN/IBM) makes the standard checks on client;s certificate chain (authentication)
+                // default tust-manager (SUN/IBM) makes the standard checks on client;s certificate chain (authentication)
                 ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
             }
             if (logger.isLoggable(Level.FINER)) {
@@ -155,15 +157,15 @@ public class RSSF implements RMIServerSocketFactory, Serializable {
             if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, "SSocket binding on port " + port);
             }
-            
+
             final String forceIP = AppConfig.getProperty("lia.Monitor.useIPaddress");
-            
-            if(forceIP != null) {
+
+            if (forceIP != null) {
                 ss.bind(new InetSocketAddress(forceIP, port));
             } else {
                 ss.bind(new InetSocketAddress(port));
             }
-            
+
             if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, "SSocket bounded on port " + port);
             }
@@ -183,6 +185,7 @@ public class RSSF implements RMIServerSocketFactory, Serializable {
     }
 
     // standard store in MonALISA
+    @Override
     public ServerSocket createServerSocket(int port) throws IOException {
         return this.createServerSocket(port, AppConfig.getProperty("lia.Monitor.SKeyStore"), CUSTOM_TM);
     }

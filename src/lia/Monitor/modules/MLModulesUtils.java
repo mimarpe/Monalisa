@@ -11,10 +11,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public final class MLModulesUtils {
-    /** Logger Name */
-    private static final String COMPONENT = "lia.Monitor.modules";
-    /** The Logger */ 
-    private static final Logger logger = Logger.getLogger(COMPONENT);
+    /** The Logger */
+    private static final Logger logger = Logger.getLogger(MLModulesUtils.class.getName());
 
     public static BufferedReader TcpCmd(String host, int port, String cmd) {
 
@@ -32,7 +30,7 @@ public final class MLModulesUtils {
             socket.setSoLinger(true, 1);
             socket.setTcpNoDelay(true);
         } catch (Throwable t) {
-            logger.log(Level.SEVERE, "Exception creating socket" + " for "+host+":"+port, t);
+            logger.log(Level.SEVERE, "Exception creating socket" + " for " + host + ":" + port, t);
             cleanup(socket, in, out, buffer);
             return null;
         }
@@ -44,7 +42,7 @@ public final class MLModulesUtils {
             in = new InputStreamReader(buffer, "8859_1");
 
         } catch (Throwable t) {
-            logger.log(Level.SEVERE, "Exception creating Streams" + " for "+host+":"+port, t);
+            logger.log(Level.SEVERE, "Exception creating Streams" + " for " + host + ":" + port, t);
             cleanup(socket, in, out, buffer);
             return null;
         }
@@ -61,10 +59,7 @@ public final class MLModulesUtils {
             while (c > -1) {
                 nb++;
                 //filter non-printable and non-ASCII
-                if ((c >= 32 && c < 127)
-                    || c == '\t'
-                    || c == '\r'
-                    || c == '\n') {
+                if (((c >= 32) && (c < 127)) || (c == '\t') || (c == '\r') || (c == '\n')) {
 
                     answerBuff.append((char) c);
                 }
@@ -76,37 +71,38 @@ public final class MLModulesUtils {
 
             return new BufferedReader(new StringReader(answerBuff.toString()));
 
-        } catch ( Throwable t ) {
-            logger.log( Level.WARNING, "FAILED to execute cmd = " + cmd + " for "+host+":"+port);
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "FAILED to execute cmd = " + cmd + " for " + host + ":" + port);
             cleanup(socket, in, out, buffer);
             return null;
         }
 
     }
-    private static void cleanup(
-        Socket socket,
-        InputStreamReader in,
-        OutputStreamWriter out,
-        BufferedInputStream buffer) {
+
+    private static void cleanup(Socket socket, InputStreamReader in, OutputStreamWriter out, BufferedInputStream buffer) {
 
         try {
 
-            if (out != null)
+            if (out != null) {
                 out.close();
-            if (in != null)
+            }
+            if (in != null) {
                 in.close();
-            if (buffer != null)
+            }
+            if (buffer != null) {
                 buffer.close();
+            }
 
         } catch (Throwable t) {
             logger.log(Level.WARNING, " Failed to clean-up streams ", t);
         }
 
         try {
-            if (socket != null)
+            if (socket != null) {
                 socket.close();
+            }
         } catch (Throwable t) {
-             logger.log(Level.SEVERE, " Failed to close socket!!!! ", t);
+            logger.log(Level.SEVERE, " Failed to close socket!!!! ", t);
         }
 
     }

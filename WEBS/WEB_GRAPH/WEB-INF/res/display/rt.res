@@ -47,7 +47,7 @@
 				<table border=0 cellspacing=0 cellpadding=3 width=100% style="border-bottom: 2px solid #FFFFFF;">
 				    <tr>
 					<td align=right style="padding:0px">
-					    (<a class="link" href="JavaScript:checkall();" class="link">check all</a> | <a class="link" href="JavaScript:uncheckall();" class="link">uncheck all</a>)
+					    (<a class="link" href="JavaScript:checkall();" class="link">select all</a> | <a class="link" href="JavaScript:uncheckall();" class="link">unselect all</a>)
 					</td>
 				    </tr>
 				    <tr>

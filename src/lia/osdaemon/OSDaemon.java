@@ -39,13 +39,13 @@ import net.jini.lookup.ServiceDiscoveryManager;
  */
 public class OSDaemon extends Thread implements XDRMessageNotifier {
 
-    private static final Logger logger = Logger.getLogger("lia.osdaemon.OSDaemon");
+    private static final Logger logger = Logger.getLogger(OSDaemon.class.getName());
     private static final String default_LUDs = "monalisa.cacr.caltech.edu,monalisa.cern.ch";
     private static final Object sync = new Object();
     private static OSDaemon _thisInstance = null;
     private static ServiceDiscoveryManager sdm;
     private static LookupDiscoveryManager ldm;
-    private boolean hasToRun;
+    private final boolean hasToRun;
     private boolean shouldUseJini;
     private XDRGenericComm agentComm;
     private static OSDaemonConfig conf;
@@ -58,11 +58,11 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
      */
     class PipesMux extends Thread implements XDRMessageNotifier {
 
-        private XDRMessageNotifier mainNotif;
+        private final XDRMessageNotifier mainNotif;
         File is;
         File os;
-        private Object syncObj;
-        private boolean stillAlive;
+        private final Object syncObj;
+        private final boolean stillAlive;
         private boolean needToStart;
 
         PipesMux(File is, File os, XDRMessageNotifier mainNotif) {
@@ -75,6 +75,7 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
             this.mainNotif = mainNotif;
         }
 
+        @Override
         public void notifyXDRCommClosed(XDRGenericComm comm) {
             synchronized (syncObj) {
                 needToStart = true;
@@ -83,10 +84,12 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
             this.mainNotif.notifyXDRCommClosed(comm);
         }
 
+        @Override
         public void notifyXDRMessage(XDRMessage xdrMessage, XDRGenericComm comm) {
             this.mainNotif.notifyXDRMessage(xdrMessage, comm);
         }
 
+        @Override
         public void run() {
             while (stillAlive) {
                 try {
@@ -109,8 +112,8 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
             }
         }
     }
-    private static boolean shouldUseSSL = false;
 
+    private static boolean shouldUseSSL = false;
 
     static {
         try {
@@ -188,20 +191,22 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
 
                 new PipesMux(ipf, opf, this).start();
             } else {
-                new XDRTcpServer(Integer.valueOf(conf.getProperty("lia.osdaemon.OSDaemon.listenPort")).intValue(), this).start();
+                new XDRTcpServer(Integer.valueOf(conf.getProperty("lia.osdaemon.OSDaemon.listenPort")).intValue(), this)
+                        .start();
             }
         } catch (Throwable t) {
             logger.log(Level.WARNING, "Cannot start XDRTcpServer");
             System.exit(1);
         }
 
-        if(agentComm == null) {
+        if (agentComm == null) {
             connectToMLCopyAgent();
         }
-        
+
         pool = Executors.newCachedThreadPool();
     }
 
+    @Override
     public void notifyXDRCommClosed(XDRGenericComm comm) {
         String key = comm.getKey();
         System.out.println("OSDaemon - notifyXDRCommClosed removing K = " + key);
@@ -221,13 +226,14 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
             Process pro = null;
             InputStream out = null;
             BufferedReader br = null;
-            pro = MLProcess.exec(new String[]{"mkfifo", pipeName});
+            pro = MLProcess.exec(new String[] { "mkfifo", pipeName });
             pro.waitFor();
         } catch (Throwable t) {
             logger.log(Level.WARNING, "Cannot create named PIPE", t);
         }
     }
 
+    @Override
     public void notifyXDRMessage(XDRMessage xdrMessage, XDRGenericComm comm) {
         if (logger.isLoggable(Level.FINEST)) {
             logger.log(Level.FINEST, " notify() XDRMessage = " + xdrMessage.toString());
@@ -250,7 +256,9 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
                 if (mlpt != null) {
                     mlpt.notify(xdrMessage, comm);
                 } else {
-                    System.out.println(" [ " + System.currentTimeMillis() + " ] " + " Got from agent .... but no task for this id [ \n\n" + xdrMessage.id + " = " + xdrMessage.toString());
+                    System.out.println(" [ " + System.currentTimeMillis() + " ] "
+                            + " Got from agent .... but no task for this id [ \n\n" + xdrMessage.id + " = "
+                            + xdrMessage.toString());
                 }
             }
         } catch (Throwable t) {
@@ -261,7 +269,8 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
     private boolean init() {
         shouldUseJini = true;
         try {
-            shouldUseJini = Boolean.valueOf(conf.getProperty("lia.osdaemon.OSDaemon.shouldUseJini", "true")).booleanValue();
+            shouldUseJini = Boolean.valueOf(conf.getProperty("lia.osdaemon.OSDaemon.shouldUseJini", "true"))
+                    .booleanValue();
         } catch (Throwable t) {
             shouldUseJini = true;
         }
@@ -272,7 +281,7 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
         try {
             // get specified LookupLocators[]
             LookupLocator[] lookupLocators = getLUDSs();
-            if (lookupLocators == null || lookupLocators.length == 0) {
+            if ((lookupLocators == null) || (lookupLocators.length == 0)) {
                 logger.log(Level.SEVERE, "Got null/zero size length lookup locators");
                 return false;
             }
@@ -322,7 +331,7 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
 
     private LookupLocator[] getLUDSs() {
         String[] luslist = conf.getVectorProperty("lia.Monitor.LUSs", default_LUDs);
-        if (luslist == null || luslist.length == 0) {
+        if ((luslist == null) || (luslist.length == 0)) {
             return null;
         }
         int count = luslist.length;
@@ -334,7 +343,8 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
             try {
                 locators[i] = new LookupLocator("jini://" + host);
             } catch (Throwable t) {
-                logger.log(Level.WARNING, "Got exception trying to create LookupLocator(" + host + ")... This is strange, sohuld NOT!!!", t);
+                logger.log(Level.WARNING, "Got exception trying to create LookupLocator(" + host
+                        + ")... This is strange, sohuld NOT!!!", t);
             }
         }
 
@@ -353,7 +363,7 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
 
     private static final Configuration getBasicExportConfig() {
         StringBuilder config = new StringBuilder();
-        String[] options = new String[]{"-"};
+        String[] options = new String[] { "-" };
 
         config.append("import java.net.NetworkInterface;\n");
         config.append("net.jini.discovery.LookupDiscovery {\n");
@@ -379,11 +389,11 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
             String address = conf.getProperty("lia.osdaemon.OSDaemon.MLAgentAddress");
             String portS = conf.getProperty("lia.osdaemon.OSDaemon.MLAgentPort");
 
-
             logger.log(Level.INFO, "Connecting to: " + address + ":" + portS);
-            
-            if (address == null || portS == null) {
-                logger.log(Level.WARNING, " Either lia.osdaemon.OSDaemon.MLAgentAddress " + address + " or lia.osdaemon.OSDaemon.MLAgentPort were null ... cannot connect");
+
+            if ((address == null) || (portS == null)) {
+                logger.log(Level.WARNING, " Either lia.osdaemon.OSDaemon.MLAgentAddress " + address
+                        + " or lia.osdaemon.OSDaemon.MLAgentPort were null ... cannot connect");
                 return;
             }
 
@@ -392,21 +402,26 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
             try {
                 ia = InetAddress.getByName(address);
             } catch (Throwable t) {
-                logger.log(Level.WARNING, " [ OSD ] Got exception trying to determine the address for lia.osdaemon.OSDaemon.MLAgentAddress = " + address + " ... will not connect. Cause: ", t);
+                logger.log(Level.WARNING,
+                        " [ OSD ] Got exception trying to determine the address for lia.osdaemon.OSDaemon.MLAgentAddress = "
+                                + address + " ... will not connect. Cause: ", t);
                 ia = null;
                 return;
             }
-            
+
             try {
                 port = Integer.valueOf(portS).intValue();
-            }catch(Throwable t) {
-                logger.log(Level.WARNING, " [ OSD ] Got exception trying to determine the address for lia.osdaemon.OSDaemon.MLAgentPort = " + portS + " ... will not connect. Cause: ", t);
+            } catch (Throwable t) {
+                logger.log(Level.WARNING,
+                        " [ OSD ] Got exception trying to determine the address for lia.osdaemon.OSDaemon.MLAgentPort = "
+                                + portS + " ... will not connect. Cause: ", t);
                 port = -1;
                 return;
             }
-            
-            if (ia == null || port == -1) {
-                logger.log(Level.WARNING, " [ OSD ] Unable to interpret either the remote address or the remote port...will not connect");
+
+            if ((ia == null) || (port == -1)) {
+                logger.log(Level.WARNING,
+                        " [ OSD ] Unable to interpret either the remote address or the remote port...will not connect");
                 return;
             }
 
@@ -442,6 +457,7 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
         }
     }
 
+    @Override
     public void run() {
         while (hasToRun) {
             try {
@@ -463,7 +479,7 @@ public class OSDaemon extends Thread implements XDRMessageNotifier {
             System.setSecurityManager(new RMISecurityManager());
         }
         OSDaemon osd = getInstance();
-        if(osd.agentComm == null) {
+        if (osd.agentComm == null) {
             logger.log(Level.WARNING, " OSD agent comm still null ... will spawn a thread to reconnect");
         } else {
             logger.log(Level.INFO, " OSD agent comm UP & running");

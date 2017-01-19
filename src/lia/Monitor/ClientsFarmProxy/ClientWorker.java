@@ -1,5 +1,5 @@
 /*
- * $Id: ClientWorker.java 7239 2012-03-29 10:05:35Z ramiro $
+ * $Id: ClientWorker.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.ClientsFarmProxy;
 
@@ -39,13 +39,16 @@ import net.jini.core.lookup.ServiceItem;
  */
 public class ClientWorker extends GenericProxyWorker {
 
-    private static final transient Logger logger = Logger.getLogger(ClientWorker.class.getName());
-    
+    private static final Logger logger = Logger.getLogger(ClientWorker.class.getName());
+
     private static final AtomicLong lastErrNotify = new AtomicLong(0);
 
-    private static final long DT_NOTIFY_COMPRESS_THRESHOLD_NANOS = TimeUnit.MINUTES.toNanos(AppConfig.getl("lia.Monitor.ClientsFarmProxy.ClientWorker.DT_NOTIFY_COMPRESS_THRESHOLD_MINUTES", 45));
-    private static final long DT_NOTIFY_COMPRESS_DURATION_THRESHOLD_NANOS = TimeUnit.SECONDS.toNanos(AppConfig.getl("lia.Monitor.ClientsFarmProxy.ClientWorker.DT_NOTIFY_COMPRESS_DURATION_THRESHOLD_SECONDS", 20));
-    private static final String[] NOTIFY_COMPRESS_RCPTS = AppConfig.getVectorProperty("lia.Monitor.ClientsFarmProxy.ClientWorker.RCPTS", "Ramiro.Voicu@cern.ch");
+    private static final long DT_NOTIFY_COMPRESS_THRESHOLD_NANOS = TimeUnit.MINUTES.toNanos(AppConfig.getl(
+            "lia.Monitor.ClientsFarmProxy.ClientWorker.DT_NOTIFY_COMPRESS_THRESHOLD_MINUTES", 45));
+    private static final long DT_NOTIFY_COMPRESS_DURATION_THRESHOLD_NANOS = TimeUnit.SECONDS.toNanos(AppConfig.getl(
+            "lia.Monitor.ClientsFarmProxy.ClientWorker.DT_NOTIFY_COMPRESS_DURATION_THRESHOLD_SECONDS", 20));
+    private static final String[] NOTIFY_COMPRESS_RCPTS = AppConfig.getVectorProperty(
+            "lia.Monitor.ClientsFarmProxy.ClientWorker.RCPTS", "Ramiro.Voicu@cern.ch");
     private static final AppCtrlSessionManager appCtrlSessMgr = AppCtrlSessionManager.getInstance();
 
     private final Integer myID;
@@ -68,7 +71,7 @@ public class ClientWorker extends GenericProxyWorker {
 
     private long lastMailConfSentBytes = 0;
 
-    private AtomicBoolean notified = new AtomicBoolean(false);
+    private final AtomicBoolean notified = new AtomicBoolean(false);
 
     private long lastMailSentBytes = 0; /*
                                          * bytes couter at last mail send with statistics
@@ -155,11 +158,12 @@ public class ClientWorker extends GenericProxyWorker {
         return notified.get();
     }
 
+    @Override
     public void notifyMessage(Object message) {
 
         final boolean isFinest = logger.isLoggable(Level.FINEST);
         final boolean isFiner = isFinest || logger.isLoggable(Level.FINEST);
-        
+
         if (message != null) {
 
             if (isFinest) {
@@ -178,16 +182,18 @@ public class ClientWorker extends GenericProxyWorker {
 
                         try {
                             final String c = (String) mmcp.ident;
-                            if (c != null && c.startsWith("c")) {
+                            if ((c != null) && c.startsWith("c")) {
                                 compressed.set(true);
                             }
                         } catch (Throwable t) {
                         }
 
                         if (compressed.get()) {
-                            logger.log(Level.INFO, " The client: " + myName + " is a new Client; will receive new config messages");
+                            logger.log(Level.INFO, " The client: " + myName
+                                    + " is a new Client; will receive new config messages");
                         } else {
-                            logger.log(Level.INFO, " The client: " + myName + " is an old client; will NOT receive new config messages");
+                            logger.log(Level.INFO, " The client: " + myName
+                                    + " is an old client; will NOT receive new config messages");
                         }
 
                         try {
@@ -203,14 +209,16 @@ public class ClientWorker extends GenericProxyWorker {
                             synchronized (groupsInterestedIn) {
                                 groupsInterestedIn.clear();
                                 final Vector<String> vr = (Vector<String>) mmcp.result;
-                                if (vr != null)
+                                if (vr != null) {
                                     groupsInterestedIn.addAll(vr);
+                                }
                             }
 
                             startSendConfsThread(v);
                             return;
                         } catch (Throwable ex) {
-                            logger.log(Level.WARNING, " [ ClientWorker ] got exception in notify message processing groups", ex);
+                            logger.log(Level.WARNING,
+                                    " [ ClientWorker ] got exception in notify message processing groups", ex);
                         }
 
                         // end if mmcp.tag.startsWith("proxy")
@@ -228,7 +236,7 @@ public class ClientWorker extends GenericProxyWorker {
 
     } // notifyMessage
 
-
+    @Override
     public void notifyConnectionClosed() {
         if (notified.compareAndSet(false, true)) {
             logger.log(Level.WARNING, "Close connection with client " + toString());
@@ -243,6 +251,7 @@ public class ClientWorker extends GenericProxyWorker {
 
     // moved here from run()
 
+    @Override
     public boolean commInit() {
         if (infoToFile.enabled()) {
             infoToFile.writeToFile((new Date()) + " [ Client ] [" + myName + "] started ! \n\n");
@@ -265,7 +274,10 @@ public class ClientWorker extends GenericProxyWorker {
         } // try - catch
 
         if (infoToFile.enabled()) {
-            infoToFile.writeToFile((new Date()) + "[Client] [" + myName + "] " + " send available farms and configurations took: " + TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - sendConfStart) + " milliseconds and nr. of bytes: " + (getSentBytes() / 1000000d) + "\n\n");
+            infoToFile.writeToFile((new Date()) + "[Client] [" + myName + "] "
+                    + " send available farms and configurations took: "
+                    + TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - sendConfStart)
+                    + " milliseconds and nr. of bytes: " + (getSentBytes() / 1000000d) + "\n\n");
         }
         return true;
     } // commInit
@@ -282,24 +294,25 @@ public class ClientWorker extends GenericProxyWorker {
         return false;
     }
 
+    @Override
     public void processMsg(monMessage o) {
         ptw.sendMsg(o);
     }
-    
+
+    @Override
     public void processMsg(MonMessageClientsProxy o) {
         ptw.sendMsg(o);
     }
-    
+
     public void processMsg1(Object o) {
         try {
             // First send the message and after that do the logging ...
-
 
             /**
              * ---------------------------------------------------------- log in a file how many messages came on this
              * connection
              */
-            if (infoToFile.enabled() && (System.currentTimeMillis() - lastUpdateFileInfo >= 3600000)) {
+            if (infoToFile.enabled() && ((System.currentTimeMillis() - lastUpdateFileInfo) >= 3600000)) {
                 long nrMsg = msgsLastHourContor.getAndSet(0L);
 
                 lastUpdateFileInfo = System.currentTimeMillis();
@@ -308,7 +321,7 @@ public class ClientWorker extends GenericProxyWorker {
 
                 long lastHourMsgsSize = 0;
 
-                if (lastSizeMsg == 0 || lastSizeMsg > sizeMsgs) {
+                if ((lastSizeMsg == 0) || (lastSizeMsg > sizeMsgs)) {
                     lastHourMsgsSize = sizeMsgs;
                 } else {
                     lastHourMsgsSize = sizeMsgs - lastSizeMsg;
@@ -317,16 +330,18 @@ public class ClientWorker extends GenericProxyWorker {
 
                 sizeMsgs = getConfSentBytes();
                 long lastHourConfSize = 0;
-                if (lastConfSizeMsg == 0 || lastConfSizeMsg > sizeMsgs) {
+                if ((lastConfSizeMsg == 0) || (lastConfSizeMsg > sizeMsgs)) {
                     lastHourConfSize = sizeMsgs;
                 } else {
                     lastHourConfSize = sizeMsgs - lastConfSizeMsg;
                 } // if = else
                 lastConfSizeMsg = sizeMsgs;
 
-                infoToFile.writeToFile((new Date()) + " : " + strToFile + nrMsg + "\n\t\t [size] " + (lastHourMsgsSize / 1000000d) + "\n\t\t [conf size] " + (lastHourConfSize / 1000000d) + "\n\n");
+                infoToFile.writeToFile((new Date()) + " : " + strToFile + nrMsg + "\n\t\t [size] "
+                        + (lastHourMsgsSize / 1000000d) + "\n\t\t [conf size] " + (lastHourConfSize / 1000000d)
+                        + "\n\n");
             } // if it passed an hour, write the log information to file
-            
+
             /**
              * finished logging into the file --------------------------------------------------------------
              */
@@ -334,12 +349,12 @@ public class ClientWorker extends GenericProxyWorker {
             /*
              * ------------------------------------------------------------ send with ApMon client msgs rate
              */
-            if (System.currentTimeMillis() - lastClientMsgRate >= 60000) {
+            if ((System.currentTimeMillis() - lastClientMsgRate) >= 60000) {
                 long sizeMsgs = getSentBytes();
 
                 long lastMinMsgRate = 0;
 
-                if (lastRateMsg == 0 || lastRateMsg > sizeMsgs) {
+                if ((lastRateMsg == 0) || (lastRateMsg > sizeMsgs)) {
                     lastMinMsgRate = sizeMsgs;
                 } else {
                     lastMinMsgRate = sizeMsgs - lastRateMsg;
@@ -350,7 +365,7 @@ public class ClientWorker extends GenericProxyWorker {
 
                 sizeMsgs = getConfSentBytes();
                 long lastMinConfRate = 0;
-                if (lastConfRate == 0 || lastConfRate > sizeMsgs) {
+                if ((lastConfRate == 0) || (lastConfRate > sizeMsgs)) {
                     lastMinConfRate = sizeMsgs;
                 } else {
                     lastMinConfRate = sizeMsgs - lastConfRate;
@@ -376,6 +391,7 @@ public class ClientWorker extends GenericProxyWorker {
         return startTime;
     } // getStartTime
 
+    @Override
     public String toString() {
         return "ClientWorker [ " + myName + " ]";
     } // toString
@@ -384,26 +400,29 @@ public class ClientWorker extends GenericProxyWorker {
 
         StringBuilder sb = new StringBuilder();
         final boolean isFinest = logger.isLoggable(Level.FINEST);
-        final boolean isFiner = isFinest || logger.isLoggable(Level.FINER); 
-        final boolean isFine = isFiner || logger.isLoggable(Level.FINER); 
-        
+        final boolean isFiner = isFinest || logger.isLoggable(Level.FINER);
+        final boolean isFine = isFiner || logger.isLoggable(Level.FINER);
+
         final boolean supportsCommpression = this.compressed.get();
-        
-        if(isFine) {
-            sb.append("\n\n [ ClientWorker ] [ Compress ] Started for: ").append(myName).append(" startSendConfsThread for:  ").append(groups);
+
+        if (isFine) {
+            sb.append("\n\n [ ClientWorker ] [ Compress ] Started for: ").append(myName)
+                    .append(" startSendConfsThread for:  ").append(groups);
         }
-        
+
         final Map<ServiceID, MFarmClientConfigInfo> chm = ClientsCommunication.getFarmsConfByGrps(groups);
 
         final Vector<MonMessageClientsProxy> confs = new Vector<MonMessageClientsProxy>();
 
         // send configurations
         for (final MFarmClientConfigInfo mm : chm.values()) {
-            if (mm == null)
+            if (mm == null) {
                 continue;
+            }
             final MonMessageClientsProxy mmcp = mm.getConfigMessage();
-            if (mmcp == null)
+            if (mmcp == null) {
                 continue;
+            }
             if (supportsCommpression) {
                 if (mmcp.result != null) {
                     confs.add(mmcp);
@@ -411,25 +430,26 @@ public class ClientWorker extends GenericProxyWorker {
             } else {
                 ptw.sendMsg(mmcp);
             } // if - else
-            // if (mm != null) ptw.sendMsg(mm);
+              // if (mm != null) ptw.sendMsg(mm);
         } // for
 
         if (supportsCommpression) {
             // serialize confs vector ...
             long startCompress = Utils.nanoNow();
             if (isFiner) {
-                sb.append("\n Before Compress Free Mem: ").append(Runtime.getRuntime().freeMemory()).append(" TotalMem: ").append(Runtime.getRuntime().totalMemory());
+                sb.append("\n Before Compress Free Mem: ").append(Runtime.getRuntime().freeMemory())
+                        .append(" TotalMem: ").append(Runtime.getRuntime().totalMemory());
             }
             ByteArrayOutputStream cBaos = new ByteArrayOutputStream();
             try {
-                
+
             } finally {
                 try {
                     cBaos.close();
                 } catch (IOException e) {
                 } // try - catch
             }
-            
+
             Deflater compressor = new Deflater();
             compressor.setLevel(Deflater.BEST_SPEED);
             DeflaterOutputStream dos = new DeflaterOutputStream(cBaos, compressor);
@@ -445,16 +465,22 @@ public class ClientWorker extends GenericProxyWorker {
             final long dtCompressNanos = Utils.nanoNow() - startCompress;
 
             if (isFiner) {
-                sb.append("\n After compress: Free Mem: ").append(Runtime.getRuntime().freeMemory()).append(" TotalMem: ").append(Runtime.getRuntime().totalMemory());
-                sb.append("\n Compressed size: ").append(compressedData.length).append("\n Compress Time = ").append(TimeUnit.NANOSECONDS.toMillis(dtCompressNanos)).append(" ms");
-                sb.append("\n [ ClientWorker ] [ Compress ] Finish compress for: ").append(myName).append(" @ ").append(new Date().toString()).append("\n\n");
+                sb.append("\n After compress: Free Mem: ").append(Runtime.getRuntime().freeMemory())
+                        .append(" TotalMem: ").append(Runtime.getRuntime().totalMemory());
+                sb.append("\n Compressed size: ").append(compressedData.length).append("\n Compress Time = ")
+                        .append(TimeUnit.NANOSECONDS.toMillis(dtCompressNanos)).append(" ms");
+                sb.append("\n [ ClientWorker ] [ Compress ] Finish compress for: ").append(myName).append(" @ ")
+                        .append(new Date().toString()).append("\n\n");
             }
 
             if (dtCompressNanos >= DT_NOTIFY_COMPRESS_DURATION_THRESHOLD_NANOS) {
                 sb = new StringBuilder();
-                sb.append("\n [ ClientWorker ] [ Compress ] Finish compress for: ").append(myName).append(" @ ").append(new Date().toString()).append("\n\n");
-                sb.append("\n After compress: Free Mem: ").append(Runtime.getRuntime().freeMemory()).append(" TotalMem: ").append(Runtime.getRuntime().totalMemory());
-                sb.append("\n Compressed size: ").append(compressedData.length).append("\n Compress Time = ").append(TimeUnit.NANOSECONDS.toMillis(dtCompressNanos)).append(" ms");
+                sb.append("\n [ ClientWorker ] [ Compress ] Finish compress for: ").append(myName).append(" @ ")
+                        .append(new Date().toString()).append("\n\n");
+                sb.append("\n After compress: Free Mem: ").append(Runtime.getRuntime().freeMemory())
+                        .append(" TotalMem: ").append(Runtime.getRuntime().totalMemory());
+                sb.append("\n Compressed size: ").append(compressedData.length).append("\n Compress Time = ")
+                        .append(TimeUnit.NANOSECONDS.toMillis(dtCompressNanos)).append(" ms");
                 notifyCompressThreshold(sb.toString(), dtCompressNanos);
             }
 
@@ -462,12 +488,13 @@ public class ClientWorker extends GenericProxyWorker {
             MonMessageClientsProxy mm = new MonMessageClientsProxy(monMessage.ML_CONFIG_TAG, null, compressedData, null);
             ptw.sendMsg(mm);
 
-            if(isFine) {
-                sb.append("\n *********** All confs ( ").append(confs.size()).append(") sent to client: ********* \n\n");
-                if(isFiner) {
+            if (isFine) {
+                sb.append("\n *********** All confs ( ").append(confs.size())
+                        .append(") sent to client: ********* \n\n");
+                if (isFiner) {
                     for (final MonMessageClientsProxy mmcp : confs) {
                         sb.append(((MFarm) mmcp.result).name).append(" ");
-                        if(isFinest) {
+                        if (isFinest) {
                             sb.append("\n").append(MFarmConfigUtils.getMFarmDump((MFarm) mmcp.result)).append("\n");
                         }
                     }
@@ -480,11 +507,14 @@ public class ClientWorker extends GenericProxyWorker {
 
     private static final void notifyCompressThreshold(String msg, long durationNanos) {
         final long now = Utils.nanoNow();
-        if (lastErrNotify.get() + DT_NOTIFY_COMPRESS_THRESHOLD_NANOS < now) {
+        if ((lastErrNotify.get() + DT_NOTIFY_COMPRESS_THRESHOLD_NANOS) < now) {
             lastErrNotify.set(now);
             try {
-                MailFactory.getMailSender().sendMessage("support@monalisa.cern.ch", NOTIFY_COMPRESS_RCPTS, 
-                                                        "[proxy(" + ServiceCommunication.getServiceName() + ")] CONFIG COMPRESS THRESHOLD: " + TimeUnit.NANOSECONDS.toMillis(durationNanos) +" ms", msg);
+                MailFactory.getMailSender().sendMessage(
+                        "support@monalisa.cern.ch",
+                        NOTIFY_COMPRESS_RCPTS,
+                        "[proxy(" + ServiceCommunication.getServiceName() + ")] CONFIG COMPRESS THRESHOLD: "
+                                + TimeUnit.NANOSECONDS.toMillis(durationNanos) + " ms", msg);
             } catch (Throwable t) {
                 logger.log(Level.WARNING, "[notifyCompressThreshold] Got exception sending mail", t);
             }

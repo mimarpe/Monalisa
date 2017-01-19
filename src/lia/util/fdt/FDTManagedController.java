@@ -47,7 +47,7 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
     private static final long serialVersionUID = -3640241005236258502L;
 
     /** Logger used by this class */
-    public final transient Logger logger = Logger.getLogger(getClass().getName());
+    protected static final Logger logger = Logger.getLogger(FDTManagedController.class.getName());
 
     static public String OsName = "*";
 
@@ -55,9 +55,10 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
 
     protected MonModuleInfo info;
 
-    private Properties pModuleConfiguration = new Properties();
+    private final Properties pModuleConfiguration = new Properties();
 
-    protected static final String DEFAULT_FDT_CONF_URL = AppConfig.getProperty("fdt.controlURL", "http://monalisa1.cern.ch:8000");
+    protected static final String DEFAULT_FDT_CONF_URL = AppConfig.getProperty("fdt.controlURL",
+            "http://monalisa1.cern.ch:8000");
 
     protected static final String SERVLET_KEY = AppConfig.getProperty("fdt.urlkey", "5s54g^fX");
 
@@ -67,9 +68,11 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
 
     protected static final String FDT_TRACE_CONF = "/Trace";
 
-    protected static final String FDT_CLIENT_CMD_PREFIX = AppConfig.getProperty("fdt.clientCmdPrefix", AppConfig.getProperty("java.home") + "/bin/java -jar %JAR% -c %IP% ");
+    protected static final String FDT_CLIENT_CMD_PREFIX = AppConfig.getProperty("fdt.clientCmdPrefix",
+            AppConfig.getProperty("java.home") + "/bin/java -jar %JAR% -c %IP% ");
 
-    protected static final String FDT_CLIENT_CMD_SUFFIX = AppConfig.getProperty("fdt.clientCmdSuffix", " -lisafdtclient  &>" + AppConfig.getProperty("lia.Monitor.Farm.HOME") + "/fdtclient.log");
+    protected static final String FDT_CLIENT_CMD_SUFFIX = AppConfig.getProperty("fdt.clientCmdSuffix",
+            " -lisafdtclient  &>" + AppConfig.getProperty("lia.Monitor.Farm.HOME") + "/fdtclient.log");
 
     // configuration read from control servlet
     protected Properties pRemoteConfig = new Properties();
@@ -92,6 +95,7 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
      * 
      * @see lia.Monitor.monitor.MonitoringModule#init(lia.Monitor.monitor.MNode, java.lang.String)
      */
+    @Override
     public MonModuleInfo init(MNode node, String args) {
         this.Node = node;
         this.info = new MonModuleInfo();
@@ -111,10 +115,11 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
      */
     protected void init_args(String list) throws Exception {
         String[] splittedArgs = list.split("(\\s)*(;|,)+(\\s)*");
-        for (int i = 0; i < splittedArgs.length; i++) {
-            String[] aKeyValue = splittedArgs[i].split("(\\s)*=(\\s)*");
-            if (aKeyValue.length != 2)
+        for (String splittedArg : splittedArgs) {
+            String[] aKeyValue = splittedArg.split("(\\s)*=(\\s)*");
+            if (aKeyValue.length != 2) {
                 continue;
+            }
             pModuleConfiguration.put(aKeyValue[0], aKeyValue[1]);
         }
     }
@@ -122,6 +127,7 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
     /**
      * @see lia.Monitor.monitor.MonitoringModule#isRepetitive()
      */
+    @Override
     public boolean isRepetitive() {
         return true;
     }
@@ -129,6 +135,7 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
     /**
      * @see lia.Monitor.monitor.MonitoringModule#getNode()
      */
+    @Override
     public MNode getNode() {
         return Node;
     }
@@ -136,6 +143,7 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
     /**
      * @see lia.Monitor.monitor.MonitoringModule#getClusterName()
      */
+    @Override
     public String getClusterName() {
         return Node.getClusterName();
     }
@@ -143,6 +151,7 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
     /**
      * @see lia.Monitor.monitor.MonitoringModule#getFarmName()
      */
+    @Override
     public String getFarmName() {
         return Node.getFarmName();
     }
@@ -150,6 +159,7 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
     /**
      * @see lia.Monitor.monitor.MonitoringModule#getInfo()
      */
+    @Override
     public MonModuleInfo getInfo() {
         return this.info;
     }
@@ -157,10 +167,12 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
     /**
      * @see lia.Monitor.monitor.MonitoringModule#getTaskName()
      */
+    @Override
     public String getTaskName() {
         return info.getName();
     }
 
+    @Override
     public String getOsName() {
         return OsName;
     }
@@ -172,8 +184,9 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
      */
     public Object getBufferedResults() {
         final int size = bufferedResults.size();
-        if (size == 0)
+        if (size == 0) {
             return null;
+        }
         Vector<Result> rV = new Vector<Result>(size);
         bufferedResults.drainTo(rV);
         return rV;
@@ -186,23 +199,26 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
         bufferedResults.add(r);
     }
 
+    @Override
     public List<String> getCommandSet() {
         List<String> lCommandSet = new LinkedList<String>();
         lCommandSet.add("monitorTransfer transfer_id parameter value\n");
         return lCommandSet;
     }
 
+    @Override
     public String getCommandUsage(String command) {
         if (command.equalsIgnoreCase("startTransfer")) {
             return "startTransfer IPsrc IPdst filesz \n\t IPsrc: source address \n\t IPdst: dest address\n\t filesz: size of file to transfer \n\t Request performance improvements for data transfer";
         } else if (command.equalsIgnoreCase("endTransfer")) {
             return "endTransfer: \n\t Request reverting the settings";
-        } else
+        } else {
             return "Unknown command";
+        }
     }
 
     protected static boolean isNull(String prv) {
-        return prv == null || prv.trim().length() == 0;
+        return (prv == null) || (prv.trim().length() == 0);
     }
 
     /** Internals * */
@@ -215,6 +231,7 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
     /**
      * @see lia.util.DynamicThreadPoll.SchJob#stop()
      */
+    @Override
     public boolean stop() {
         try {
             stopFDT();
@@ -231,12 +248,15 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
 
     protected void reportTrace(String ip, String trace) {
         final Properties prop = getModuleConfiguration();
-        final String sFDTTraceURL = prop.getProperty("controlURL", AppConfig.getProperty("fdt.controlURL", DEFAULT_FDT_CONF_URL)) + FDT_TRACE_CONF;
+        final String sFDTTraceURL = prop.getProperty("controlURL",
+                AppConfig.getProperty("fdt.controlURL", DEFAULT_FDT_CONF_URL))
+                + FDT_TRACE_CONF;
         try {
             // Construct data
             String data = URLEncoder.encode("key", "UTF-8") + "=" + URLEncoder.encode(SERVLET_KEY, "UTF-8");
             final String myName = getName();
-            data += "&" + URLEncoder.encode("name", "UTF-8") + "=" + URLEncoder.encode(myName == null ? getMyDetails() : myName, "UTF-8");
+            data += "&" + URLEncoder.encode("name", "UTF-8") + "="
+                    + URLEncoder.encode(myName == null ? getMyDetails() : myName, "UTF-8");
             data += "&" + URLEncoder.encode("target", "UTF-8") + "=" + URLEncoder.encode(ip, "UTF-8");
             data += "&" + URLEncoder.encode("trace", "UTF-8") + "=" + URLEncoder.encode(trace, "UTF-8");
             // Send data
@@ -254,8 +274,9 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
             }
             rd.close();
             wr.close();
-            if (logger.isLoggable(Level.FINEST))
+            if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, "[FDTClient] Tracepath to " + ip + " (" + data + ") sent.");
+            }
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Cannot report trace to URL: " + sFDTTraceURL, e);
         }
@@ -272,16 +293,20 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
         try {
             final Properties prop = getModuleConfiguration();
             final String myName = getName();
-            final String sFDTClientsURL = prop.getProperty("controlURL", AppConfig.getProperty("fdt.controlURL", DEFAULT_FDT_CONF_URL)) + FDT_CLIENTS_CONF;
-            sURL = (sFDTClientsURL + "&machine.name=" + encode(myName == null ? getMyDetails() : myName) + "&machine.hostname=" + encode(getMyDetails()) + "&" + param + "=" + encode(value));
+            final String sFDTClientsURL = prop.getProperty("controlURL",
+                    AppConfig.getProperty("fdt.controlURL", DEFAULT_FDT_CONF_URL))
+                    + FDT_CLIENTS_CONF;
+            sURL = (sFDTClientsURL + "&machine.name=" + encode(myName == null ? getMyDetails() : myName)
+                    + "&machine.hostname=" + encode(getMyDetails()) + "&" + param + "=" + encode(value));
             URL url = new URL(sURL);
             conn = getURLConnection(url);
             conn.connect();
             is = conn.getInputStream();
             isr = new InputStreamReader(is);
             rd = new BufferedReader(isr);
-            while (rd.readLine() != null)
+            while (rd.readLine() != null) {
                 ;
+            }
             rd.close();
         } finally {
             Utils.closeIgnoringException(rd);
@@ -306,7 +331,7 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
     }
 
     /**
-     * Returns a 'unconnected' URLConnection with the cache flags set tot false
+     * Returns a 'unconnected' URLConnection with the cache flags set to false
      * 
      * @param url
      * @return
@@ -319,19 +344,28 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
         return conn;
     }
 
-    protected String getMyHostname() {
-        String myHostname = null;
-        try {
-            myHostname = InetAddress.getLocalHost().toString();
-        } catch (Throwable e) {
-            myHostname = "localhost";
-        }
-        return myHostname;
-    }
+    private String cachedMyHostName = null; 
+    
+	protected String getMyHostname() {
+		if (cachedMyHostName != null)
+			return cachedMyHostName;
+
+		String myHostname = null;
+		try {
+			myHostname = InetAddress.getLocalHost().toString();
+
+			cachedMyHostName = myHostname;
+		} catch (Throwable e) {
+			myHostname = "localhost";
+		}
+
+		return myHostname;
+	}
 
     protected String getMyDetails() {
         String myDetails = getMyHostname();
-        myDetails += "<br>" + System.getProperty("java.version") + " / " + System.getProperty("os.version") + " / " + System.getProperty("os.arch") + " <br> FDTVersion:" + getMyVersion();
+        myDetails += "<br>" + System.getProperty("java.version") + " / " + System.getProperty("os.version") + " / "
+                + System.getProperty("os.arch") + " <br> FDTVersion:" + getMyVersion();
         return myDetails;
     }
 
@@ -349,12 +383,11 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
      * @return
      */
     protected String getName() {
-        return AppConfig.getProperty("MonALISA_ServiceName") == null ? getMyHostname() : AppConfig.getProperty("MonALISA_ServiceName");
+        return AppConfig.getProperty("MonALISA_ServiceName") == null ? getMyHostname() : AppConfig
+                .getProperty("MonALISA_ServiceName");
     }
 
-    private static final String[] SYS_EXTENDED_PATH = new String[] {
-        "PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin"
-    };
+    private static final String[] SYS_EXTENDED_PATH = new String[] { "PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin" };
 
     public StringBuilder getStdoutFirstLines(String cmd, int nLines) throws IOException {
         if (logger.isLoggable(Level.INFO)) {
@@ -368,12 +401,13 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
             int lineCnt = 0;
             if (buff != null) {
                 ret = new StringBuilder();
-                while ((crtLine = buff.readLine()) != null && lineCnt < nLines) {
+                while (((crtLine = buff.readLine()) != null) && (lineCnt < nLines)) {
                     ret.append(crtLine + "\n");
                     lineCnt++;
                 }
-                if (ret.length() == 0)
+                if (ret.length() == 0) {
                     ret = null;
+                }
             }
         } catch (Exception e) {
             if (logger.isLoggable(Level.WARNING)) {
@@ -381,10 +415,12 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
             }
             return null;
         } finally {
-            if (process != null)
+            if (process != null) {
                 process.destroy();
-            if (buff != null)
+            }
+            if (buff != null) {
                 buff.close();
+            }
         }
         return ret;
     }
@@ -392,6 +428,7 @@ public abstract class FDTManagedController extends SchJob implements LisaXDRModu
     /**
      * @see lia.Monitor.monitor.ShutdownReceiver#Shutdown()
      */
+    @Override
     public void Shutdown() {
         if (logger.isLoggable(Level.INFO)) {
             logger.log(Level.INFO, "Stopping module...");

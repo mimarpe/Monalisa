@@ -25,7 +25,7 @@ public class WeightedRRSet extends RRset {
 	/**
 	 * The mapping between Record object and their weights (Double).
 	 */
-	protected final Hashtable htRecords = new Hashtable();
+	protected final Hashtable<Record, Double> htRecords = new Hashtable<Record, Double>();
 	
 	/**
 	 * Default constructor

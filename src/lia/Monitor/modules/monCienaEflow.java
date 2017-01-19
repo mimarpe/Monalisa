@@ -1,6 +1,3 @@
-/*
- * Created on Dec 2, 2008 $Id: monCienaEflow.java 7208 2011-12-04 18:53:48Z ramiro $
- */
 package lia.Monitor.modules;
 
 import java.io.BufferedInputStream;
@@ -47,67 +44,70 @@ import lia.util.telnet.OSTelnetException;
 
 /**
  * Monitoring module for eflow trafic on Ciena CD/CI interfaces
- * 
+ *
  * @author ramiro
  */
 public class monCienaEflow extends cmdExec implements MonitoringModule, Observer {
 
     /**
-     * 
+     *
      */
     private static final long serialVersionUID = -8463006260527278580L;
-    
+
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(monCienaEflow.class.getName());
+    private static final Logger logger = Logger.getLogger(monCienaEflow.class.getName());
     private static final String TL1_CTAG = "eflw";
     private static final String ALL_EFLOWS_CMD = "rtrv-eflow:::eflw;\n";
-    
-    
+
     private static final char IN_OUT_CHAR_DELIMITER = '-';
     private static final String IN_TOKEN = "IN";
     private static final String OUT_TOKEN = "OUT";
-    
+
     File eflowConfFile = null;
 
     String mlEflowClusterName = "MLEFLOWS";
     String mlEflowCounterClusterName = "MLEFLOWS_COUNTERS";
-    
+
     CienaTelnet cienaTL1Conn;
-    
-    private static final AtomicBoolean shouldMonitorPerformance = new AtomicBoolean(AppConfig.getb("lia.Monitor.modules.monCienaEflow.shouldMonitorPerformance", false));
+
+    private static final AtomicBoolean shouldMonitorPerformance = new AtomicBoolean(AppConfig.getb(
+            "lia.Monitor.modules.monCienaEflow.shouldMonitorPerformance", false));
 
     private static final AtomicReference<Properties> mlMappingsReference = new AtomicReference<Properties>();
-    
+
     //K: eflow name; V: EFlowStats
     private final Map<String, EFlowStats> eFlowsMap = new HashMap<String, EFlowStats>();
 
     static {
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
-                shouldMonitorPerformance.set(AppConfig.getb("lia.Monitor.modules.monCienaEflow.shouldMonitorPerformance", false));
+                shouldMonitorPerformance.set(AppConfig.getb(
+                        "lia.Monitor.modules.monCienaEflow.shouldMonitorPerformance", false));
             }
         });
     }
 
     private static final class EFlowsMLMapping {
-        
+
         private static final String getMLMapping(final String eFlowName) {
             final Properties p = mlMappingsReference.get();
-            if(p != null) {
+            if (p != null) {
                 return p.getProperty(eFlowName);
             }
-            
+
             return null;
         }
-        
+
     }
-    
+
     public monCienaEflow() {
         TaskName = "monCienaEflow";
         isRepetitive = true;
     }
 
+    @Override
     public MonModuleInfo init(MNode Node, String args) {
         info = new MonModuleInfo();
         info.name = TaskName;
@@ -115,13 +115,15 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
 
         if (args == null) {
             logger.log(Level.SEVERE, "[ monCienaEflow ] Null params in init. The module is unable to monitor the CD/CI");
-            throw new IllegalArgumentException("[ monCienaEflow ] Null params in init. The module is unable to monitor the CD/CI");
+            throw new IllegalArgumentException(
+                    "[ monCienaEflow ] Null params in init. The module is unable to monitor the CD/CI");
         }
 
         if (args.length() == 0) {
             logger.log(Level.SEVERE,
                     "[ monCienaEflow ] The args list is empty. The module is unable to monitor the CD/CI");
-            throw new IllegalArgumentException("[ monCienaEflow ] The args list is empty. The module is unable to monitor the CD/CI");
+            throw new IllegalArgumentException(
+                    "[ monCienaEflow ] The args list is empty. The module is unable to monitor the CD/CI");
         }
 
         if (args.startsWith("\"")) {
@@ -133,36 +135,44 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
         }
 
         final String[] argsTokens = args.split("(\\s)*;(\\s)*");
-        if (argsTokens != null && argsTokens.length > 0) {
-            for (int i = 0; i < argsTokens.length; i++) {
+        if ((argsTokens != null) && (argsTokens.length > 0)) {
+            for (String argsToken : argsTokens) {
                 try {
-                    final String argT = argsTokens[i].trim();
+                    final String argT = argsToken.trim();
                     if (argT.startsWith("eflowConfFile")) {
                         String[] fileTks = argT.split("(\\s)*=(\\s)*");
-                        if (fileTks == null || fileTks.length != 2) {
-                            logger.log(Level.SEVERE, "[ monCienaEflow ] cannot parse eflowConfFile param [ " + argT + " ]  ... ");
-                            throw new IllegalArgumentException("[ monCienaEflow ] cannot parse eflowConfFile param [ " + argT + " ]  ... ");
+                        if ((fileTks == null) || (fileTks.length != 2)) {
+                            logger.log(Level.SEVERE, "[ monCienaEflow ] cannot parse eflowConfFile param [ " + argT
+                                    + " ]  ... ");
+                            throw new IllegalArgumentException("[ monCienaEflow ] cannot parse eflowConfFile param [ "
+                                    + argT + " ]  ... ");
                         }
 
                         eflowConfFile = new File(fileTks[1]);
 
                         if (!eflowConfFile.exists()) {
-                            logger.log(Level.SEVERE, "[ monCienaEflow ] The eflowConfFile [ " + eflowConfFile + " ] does not exist");
-                            throw new IllegalArgumentException("[ monCienaEflow ] The eflowConfFile [ " + eflowConfFile + " ] does not exist");
+                            logger.log(Level.SEVERE, "[ monCienaEflow ] The eflowConfFile [ " + eflowConfFile
+                                    + " ] does not exist");
+                            throw new IllegalArgumentException("[ monCienaEflow ] The eflowConfFile [ " + eflowConfFile
+                                    + " ] does not exist");
                         }
 
                         if (!eflowConfFile.canRead()) {
-                            logger.log(Level.SEVERE, "[ monCienaEflow ] The eflowConfFile [ " + eflowConfFile + " ] does not have read access");
-                            throw new IllegalArgumentException("[ monCienaEflow ] The eflowConfFile [ " + eflowConfFile + " ] does not have read access");
+                            logger.log(Level.SEVERE, "[ monCienaEflow ] The eflowConfFile [ " + eflowConfFile
+                                    + " ] does not have read access");
+                            throw new IllegalArgumentException("[ monCienaEflow ] The eflowConfFile [ " + eflowConfFile
+                                    + " ] does not have read access");
                         }
 
-                    } else if(argT.startsWith("MLEFLOWS_CLUSTER_NAME")) {
+                    } else if (argT.startsWith("MLEFLOWS_CLUSTER_NAME")) {
                         String[] tks = argT.split("(\\s)*=(\\s)*");
-                        if (tks == null || tks.length != 2) {
-                            logger.log(Level.SEVERE, "[ monCienaEflow ] cannot parse MLEFLOWS_CLUSTER_NAME param [ " + argT + " ]  ... ");
-                            throw new IllegalArgumentException("[ monCienaEflow ] cannot parse MLEFLOWS_CLUSTER_NAME param [ " + argT + " ]  ... ");
+                        if ((tks == null) || (tks.length != 2)) {
+                            logger.log(Level.SEVERE, "[ monCienaEflow ] cannot parse MLEFLOWS_CLUSTER_NAME param [ "
+                                    + argT + " ]  ... ");
+                            throw new IllegalArgumentException(
+                                    "[ monCienaEflow ] cannot parse MLEFLOWS_CLUSTER_NAME param [ " + argT + " ]  ... ");
                         }
-                        
+
                         mlEflowClusterName = tks[1];
                         mlEflowCounterClusterName = mlEflowClusterName + "_COUNTERS";
                     }
@@ -171,13 +181,17 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
                 }
             }
         } else {
-            logger.log(Level.SEVERE, "[ monCienaEflow ] Unable to determine the arguments tokens. The module is unable to monitor the CD/CI");
-            throw new IllegalArgumentException("[ monCienaEflow ] Unable to determine the arguments tokens. The module is unable to monitor the CD/CI");
+            logger.log(Level.SEVERE,
+                    "[ monCienaEflow ] Unable to determine the arguments tokens. The module is unable to monitor the CD/CI");
+            throw new IllegalArgumentException(
+                    "[ monCienaEflow ] Unable to determine the arguments tokens. The module is unable to monitor the CD/CI");
         }
 
         if (eflowConfFile == null) {
-            logger.log(Level.SEVERE, "[ monCienaEflow ] Unable to determine eflowConfFile. The module is unable to monitor the CD/CI");
-            throw new IllegalArgumentException("[ monCienaEflow ] Unable to determine eflowConfFile. The module is unable to monitor the CD/CI");
+            logger.log(Level.SEVERE,
+                    "[ monCienaEflow ] Unable to determine eflowConfFile. The module is unable to monitor the CD/CI");
+            throw new IllegalArgumentException(
+                    "[ monCienaEflow ] Unable to determine eflowConfFile. The module is unable to monitor the CD/CI");
         }
 
         // Just parse the conf file
@@ -185,7 +199,8 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
             reloadConf();
         } catch (Throwable t) {
             logger.log(Level.SEVERE, "[ monCienaEflow ] Got exception parsing the conf files", t);
-            throw new IllegalArgumentException("[ monCienaEflow ] Got exception parsing the conf files: " + t.getMessage());
+            throw new IllegalArgumentException("[ monCienaEflow ] Got exception parsing the conf files: "
+                    + t.getMessage());
         }
 
         try {
@@ -196,23 +211,26 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
             logger.log(Level.SEVERE, "[ monCienaEflow ] Unable to monitor the config files for changes", t);
         }
 
-        logger.log(Level.INFO, " [ monCienaEflow ] mlEflowClusterName=" + mlEflowClusterName + "; mlEflowCounterClusterName=" +mlEflowCounterClusterName);
+        logger.log(Level.INFO, " [ monCienaEflow ] mlEflowClusterName=" + mlEflowClusterName
+                + "; mlEflowCounterClusterName=" + mlEflowCounterClusterName);
         return info;
     }
 
+    @Override
     public MonModuleInfo getInfo() {
         return info;
     }
 
+    @Override
     public String getOsName() {
         return "linux";
     }
 
     private static final String INTF_OCTETS_MARKER = "INTF_IN_OCTETS,";
     private final static int INTF_OCTETS_MARKER_SIZE = INTF_OCTETS_MARKER.length();
-    
-    public Object doProcess() throws Exception {
 
+    @Override
+    public Object doProcess() throws Exception {
 
         final long sTime = Utils.nanoNow();
         ArrayList<Object> al = new ArrayList<Object>();
@@ -221,14 +239,14 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
 
         String line = null;
         String iLine = null;
-        
+
         final Set<EFlowStats> currentFlows = new TreeSet<EFlowStats>();
-        
+
         final Map<String, EFlowStats> currentStrippedFlowsMap = new HashMap<String, EFlowStats>();
         //key String - flow name stripped(without -in or -out)
         //value FDXEFlow
         final Map<String, FDXEFlow> currentDuplexFlows = new HashMap<String, FDXEFlow>();
-        
+
         try {
             if (cienaTL1Conn == null) {
                 cienaTL1Conn = CienaTelnet.getMonitorInstance();
@@ -242,86 +260,98 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
             line = null;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
-                if(line.startsWith("\"") && line.endsWith("\"")) {
+                if (line.startsWith("\"") && line.endsWith("\"")) {
                     final int idx = line.indexOf(":");
-                    if(idx > 0) {
+                    if (idx > 0) {
                         final TL1Response tl1Response = TL1Response.parseLine(line);
-                        
+
                         final String eFlowName = tl1Response.singleParams.get(0);
                         final String sCollectPM = tl1Response.paramsMap.get("COLLECTPM");
-                        final boolean canMonitor = ( sCollectPM != null && sCollectPM.equals("YES") ) ;
+                        final boolean canMonitor = ((sCollectPM != null) && sCollectPM.equals("YES"));
 
                         EFlowStats efws = eFlowsMap.get(eFlowName);
-                        if(efws == null) {
+                        if (efws == null) {
                             efws = new EFlowStats(eFlowName, EFlowsMLMapping.getMLMapping(eFlowName));
                             eFlowsMap.put(eFlowName, efws);
                         }
                         efws.collectPM = canMonitor;
-                        
-                        if(!currentFlows.add(efws)) {
-                            logger.log(Level.WARNING, " [ monCienaEflow ] [ WARNING ] The flow: " + efws + " appeared at least one time before. TL1 response was: \n\n" 
-                                       + sb.toString() 
-                                       + "[ monCienaEflow ] [ END WARNING ] The flow: " + efws + " appeared at least one time before");
+
+                        if (!currentFlows.add(efws)) {
+                            logger.log(Level.WARNING, " [ monCienaEflow ] [ WARNING ] The flow: " + efws
+                                    + " appeared at least one time before. TL1 response was: \n\n" + sb.toString()
+                                    + "[ monCienaEflow ] [ END WARNING ] The flow: " + efws
+                                    + " appeared at least one time before");
                         }
-                        
-                        if(canMonitor) {
+
+                        if (canMonitor) {
                             final int idxEnd = eFlowName.lastIndexOf(IN_OUT_CHAR_DELIMITER);
-                            if(idxEnd > 0 && idxEnd < eFlowName.length() - 2) {
+                            if ((idxEnd > 0) && (idxEnd < (eFlowName.length() - 2))) {
                                 final String endToken = eFlowName.substring(idxEnd + 1);
                                 final boolean isInFlow = endToken.equalsIgnoreCase(IN_TOKEN);
                                 final String strippedFlowName = eFlowName.substring(0, idxEnd);
-                                if( isInFlow ) {
+                                if (isInFlow) {
                                     final EFlowStats outFlow = currentStrippedFlowsMap.remove(strippedFlowName);
-                                    if(outFlow == null) {
+                                    if (outFlow == null) {
                                         currentStrippedFlowsMap.put(strippedFlowName, efws);
                                     } else {
-                                        currentDuplexFlows.put(strippedFlowName, new FDXEFlow(strippedFlowName, efws, outFlow));
+                                        currentDuplexFlows.put(strippedFlowName, new FDXEFlow(strippedFlowName, efws,
+                                                outFlow));
                                     }
                                 } else if (endToken.equalsIgnoreCase(OUT_TOKEN)) {
                                     final EFlowStats inFlow = currentStrippedFlowsMap.remove(strippedFlowName);
-                                    if(inFlow == null) {
+                                    if (inFlow == null) {
                                         currentStrippedFlowsMap.put(strippedFlowName, efws);
                                     } else {
-                                        currentDuplexFlows.put(strippedFlowName, new FDXEFlow(strippedFlowName, inFlow, efws));
+                                        currentDuplexFlows.put(strippedFlowName, new FDXEFlow(strippedFlowName, inFlow,
+                                                efws));
                                     }
                                 } else {
-                                    logger.log(Level.WARNING, " [ monCienaEflow ]  Wrong flow name (the end token does not end in -IN nor -OUT): " + eFlowName + " / strippedFlowName: " + strippedFlowName + " Current response: \n" + sb.toString());
+                                    logger.log(Level.WARNING,
+                                            " [ monCienaEflow ]  Wrong flow name (the end token does not end in -IN nor -OUT): "
+                                                    + eFlowName + " / strippedFlowName: " + strippedFlowName
+                                                    + " Current response: \n" + sb.toString());
                                 }
                             } else {
-                                logger.log(Level.WARNING, " [ monCienaEflow ]  Wrong flow name (not enough chars in the end): " + eFlowName + " Current response: \n" + sb.toString());
+                                logger.log(Level.WARNING,
+                                        " [ monCienaEflow ]  Wrong flow name (not enough chars in the end): "
+                                                + eFlowName + " Current response: \n" + sb.toString());
                             }
-                            
-                            final String cmdToSend = "rtrv-mib-eflow::" + eFlowName + ":" + TL1_CTAG + "::INTF_IN_OCTETS;\n";
-                            if(logger.isLoggable(Level.FINEST)) {
-                                logger.log(Level.FINEST, " [ monCienaEflow ] sending TL1 cmd for eflow: " + eFlowName +  cmdToSend);
+
+                            final String cmdToSend = "rtrv-mib-eflow::" + eFlowName + ":" + TL1_CTAG
+                                    + "::INTF_IN_OCTETS;\n";
+                            if (logger.isLoggable(Level.FINEST)) {
+                                logger.log(Level.FINEST, " [ monCienaEflow ] sending TL1 cmd for eflow: " + eFlowName
+                                        + cmdToSend);
                             }
-                            final StringBuilder iSB = cienaTL1Conn.doCmd(cmdToSend, TL1_CTAG); 
+                            final StringBuilder iSB = cienaTL1Conn.doCmd(cmdToSend, TL1_CTAG);
                             final BufferedReader iReader = new BufferedReader(new StringReader(iSB.toString()));
                             iLine = null;
                             while ((iLine = iReader.readLine()) != null) {
-                                final int idxIntf = iLine.indexOf(INTF_OCTETS_MARKER); 
-                                if(idxIntf > 0) {
-                                    final String sSpeed = iLine.substring(idxIntf + INTF_OCTETS_MARKER_SIZE, iLine.length() - 1);
+                                final int idxIntf = iLine.indexOf(INTF_OCTETS_MARKER);
+                                if (idxIntf > 0) {
+                                    final String sSpeed = iLine.substring(idxIntf + INTF_OCTETS_MARKER_SIZE,
+                                            iLine.length() - 1);
                                     efws.getSpeedAndSetLastValue(sSpeed);
                                 }
                             }
                         } else {
-                            logger.log(Level.WARNING, " [ monCienaEflow ] cannot monitor eFlow: " + eFlowName + " because COLLECTPM != YES ( " + sCollectPM  + " ) ");
+                            logger.log(Level.WARNING, " [ monCienaEflow ] cannot monitor eFlow: " + eFlowName
+                                    + " because COLLECTPM != YES ( " + sCollectPM + " ) ");
                         }
                     }
                 }
             }
 
-
             //return the results in the EFLOWS cluster
-            for(final Iterator<Map.Entry<String, EFlowStats>> it = eFlowsMap.entrySet().iterator();it.hasNext();) {
+            for (final Iterator<Map.Entry<String, EFlowStats>> it = eFlowsMap.entrySet().iterator(); it.hasNext();) {
                 final Map.Entry<String, EFlowStats> entry = it.next();
                 final String eflowName = entry.getKey();
                 final EFlowStats efs = entry.getValue();
-                
+
                 //check for stalled/dead eflows
-                if(!currentFlows.contains(efs)) {
-                    logger.log(Level.INFO, "\n\n [ monCienaEflow ] The eflow: " + eflowName + " is no longer available. Removing it.");
+                if (!currentFlows.contains(efs)) {
+                    logger.log(Level.INFO, "\n\n [ monCienaEflow ] The eflow: " + eflowName
+                            + " is no longer available. Removing it.");
                     it.remove();
                     final eResult er = new eResult();
                     er.FarmName = Node.getFarmName();
@@ -334,17 +364,17 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
                     al.add(er);
                     continue;
                 }
-                
+
                 final double lastSpeed = efs.getLastSpeed();
 
-                if(logger.isLoggable(Level.FINER)) {
+                if (logger.isLoggable(Level.FINER)) {
                     logger.log(Level.FINER, " [ monCienaEflow ] eflow: " + efs);
                 }
-                
-                if(lastSpeed < 0D) {
+
+                if (lastSpeed < 0D) {
                     continue;
                 }
-                
+
                 final Result r = new Result();
                 r.FarmName = Node.getFarmName();
                 r.ClusterName = Node.getClusterName();
@@ -352,22 +382,22 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
                 r.time = now;
                 r.Module = TaskName;
                 r.addSet("Rate", efs.getLastSpeed());
-                r.addSet("CollectPMEnabled", (efs.collectPM)?1:0);
+                r.addSet("CollectPMEnabled", (efs.collectPM) ? 1 : 0);
                 al.add(r);
-                
+
             }
 
-            for(final FDXEFlow fdxFlow : currentDuplexFlows.values()) {
+            for (final FDXEFlow fdxFlow : currentDuplexFlows.values()) {
                 final double inSpeed = fdxFlow.inFlow.getLastSpeed();
-                if(inSpeed < 0D) {
+                if (inSpeed < 0D) {
                     continue;
                 }
                 final double outSpeed = fdxFlow.outFlow.getLastSpeed();
-                if(outSpeed < 0D) {
+                if (outSpeed < 0D) {
                     continue;
                 }
                 final String mlEflowName = EFlowsMLMapping.getMLMapping(fdxFlow.name);
-                if(mlEflowName != null) {
+                if (mlEflowName != null) {
                     final Result mlr = new Result();
                     mlr.FarmName = Node.getFarmName();
                     mlr.ClusterName = mlEflowClusterName;
@@ -377,23 +407,28 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
                     mlr.addSet(mlEflowName + "_IN", inSpeed);
                     mlr.addSet(mlEflowName + "_OUT", outSpeed);
                     al.add(mlr);
-                    
-                    final Result counterResult =  new Result();
+
+                    final Result counterResult = new Result();
                     counterResult.ClusterName = mlEflowCounterClusterName;
                     counterResult.NodeName = Node.getName();
                     counterResult.time = now;
                     counterResult.Module = TaskName;
-                    counterResult.addSet(mlEflowName + "_IN", UnsignedLong.valueOf(fdxFlow.inFlow.lastCounterValue()).doubleValue());
-                    counterResult.addSet(mlEflowName + "_OUT", UnsignedLong.valueOf(fdxFlow.outFlow.lastCounterValue()).doubleValue());
+                    counterResult.addSet(mlEflowName + "_IN", UnsignedLong.valueOf(fdxFlow.inFlow.lastCounterValue())
+                            .doubleValue());
+                    counterResult.addSet(mlEflowName + "_OUT", UnsignedLong.valueOf(fdxFlow.outFlow.lastCounterValue())
+                            .doubleValue());
                     al.add(counterResult);
                 }
             }
         } catch (OSTelnetException ost) {
-            logger.log(Level.WARNING, "[ monCienaEflow ] got exception in doProcess()\n line: " + line + "\n iLine: " + iLine + "\n remote response: " + ost.getRemoteResponse(), ost);
+            logger.log(Level.WARNING, "[ monCienaEflow ] got exception in doProcess()\n line: " + line + "\n iLine: "
+                    + iLine + "\n remote response: " + ost.getRemoteResponse(), ost);
             throw new Exception(ost);
         } finally {
             if (logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, "[ monCienaEflow ] doProcess took: " + TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - sTime) + " millis");
+                logger.log(Level.FINER,
+                        "[ monCienaEflow ] doProcess took: " + TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - sTime)
+                        + " millis");
             }
 
         }
@@ -402,33 +437,34 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
             logger.log(Level.FINE, "[ monCienaEflow ] returning: " + al);
         }
 
-//        if (shouldMonitorPerformance.get()) {
-//            retV = new Vector(al.size() + 1);
-//            retV.addAll(al);
-//            //final stats
-//            try {
-//                Result r = new Result();
-//                r.time = now;
-//                r.FarmName = getFarmName();
-//                r.ClusterName = Node.getClusterName() + "_PerfStat";
-//                r.NodeName = "TL1_EthIO_Stat";
-//                r.Module = TaskName;
-//                r.addSet("TL1Delay", allTlPerf);
-//                r.addSet("TotalMLTime", TimeUnit.NANOSECONDS.toMillis(Utils.nanoTime() - sPerfTime));
-//                r.addSet("TotalTL1CmdS", cmdNo);
-//                retV.add(r);
-//            } catch (Throwable t) {
-//                logger.log(Level.WARNING, " [ monCienaAlm ] Unable to publish performance measurements", t);
-//            }
-//        } else {
-//        }
+        //        if (shouldMonitorPerformance.get()) {
+        //            retV = new Vector(al.size() + 1);
+        //            retV.addAll(al);
+        //            //final stats
+        //            try {
+        //                Result r = new Result();
+        //                r.time = now;
+        //                r.FarmName = getFarmName();
+        //                r.ClusterName = Node.getClusterName() + "_PerfStat";
+        //                r.NodeName = "TL1_EthIO_Stat";
+        //                r.Module = TaskName;
+        //                r.addSet("TL1Delay", allTlPerf);
+        //                r.addSet("TotalMLTime", TimeUnit.NANOSECONDS.toMillis(Utils.nanoTime() - sPerfTime));
+        //                r.addSet("TotalTL1CmdS", cmdNo);
+        //                retV.add(r);
+        //            } catch (Throwable t) {
+        //                logger.log(Level.WARNING, " [ monCienaAlm ] Unable to publish performance measurements", t);
+        //            }
+        //        } else {
+        //        }
 
-        if(logger.isLoggable(Level.FINEST)) {
+        if (logger.isLoggable(Level.FINEST)) {
             logger.log(Level.FINEST, " [ monCienaElfow ] returning: " + al);
         }
         return al;
     }
 
+    @Override
     public void update(Observable o, Object arg) {
         try {
             reloadConf();
@@ -437,7 +473,7 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
         }
 
     }
-    
+
     private final void reloadConf() throws IOException {
         final Properties p = new Properties();
         FileInputStream fis = null;
@@ -470,15 +506,13 @@ public class monCienaEflow extends cmdExec implements MonitoringModule, Observer
         }
 
         System.out.println("Using hostname= " + host + " IPaddress=" + ad);
-        aa.init(new MNode(host, ad, new MCluster("CMap", null), null),
-                "eflowConfFile=/home/ramiro/eflowConfFile");
+        aa.init(new MNode(host, ad, new MCluster("CMap", null), null), "eflowConfFile=/home/ramiro/eflowConfFile");
 
         try {
-            for (int k = 0; k <
-                    10000; k++) {
+            for (int k = 0; k < 10000; k++) {
                 System.out.println(" Long.MAX_VAL = " + Long.MAX_VALUE);
                 Collection<Object> bb = (Collection<Object>) aa.doProcess();
-                for (final Object o: bb) {
+                for (final Object o : bb) {
                     System.out.println(o);
                 }
 

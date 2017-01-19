@@ -16,7 +16,7 @@ import lia.web.utils.Formatare;
 public class AppMonC implements lia.app.AppInt {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(AppMonC.class.getName());
+    private static final Logger logger = Logger.getLogger(AppMonC.class.getName());
 
     /**
      * Configuration file
@@ -31,31 +31,36 @@ public class AppMonC implements lia.app.AppInt {
     /**
      * Configuration options description
      */
-    public static final String sConfigOptions = "########### Required parameters : ########\n" + "#bash=/path/to/bash (default is /bin/bash)\n"
-            + "##########################################\n\n";
+    public static final String sConfigOptions = "########### Required parameters : ########\n"
+            + "#bash=/path/to/bash (default is /bin/bash)\n" + "##########################################\n\n";
 
     /**
      * Path to bash
      */
     String sBash = "/bin/bash";
 
+    @Override
     public boolean start() {
         return true;
     }
 
+    @Override
     public boolean stop() {
         return true;
     }
 
+    @Override
     public boolean restart() {
         return true;
     }
 
+    @Override
     public int status() {
         String s = exec(sBash + " --version");
 
-        if (s == null || s.length() <= 0)
+        if ((s == null) || (s.length() <= 0)) {
             return AppUtils.APP_STATUS_STOPPED;
+        }
 
         s = s.replace('\n', ' ');
         s = s.replace('\r', ' ');
@@ -66,6 +71,7 @@ public class AppMonC implements lia.app.AppInt {
         return AppUtils.APP_STATUS_UNKNOWN;
     }
 
+    @Override
     public String info() {
         // xml with the version & stuff
         StringBuilder sb = new StringBuilder();
@@ -78,7 +84,8 @@ public class AppMonC implements lia.app.AppInt {
                 s = s.substring(s.indexOf("version") + "version".length()).trim();
                 s = s.substring(0, s.indexOf(" ")).trim();
 
-                sb.append("<key name=\"version\" value=\"" + AppUtils.enc(s) + "\" line=\"1\" read=\"true\" write=\"false\"/>\n");
+                sb.append("<key name=\"version\" value=\"" + AppUtils.enc(s)
+                        + "\" line=\"1\" read=\"true\" write=\"false\"/>\n");
             }
         } catch (Exception e) {
             // ignore
@@ -90,15 +97,14 @@ public class AppMonC implements lia.app.AppInt {
         return sb.toString();
     }
 
+    @Override
     public String exec(final String sCmd) {
 
         Throwable exc = null;
         try {
             final String s = Formatare.replace(sCmd, "\"", "\\\"");
 
-            return AppUtils.getOutput(new String[] {
-                    sBash, "-c", s
-            });
+            return AppUtils.getOutput(new String[] { sBash, "-c", s });
         } catch (Throwable t) {
             exc = t;
             if (logger.isLoggable(Level.FINEST)) {
@@ -112,6 +118,7 @@ public class AppMonC implements lia.app.AppInt {
     /**
      * @param sUpdate
      */
+    @Override
     public boolean update(String sUpdate) {
         return true;
     }
@@ -119,10 +126,12 @@ public class AppMonC implements lia.app.AppInt {
     /**
      * @param sUpdate
      */
+    @Override
     public boolean update(String sUpdate[]) {
         return true;
     }
 
+    @Override
     public String getConfiguration() {
         StringBuilder sb = new StringBuilder();
 
@@ -139,24 +148,28 @@ public class AppMonC implements lia.app.AppInt {
         return sb.toString();
     }
 
+    @Override
     public boolean updateConfiguration(String s) {
         return AppUtils.updateConfig(sFile, s) && init(sFile);
     }
 
+    @Override
     public boolean init(String sPropFile) {
         sFile = sPropFile;
         AppUtils.getConfig(prop, sFile);
 
-        if (prop.getProperty("bash") != null && prop.getProperty("bash").length() > 0) {
+        if ((prop.getProperty("bash") != null) && (prop.getProperty("bash").length() > 0)) {
             sBash = prop.getProperty("bash");
         }
         return true;
     }
 
+    @Override
     public String getName() {
         return "lia.app.monc.AppMonC";
     }
 
+    @Override
     public String getConfigFile() {
         return sFile;
     }

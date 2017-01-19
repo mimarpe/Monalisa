@@ -17,112 +17,126 @@ import lia.app.AppUtils;
  */
 public class AppTransfer implements lia.app.AppInt {
 
-	/** Logger used by this class */
-	public final transient Logger logger = Logger.getLogger(getClass().getName());
-	
-	/** Path to the AppTransfer's config file **/
-	private String configFile;
-	
-	/** 
-	 * Global properties for AppTransfer and its used protocols. The protocols' parameters
-	 * are prefixed with the protocol's name + ".".
-	 */
-	private Properties prop;
+    /** Logger used by this class */
+    private static final Logger logger = Logger.getLogger(AppTransfer.class.getName());
 
-	
-	/** Is the App started ? */
-	private boolean bRunning;
-		
-	/** Create the AppTransfer */
-	public AppTransfer() {
-		prop = new Properties();
-		bRunning = false;
-		logger.info("AppTransfer created.");
-	}
-	
-	public boolean start() {
-		bRunning = true;
-		return true;
-	}
+    /** Path to the AppTransfer's config file **/
+    private String configFile;
 
-	public boolean stop() {
-		bRunning = false;
-		logger.info("Stopping AppTransfer on admin request.");
-		ProtocolManager.getInstance().shutdownProtocols();
-		return true;
-	}
+    /** 
+     * Global properties for AppTransfer and its used protocols. The protocols' parameters
+     * are prefixed with the protocol's name + ".".
+     */
+    private final Properties prop;
 
-	public boolean restart() {
-		return stop() && start();
-	}
+    /** Is the App started ? */
+    private boolean bRunning;
 
-	public int status() {
-		return bRunning ? AppUtils.APP_STATUS_RUNNING : AppUtils.APP_STATUS_STOPPED;
-	}
+    /** Create the AppTransfer */
+    public AppTransfer() {
+        prop = new Properties();
+        bRunning = false;
+        logger.info("AppTransfer created.");
+    }
 
-	public String info() {
-		// xml with the version & stuff
-		StringBuilder sb = new StringBuilder();
-		sb.append("<config app=\"Transfer\">\n");
-		sb.append("<file name=\"info\">\n");
-		
-		//TODO: add info from each protocol
-		sb.append("Protocol info to be added.");
+    @Override
+    public boolean start() {
+        bRunning = true;
+        return true;
+    }
 
-		sb.append("</file>");
-		sb.append("</config>");
-		logger.info("info called; returning "+sb.toString());
-		return sb.toString();
-	}
+    @Override
+    public boolean stop() {
+        bRunning = false;
+        logger.info("Stopping AppTransfer on admin request.");
+        ProtocolManager.getInstance().shutdownProtocols();
+        return true;
+    }
 
-	public String exec(String sCmd) {
-		if(logger.isLoggable(Level.FINER))
-			logger.finer("Executing command '"+sCmd+"'");
-		String result = ProtocolManager.getInstance().execCommand(sCmd);
-		if(logger.isLoggable(Level.FINER))
-			logger.finer("Command finished with:\n"+result);
-		return result;
-	}
+    @Override
+    public boolean restart() {
+        return stop() && start();
+    }
 
-	public boolean update(String sUpdate) {
-		return true;
-	}
+    @Override
+    public int status() {
+        return bRunning ? AppUtils.APP_STATUS_RUNNING : AppUtils.APP_STATUS_STOPPED;
+    }
 
-	public boolean update(String sUpdate[]) {
-		return true;
-	}
+    @Override
+    public String info() {
+        // xml with the version & stuff
+        StringBuilder sb = new StringBuilder();
+        sb.append("<config app=\"Transfer\">\n");
+        sb.append("<file name=\"info\">\n");
 
-	public String getConfiguration() {
-		StringBuilder sb = new StringBuilder();
-		TreeSet ts = new TreeSet(prop.keySet());
-		for(Iterator tsit = ts.iterator(); tsit.hasNext(); ) {
-			String s = (String) tsit.next();
-			sb.append(s + "=" + prop.getProperty(s) + "\n");
-		}
-		return sb.toString();
-	}
+        //TODO: add info from each protocol
+        sb.append("Protocol info to be added.");
 
-	public boolean updateConfiguration(String s) {
-		return AppUtils.updateConfig(configFile, s) && init(configFile);
-	}
+        sb.append("</file>");
+        sb.append("</config>");
+        logger.info("info called; returning " + sb.toString());
+        return sb.toString();
+    }
 
-	public boolean init(String sPropFile) {
-		logger.info("Setting configuration from file "+sPropFile);
-		configFile = sPropFile;
-		AppUtils.getConfig(prop, configFile);
-		try{
-			ProtocolManager.getInstance().configProtocols(prop);
-		}catch(Throwable t){
-			logger.log(Level.WARNING, "Failed initializing protocols:", t);
-		}
-		return start();
-	}
+    @Override
+    public String exec(String sCmd) {
+        if (logger.isLoggable(Level.FINER)) {
+            logger.finer("Executing command '" + sCmd + "'");
+        }
+        String result = ProtocolManager.getInstance().execCommand(sCmd);
+        if (logger.isLoggable(Level.FINER)) {
+            logger.finer("Command finished with:\n" + result);
+        }
+        return result;
+    }
 
-	public String getName() {
-		return "lia.app.transfer.AppTransfer";
-	}
+    @Override
+    public boolean update(String sUpdate) {
+        return true;
+    }
 
-	public String getConfigFile() {
-		return configFile;
-	}
+    @Override
+    public boolean update(String sUpdate[]) {
+        return true;
+    }
+
+    @Override
+    public String getConfiguration() {
+        StringBuilder sb = new StringBuilder();
+        TreeSet ts = new TreeSet(prop.keySet());
+        for (Iterator tsit = ts.iterator(); tsit.hasNext();) {
+            String s = (String) tsit.next();
+            sb.append(s + "=" + prop.getProperty(s) + "\n");
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public boolean updateConfiguration(String s) {
+        return AppUtils.updateConfig(configFile, s) && init(configFile);
+    }
+
+    @Override
+    public boolean init(String sPropFile) {
+        logger.info("Setting configuration from file " + sPropFile);
+        configFile = sPropFile;
+        AppUtils.getConfig(prop, configFile);
+        try {
+            ProtocolManager.getInstance().configProtocols(prop);
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "Failed initializing protocols:", t);
+        }
+        return start();
+    }
+
+    @Override
+    public String getName() {
+        return "lia.app.transfer.AppTransfer";
+    }
+
+    @Override
+    public String getConfigFile() {
+        return configFile;
+    }
 }

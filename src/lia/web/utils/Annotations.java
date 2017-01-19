@@ -19,16 +19,16 @@ public class Annotations {
 	private static void initDatabase(){
 		final DB db = new DB();
 		
-		if (db.query("create table annotations(a_id serial primary key, a_from int, a_to int, a_groups int[], a_text text, a_color text, a_textcolor text, a_services text[], a_value int, a_fulldesc text);", true)){
-			db.query("create index annotations_from_idx on annotations(a_from);", true);
-			db.query("create index annotations_to_idx on annotations(a_to);", true);
+		if (db.syncUpdateQuery("create table annotations(a_id serial primary key, a_from int, a_to int, a_groups int[], a_text text, a_color text, a_textcolor text, a_services text[], a_value int, a_fulldesc text);", true)){
+			db.syncUpdateQuery("create index annotations_from_idx on annotations(a_from);", true);
+			db.syncUpdateQuery("create index annotations_to_idx on annotations(a_to);", true);
 		}
 		else{
-			db.query("alter table annotations add column a_value int;", true);
-			db.query("alter table annotations add column a_fulldesc text;", true);
+			db.syncUpdateQuery("alter table annotations add column a_value int;", true);
+			db.syncUpdateQuery("alter table annotations add column a_fulldesc text;", true);
 		}
 		
-		db.query("create table annotation_groups (ag_id serial primary key, ag_name text not null);", true);
+		db.syncUpdateQuery("create table annotation_groups (ag_id serial primary key, ag_name text not null);", true);
 	}
 	
 	static{
@@ -83,6 +83,8 @@ public class Annotations {
 		}
 		
 		sQuery += "ORDER BY a_from, a_id, a_to;";
+		
+		db.setReadOnly(true);
 		
 		db.query(sQuery);
 		

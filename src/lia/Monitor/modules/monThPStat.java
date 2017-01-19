@@ -27,19 +27,23 @@ import lia.util.threads.MLScheduledThreadPoolExecutor;
  */
 public class monThPStat extends AbstractSchJobMonitoring {
 
-    
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -6975014946785727439L;
+
     /** Logger used by this class */
-    static final transient Logger logger = Logger.getLogger(monThPStat.class.getName());
+    private static final Logger logger = Logger.getLogger(monThPStat.class.getName());
 
     private static final class ThreadPoolStats {
-        
+
         private final String name;
-        
+
         private long lastUpdateNano;
         private long completedTaskCount;
-        
+
         private double completedTaskRate;
-        
+
         /**
          * @param name
          */
@@ -48,59 +52,60 @@ public class monThPStat extends AbstractSchJobMonitoring {
             this.completedTaskCount = completedTaskCount;
             this.lastUpdateNano = Utils.nanoNow();
         }
-        
+
         private void updateStats(long newTaskCount) {
             final long nanoNow = Utils.nanoNow();
             final long dtNanos = nanoNow - lastUpdateNano;
-            
-            if(dtNanos <= 0) {
-                throw new IllegalStateException(" [ ThreadPoolStats ] [ updateStats ] Time in nano seconds go back ? old: " + lastUpdateNano + " new: " + nanoNow + " diff: " + dtNanos);
+
+            if (dtNanos <= 0) {
+                throw new IllegalStateException(
+                        " [ ThreadPoolStats ] [ updateStats ] Time in nano seconds go back ? old: " + lastUpdateNano
+                                + " new: " + nanoNow + " diff: " + dtNanos);
             }
-            
+
             final long diffCount = newTaskCount - this.completedTaskCount;
-            if(diffCount < 0) {
-                throw new IllegalStateException(" [ ThreadPoolStats ] [ updateStats ] Task count goes back ? old: " + this.completedTaskCount + " new: " + newTaskCount + " diff: " + dtNanos);
+            if (diffCount < 0) {
+                throw new IllegalStateException(" [ ThreadPoolStats ] [ updateStats ] Task count goes back ? old: "
+                        + this.completedTaskCount + " new: " + newTaskCount + " diff: " + dtNanos);
             }
-            
+
             //everything ok
-            this.completedTaskRate = (double)diffCount / (double)TimeUnit.NANOSECONDS.toSeconds(dtNanos);
+            this.completedTaskRate = (double) diffCount / (double) TimeUnit.NANOSECONDS.toSeconds(dtNanos);
             this.lastUpdateNano = nanoNow;
             this.completedTaskCount = newTaskCount;
-            
+
         }
     }
-    
 
     private final Map<String, ThreadPoolStats> internalStatMap = new HashMap<String, ThreadPoolStats>();
-    
+
     @Override
-	public MonModuleInfo initArgs(final String argStr) {
+    public MonModuleInfo initArgs(final String argStr) {
         return new MonModuleInfo();
     }
 
     @Override
-	public boolean isRepetitive() {
+    public boolean isRepetitive() {
         return true;
     }
 
     @Override
-	public String getTaskName() {
+    public String getTaskName() {
         return "monThPStat";
     }
-
 
     @Override
     public Object doProcess() throws Exception {
         final Map<String, MLScheduledThreadPoolExecutor> execMap = MLExecutorsFactory.getExecutors();
-        
+
         final int count = execMap.size();
-        if(count > 0) {
+        if (count > 0) {
             final long time = NTPDate.currentTimeMillis();
             final ArrayList<Result> retRes = new ArrayList<Result>(count);
-            for(final Map.Entry<String, MLScheduledThreadPoolExecutor> entry: execMap.entrySet()) {
+            for (final Map.Entry<String, MLScheduledThreadPoolExecutor> entry : execMap.entrySet()) {
                 final String execName = entry.getKey();
                 String name = execName;
-                if(execName.startsWith("lia.")) {
+                if (execName.startsWith("lia.")) {
                     name = name.substring("lia.".length());
                 }
                 final MLScheduledThreadPoolExecutor tpe = entry.getValue();
@@ -113,19 +118,19 @@ public class monThPStat extends AbstractSchJobMonitoring {
                 r.addSet("PoolSize", tpe.getPoolSize());
                 try {
                     final ThreadPoolStats stats = internalStatMap.get(name);
-                    if(stats == null) {
+                    if (stats == null) {
                         internalStatMap.put(name, new ThreadPoolStats(name, newTaskCount));
                     } else {
                         stats.updateStats(newTaskCount);
                         r.addSet("TaskRate", stats.completedTaskRate);
-                        
+
                     }
-                }catch(Throwable t) {
+                } catch (Throwable t) {
                     logger.log(Level.WARNING, "[ HANDLED ] [ monThPStat ] [ doProcess ] unable to compute task rate", t);
                 }
                 retRes.add(r);
             }
-            
+
             return retRes;
         }
         return null;
@@ -135,8 +140,12 @@ public class monThPStat extends AbstractSchJobMonitoring {
      * @param args
      * @throws Exception 
      */
-	public static void main(String[] args) throws Exception {
-        LogManager.getLogManager().readConfiguration(new ByteArrayInputStream(("handlers= java.util.logging.ConsoleHandler\n" + "java.util.logging.ConsoleHandler.level = FINEST\n" + "java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter\n" + "").getBytes()));
+    public static void main(String[] args) throws Exception {
+        LogManager.getLogManager().readConfiguration(
+                new ByteArrayInputStream(("handlers= java.util.logging.ConsoleHandler\n"
+                        + "java.util.logging.ConsoleHandler.level = FINEST\n"
+                        + "java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter\n" + "")
+                        .getBytes()));
         logger.setLevel(Level.INFO);
 
         monThPStat mdIOStat = new monThPStat();
@@ -149,10 +158,11 @@ public class monThPStat extends AbstractSchJobMonitoring {
             Collection<?> cr = (Collection<?>) mdIOStat.doProcess();
             final long endTime = Utils.nanoNow();
             StringBuilder sb = new StringBuilder();
-            for(final Object r: cr) {
+            for (final Object r : cr) {
                 sb.append(r).append("\n");
             }
-            logger.log(Level.INFO, " DT " + TimeUnit.NANOSECONDS.toMillis(endTime - sTime) + " ms. \n\n Returning \n" + sb.toString());
+            logger.log(Level.INFO, " DT " + TimeUnit.NANOSECONDS.toMillis(endTime - sTime) + " ms. \n\n Returning \n"
+                    + sb.toString());
         }
     }
 

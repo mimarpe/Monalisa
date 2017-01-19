@@ -24,7 +24,12 @@ import snmp.SNMPOctetString;
  */
 public class snmp_Load_v2 extends snmpMon2 implements MonitoringModule {
 
-    static final Logger logger = Logger.getLogger("lia.Monitor.monitor.snmp_Load_v2");
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 9152140985983034559L;
+
+    private static final Logger logger = Logger.getLogger(snmp_Load_v2.class.getName());
 
     static public String ModuleName = "snmp_Load_v2";
 
@@ -36,6 +41,7 @@ public class snmp_Load_v2 extends snmpMon2 implements MonitoringModule {
         super(sOids);
     }
 
+    @Override
     public MonModuleInfo init(MNode node, String args) {
         try {
             init(node);
@@ -53,29 +59,34 @@ public class snmp_Load_v2 extends snmpMon2 implements MonitoringModule {
         return info;
     }
 
+    @Override
     public String[] ResTypes() {
         return ResTypes;
     }
 
+    @Override
     public String getOsName() {
         return OsName;
     }
 
     // Default canSuspend, but there are cases ( DC04 Filter )
+    @Override
     public boolean canSuspend() {
         boolean canS = true;
         try {
-            canS = Boolean.valueOf(AppConfig.getProperty("lia.Monitor.modules.snmp_Load_v2.canSuspend", "true")).booleanValue();
+            canS = Boolean.valueOf(AppConfig.getProperty("lia.Monitor.modules.snmp_Load_v2.canSuspend", "true"))
+                    .booleanValue();
         } catch (Throwable t1) {
             canS = true;
         }
         return canS;
     }
 
+    @Override
     public Object doProcess() throws Exception {
-        if (info.getState()!=0){
+        if (info.getState() != 0) {
             throw new IOException("[snmp_Load_v2 ERR] Module could not be initialized");
-        }  
+        }
         Map res = super.snmpBulkGet();
 
         if (res.size() != 3) {
@@ -87,7 +98,7 @@ public class snmp_Load_v2 extends snmpMon2 implements MonitoringModule {
         // Load1
         for (int i = 0; i < sOids.length; i++) {
             Object oValue = res.get(sOids[i]);
-            if (oValue != null && oValue instanceof SNMPOctetString) {
+            if ((oValue != null) && (oValue instanceof SNMPOctetString)) {
                 SNMPOctetString osValue = (SNMPOctetString) oValue;
                 String value = StringFactory.get((byte[]) osValue.getValue());
                 double dvalue = Double.valueOf(value).doubleValue();

@@ -19,6 +19,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.media.opengl.GL;
+import javax.media.opengl.GL2;
 
 import lia.Monitor.Agents.OpticalPath.OSPort;
 import lia.Monitor.Agents.OpticalPath.v2.State.OSwPort;
@@ -27,8 +28,6 @@ import lia.Monitor.JiniClient.CommonGUI.pie;
 import lia.Monitor.JiniClient.CommonGUI.rcNode;
 import lia.Monitor.JiniClient.CommonGUI.Jogl.util.vcf;
 import lia.Monitor.JiniClient.Farms.FarmsSerMonitor;
-import lia.Monitor.JiniClient.Farms.FarmsSerMonitor.GlobeLinksType;
-import lia.Monitor.monitor.AppConfig;
 import lia.Monitor.monitor.Gresult;
 import lia.Monitor.monitor.ILink;
 import lia.Monitor.monitor.MCluster;
@@ -45,11 +44,8 @@ import lia.Monitor.monitor.OSLink;
  */
 public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeListener {
 
-    /** Logger name */
-    private static final transient String COMPONENT = "lia.Monitor.JiniClient.CommonGUI.Jogl";
-
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(FarmsNodesRenderer.class.getName());
 
     // public int nodesShow = 1; // what do the bubbles are = one of NODE_xxx constants
     // public int peersShow = 11; // what shows the color of links = one of the LINK_xxx constants
@@ -95,10 +91,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
     public String nfRouterTextureFile = "lia/images/ml_router_netflow.png";
 
-    public float[] nfDeviceColor = new float[] {
-            FarmsJoglPanel.maxNetFlowColor.getRed() / 255f, FarmsJoglPanel.maxNetFlowColor.getGreen() / 255f,
-            FarmsJoglPanel.maxNetFlowColor.getBlue() / 255f
-    };
+    public float[] nfDeviceColor = new float[] { FarmsJoglPanel.maxNetFlowColor.getRed() / 255f,
+            FarmsJoglPanel.maxNetFlowColor.getGreen() / 255f, FarmsJoglPanel.maxNetFlowColor.getBlue() / 255f };
 
     /**
      * This class SHOULD NOT BE USED!!!!<br>
@@ -123,8 +117,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         private double total_OUT = 0;
 
         public NetFlowDevice(float posLONG, float posLAT, String sLocation) {
-            if (sLocation.startsWith("[R]"))
+            if (sLocation.startsWith("[R]")) {
                 bIsRouter = true;
+            }
             this.sLocation = sLocation;
             this.posLONG = posLONG;
             this.posLAT = posLAT;
@@ -135,7 +130,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
          * 1 - link leaves the router<br>
          * -1 - link goes into the router<br>
          * <b>NOT recomended!</b>
-         * 
+         *
          * @param direction
          * @param link
          */
@@ -143,16 +138,18 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             if (direction == 1) {
                 if (fromLinks.add(link)) {// if new link added, recompute total traffic
                     double data = 0;
-                    if (link.data != null && link.data instanceof Double)
+                    if ((link.data != null) && (link.data instanceof Double)) {
                         data = ((Double) (link.data)).doubleValue();
+                    }
                     total_OUT += data;
                 }
                 ;
             } else if (direction == -1) {
                 if (toLinks.add(link)) {// if new link added, recompute total traffic
                     double data = 0;
-                    if (link.data != null && link.data instanceof Double)
+                    if ((link.data != null) && (link.data instanceof Double)) {
                         data = ((Double) (link.data)).doubleValue();
+                    }
                     total_IN += data;
                 }
                 ;
@@ -162,21 +159,23 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         /**
          * removes a link from routers and updates total traffic for them<br>
          * <b>NOT recomended!</b>
-         * 
+         *
          * @param link
          */
         public void removeLink(NFLink link) {
             if (fromLinks.remove(link)) {// if link removed, recompute total traffic
                 double data = 0;
-                if (link.data != null && link.data instanceof Double)
+                if ((link.data != null) && (link.data instanceof Double)) {
                     data = ((Double) (link.data)).doubleValue();
+                }
                 total_OUT -= data;
             }
             ;
             if (toLinks.remove(link)) {// if link removed, recompute total traffic
                 double data = 0;
-                if (link.data != null && link.data instanceof Double)
+                if ((link.data != null) && (link.data instanceof Double)) {
                     data = ((Double) (link.data)).doubleValue();
+                }
                 total_IN -= data;
             }
             ;
@@ -195,8 +194,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             for (Iterator it = fromLinks.iterator(); it.hasNext();) {
                 data = 0;
                 link = (NFLink) it.next();
-                if (link.data != null && link.data instanceof Double)
+                if ((link.data != null) && (link.data instanceof Double)) {
                     data = ((Double) (link.data)).doubleValue();
+                }
                 sum += data;
             }
             ;
@@ -205,8 +205,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             for (Iterator it = toLinks.iterator(); it.hasNext();) {
                 data = 0;
                 link = (NFLink) it.next();
-                if (link.data != null && link.data instanceof Double)
+                if ((link.data != null) && (link.data instanceof Double)) {
                     data = ((Double) (link.data)).doubleValue();
+                }
                 sum += data;
             }
             ;
@@ -219,9 +220,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
     public String routerTextureFile = "lia/images/ml_router.png";
 
-    public float[] routerColor = new float[] {
-            0f, 170 / 255f, 249 / 255f
-    };
+    public float[] routerColor = new float[] { 0f, 170 / 255f, 249 / 255f };
 
     // int router_texture_id = 0;
     public class WANRouter {
@@ -249,7 +248,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
          * 1 - link leaves the router<br>
          * -1 - link goes into the router<br>
          * <b>NOT recomended!</b>
-         * 
+         *
          * @param direction
          * @param link
          */
@@ -257,16 +256,18 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             if (direction == 1) {
                 if (fromLinks.add(link)) {// if new link added, recompute total traffic
                     double data = 0;
-                    if (link.data != null && link.data instanceof Double)
+                    if ((link.data != null) && (link.data instanceof Double)) {
                         data = ((Double) (link.data)).doubleValue();
+                    }
                     total_OUT += data;
                 }
                 ;
             } else if (direction == -1) {
                 if (toLinks.add(link)) {// if new link added, recompute total traffic
                     double data = 0;
-                    if (link.data != null && link.data instanceof Double)
+                    if ((link.data != null) && (link.data instanceof Double)) {
                         data = ((Double) (link.data)).doubleValue();
+                    }
                     total_IN += data;
                 }
                 ;
@@ -276,21 +277,23 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         /**
          * removes a link from routers and updates total traffic for them<br>
          * <b>NOT recomended!</b>
-         * 
+         *
          * @param link
          */
         public void removeLink(ILink link) {
             if (fromLinks.remove(link)) {// if link removed, recompute total traffic
                 double data = 0;
-                if (link.data != null && link.data instanceof Double)
+                if ((link.data != null) && (link.data instanceof Double)) {
                     data = ((Double) (link.data)).doubleValue();
+                }
                 total_OUT -= data;
             }
             ;
             if (toLinks.remove(link)) {// if link removed, recompute total traffic
                 double data = 0;
-                if (link.data != null && link.data instanceof Double)
+                if ((link.data != null) && (link.data instanceof Double)) {
                     data = ((Double) (link.data)).doubleValue();
+                }
                 total_IN -= data;
             }
             ;
@@ -309,8 +312,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             for (Iterator it = fromLinks.iterator(); it.hasNext();) {
                 data = 0;
                 link = (ILink) it.next();
-                if (link.data != null && link.data instanceof Double)
+                if ((link.data != null) && (link.data instanceof Double)) {
                     data = ((Double) (link.data)).doubleValue();
+                }
                 sum += data;
             }
             ;
@@ -319,22 +323,26 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             for (Iterator it = toLinks.iterator(); it.hasNext();) {
                 data = 0;
                 link = (ILink) it.next();
-                if (link.data != null && link.data instanceof Double)
+                if ((link.data != null) && (link.data instanceof Double)) {
                     data = ((Double) (link.data)).doubleValue();
+                }
                 sum += data;
             }
             ;
             total_IN = sum;
         }
 
+        @Override
         public String toString() {
-            return "router " + sLocation + " " + posLONG + " long " + posLAT + " lat with " + fromLinks.size() + " from links and " + toLinks.size()
-                    + " to links ";
+            return "router " + sLocation + " " + posLONG + " long " + posLAT + " lat with " + fromLinks.size()
+                    + " from links and " + toLinks.size() + " to links ";
         }
 
         public boolean equals(WANRouter b) {
-            if (((int) (posLONG * 100)) == ((int) (b.posLONG * 100)) && ((int) (posLAT * 100)) == ((int) (b.posLAT * 100)))
+            if ((((int) (posLONG * 100)) == ((int) (b.posLONG * 100)))
+                    && (((int) (posLAT * 100)) == ((int) (b.posLAT * 100)))) {
                 return true;
+            }
             return false;
         }
     }
@@ -343,7 +351,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
      * iterats through hRouters set to remove from each router
      * the link, that can be from or to.<br>
      * If a routers remains without from and to links, it is removed also.
-     * 
+     *
      * @param link
      * @return number of routers that have been removed
      */
@@ -355,7 +363,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 WANRouter router = (WANRouter) it.next();
                 router.fromLinks.remove(link);
                 router.toLinks.remove(link);
-                if (router.fromLinks.size() == 0 && router.toLinks.size() == 0) {
+                if ((router.fromLinks.size() == 0) && (router.toLinks.size() == 0)) {
                     // this router is not generated by any link, so remove it
                     it.remove();
                     nRemovedRoutersCount++;
@@ -388,7 +396,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
      * iterats through hNetFlowDevices set to remove from each router
      * the link, that can be from or to.<br>
      * If a routers remains without from and to links, it is removed also.
-     * 
+     *
      * @param link
      * @return number of routers that have been removed
      */
@@ -400,7 +408,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 NetFlowDevice router = (NetFlowDevice) it.next();
                 router.fromLinks.remove(link);
                 router.toLinks.remove(link);
-                if (router.fromLinks.size() == 0 && router.toLinks.size() == 0) {
+                if ((router.fromLinks.size() == 0) && (router.toLinks.size() == 0)) {
                     // this router is not generated by any link, so remove it
                     it.remove();
                     nRemovedRoutersCount++;
@@ -443,9 +451,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         // nLevels = levels;
         // nMaxPoints = max_points;
 
-        subViewCapabilities = new String[] {
-                "Normal view", "OnTop view"
-        };
+        subViewCapabilities = new String[] { "Normal view", "OnTop view" };
         /**
          * all these variables have to be reinitialized when we have a new gl
          */
@@ -493,12 +499,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
     /**
      * draws the farms nodes as cilinders
      */
-    public void drawNodes(GL gl, Object[] graphicalAttrs) {
+    @Override
+    public void drawNodes(GL2 gl, Object[] graphicalAttrs) {
         // get radius
         Object obj;
         obj = ((Hashtable) graphicalAttrs[0]).get("NodeRadius");
-        if (obj == null)// no radius specified
+        if (obj == null) {
             return;
+        }
         float radius = ((Float) obj).floatValue();
 
         HashMap htComputedNodes = new HashMap();// used for ontop view
@@ -518,27 +526,33 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 if (obj != null) {// this node has its attributes computed, so draw it
                     hAttrs = (HashMap) obj;
                     vectors = (VectorO[]) hAttrs.get("PositioningVectors");
-                    if (vectors == null)
+                    if (vectors == null) {
                         continue;
+                    }
                     if (node.szOpticalSwitch_Name == null) {
                         obj = hAttrs.get("NodeID");
-                        if (obj == null)
+                        if (obj == null) {
                             continue;// skip to next one
+                        }
                         nodeID = ((Integer) obj).intValue();
-                    } else
+                    } else {
                         nodeID = optical_switchID;
+                    }
                     // draw node
                     if (nodeID > 0 /* && vectors!=null */) {// vectors is already checked for nullity
-                        if (bOnTopView)
-                            vNewPos = recomputeVectors(((HashMap) graphicalAttrs[1]), htComputedNodes, node, vectors, radius);
-                        else
+                        if (bOnTopView) {
+                            vNewPos = recomputeVectors(((HashMap) graphicalAttrs[1]), htComputedNodes, node, vectors,
+                                    radius);
+                        } else {
                             vNewPos = vectors[1];
+                        }
                         drawNode(gl, vectors[0], vNewPos, nodeID, radius);
                     }
                     // draw node links to other nodes
                 }
             } catch (Exception ex) {
-                logger.log(Level.INFO, "Could not draw node " + (node == null ? "null" : node.UnitName) + " exception:" + ex.getMessage());
+                logger.log(Level.INFO, "Could not draw node " + (node == null ? "null" : node.UnitName) + " exception:"
+                        + ex.getMessage());
                 ex.printStackTrace();
             }
             // pop the matrix
@@ -551,12 +565,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
      * this computation is called at RECOMPUTE_NODES_TIME to show data received<br>
      * after each recomputation, draw node
      */
-    public void computeNodes(GL gl, Object[] graphicalAttrs) {
+    @Override
+    public void computeNodes(GL2 gl, Object[] graphicalAttrs) {
         // get radius
         Object obj;
         obj = ((Hashtable) graphicalAttrs[0]).get("NodeRadius");
-        if (obj == null)// no radius specified
+        if (obj == null) {
             return;
+        }
         float radius = ((Float) obj).floatValue();
 
         // compute maximal values
@@ -628,29 +644,33 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         if (obj == null) {// each time reconstruct the node...?
                             nodeID = gl.glGenLists(1);
                             // System.out.println("linkID generated: "+linkID);
-                            gl.glNewList(nodeID, GL.GL_COMPILE);
+                            gl.glNewList(nodeID, GL2.GL_COMPILE);
 
                             // construct node
                             constructNode(gl, components, fractions, colors);
 
                             gl.glEndList();
                             hAttrs.put("NodeID", Integer.valueOf(nodeID));
-                        } else
+                        } else {
                             nodeID = ((Integer) obj).intValue();
+                        }
                     } else {
                         nodeID = optical_switchID;
                         // hAttrs.put("NodeID", Integer.valueOf(nodeID));
                     }
                     vectors = (VectorO[]) hAttrs.get("PositioningVectors");
                     // draw node
-                    if (bOnTopView)
-                        vNewPos = recomputeVectors(((HashMap) graphicalAttrs[1]), htComputedNodes, node, vectors, radius);
-                    else
+                    if (bOnTopView) {
+                        vNewPos = recomputeVectors(((HashMap) graphicalAttrs[1]), htComputedNodes, node, vectors,
+                                radius);
+                    } else {
                         vNewPos = vectors[1];
+                    }
                     drawNode(gl, vectors[0], vNewPos, nodeID, radius);
                 }
             } catch (Exception ex) {
-                logger.log(Level.WARNING, "Could not compute and draw node " + (node == null ? "null" : node.UnitName) + " ex:" + ex.getMessage());
+                logger.log(Level.WARNING, "Could not compute and draw node " + (node == null ? "null" : node.UnitName)
+                        + " ex:" + ex.getMessage());
                 ex.printStackTrace();
             }
             // pop the matrix
@@ -661,7 +681,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
     /**
      * creates the cap to be used by each node
      */
-    public void initNodes(GL gl, Object[] graphicalAttrs) {
+    @Override
+    public void initNodes(GL2 gl, Object[] graphicalAttrs) {
 
         // remove all aping, wan and os links, and also netflow links, they are invalid now
         Object link;
@@ -730,10 +751,10 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 float globeVirtRad = JoglPanel.globals.globeVirtualRadius;
                 int linkID = gl.glGenLists(1);
                 // System.out.println("linkID generated: "+linkID);
-                gl.glNewList(linkID, GL.GL_COMPILE);
+                gl.glNewList(linkID, GL2.GL_COMPILE);
                 JoGLDirectedArc3D Darc3D;
-                Darc3D = new JoGLDirectedArc3D(nflink.fromLAT, nflink.fromLONG, nflink.toLAT, nflink.toLONG, globeRad, 10, 0.05, -globeRad
-                        + globeVirtRad, 0.2);
+                Darc3D = new JoGLDirectedArc3D(nflink.fromLAT, nflink.fromLONG, nflink.toLAT, nflink.toLONG, globeRad,
+                        10, 0.05, -globeRad + globeVirtRad, 0.2);
                 ArrayList alArcPoints = new ArrayList();
                 Darc3D.setPoints(alArcPoints);
                 Darc3D.drawArc(gl);
@@ -746,7 +767,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 VectorO VzAxis = new VectorO(0, 0, 1);
                 VectorO vRotAxis = VzAxis.CrossProduct(vPointDir);
                 // rotate z to Vdir around vectorial product with dot product
-                float angleRotation = (float) (Math.acos(VzAxis.DotProduct(vPointDir)) * 180 / Math.PI);
+                float angleRotation = (float) ((Math.acos(VzAxis.DotProduct(vPointDir)) * 180) / Math.PI);
                 hLinkAttrs.put("LinkArrowRotationAngle", new Float(angleRotation));
                 hLinkAttrs.put("LinkArrowRotationAxis", vRotAxis);
                 // System.out.println("replace netflow link old_id="+obj+" with new_id="+linkID);
@@ -797,7 +818,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         packageID = DataGlobals.getCubeID(gl, "lia/images/ml_package.jpg", "Package Cube");
         packageNFID = gl.glGenLists(1);
         // System.out.println("routerID="+ routerID);
-        gl.glNewList(packageNFID, GL.GL_COMPILE);
+        gl.glNewList(packageNFID, GL2.GL_COMPILE);
         {
             ZoomMapRenderer.drawSphere(gl, 8, 4);
         }
@@ -807,9 +828,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             int nMaxPoints = 8;
             conID = gl.glGenLists(1);
             // System.out.println("conID="+conID);
-            gl.glNewList(conID, GL.GL_COMPILE);
+            gl.glNewList(conID, GL2.GL_COMPILE);
             {
-                float faDelta = 2 * (float) Math.PI / nMaxPoints, faAlfa;
+                float faDelta = (2 * (float) Math.PI) / nMaxPoints, faAlfa;
                 float fX, fY;
                 // draw upper cone
                 gl.glBegin(GL.GL_TRIANGLE_FAN);
@@ -843,26 +864,24 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         }
     }
 
-    private float[] topCenter = new float[] {
-            0, 0, .5f
-    };
+    private final float[] topCenter = new float[] { 0, 0, .5f };
 
-    private float[] pa1 = new float[3];
+    private final float[] pa1 = new float[3];
 
-    private float[] pa2 = new float[3];
+    private final float[] pa2 = new float[3];
 
-    private float[] p1 = new float[3];
+    private final float[] p1 = new float[3];
 
-    private float[] p2 = new float[3];
+    private final float[] p2 = new float[3];
 
-    private float[] aux = new float[3];
+    private final float[] aux = new float[3];
 
-    private float fraction = .2f;
+    private final float fraction = .2f;
 
     /**
      * draws a node centered in (0,0,0) pointed in z direction, and having unitar dimensions,
      * with all the colors on it
-     * 
+     *
      * @param gl
      * @param Vdir
      * @param Vpos
@@ -871,7 +890,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
      * @param colors
      * @param radius
      */
-    private void constructNode(GL gl, int components, float[] fractions, Color[] colors) {
+    private void constructNode(GL2 gl, int components, float[] fractions, Color[] colors) {
         VectorO Vdir = new VectorO(0, 0, 1);
         VectorO Vp = new VectorO(1, 0, 0);
         // VectorO Vpos = new VectorO(0,0,0);
@@ -889,7 +908,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
         for (int i = 0; i < components; i++) {
             points = 1 + (int) (fractions[i] * 31);
-            angle = 360f * fractions[i] / points;
+            angle = (360f * fractions[i]) / points;
             // draw first point
             for (int j = 0; j < points; j++) {
                 // draw next points
@@ -900,8 +919,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 pa2[0] = p2[0];
                 pa2[1] = p2[1];
                 pa2[2] = p2[2];
-                if (curr_Tangle + angle > 360f)
+                if ((curr_Tangle + angle) > 360f) {
                     angle = 360f - curr_Tangle;
+                }
                 Vp.Rotate(Vdir, angle);
                 curr_Tangle += angle;
                 // compute current points
@@ -918,13 +938,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 // ---code insertion---//
                 aux[0] = pa2[0] * (1f - fraction);
                 aux[1] = pa2[1] * (1f - fraction);
-                aux[2] = pa2[2] * (1f - fraction) + .5f * fraction;
+                aux[2] = (pa2[2] * (1f - fraction)) + (.5f * fraction);
                 gl.glVertex3fv(aux, 0);
                 aux[0] = p2[0] * (1f - fraction);
                 aux[1] = p2[1] * (1f - fraction);
-                aux[2] = p2[2] * (1f - fraction) + 0.5f * fraction;
+                aux[2] = (p2[2] * (1f - fraction)) + (0.5f * fraction);
                 gl.glVertex3fv(aux, 0);
-                gl.glColor3f(colors[i].getRed() / 2f / 255f, colors[i].getGreen() / 2f / 255f, colors[i].getBlue() / 2f / 255f);
+                gl.glColor3f(colors[i].getRed() / 2f / 255f, colors[i].getGreen() / 2f / 255f,
+                        colors[i].getBlue() / 2f / 255f);
                 // ---end code insertion---//
                 gl.glVertex3fv(pa2, 0);
                 gl.glVertex3fv(p2, 0);
@@ -940,7 +961,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
     /**
      * draws a node by creating a diplay list for it
-     * 
+     *
      * @param gl
      * @param Vdir
      * @param Vpos
@@ -949,7 +970,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
      * @param colors
      * @param radius
      */
-    private void drawNode(GL gl, VectorO VdirInit, VectorO VposInit, int nodeID, float radius) {
+    private void drawNode(GL2 gl, VectorO VdirInit, VectorO VposInit, int nodeID, float radius) {
         // operations are put in inverse order because last is first executed in opengl
         // 3. position object cu correct coordinates
         gl.glTranslatef(VposInit.getX(), VposInit.getY(), VposInit.getZ());
@@ -958,7 +979,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         VectorO VzAxis = new VectorO(0, 0, 1);
         VectorO VRotAxis = VzAxis.CrossProduct(VdirInit);
         // rotate z to Vdir around vectorial product with dot product
-        gl.glRotatef((float) (Math.acos(VzAxis.DotProduct(VdirInit)) * 180 / Math.PI), VRotAxis.getX(), VRotAxis.getY(), VRotAxis.getZ());
+        gl.glRotatef((float) ((Math.acos(VzAxis.DotProduct(VdirInit)) * 180) / Math.PI), VRotAxis.getX(),
+                VRotAxis.getY(), VRotAxis.getZ());
         // 1. operation: scale to radius dimmensions:
         gl.glScalef(radius, radius, radius);
         // use already constructed cap as display list
@@ -969,24 +991,30 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
     /**
      * draws links, if their attributes are computed, and invalidate links is not set
      */
-    public void drawLinks(GL gl, Object[] graphicalAttrs) {
+    @Override
+    public void drawLinks(GL2 gl, Object[] graphicalAttrs) {
         // get radius
         Object obj;
         obj = ((Hashtable) graphicalAttrs[0]).get("NodeRadius");
-        if (obj == null)// no radius specified
+        if (obj == null) {
             return;
+        }
         float radius = ((Float) obj).floatValue();
 
         // check options in panel to recompute colors
-        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowWAN.isSelected())
+        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowWAN.isSelected()) {
             drawWAN(gl, radius);
-        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowNF.isSelected())
+        }
+        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowNF.isSelected()) {
             drawNF(gl, radius);
-        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowOS.isSelected())
+        }
+        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowOS.isSelected()) {
             drawOS(gl, radius);
+        }
 
-        if (!((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowPing.isSelected())
+        if (!((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowPing.isSelected()) {
             return;
+        }
 
         ILink link;
         HashMap hLinkAttrs;
@@ -998,14 +1026,21 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 hLinkAttrs = (HashMap) ((HashMap) graphicalAttrs[2]).get(link);
                 // draw the link
                 obj = hLinkAttrs.get("LinkColor");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 colorLink = (float[]) obj;
                 obj = hLinkAttrs.get("LinkID");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 linkID = ((Integer) obj).intValue();
-                gl.glColor3fv(colorLink, 0);
+
+                if ((link.name != null) && (link.name.indexOf("NetLink") >= 0)) {
+                    gl.glColor3fv(Color.GREEN.getColorComponents(null), 0);
+                } else {
+                    gl.glColor3fv(colorLink, 0);
+                }
                 gl.glCallList(linkID);
 
                 // draw arrow on link
@@ -1020,10 +1055,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         // 3. position object cu correct coordinates
                         gl.glTranslatef(vLinkArrowBase.getX(), vLinkArrowBase.getY(), vLinkArrowBase.getZ());
                         // 2. operation: rotate from (0,0,1) to Vdir
-                        gl.glRotatef(fLinkArrowRotationAngle,
-                                     vLinkArrowRotationAxis.getX(),
-                                     vLinkArrowRotationAxis.getY(),
-                                     vLinkArrowRotationAxis.getZ());
+                        gl.glRotatef(fLinkArrowRotationAngle, vLinkArrowRotationAxis.getX(),
+                                vLinkArrowRotationAxis.getY(), vLinkArrowRotationAxis.getZ());
                         // 1. operation: scale to radius dimmensions:
                         gl.glScalef(radius / 2, radius / 2, radius / 2);
                         // use already constructed cap as display list
@@ -1047,15 +1080,17 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
      * computes and draws links; recomputes color and, if links invalidated or link without diplay list,
      * recomputes diplay list for link
      */
-    public void computeLinks(GL gl, Object[] graphicalAttrs) {
+    @Override
+    public void computeLinks(GL2 gl, Object[] graphicalAttrs) {
         // check to see if all links are invalidated, so to recompute them
         boolean bInvalidateLinks = (((Hashtable) graphicalAttrs[0]).remove("InvalidateLinks") != null);
         Object obj;
 
         // get radius
         obj = ((Hashtable) graphicalAttrs[0]).get("NodeRadius");
-        if (obj == null)// no radius specified
+        if (obj == null) {
             return;
+        }
         float radius = ((Float) obj).floatValue();
 
         // check options in panel to recompute wan colors
@@ -1063,7 +1098,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             // System.out.println("<mluc>  compute wan links");
             computeWANTrafficColors(wanAttrs);
             computeWAN(gl, graphicalAttrs, bInvalidateLinks, radius);// does the same job as DataRenderer.updateLinks
-                                                                     // and this.computeLinks
+            // and this.computeLinks
         }
         ;
 
@@ -1071,19 +1106,20 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowNF.isSelected()) {
             computeNFTrafficColors(nfAttrs);
             computeNF(gl, graphicalAttrs, bInvalidateLinks, radius);// does the same job as DataRenderer.updateLinks and
-                                                                    // this.computeLinks
+            // this.computeLinks
         }
         ;
 
         // check options in panel to recompute os colors
         if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowOS.isSelected()) {
             computeOS(gl, graphicalAttrs, bInvalidateLinks, radius);// does the same job as DataRenderer.updateLinks and
-                                                                    // this.computeLinks
+            // this.computeLinks
         }
         ;
 
-        if (!((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowPing.isSelected())
+        if (!((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowPing.isSelected()) {
             return;
+        }
 
         // check options in panel to recompute colors
         computePingTrafficColors(((HashMap) graphicalAttrs[2]), ((HashMap) graphicalAttrs[1]));
@@ -1104,34 +1140,39 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
                 // recompute color
                 obj = hLinkAttrs.get("LinkColor");
-                if (obj == null)
+                if (obj == null) {
                     colorLink = new float[3];
-                else
+                } else {
                     colorLink = (float[]) obj;
+                }
                 ns = (rcNode) hLinkAttrs.get("fromNode");
-                if (ns == null)
+                if (ns == null) {
                     continue;
+                }
                 nw = (rcNode) hLinkAttrs.get("toNode");
-                if (nw == null)
+                if (nw == null) {
                     continue;
+                }
                 link.speed = ns.connPerformance(nw);
                 link.data = Double.valueOf(ns.connLP(nw));
 
                 Color c;
-                if (((Double) link.data).doubleValue() == 1.0)
+                if (((Double) link.data).doubleValue() == 1.0) {
                     c = Color.RED;
-                else {
+                } else {
                     c = ((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.csPing.getColor(link.speed);
-                    if (c == null)
+                    if (c == null) {
                         continue;
+                    }
                 }
                 colorLink[0] = c.getRed() / 255f;
                 colorLink[1] = c.getGreen() / 255f;
                 colorLink[2] = c.getBlue() / 255f;
 
                 // colorLink = getLinkQualityColor(link, colorLink);
-                if (obj == null)
+                if (obj == null) {
                     hLinkAttrs.put("LinkColor", colorLink);
+                }
 
                 // check coordinates for source and destination nodes to see if any changes, and, if so
                 // update values for link and recompute it
@@ -1141,7 +1182,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 srcLong = DataGlobals.failsafeParseFloat(ns.LONG, -111.15f);
                 dstLat = DataGlobals.failsafeParseFloat(nw.LAT, -21.22f);
                 dstLong = DataGlobals.failsafeParseFloat(nw.LONG, -111.15f);
-                if (srcLat != link.fromLAT || srcLong != link.fromLONG || dstLat != link.toLAT || dstLong != link.toLONG) {
+                if ((srcLat != link.fromLAT) || (srcLong != link.fromLONG) || (dstLat != link.toLAT)
+                        || (dstLong != link.toLONG)) {
                     // update link's start and end coordinates
                     link.fromLAT = srcLat;
                     link.fromLONG = srcLong;
@@ -1153,7 +1195,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
                 // if neccessary, recompute display list
                 obj = hLinkAttrs.get("LinkID");
-                if (obj != null && (bInvalidateLinks || bInvalidateThisLink)) {// for that, delete old id
+                if ((obj != null) && (bInvalidateLinks || bInvalidateThisLink)) {// for that, delete old id
                     gl.glDeleteLists(((Integer) obj).intValue(), 1);
                     obj = null;
                 }
@@ -1161,21 +1203,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 if (obj == null) {
                     linkID = gl.glGenLists(1);
                     // System.out.println("linkID generated: "+linkID);
-                    gl.glNewList(linkID, GL.GL_COMPILE);
+                    gl.glNewList(linkID, GL2.GL_COMPILE);
 
                     // JoGLArc3D arc3D = new JoGLArc3D(link.fromLAT, link.fromLONG, link.toLAT, link.toLONG, globeRad,
                     // 10, 0.02, -globeRad+globeVirtRad);
                     // arc3D.drawArc(gl);
                     JoGLDirectedArc3D Darc3D;
-                    Darc3D = new JoGLDirectedArc3D(link.fromLAT,
-                                                   link.fromLONG,
-                                                   link.toLAT,
-                                                   link.toLONG,
-                                                   globeRad,
-                                                   10,
-                                                   0.05,
-                                                   -globeRad + globeVirtRad,
-                                                   0.2);
+                    Darc3D = new JoGLDirectedArc3D(link.fromLAT, link.fromLONG, link.toLAT, link.toLONG, globeRad, 10,
+                            0.05, -globeRad + globeVirtRad, 0.2);
                     Darc3D.drawArc(gl);
                     gl.glEndList();
                     hLinkAttrs.put("LinkID", Integer.valueOf(linkID));
@@ -1187,15 +1222,21 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     VectorO VzAxis = new VectorO(0, 0, 1);
                     VectorO vRotAxis = VzAxis.CrossProduct(vPointDir);
                     // rotate z to Vdir around vectorial product with dot product
-                    float angleRotation = (float) (Math.acos(VzAxis.DotProduct(vPointDir)) * 180 / Math.PI);
+                    float angleRotation = (float) ((Math.acos(VzAxis.DotProduct(vPointDir)) * 180) / Math.PI);
                     hLinkAttrs.put("LinkArrowRotationAngle", new Float(angleRotation));
                     hLinkAttrs.put("LinkArrowRotationAxis", vRotAxis);
-                } else
+                } else {
                     linkID = ((Integer) obj).intValue();
+                }
 
                 // draw the link
                 // colorLink = (float[])hLinkAttrs.get("LinkColor");
-                gl.glColor3fv(colorLink, 0);
+                if ((link.name != null) && (link.name.indexOf("NetLink") >= 0)) {
+                    gl.glColor3fv(Color.GREEN.getColorComponents(null), 0);
+                } else {
+                    gl.glColor3fv(colorLink, 0);
+                }
+
                 gl.glCallList(linkID);
 
                 // draw arrow on link
@@ -1212,10 +1253,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         gl.glTranslatef(vLinkArrowBase.getX(), vLinkArrowBase.getY(), vLinkArrowBase.getZ());
                         // 2. operation: rotate from (0,0,1) to Vdir
                         // System.out.println("link arrow rotation axis: "+vLinkArrowRotationAxis);
-                        gl.glRotatef(fLinkArrowRotationAngle,
-                                     vLinkArrowRotationAxis.getX(),
-                                     vLinkArrowRotationAxis.getY(),
-                                     vLinkArrowRotationAxis.getZ());
+                        gl.glRotatef(fLinkArrowRotationAngle, vLinkArrowRotationAxis.getX(),
+                                vLinkArrowRotationAxis.getY(), vLinkArrowRotationAxis.getZ());
                         // 1. operation: scale to radius dimmensions:
                         gl.glScalef(radius / 2, radius / 2, radius / 2);
                         // use already constructed cap as display list
@@ -1237,12 +1276,12 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
     /**
      * computes wan links
-     * 
+     *
      * @param gl
      * @param graphicalAttrs
      * @param bInvalidateLinks
      */
-    private void computeWAN(GL gl, Object[] graphicalAttrs, boolean bInvalidateLinks, float radius) {
+    private void computeWAN(GL2 gl, Object[] graphicalAttrs, boolean bInvalidateLinks, float radius) {
         Object obj;
         ILink link;
         HashMap hLinkAttrs;
@@ -1262,8 +1301,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     for (Iterator it2 = node.wconn.values().iterator(); it2.hasNext();) {
                         Object objLink = it2.next();
                         // System.out.println("obj link instance of "+objLink.getClass().getName());
-                        if (!(objLink instanceof ILink))
+                        if (!(objLink instanceof ILink)) {
                             continue;
+                        }
                         link = (ILink) objLink;
                         // System.out.println("wan link "+link.name);
                         obj = wanAttrs.get(link);
@@ -1278,15 +1318,18 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                             // put routers at each end of the wan link
                             Object objRouter;
                             // String cityFrom = (String) link.from.get("CITY");
-                            if (link.from != null && link.from.get("LONG") != null && link.from.get("LAT") != null && link.to != null
-                                    && link.to.get("LONG") != null && link.to.get("LAT") != null) {
-                                String locationFrom = (String) link.from.get("LONG") + "/" + (String) link.from.get("LAT");
+                            if ((link.from != null) && (link.from.get("LONG") != null)
+                                    && (link.from.get("LAT") != null) && (link.to != null)
+                                    && (link.to.get("LONG") != null) && (link.to.get("LAT") != null)) {
+                                String locationFrom = link.from.get("LONG") + "/" + link.from.get("LAT");
                                 // System.out.println("location from: "+locationFrom);
                                 if ((objRouter = hRouters.get(locationFrom)) == null) {
                                     // float []vectorPos = new float[2];
                                     float posLONG, posLAT;
-                                    /* vectorPos[0] = */posLONG = DataGlobals.failsafeParseFloat((String) link.from.get("LONG"), -111.15f);
-                                    /* vectorPos[1] = */posLAT = DataGlobals.failsafeParseFloat((String) link.from.get("LAT"), -21.22f);
+                                    /* vectorPos[0] = */posLONG = DataGlobals.failsafeParseFloat(
+                                            link.from.get("LONG"), -111.15f);
+                                    /* vectorPos[1] = */posLAT = DataGlobals.failsafeParseFloat(link.from.get("LAT"),
+                                            -21.22f);
                                     // hRouters.put( locationFrom, vectorPos);
                                     // parse router location
                                     String sLocation = null;
@@ -1301,7 +1344,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                                     // sLocation = link.name.substring(0, nMinusSeparator);
                                     // }
                                     // };
-                                    sLocation = (String) link.from.get("CITY");
+                                    sLocation = link.from.get("CITY");
                                     routerFrom = new WANRouter(posLONG, posLAT, sLocation);
                                     hRouters.put(locationFrom, routerFrom);
                                 } else if (objRouter instanceof WANRouter) {
@@ -1311,12 +1354,12 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                                 hLinkAttrs.put("routerFrom", routerFrom);
                                 routerFrom.fromLinks.add(link);
                                 // String cityTo = (String) link.to.get("CITY");
-                                String locationTo = (String) link.to.get("LONG") + "/" + (String) link.to.get("LAT");
+                                String locationTo = link.to.get("LONG") + "/" + link.to.get("LAT");
                                 // System.out.println("location to: "+locationTo);
                                 if ((objRouter = hRouters.get(locationTo)) == null) {
                                     float posLONG, posLAT;
-                                    posLONG = DataGlobals.failsafeParseFloat((String) link.to.get("LONG"), -111.15f);
-                                    posLAT = DataGlobals.failsafeParseFloat((String) link.to.get("LAT"), -21.22f);
+                                    posLONG = DataGlobals.failsafeParseFloat(link.to.get("LONG"), -111.15f);
+                                    posLAT = DataGlobals.failsafeParseFloat(link.to.get("LAT"), -21.22f);
                                     // hRouters.put( locationTo, vectorPos);
                                     // parse router location
                                     String sLocation = null;
@@ -1331,7 +1374,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                                     // sLocation = link.name.substring(0, nMinusSeparator);
                                     // }
                                     // }
-                                    sLocation = (String) link.to.get("CITY");
+                                    sLocation = link.to.get("CITY");
                                     routerTo = new WANRouter(posLONG, posLAT, sLocation);
                                     hRouters.put(locationTo, routerTo);
                                 } else if (objRouter instanceof WANRouter) {
@@ -1349,7 +1392,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                             // check to see if the coordinates for this wan link have changed
                         }
                         ;
-                        if (routerFrom != null && routerTo != null) {
+                        if ((routerFrom != null) && (routerTo != null)) {
                             // here i have the creator node, the source and
                             // destination routers, so sort links
                             // check the order hashmap
@@ -1358,10 +1401,10 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                             for (Iterator it3 = hOrderNodes.keySet().iterator(); it3.hasNext();) {
                                 WANRouter[] key = (WANRouter[]) it3.next();
                                 if (routerFrom.equals(key[0]) && routerTo.equals(key[1]) /*
-                                                                                          * ||
-                                                                                          * routerFrom.equals(key[1]) &&
-                                                                                          * routerTo.equals(key[0])
-                                                                                          */) {
+                                                                                         * ||
+                                                                                         * routerFrom.equals(key[1]) &&
+                                                                                         * routerTo.equals(key[0])
+                                                                                         */) {
                                     // another link(s) already exist between these two routers
                                     // increment order and break cycle
                                     nOrder = ((Integer) hOrderNodes.get(key)).intValue() + 1;
@@ -1374,14 +1417,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                             obj = hLinkAttrs.get("Order");
                             if (obj != null) {
                                 int nOldOrder = ((Integer) obj).intValue();
-                                if (nOldOrder != nOrder)
+                                if (nOldOrder != nOrder) {
                                     hLinkAttrs.remove("LinkID");
+                                }
                             }
                             hLinkAttrs.put("Order", Integer.valueOf(nOrder));
-                            if (keySel == null)
-                                keySel = new WANRouter[] {
-                                        routerFrom, routerTo
-                                };
+                            if (keySel == null) {
+                                keySel = new WANRouter[] { routerFrom, routerTo };
+                            }
                             // System.out.println("from "+routerFrom.toString()+" to "+routerTo+" link number="+nOrder);
                             hOrderNodes.put(keySel, Integer.valueOf(nOrder));
                         }
@@ -1470,28 +1513,34 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
                 // get link order
                 obj = hLinkAttrs.get("Order");
-                if (obj == null || !(obj instanceof Integer))
+                if ((obj == null) || !(obj instanceof Integer)) {
                     continue;
+                }
                 int nOrder = ((Integer) obj).intValue();
                 // recompute color
-                Color c = ((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.csWAN.getColor(((Double) (link.data)).doubleValue());
-                if (c == null)
+                Color c = ((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.csWAN.getColor(((Double) (link.data))
+                        .doubleValue());
+                if (c == null) {
                     continue;
+                }
                 obj = hLinkAttrs.get("LinkColor");
-                if (obj == null)
+                if (obj == null) {
                     colorLink = new float[3];
-                else
+                } else {
                     colorLink = (float[]) obj;
+                }
                 colorLink[0] = c.getRed() / 255f;
                 colorLink[1] = c.getGreen() / 255f;
                 colorLink[2] = c.getBlue() / 255f;
-                if (obj == null)
+                if (obj == null) {
                     hLinkAttrs.put("LinkColor", colorLink);
+                }
 
                 // recompute value
                 Double value = ((Double) (link.data));
-                if (value == null)
+                if (value == null) {
                     continue;
+                }
                 hLinkAttrs.put("LinkValue", value);
                 double val = value.doubleValue();
                 int line_width = 1;
@@ -1502,12 +1551,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 Hashtable hWANOptions = (Hashtable) OptionsPanelValues.get("wan");
                 double Max = ((Double) hWANOptions.get("MaxValue")).doubleValue();
                 double Min = ((Double) hWANOptions.get("MinValue")).doubleValue();
-                if (Max >= val && Max > Min && Max > 0 && val >= Min) {
-                    line_width = (int) (3 - 2 * (Max - val) / (Max - Min));
-                    if (line_width < 1)
+                if ((Max >= val) && (Max > Min) && (Max > 0) && (val >= Min)) {
+                    line_width = (int) (3 - ((2 * (Max - val)) / (Max - Min)));
+                    if (line_width < 1) {
                         line_width = 1;
-                } else
+                    }
+                } else {
                     line_width = 1;
+                }
                 // System.out.println("compute wan link width: "+line_width);
                 hLinkAttrs.put("LinkWidth", Integer.valueOf(line_width));
 
@@ -1522,17 +1573,20 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 // *(MAX_SPEED_WAN_SEGMENT_STEPS-MIN_SPEED_WAN_SEGMENT_STEPS)
                 // /(MaxLimit-MinLimit));
                 total_steps = MIN_SPEED_WAN_SEGMENT_STEPS
-                        + (Max > 0 ? (int) ((MAX_SPEED_WAN_SEGMENT_STEPS - MIN_SPEED_WAN_SEGMENT_STEPS) * val / Max) : 0);
-                if (total_steps > MIN_SPEED_WAN_SEGMENT_STEPS)
+                        + (Max > 0 ? (int) (((MAX_SPEED_WAN_SEGMENT_STEPS - MIN_SPEED_WAN_SEGMENT_STEPS) * val) / Max)
+                                : 0);
+                if (total_steps > MIN_SPEED_WAN_SEGMENT_STEPS) {
                     total_steps = MIN_SPEED_WAN_SEGMENT_STEPS;
-                if (total_steps < MAX_SPEED_WAN_SEGMENT_STEPS)
+                }
+                if (total_steps < MAX_SPEED_WAN_SEGMENT_STEPS) {
                     total_steps = MAX_SPEED_WAN_SEGMENT_STEPS;
+                }
                 // System.out.println("total_steps="+total_steps);
                 hLinkAttrs.put("WANSegmentSteps", Integer.valueOf(total_steps));
 
                 // if neccessary, recompute display list
                 obj = hLinkAttrs.get("LinkID");
-                if (obj != null && bInvalidateLinks) {// for that, delete old id
+                if ((obj != null) && bInvalidateLinks) {// for that, delete old id
                     gl.glDeleteLists(((Integer) obj).intValue(), 1);
                     obj = null;
                 }
@@ -1540,15 +1594,15 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 if (obj == null) {
                     linkID = gl.glGenLists(1);
                     // System.out.println("linkID generated: "+linkID);
-                    gl.glNewList(linkID, GL.GL_COMPILE);
+                    gl.glNewList(linkID, GL2.GL_COMPILE);
                     JoGLDirectedArc3D Darc3D;
-                    Darc3D = new JoGLDirectedArc3D(link.fromLAT, link.fromLONG, link.toLAT, link.toLONG, globeRad, 10, 0.05/*
-                                                                                                                            * +
-                                                                                                                            * 0.01
-                                                                                                                            * *
-                                                                                                                            * nOrder
-                                                                                                                            */, -globeRad
-                            + globeVirtRad, 0.1 + 0.1 * nOrder);
+                    Darc3D = new JoGLDirectedArc3D(link.fromLAT, link.fromLONG, link.toLAT, link.toLONG, globeRad, 10,
+                            0.05/*
+                                * +
+                                * 0.01
+                                * *
+                                * nOrder
+                                */, -globeRad + globeVirtRad, 0.1 + (0.1 * nOrder));
                     ArrayList alArcPoints = new ArrayList();
                     Darc3D.setPoints(alArcPoints);
                     Darc3D.drawArc(gl);
@@ -1568,7 +1622,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     VectorO VzAxis = new VectorO(0, 0, 1);
                     VectorO vRotAxis = VzAxis.CrossProduct(vPointDir);
                     // rotate z to Vdir around vectorial product with dot product
-                    float angleRotation = (float) (Math.acos(VzAxis.DotProduct(vPointDir)) * 180 / Math.PI);
+                    float angleRotation = (float) ((Math.acos(VzAxis.DotProduct(vPointDir)) * 180) / Math.PI);
                     hLinkAttrs.put("LinkArrowRotationAngle", new Float(angleRotation));
                     hLinkAttrs.put("LinkArrowRotationAxis", vRotAxis);
                 } else {
@@ -1578,11 +1632,19 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
                 // draw the link
                 // colorLink = (float[])hLinkAttrs.get("LinkColor");
-                gl.glLineWidth((float) line_width);
-                gl.glColor3fv(colorLink, 0);
+                gl.glLineWidth(line_width);
+                if ((link.name != null) && (link.name.indexOf("NetLink") >= 0)) {
+                    gl.glColor3fv(Color.GREEN.getColorComponents(null), 0);
+                } else {
+                    gl.glColor3fv(colorLink, 0);
+                }
                 gl.glCallList(linkID);
                 gl.glLineWidth(1f);
-                gl.glColor3fv(colorLink, 0);
+                if ((link.name != null) && (link.name.indexOf("NetLink") >= 0)) {
+                    gl.glColor3fv(Color.GREEN.getColorComponents(null), 0);
+                } else {
+                    gl.glColor3fv(colorLink, 0);
+                }
 
                 // draw arrow on link
                 if (conID > 0) {// if there is an object to be drawn
@@ -1598,10 +1660,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         gl.glTranslatef(vLinkArrowBase.getX(), vLinkArrowBase.getY(), vLinkArrowBase.getZ());
                         // 2. operation: rotate from (0,0,1) to Vdir
                         // System.out.println("link arrow rotation axis: "+vLinkArrowRotationAxis);
-                        gl.glRotatef(fLinkArrowRotationAngle,
-                                     vLinkArrowRotationAxis.getX(),
-                                     vLinkArrowRotationAxis.getY(),
-                                     vLinkArrowRotationAxis.getZ());
+                        gl.glRotatef(fLinkArrowRotationAngle, vLinkArrowRotationAxis.getX(),
+                                vLinkArrowRotationAxis.getY(), vLinkArrowRotationAxis.getZ());
                         // 1. operation: scale to radius dimmensions:
                         gl.glScalef(radius / 2, radius / 2, radius / 2);
                         // use already constructed cap as display list
@@ -1623,11 +1683,12 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         // listRouters();
         drawRouters(gl, radius * .9f);
 
-        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbAnimateWAN.isSelected())
+        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbAnimateWAN.isSelected()) {
             drawPackages(gl, radius);
+        }
     }
 
-    private void computeNF(GL gl, Object[] graphicalAttrs, boolean bInvalidateLinks, float radius) {
+    private void computeNF(GL2 gl, Object[] graphicalAttrs, boolean bInvalidateLinks, float radius) {
         Object obj;
         NFLink link;
         HashMap hLinkAttrs;
@@ -1641,8 +1702,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     // for each net flow link, check to see if already put
                     for (Iterator it2 = node.wconn.values().iterator(); it2.hasNext();) {
                         Object objLink = it2.next();
-                        if (!(objLink instanceof NFLink))
+                        if (!(objLink instanceof NFLink)) {
                             continue;
+                        }
                         link = (NFLink) objLink;
                         obj = nfAttrs.get(link);
                         NetFlowDevice routerFrom = null;
@@ -1655,16 +1717,17 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
                             // put netflow router at each end of the net flow link
                             Object objRouter;
-                            if (link.from != null && link.from.get("LONG") != null && link.from.get("LAT") != null && link.to != null
-                                    && link.to.get("LONG") != null && link.to.get("LAT") != null) {
-                                String locationFrom = (String) link.from.get("LONG") + "/" + (String) link.from.get("LAT");
+                            if ((link.from != null) && (link.from.get("LONG") != null)
+                                    && (link.from.get("LAT") != null) && (link.to != null)
+                                    && (link.to.get("LONG") != null) && (link.to.get("LAT") != null)) {
+                                String locationFrom = link.from.get("LONG") + "/" + link.from.get("LAT");
                                 if ((objRouter = hNetFlowDevices.get(locationFrom)) == null) {
                                     float posLONG, posLAT;
-                                    posLONG = DataGlobals.failsafeParseFloat((String) link.from.get("LONG"), -111.15f);
-                                    posLAT = DataGlobals.failsafeParseFloat((String) link.from.get("LAT"), -21.22f);
+                                    posLONG = DataGlobals.failsafeParseFloat(link.from.get("LONG"), -111.15f);
+                                    posLAT = DataGlobals.failsafeParseFloat(link.from.get("LAT"), -21.22f);
                                     // parse router location
                                     String sLocation = null;
-                                    sLocation = (String) link.from.get("CITY");
+                                    sLocation = link.from.get("CITY");
                                     routerFrom = new NetFlowDevice(posLONG, posLAT, sLocation);
                                     hNetFlowDevices.put(locationFrom, routerFrom);
                                 } else if (objRouter instanceof NetFlowDevice) {
@@ -1672,14 +1735,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                                 }
                                 hLinkAttrs.put("routerFrom", routerFrom);
                                 routerFrom.fromLinks.add(link);
-                                String locationTo = (String) link.to.get("LONG") + "/" + (String) link.to.get("LAT");
+                                String locationTo = link.to.get("LONG") + "/" + link.to.get("LAT");
                                 if ((objRouter = hNetFlowDevices.get(locationTo)) == null) {
                                     float posLONG, posLAT;
-                                    posLONG = DataGlobals.failsafeParseFloat((String) link.to.get("LONG"), -111.15f);
-                                    posLAT = DataGlobals.failsafeParseFloat((String) link.to.get("LAT"), -21.22f);
+                                    posLONG = DataGlobals.failsafeParseFloat(link.to.get("LONG"), -111.15f);
+                                    posLAT = DataGlobals.failsafeParseFloat(link.to.get("LAT"), -21.22f);
                                     // parse router location
                                     String sLocation = null;
-                                    sLocation = (String) link.to.get("CITY");
+                                    sLocation = link.to.get("CITY");
                                     routerTo = new NetFlowDevice(posLONG, posLAT, sLocation);
                                     hNetFlowDevices.put(locationTo, routerTo);
                                 } else if (objRouter instanceof NetFlowDevice) {
@@ -1696,7 +1759,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                             // check to see if the coordinates for this netflow link have changed
                         }
                         ;
-                        if (routerFrom != null && routerTo != null) {
+                        if ((routerFrom != null) && (routerTo != null)) {
                             // here i have the creator node, the source and
                             // destination routers, so sort links
                             // check the order hashmap
@@ -1717,14 +1780,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                             obj = hLinkAttrs.get("Order");
                             if (obj != null) {
                                 int nOldOrder = ((Integer) obj).intValue();
-                                if (nOldOrder != nOrder)
+                                if (nOldOrder != nOrder) {
                                     hLinkAttrs.remove("LinkID");
+                                }
                             }
                             hLinkAttrs.put("Order", Integer.valueOf(nOrder));
-                            if (keySel == null)
-                                keySel = new NetFlowDevice[] {
-                                        routerFrom, routerTo
-                                };
+                            if (keySel == null) {
+                                keySel = new NetFlowDevice[] { routerFrom, routerTo };
+                            }
                             // System.out.println("from "+routerFrom.toString()+" to "+routerTo+" link number="+nOrder);
                             hOrderNodes.put(keySel, Integer.valueOf(nOrder));
                         }
@@ -1791,30 +1854,35 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
                 // get link order
                 obj = hLinkAttrs.get("Order");
-                if (obj == null || !(obj instanceof Integer))
+                if ((obj == null) || !(obj instanceof Integer)) {
                     continue;
+                }
                 int nOrder = ((Integer) obj).intValue();
                 // recompute value
                 Double value = ((Double) (link.data));
-                if (value == null)
+                if (value == null) {
                     continue;
+                }
                 hLinkAttrs.put("LinkValue", value);
                 double val = value.doubleValue();
 
                 // recompute color
                 Color c = ((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.csNetFlow.getColor(val);
-                if (c == null)
+                if (c == null) {
                     continue;
+                }
                 obj = hLinkAttrs.get("LinkColor");
-                if (obj == null)
+                if (obj == null) {
                     colorLink = new float[3];
-                else
+                } else {
                     colorLink = (float[]) obj;
+                }
                 colorLink[0] = c.getRed() / 255f;
                 colorLink[1] = c.getGreen() / 255f;
                 colorLink[2] = c.getBlue() / 255f;
-                if (obj == null)
+                if (obj == null) {
                     hLinkAttrs.put("LinkColor", colorLink);
+                }
 
                 int line_width = 1;
                 /**
@@ -1824,12 +1892,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 Hashtable hNFOptions = (Hashtable) OptionsPanelValues.get("netflow");
                 double Max = ((Double) hNFOptions.get("MaxValue")).doubleValue();
                 double Min = ((Double) hNFOptions.get("MinValue")).doubleValue();
-                if (Max >= val && Max > Min && Max > 0 && val >= Min) {
-                    line_width = (int) (3 - 2 * (Max - val) / (Max - Min));
-                    if (line_width < 1)
+                if ((Max >= val) && (Max > Min) && (Max > 0) && (val >= Min)) {
+                    line_width = (int) (3 - ((2 * (Max - val)) / (Max - Min)));
+                    if (line_width < 1) {
                         line_width = 1;
-                } else
+                    }
+                } else {
                     line_width = 1;
+                }
                 hLinkAttrs.put("LinkWidth", Integer.valueOf(line_width));
 
                 /** ?????? */
@@ -1838,17 +1908,20 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 // to Min corresponds MIN_SPEED_WAN_SEGMENT_STEPS
                 int total_steps = 0;
                 total_steps = MIN_SPEED_WAN_SEGMENT_STEPS
-                        + (Max > 0 ? (int) ((MAX_SPEED_WAN_SEGMENT_STEPS - MIN_SPEED_WAN_SEGMENT_STEPS) * val / Max) : 0);
-                if (total_steps > MIN_SPEED_WAN_SEGMENT_STEPS)
+                        + (Max > 0 ? (int) (((MAX_SPEED_WAN_SEGMENT_STEPS - MIN_SPEED_WAN_SEGMENT_STEPS) * val) / Max)
+                                : 0);
+                if (total_steps > MIN_SPEED_WAN_SEGMENT_STEPS) {
                     total_steps = MIN_SPEED_WAN_SEGMENT_STEPS;
-                if (total_steps < MAX_SPEED_WAN_SEGMENT_STEPS)
+                }
+                if (total_steps < MAX_SPEED_WAN_SEGMENT_STEPS) {
                     total_steps = MAX_SPEED_WAN_SEGMENT_STEPS;
+                }
                 // System.out.println("total_steps="+total_steps);
                 hLinkAttrs.put("WANSegmentSteps", Integer.valueOf(total_steps));
 
                 // if neccessary, recompute display list
                 obj = hLinkAttrs.get("LinkID");
-                if (obj != null && bInvalidateLinks) {// for that, delete old id
+                if ((obj != null) && bInvalidateLinks) {// for that, delete old id
                     gl.glDeleteLists(((Integer) obj).intValue(), 1);
                     obj = null;
                 }
@@ -1856,17 +1929,10 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 if (obj == null) {
                     linkID = gl.glGenLists(1);
                     // System.out.println("linkID generated: "+linkID);
-                    gl.glNewList(linkID, GL.GL_COMPILE);
+                    gl.glNewList(linkID, GL2.GL_COMPILE);
                     JoGLDirectedArc3D Darc3D;
-                    Darc3D = new JoGLDirectedArc3D(link.fromLAT,
-                                                   link.fromLONG,
-                                                   link.toLAT,
-                                                   link.toLONG,
-                                                   globeRad,
-                                                   10,
-                                                   0.05,
-                                                   -globeRad + globeVirtRad,
-                                                   0.1 + 0.1 * nOrder);
+                    Darc3D = new JoGLDirectedArc3D(link.fromLAT, link.fromLONG, link.toLAT, link.toLONG, globeRad, 10,
+                            0.05, -globeRad + globeVirtRad, 0.1 + (0.1 * nOrder));
                     ArrayList alArcPoints = new ArrayList();
                     Darc3D.setPoints(alArcPoints);
                     Darc3D.drawArc(gl);
@@ -1879,19 +1945,28 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     VectorO VzAxis = new VectorO(0, 0, 1);
                     VectorO vRotAxis = VzAxis.CrossProduct(vPointDir);
                     // rotate z to Vdir around vectorial product with dot product
-                    float angleRotation = (float) (Math.acos(VzAxis.DotProduct(vPointDir)) * 180 / Math.PI);
+                    float angleRotation = (float) ((Math.acos(VzAxis.DotProduct(vPointDir)) * 180) / Math.PI);
                     hLinkAttrs.put("LinkArrowRotationAngle", new Float(angleRotation));
                     hLinkAttrs.put("LinkArrowRotationAxis", vRotAxis);
-                } else
+                } else {
                     linkID = ((Integer) obj).intValue();
+                }
 
                 // draw the link
-                gl.glLineWidth((float) line_width);
-                gl.glColor3fv(colorLink, 0);
+                gl.glLineWidth(line_width);
+                if ((link.name != null) && (link.name.indexOf("NetLink") >= 0)) {
+                    gl.glColor3fv(Color.GREEN.getColorComponents(null), 0);
+                } else {
+                    gl.glColor3fv(colorLink, 0);
+                }
                 gl.glCallList(linkID);
                 gl.glLineWidth(1f);
 
-                gl.glColor3fv(colorLink, 0);
+                if ((link.name != null) && (link.name.indexOf("NetLink") >= 0)) {
+                    gl.glColor3fv(Color.GREEN.getColorComponents(null), 0);
+                } else {
+                    gl.glColor3fv(colorLink, 0);
+                }
                 /** ???? */
 
                 // draw arrow on link
@@ -1908,10 +1983,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         gl.glTranslatef(vLinkArrowBase.getX(), vLinkArrowBase.getY(), vLinkArrowBase.getZ());
                         // 2. operation: rotate from (0,0,1) to Vdir
                         // System.out.println("link arrow rotation axis: "+vLinkArrowRotationAxis);
-                        gl.glRotatef(fLinkArrowRotationAngle,
-                                     vLinkArrowRotationAxis.getX(),
-                                     vLinkArrowRotationAxis.getY(),
-                                     vLinkArrowRotationAxis.getZ());
+                        gl.glRotatef(fLinkArrowRotationAngle, vLinkArrowRotationAxis.getX(),
+                                vLinkArrowRotationAxis.getY(), vLinkArrowRotationAxis.getZ());
                         // 1. operation: scale to radius dimmensions:
                         gl.glScalef(radius / 2, radius / 2, radius / 2);
                         // use already constructed cap as display list
@@ -1933,18 +2006,19 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         drawNetFlowDevices(gl, radius * .9f);
 
         /** should it be??? */
-        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbAnimateWAN.isSelected())
+        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbAnimateWAN.isSelected()) {
             drawPackages4NF(gl, radius);
+        }
     }
 
     /**
      * computes os links
-     * 
+     *
      * @param gl
      * @param graphicalAttrs
      * @param bInvalidateLinks
      */
-    private void computeOS(GL gl, Object[] graphicalAttrs, boolean bInvalidateLinks, float radius) {
+    private void computeOS(GL2 gl, Object[] graphicalAttrs, boolean bInvalidateLinks, float radius) {
         // System.out.println("recompute os links: "+bInvalidateLinks+" radius="+radius);
         Object obj;
         OSLink link;
@@ -1960,11 +2034,13 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     hOrderNodes.clear();
                     for (Iterator it2 = node.wconn.values().iterator(); it2.hasNext();) {
                         Object objLink = it2.next();
-                        if (!(objLink instanceof OSLink))
+                        if (!(objLink instanceof OSLink)) {
                             continue;
+                        }
                         link = (OSLink) objLink;
-                        if (link.checkFlag(OSLink.OSLINK_FLAG_FAKE_NODE))
+                        if (link.checkFlag(OSLink.OSLINK_FLAG_FAKE_NODE)) {
                             continue;
+                        }
                         rcNode source = null, dest = null;
 
                         if (link.szSourcePort != null) { // type one sw
@@ -2000,9 +2076,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         // check the order hashmap
                         Object objOrder;
                         objOrder = hOrderNodes.get(dest);
-                        if (objOrder == null)
+                        if (objOrder == null) {
                             nOrder = 1;
-                        else {
+                        } else {
                             nOrder = ((Integer) objOrder).intValue() + 1;
                         }
                         ((HashMap) osAttrs.get(link)).put("Order", Integer.valueOf(nOrder));
@@ -2037,13 +2113,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     continue;
                 }
                 boolean contains = false;
-                if (link.rcSource != null)
+                if (link.rcSource != null) {
                     for (Enumeration en = link.rcSource.wconn.elements(); en.hasMoreElements();) {
                         if (link.equals(en.nextElement())) {
                             contains = true;
                             break;
                         }
                     }
+                }
                 if (nFrom.bHiddenOnMap || !contains || nTo.bHiddenOnMap) {
                     System.out.println("source hidden or not contained or destination hidden for " + link);
                     it.remove();
@@ -2070,23 +2147,27 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
                 // get link order
                 obj = hLinkAttrs.get("Order");
-                if (obj == null || !(obj instanceof Integer))
+                if ((obj == null) || !(obj instanceof Integer)) {
                     continue;
+                }
                 int nOrder = ((Integer) obj).intValue();
                 // recompute color
                 Color c = link.getStateColor();
-                if (c == null)
+                if (c == null) {
                     continue;
+                }
                 obj = hLinkAttrs.get("LinkColor");
-                if (obj == null)
+                if (obj == null) {
                     colorLink = new float[3];
-                else
+                } else {
                     colorLink = (float[]) obj;
+                }
                 colorLink[0] = c.getRed() / 255f;
                 colorLink[1] = c.getGreen() / 255f;
                 colorLink[2] = c.getBlue() / 255f;
-                if (obj == null)
+                if (obj == null) {
                     hLinkAttrs.put("LinkColor", colorLink);
+                }
 
                 // check coordinates for source and destination nodes to see if any changes, and, if so
                 // update values for link and recompute it
@@ -2102,14 +2183,14 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 float nfrom_long = DataGlobals.failsafeParseFloat(nFrom.LONG, -111.15f);
                 float nto_lat = DataGlobals.failsafeParseFloat(nTo.LAT, -21.22f);
                 float nto_long = DataGlobals.failsafeParseFloat(nTo.LONG, -111.15f);
-                if (srcLat != nfrom_lat || srcLong != nfrom_long || dstLat != nto_lat || dstLong != nto_long) {// link.fromLAT
-                                                                                                               // ||
-                                                                                                               // srcLong!=link.fromLONG
-                                                                                                               // ||
-                                                                                                               // dstLat!=link.toLAT
-                                                                                                               // ||
-                                                                                                               // dstLong!=link.toLONG
-                                                                                                               // ) {
+                if ((srcLat != nfrom_lat) || (srcLong != nfrom_long) || (dstLat != nto_lat) || (dstLong != nto_long)) {// link.fromLAT
+                    // ||
+                    // srcLong!=link.fromLONG
+                    // ||
+                    // dstLat!=link.toLAT
+                    // ||
+                    // dstLong!=link.toLONG
+                    // ) {
                     // update link's start and end coordinates
                     hLinkAttrs.put("fromLAT", nFrom.LAT);// link.rcSource.LAT);
                     hLinkAttrs.put("fromLONG", nFrom.LONG);// link.rcSource.LONG);
@@ -2125,7 +2206,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
                 // if neccessary, recompute display list
                 obj = hLinkAttrs.get("LinkID");
-                if (obj != null && (bInvalidateLinks || bInvalidateThisLink)) {// for that, delete old id
+                if ((obj != null) && (bInvalidateLinks || bInvalidateThisLink)) {// for that, delete old id
                     gl.glDeleteLists(((Integer) obj).intValue(), 1);
                     obj = null;
                 }
@@ -2133,22 +2214,23 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 if (obj == null) {
                     linkID = gl.glGenLists(1);
                     // System.out.println("linkID generated: "+linkID);
-                    gl.glNewList(linkID, GL.GL_COMPILE);
+                    gl.glNewList(linkID, GL2.GL_COMPILE);
                     JoGLDirectedArc3D Darc3D;
-                    Darc3D = new JoGLDirectedArc3D(srcLat, srcLong, dstLat, dstLong, globeRad, 10, 0.05, -globeRad + globeVirtRad, 0.1 + 0.1 * nOrder/*
-                                                                                                                                                      * 0.05
-                                                                                                                                                      * *
-                                                                                                                                                      * nOrder
-                                                                                                                                                      * ,
-                                                                                                                                                      * -
-                                                                                                                                                      * globeRad
-                                                                                                                                                      * +
-                                                                                                                                                      * globeVirtRad
-                                                                                                                                                      * ,
-                                                                                                                                                      * 0.2
-                                                                                                                                                      * *
-                                                                                                                                                      * nOrder
-                                                                                                                                                      */);
+                    Darc3D = new JoGLDirectedArc3D(srcLat, srcLong, dstLat, dstLong, globeRad, 10, 0.05, -globeRad
+                            + globeVirtRad, 0.1 + (0.1 * nOrder/*
+                                                               * 0.05
+                                                               * *
+                                                               * nOrder
+                                                               * ,
+                                                               * -
+                                                               * globeRad
+                                                               * +
+                                                               * globeVirtRad
+                                                               * ,
+                                                               * 0.2
+                                                               * *
+                                                               * nOrder
+                                                               */));
                     Darc3D.drawArc(gl);
                     gl.glEndList();
                     hLinkAttrs.put("LinkID", Integer.valueOf(linkID));
@@ -2160,11 +2242,12 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     VectorO VzAxis = new VectorO(0, 0, 1);
                     VectorO vRotAxis = VzAxis.CrossProduct(vPointDir);
                     // rotate z to Vdir around vectorial product with dot product
-                    float angleRotation = (float) (Math.acos(VzAxis.DotProduct(vPointDir)) * 180 / Math.PI);
+                    float angleRotation = (float) ((Math.acos(VzAxis.DotProduct(vPointDir)) * 180) / Math.PI);
                     hLinkAttrs.put("LinkArrowRotationAngle", new Float(angleRotation));
                     hLinkAttrs.put("LinkArrowRotationAxis", vRotAxis);
-                } else
+                } else {
                     linkID = ((Integer) obj).intValue();
+                }
 
                 // draw the link
                 // colorLink = (float[])hLinkAttrs.get("LinkColor");
@@ -2185,10 +2268,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         gl.glTranslatef(vLinkArrowBase.getX(), vLinkArrowBase.getY(), vLinkArrowBase.getZ());
                         // 2. operation: rotate from (0,0,1) to Vdir
                         // System.out.println("link arrow rotation axis: "+vLinkArrowRotationAxis);
-                        gl.glRotatef(fLinkArrowRotationAngle,
-                                     vLinkArrowRotationAxis.getX(),
-                                     vLinkArrowRotationAxis.getY(),
-                                     vLinkArrowRotationAxis.getZ());
+                        gl.glRotatef(fLinkArrowRotationAngle, vLinkArrowRotationAxis.getX(),
+                                vLinkArrowRotationAxis.getY(), vLinkArrowRotationAxis.getZ());
                         // 1. operation: scale to radius dimmensions:
                         gl.glScalef(radius / 2, radius / 2, radius / 2);
                         // use already constructed cap as display list
@@ -2209,7 +2290,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
     }
 
-    private void drawWAN(GL gl, float radius) {
+    private void drawWAN(GL2 gl, float radius) {
         Object obj;
         ILink link;
         HashMap hLinkAttrs;
@@ -2219,21 +2300,24 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             // check if a node's link from wconn was eliminated
             for (Iterator it = wanAttrs.keySet().iterator(); it.hasNext();) {
                 Object objLink = it.next();
-                if (!(objLink instanceof ILink))
+                if (!(objLink instanceof ILink)) {
                     continue;
+                }
                 link = (ILink) objLink;
                 hLinkAttrs = (HashMap) wanAttrs.get(link);
 
                 // draw the link
                 obj = hLinkAttrs.get("LinkValue");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 // double val = ((Double)obj).doubleValue();
                 // double line_width = 1;
                 obj = hLinkAttrs.get("LinkWidth");
                 // System.out.println("link width: "+obj);
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 double line_width = ((Integer) obj).intValue();
                 /**
                  * max line widht is 3, minimum is 1
@@ -2252,17 +2336,23 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 // }
 
                 obj = hLinkAttrs.get("LinkColor");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 colorLink = (float[]) obj;
                 obj = hLinkAttrs.get("LinkID");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 linkID = ((Integer) obj).intValue();
 
                 // draw the link
                 gl.glLineWidth((float) line_width);
-                gl.glColor3fv(colorLink, 0);
+                if ((link.name != null) && (link.name.indexOf("NetLink") >= 0)) {
+                    gl.glColor3fv(Color.GREEN.getColorComponents(null), 0);
+                } else {
+                    gl.glColor3fv(colorLink, 0);
+                }
                 gl.glCallList(linkID);
                 gl.glLineWidth(1f);
 
@@ -2278,10 +2368,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         // 3. position object cu correct coordinates
                         gl.glTranslatef(vLinkArrowBase.getX(), vLinkArrowBase.getY(), vLinkArrowBase.getZ());
                         // 2. operation: rotate from (0,0,1) to Vdir
-                        gl.glRotatef(fLinkArrowRotationAngle,
-                                     vLinkArrowRotationAxis.getX(),
-                                     vLinkArrowRotationAxis.getY(),
-                                     vLinkArrowRotationAxis.getZ());
+                        gl.glRotatef(fLinkArrowRotationAngle, vLinkArrowRotationAxis.getX(),
+                                vLinkArrowRotationAxis.getY(), vLinkArrowRotationAxis.getZ());
                         // 1. operation: scale to radius dimmensions:
                         gl.glScalef(radius / 2, radius / 2, radius / 2);
                         // use already constructed cap as display list
@@ -2302,18 +2390,19 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
         drawRouters(gl, radius * .9f);
 
-        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbAnimateWAN.isSelected())
+        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbAnimateWAN.isSelected()) {
             drawPackages(gl, radius);
+        }
     }
 
     /**
      * draw netflow links
      * Sep 13, 2005 6:57:19 PM - mluc<br>
-     * 
+     *
      * @param gl
      * @param radius
      */
-    private void drawNF(GL gl, float radius) {
+    private void drawNF(GL2 gl, float radius) {
         Object obj;
         NFLink link;
         HashMap hLinkAttrs;
@@ -2323,33 +2412,42 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             // check if a node's link from wconn was eliminated
             for (Iterator it = nfAttrs.keySet().iterator(); it.hasNext();) {
                 Object objLink = it.next();
-                if (!(objLink instanceof NFLink))
+                if (!(objLink instanceof NFLink)) {
                     continue;
+                }
                 link = (NFLink) objLink;
                 hLinkAttrs = (HashMap) nfAttrs.get(link);
 
                 // draw the link
                 obj = hLinkAttrs.get("LinkValue");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 obj = hLinkAttrs.get("LinkWidth");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 double line_width = ((Integer) obj).intValue();
                 /** max line widht is 3, minimum is 1 */
 
                 obj = hLinkAttrs.get("LinkColor");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 colorLink = (float[]) obj;
                 obj = hLinkAttrs.get("LinkID");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 linkID = ((Integer) obj).intValue();
 
                 // draw the link
                 gl.glLineWidth((float) line_width);
-                gl.glColor3fv(colorLink, 0);
+                if ((link.name != null) && (link.name.indexOf("NetLink") >= 0)) {
+                    gl.glColor3fv(Color.GREEN.getColorComponents(null), 0);
+                } else {
+                    gl.glColor3fv(colorLink, 0);
+                }
                 gl.glCallList(linkID);
                 gl.glLineWidth(1f);
 
@@ -2365,10 +2463,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         // 3. position object cu correct coordinates
                         gl.glTranslatef(vLinkArrowBase.getX(), vLinkArrowBase.getY(), vLinkArrowBase.getZ());
                         // 2. operation: rotate from (0,0,1) to Vdir
-                        gl.glRotatef(fLinkArrowRotationAngle,
-                                     vLinkArrowRotationAxis.getX(),
-                                     vLinkArrowRotationAxis.getY(),
-                                     vLinkArrowRotationAxis.getZ());
+                        gl.glRotatef(fLinkArrowRotationAngle, vLinkArrowRotationAxis.getX(),
+                                vLinkArrowRotationAxis.getY(), vLinkArrowRotationAxis.getZ());
                         // 1. operation: scale to radius dimmensions:
                         gl.glScalef(radius / 2, radius / 2, radius / 2);
                         // use already constructed cap as display list
@@ -2389,39 +2485,44 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
         drawNetFlowDevices(gl, radius * .9f);
 
-        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbAnimateWAN.isSelected())
+        if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbAnimateWAN.isSelected()) {
             drawPackages4NF(gl, radius);
+        }
     }
 
     /**
      * draws packages for each link
-     * 
+     *
      * @param gl
      * @param radius
      */
-    private void drawPackages(GL gl, float radius) {
-        if (!bAnimationRecomputed)
+    private void drawPackages(GL2 gl, float radius) {
+        if (!bAnimationRecomputed) {
             return;
+        }
         Object obj;
         ILink link;
         HashMap hLinkAttrs;
-        if (packageID == 0)// no texture for package
+        if (packageID == 0) {
             return;
+        }
         try {
             // for each link
             for (Iterator it = wanAttrs.keySet().iterator(); it.hasNext();) {
                 Object objLink = it.next();
-                if (!(objLink instanceof ILink))
+                if (!(objLink instanceof ILink)) {
                     continue;
+                }
                 link = (ILink) objLink;
                 hLinkAttrs = (HashMap) wanAttrs.get(link);
                 // get packages vector
                 Vector vPackages = null;
                 obj = hLinkAttrs.get("PackagesVector");
-                if (obj != null && obj instanceof Vector)
+                if ((obj != null) && (obj instanceof Vector)) {
                     vPackages = (Vector) obj;
-                else
+                } else {
                     continue;
+                }
                 // if one available, draw packages
                 WANPackage aPackage;
                 for (int i = 0; i < vPackages.size(); i++) {
@@ -2441,7 +2542,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         // aPackage.vRotAxis.getZ());
                         // gl.glRotatef( aPackage.fRotAngle2, 0, 0, 1);
                         // 1. operation: scale to radius dimmensions:
-                        gl.glScalef(radius * aPackage.fraction_radius, radius * aPackage.fraction_radius, radius * aPackage.fraction_radius);
+                        gl.glScalef(radius * aPackage.fraction_radius, radius * aPackage.fraction_radius, radius
+                                * aPackage.fraction_radius);
                         // use already constructed cap as display list
                         // draw it at (0,0,0) in self reference system
                         gl.glCallList(packageID);
@@ -2463,39 +2565,50 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
     /**
      * draws packages for each netflow link
-     * 
+     *
      * @param gl
      * @param radius
      */
-    private void drawPackages4NF(GL gl, float radius) {
-        if (!bAnimationRecomputed)
+    private void drawPackages4NF(GL2 gl, float radius) {
+        if (!bAnimationRecomputed) {
             return;
+        }
         Object obj;
         NFLink link;
         HashMap hLinkAttrs;
-        if (packageNFID == 0)// no texture for package
+        if (packageNFID == 0) {
             return;
+        }
         float[] colorLink;
         try {
             // for each link
             for (Iterator it = nfAttrs.keySet().iterator(); it.hasNext();) {
                 Object objLink = it.next();
-                if (!(objLink instanceof NFLink))
+                if (!(objLink instanceof NFLink)) {
                     continue;
+                }
                 link = (NFLink) objLink;
                 hLinkAttrs = (HashMap) nfAttrs.get(link);
                 obj = hLinkAttrs.get("LinkColor");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 colorLink = (float[]) obj;
-                gl.glColor3fv(colorLink, 0);
+                if ((link.name != null) && (link.name.indexOf("NetLink") >= 0)) {
+                    gl.glColor3fv(Color.GREEN.getColorComponents(null), 0);
+
+                    continue;
+                } else {
+                    gl.glColor3fv(colorLink, 0);
+                }
                 // get packages vector
                 Vector vPackages = null;
                 obj = hLinkAttrs.get("PackagesVector");
-                if (obj != null && obj instanceof Vector)
+                if ((obj != null) && (obj instanceof Vector)) {
                     vPackages = (Vector) obj;
-                else
+                } else {
                     continue;
+                }
                 // if one available, draw packages
                 WANPackage aPackage;
                 for (int i = 0; i < vPackages.size(); i++) {
@@ -2515,7 +2628,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         // aPackage.vRotAxis.getZ());
                         // gl.glRotatef( aPackage.fRotAngle2, 0, 0, 1);
                         // 1. operation: scale to radius dimmensions:
-                        gl.glScalef(radius * aPackage.fraction_radius, radius * aPackage.fraction_radius, radius * aPackage.fraction_radius);
+                        gl.glScalef(radius * aPackage.fraction_radius, radius * aPackage.fraction_radius, radius
+                                * aPackage.fraction_radius);
                         // use already constructed cap as display list
                         // draw it at (0,0,0) in self reference system
                         gl.glCallList(packageNFID);
@@ -2535,7 +2649,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
     }
 
-    private void drawOS(GL gl, float radius) {
+    private void drawOS(GL2 gl, float radius) {
         Object obj;
         OSLink link;
         HashMap hLinkAttrs;
@@ -2544,19 +2658,22 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         try {
             for (Iterator it = osAttrs.keySet().iterator(); it.hasNext();) {
                 Object objLink = it.next();
-                if (!(objLink instanceof OSLink))
+                if (!(objLink instanceof OSLink)) {
                     continue;
+                }
                 link = (OSLink) objLink;
                 hLinkAttrs = (HashMap) osAttrs.get(link);
 
                 // draw the link
                 obj = hLinkAttrs.get("LinkColor");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 colorLink = (float[]) obj;
                 obj = hLinkAttrs.get("LinkID");
-                if (obj == null)
+                if (obj == null) {
                     continue;// skip to next one
+                }
                 linkID = ((Integer) obj).intValue();
 
                 // draw the link
@@ -2575,10 +2692,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         // 3. position object cu correct coordinates
                         gl.glTranslatef(vLinkArrowBase.getX(), vLinkArrowBase.getY(), vLinkArrowBase.getZ());
                         // 2. operation: rotate from (0,0,1) to Vdir
-                        gl.glRotatef(fLinkArrowRotationAngle,
-                                     vLinkArrowRotationAxis.getX(),
-                                     vLinkArrowRotationAxis.getY(),
-                                     vLinkArrowRotationAxis.getZ());
+                        gl.glRotatef(fLinkArrowRotationAngle, vLinkArrowRotationAxis.getX(),
+                                vLinkArrowRotationAxis.getY(), vLinkArrowRotationAxis.getZ());
                         // 1. operation: scale to radius dimmensions:
                         gl.glScalef(radius / 2, radius / 2, radius / 2);
                         // use already constructed cap as display list
@@ -2599,7 +2714,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
     }
 
-    private void drawRouters(GL gl, float radius) {
+    private void drawRouters(GL2 gl, float radius) {
         // int rID = getRouterID( gl);
         if (routerID <= 0) {
             // System.out.println("Error on drawing router");
@@ -2615,8 +2730,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             try {
                 WANRouter router = (WANRouter) it.next();
                 coords = Globals.point2Dto3D(router.posLAT, router.posLONG, coords);
-                if (coords == null)
+                if (coords == null) {
                     continue;
+                }
 
                 VectorO VdirInit;
                 if (JoglPanel.globals.globeRadius != -1) {
@@ -2624,8 +2740,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     adaosZ = JoglPanel.globals.globeRadius - JoglPanel.globals.globeVirtualRadius;
                     VdirInit = new VectorO(coords[0], coords[1], coords[2] + adaosZ);
                     VdirInit.Normalize();
-                } else
+                } else {
                     VdirInit = new VectorO(0, 0, 1);
+                }
                 // operations are put in inverse order because last is first executed in opengl
                 // 3. position object cu correct coordinates
                 gl.glTranslatef(coords[0], coords[1], coords[2]);
@@ -2634,7 +2751,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 VectorO VzAxis = new VectorO(0, 0, 1);
                 VectorO VRotAxis = VzAxis.CrossProduct(VdirInit);
                 // rotate z to Vdir around vectorial product with dot product
-                gl.glRotatef((float) (Math.acos(VzAxis.DotProduct(VdirInit)) * 180 / Math.PI), VRotAxis.getX(), VRotAxis.getY(), VRotAxis.getZ());
+                gl.glRotatef((float) ((Math.acos(VzAxis.DotProduct(VdirInit)) * 180) / Math.PI), VRotAxis.getX(),
+                        VRotAxis.getY(), VRotAxis.getZ());
                 // 1. operation: scale to radius dimmensions:
                 gl.glScalef(radius, radius, radius);
                 // use already constructed cap as display list
@@ -2663,7 +2781,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         }
     }
 
-    private void drawNetFlowDevices(GL gl, float radius) {
+    private void drawNetFlowDevices(GL2 gl, float radius) {
         if (nfDeviceID <= 0) {
             return;
         }
@@ -2676,8 +2794,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             try {
                 NetFlowDevice router = (NetFlowDevice) it.next();
                 coords = Globals.point2Dto3D(router.posLAT, router.posLONG, coords);
-                if (coords == null)
+                if (coords == null) {
                     continue;
+                }
 
                 VectorO VdirInit;
                 if (JoglPanel.globals.globeRadius != -1) {
@@ -2685,8 +2804,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     adaosZ = JoglPanel.globals.globeRadius - JoglPanel.globals.globeVirtualRadius;
                     VdirInit = new VectorO(coords[0], coords[1], coords[2] + adaosZ);
                     VdirInit.Normalize();
-                } else
+                } else {
                     VdirInit = new VectorO(0, 0, 1);
+                }
                 // operations are put in inverse order because last is first executed in opengl
                 // 3. position object cu correct coordinates
                 gl.glTranslatef(coords[0], coords[1], coords[2]);
@@ -2695,16 +2815,18 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 VectorO VzAxis = new VectorO(0, 0, 1);
                 VectorO VRotAxis = VzAxis.CrossProduct(VdirInit);
                 // rotate z to Vdir around vectorial product with dot product
-                gl.glRotatef((float) (Math.acos(VzAxis.DotProduct(VdirInit)) * 180 / Math.PI), VRotAxis.getX(), VRotAxis.getY(), VRotAxis.getZ());
+                gl.glRotatef((float) ((Math.acos(VzAxis.DotProduct(VdirInit)) * 180) / Math.PI), VRotAxis.getX(),
+                        VRotAxis.getY(), VRotAxis.getZ());
                 // 1. operation: scale to radius dimmensions:
                 gl.glScalef(radius, radius, radius);
                 // use already constructed cap as display list
                 // draw it at (0,0,0) in self reference system
-                if (router.bIsRouter)
+                if (router.bIsRouter) {
                     gl.glCallList(nfRouterID);
-                else
+                } else {
                     gl.glCallList(nfDeviceID);
-                // gl.glCallList( conID);
+                    // gl.glCallList( conID);
+                }
             } catch (Exception ex) {
                 logger.log(Level.INFO, "Exception drawing devices for netflow links: " + ex.getMessage());
                 ex.printStackTrace();
@@ -2713,28 +2835,37 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         }
     }
 
+    @Override
     public Hashtable getLinks(rcNode node) {
-        if (node != null)
+        if (node != null) {
             return node.conn;
+        }
         return null;
     }
 
+    @Override
     public boolean isValidLink(Object link) {
-        if (link == null)
+        if (link == null) {
             return false;
-        if (link instanceof ILink && ((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowPing.isSelected() || link instanceof OSLink
-                && ((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowOS.isSelected())
+        }
+        if (((link instanceof ILink) && ((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowPing.isSelected())
+                || ((link instanceof OSLink) && ((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowOS
+                        .isSelected())) {
             return true;
+        }
         return false;
     }
 
+    @Override
     public boolean isDeadLink(Object link, HashMap hLinkAttrs, HashMap localNodes) {
         rcNode nodeFrom, nodeTo;
         nodeFrom = (rcNode) hLinkAttrs.get("fromNode");
         nodeTo = (rcNode) hLinkAttrs.get("toNode");
-        if (nodeFrom == null || nodeTo == null || !localNodes.containsKey(nodeFrom) || !localNodes.containsKey(nodeTo) || nodeFrom.bHiddenOnMap
-                || nodeTo.bHiddenOnMap || !getLinks(nodeFrom).containsKey(nodeTo) || !isValidLink(link))
+        if ((nodeFrom == null) || (nodeTo == null) || !localNodes.containsKey(nodeFrom)
+                || !localNodes.containsKey(nodeTo) || nodeFrom.bHiddenOnMap || nodeTo.bHiddenOnMap
+                || !getLinks(nodeFrom).containsKey(nodeTo) || !isValidLink(link)) {
             return true;
+        }
         return false;
     }
 
@@ -2745,7 +2876,8 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
     /**
      * specific function for on top renderer
      */
-    private VectorO recomputeVectors(HashMap gaNodes, HashMap htComputedNodes, rcNode node, VectorO[] vectors, float radius) {
+    private VectorO recomputeVectors(HashMap gaNodes, HashMap htComputedNodes, rcNode node, VectorO[] vectors,
+            float radius) {
         rcNode checked_node;
         boolean bNodeTreated = false;
         Map.Entry entry;
@@ -2770,11 +2902,12 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             obj = gaNodes.get(checked_node);
             if (obj != null) {// this node has its attributes computed, so draw it
                 cnVectors = (VectorO[]) ((HashMap) obj).get("PositioningVectors");
-                if (cnVectors == null)
+                if (cnVectors == null) {
                     continue;
+                }
             }
             ;
-            if ((float) vectors[1].distanceTo(cnVectors[1]) < 2 * radius) {
+            if ((float) vectors[1].distanceTo(cnVectors[1]) < (2 * radius)) {
                 // distance from one node to another one is smaller than radius, so draw one on top of other
                 vNewPos = new VectorO(cnVectors[1]);
                 VectorO vLevel = new VectorO(cnVectors[0]);
@@ -2804,8 +2937,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
      */
 
     private void computePingTrafficColors(HashMap links, HashMap nodes) {
-        if (links == null)
+        if (links == null) {
             return;
+        }
         double minPerformance = Double.MAX_VALUE;
         double maxPerformance = Double.MIN_VALUE;
         double perf, lp;
@@ -2817,19 +2951,24 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             for (Iterator it = links.keySet().iterator(); it.hasNext();) {
                 link = (ILink) it.next();
                 ns = (rcNode) ((HashMap) links.get(link)).get("fromNode");
-                if (ns == null)
+                if (ns == null) {
                     continue;
+                }
                 n = (rcNode) ((HashMap) links.get(link)).get("toNode");
-                if (n == null)
+                if (n == null) {
                     continue;
+                }
                 perf = ns.connPerformance(n);
                 lp = ns.connLP(n);
-                if (lp == 1.0)
+                if (lp == 1.0) {
                     continue;
-                if (perf < minPerformance)
+                }
+                if (perf < minPerformance) {
                     minPerformance = perf;
-                if (perf > maxPerformance)
+                }
+                if (perf > maxPerformance) {
                     maxPerformance = perf;
+                }
             }
         } catch (Exception ex) {
             logger.log(Level.INFO, "exception computing Ping links color: " + ex.getMessage());
@@ -2858,10 +2997,11 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
     }
 
     private void computeWANTrafficColors(HashMap links) {
-        if (links == null)
+        if (links == null) {
             return;
-        // first, check all links and see which is the best and which is
-        // the worst for the current quality selected in the link menu
+            // first, check all links and see which is the best and which is
+            // the worst for the current quality selected in the link menu
+        }
 
         double minPerformance = Double.MAX_VALUE;
         double maxPerformance = 0;
@@ -2873,15 +3013,19 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             for (Iterator it = links.keySet().iterator(); it.hasNext();) {
                 link = (ILink) it.next();
                 v = ((Double) (link.data)).doubleValue();
-                if (v < minPerformance)
+                if (v < minPerformance) {
                     minPerformance = v;
-                if (v > maxPerformance)
+                }
+                if (v > maxPerformance) {
                     maxPerformance = v;
+                }
                 v = link.speed;
-                if (v < minLimit)
+                if (v < minLimit) {
                     minLimit = v;
-                if (v > maxLimit)
+                }
+                if (v > maxLimit) {
                     maxLimit = v;
+                }
             }
         } catch (Exception ex) {
             logger.log(Level.INFO, "exception computing WAN links color: " + ex.getMessage());
@@ -2919,15 +3063,16 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
     /**
      * computes netflow traffic color based on colors of each link
      * Sep 13, 2005 4:27:04 PM - mluc<br>
-     * 
+     *
      * @param links
      *            hashtable of NFLinks
      */
     private void computeNFTrafficColors(HashMap links) {
-        if (links == null)
+        if (links == null) {
             return;
-        // first, check all links and see which is the best and which is
-        // the worst for the current quality selected in the link menu
+            // first, check all links and see which is the best and which is
+            // the worst for the current quality selected in the link menu
+        }
 
         double minPerformance = Double.MAX_VALUE;
         double maxPerformance = 0;
@@ -2939,15 +3084,19 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             for (Iterator it = links.keySet().iterator(); it.hasNext();) {
                 link = (NFLink) it.next();
                 v = ((Double) (link.data)).doubleValue();
-                if (v < minPerformance)
+                if (v < minPerformance) {
                     minPerformance = v;
-                if (v > maxPerformance)
+                }
+                if (v > maxPerformance) {
                     maxPerformance = v;
+                }
                 v = link.speed;
-                if (v < minLimit)
+                if (v < minLimit) {
                     minLimit = v;
-                if (v > maxLimit)
+                }
+                if (v > maxLimit) {
                     maxLimit = v;
+                }
             }
         } catch (Exception ex) {
             logger.log(Level.INFO, "exception computing NetFlow links color: " + ex.getMessage());
@@ -2982,7 +3131,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         }
     }
 
-    public ArrayList getOtherSelectedObjects(VectorO vEyePosition, VectorO vDirection, float radius, ArrayList alSelectedObjects) {
+    @Override
+    public ArrayList getOtherSelectedObjects(VectorO vEyePosition, VectorO vDirection, float radius,
+            ArrayList alSelectedObjects) {
         HashMap hLinkAttrs;
         if (((FarmsJoglPanel) JoglPanel.globals.mainPanel).optPan.kbShowWAN.isSelected()) {
             // select WAN objects
@@ -2993,30 +3144,34 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 // check wan links
                 for (Iterator it = wanAttrs.keySet().iterator(); it.hasNext();) {
                     Object objLink = it.next();
-                    if (!(objLink instanceof ILink))
+                    if (!(objLink instanceof ILink)) {
                         continue;
+                    }
                     link = (ILink) objLink;
                     hLinkAttrs = (HashMap) wanAttrs.get(link);
 
                     // check if arrow is selected
                     VectorO vLinkArrowBase = (VectorO) hLinkAttrs.get("LinkArrowBase");
 
-                    if (vLinkArrowBase != null && Globals.sphereIntersection(vEyePosition, vDirection, vLinkArrowBase, radius / 2)
+                    if ((vLinkArrowBase != null)
+                            && Globals.sphereIntersection(vEyePosition, vDirection, vLinkArrowBase, radius / 2)
                             && Globals.isVisible(vEyePosition, vLinkArrowBase, fGlobeRadius)) {
                         HashMap hObjAttrs = new HashMap();// create hashmap to put this link's attributes in it
                         double data = 0;
-                        if (link.data != null && link.data instanceof Double)
+                        if ((link.data != null) && (link.data instanceof Double)) {
                             data = ((Double) (link.data)).doubleValue();
+                        }
                         // String sName = "";//hLinkAttrs.get("LinkArrowBase");
                         String sDescription = "Traffic: " + DataGlobals.formatDoubleByteMul(data, 2) + "\nCapacity: "
                                 + DataGlobals.formatDoubleByteMul(link.speed, 2) + "\nUtilisation: "
-                                + (link.speed > 0 ? "" + (int) (data * 100 / link.speed) : "???") + "%";
+                                + (link.speed > 0 ? "" + (int) ((data * 100) / link.speed) : "???") + "%";
                         hObjAttrs.put("Name", "wan-link " + link.name);
                         hObjAttrs.put("Description", sDescription);
                         hObjAttrs.put("Position", vLinkArrowBase);
                         hObjAttrs.put("Type", "wan-link");
-                        if (alSelectedObjects == null)
+                        if (alSelectedObjects == null) {
                             alSelectedObjects = new ArrayList();
+                        }
                         alSelectedObjects.add(hObjAttrs);
                     }
                     ;
@@ -3051,22 +3206,29 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 for (Iterator it = hRouters.values().iterator(); it.hasNext();) {
                     WANRouter router = (WANRouter) it.next();
                     coords = Globals.point2Dto3D(router.posLAT, router.posLONG, coords);
-                    if (coords == null)
+                    if (coords == null) {
                         continue;
+                    }
                     VectorO vPos = new VectorO(coords);
-                    if (Globals.sphereIntersection(vEyePosition, vDirection, vPos, radius) && Globals.isVisible(vEyePosition, vPos, fGlobeRadius)) {
+                    if (Globals.sphereIntersection(vEyePosition, vDirection, vPos, radius)
+                            && Globals.isVisible(vEyePosition, vPos, fGlobeRadius)) {
                         // add package to selected objects
                         HashMap hObjAttrs = new HashMap();// create hashmap to put this link's attributes in it
-                        hObjAttrs.put("Name", "wan-router" + (router.sLocation == null ? "" : " (" + router.sLocation + ")"));
-                        hObjAttrs.put("Description", "Total traffic IN: " + DataGlobals.formatDoubleByteMul(router.total_IN, 2)
-                                + "\nTotal traffic OUT: " + DataGlobals.formatDoubleByteMul(router.total_OUT, 2)
+                        hObjAttrs.put("Name", "wan-router"
+                                + (router.sLocation == null ? "" : " (" + router.sLocation + ")"));
+                        hObjAttrs.put(
+                                "Description",
+                                "Total traffic IN: " + DataGlobals.formatDoubleByteMul(router.total_IN, 2)
+                                        + "\nTotal traffic OUT: "
+                                        + DataGlobals.formatDoubleByteMul(router.total_OUT, 2)
                         // +"\nLinks IN: "+router.toLinks.size()
                         // +"\nLinks OUT: "+router.fromLinks.size()
-                        );
+                                );
                         hObjAttrs.put("Position", vPos);
                         hObjAttrs.put("Type", "wan-link-router");
-                        if (alSelectedObjects == null)
+                        if (alSelectedObjects == null) {
                             alSelectedObjects = new ArrayList();
+                        }
                         alSelectedObjects.add(hObjAttrs);
                     }
                 }
@@ -3080,22 +3242,25 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             try {
                 for (Iterator it = osAttrs.keySet().iterator(); it.hasNext();) {
                     Object objLink = it.next();
-                    if (!(objLink instanceof OSLink))
+                    if (!(objLink instanceof OSLink)) {
                         continue;
+                    }
                     oslink = (OSLink) objLink;
                     hLinkAttrs = (HashMap) osAttrs.get(oslink);
 
                     VectorO vLinkArrowBase = (VectorO) hLinkAttrs.get("LinkArrowBase");
 
-                    if (vLinkArrowBase != null && Globals.sphereIntersection(vEyePosition, vDirection, vLinkArrowBase, radius / 2)) {
+                    if ((vLinkArrowBase != null)
+                            && Globals.sphereIntersection(vEyePosition, vDirection, vLinkArrowBase, radius / 2)) {
                         HashMap hObjAttrs = new HashMap();// create hashmap to put this link's attributes in it
                         String sName = "";// hLinkAttrs.get("LinkArrowBase");
                         sName = oslink.toString();
                         hObjAttrs.put("Name", sName);
                         hObjAttrs.put("Position", vLinkArrowBase);
                         hObjAttrs.put("Type", "os-link");
-                        if (alSelectedObjects == null)
+                        if (alSelectedObjects == null) {
                             alSelectedObjects = new ArrayList();
+                        }
                         alSelectedObjects.add(hObjAttrs);
                     }
                     ;
@@ -3110,63 +3275,70 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             // check first NetFlow links
             NFLink link;
             float fGlobeRadius = JoglPanel.globals.globeRadius;
-            
+
             final FarmsSerMonitor.GlobeLinksType glt = FarmsSerMonitor.getGlobeLinksTypeFromEnv();
             String attrName = "";
             String routerName = "";
             switch (glt) {
-                case FDT: {
-                    attrName = "FDT link ";
-                    routerName = "FDT node";
-                    break;
-                }
-                case NETFLOW: {
-                    attrName = "NetFlow ";
-                    routerName = "NetFlow device";
-                    break;
-                }
-                case OPENFLOW: {
-                    attrName = "OpenFlow ";
-                    routerName = "OpenFlow device";
-                    break;
-                }
-                case UNDEFINED:
-                    break;
-                default:
-                    break;
+            case FDT: {
+                attrName = "FDT link ";
+                routerName = "FDT node";
+                break;
+            }
+            case NETFLOW: {
+                attrName = "NetFlow ";
+                routerName = "NetFlow device";
+                break;
+            }
+            case OPENFLOW: {
+                attrName = "OpenFlow ";
+                routerName = "OpenFlow device";
+                break;
+            }
+            case UNDEFINED:
+                break;
+            default:
+                break;
             }
 
             try {
                 // check net flow links
                 for (Iterator it = nfAttrs.keySet().iterator(); it.hasNext();) {
                     Object objLink = it.next();
-                    if (!(objLink instanceof NFLink))
+                    if (!(objLink instanceof NFLink)) {
                         continue;
+                    }
                     link = (NFLink) objLink;
                     hLinkAttrs = (HashMap) nfAttrs.get(link);
 
                     // check if arrow is selected
                     VectorO vLinkArrowBase = (VectorO) hLinkAttrs.get("LinkArrowBase");
 
-                    if (vLinkArrowBase != null && Globals.sphereIntersection(vEyePosition, vDirection, vLinkArrowBase, radius / 2)
+                    if ((vLinkArrowBase != null)
+                            && Globals.sphereIntersection(vEyePosition, vDirection, vLinkArrowBase, radius / 2)
                             && Globals.isVisible(vEyePosition, vLinkArrowBase, fGlobeRadius)) {
                         HashMap hObjAttrs = new HashMap();// create hashmap to put this link's attributes in it
                         double data = 0;
-                        if (link.data != null && link.data instanceof Double)
+                        if ((link.data != null) && (link.data instanceof Double)) {
                             data = ((Double) (link.data)).doubleValue();
+                        }
                         // String sName = "";//hLinkAttrs.get("LinkArrowBase");
-                        String sDescription = "Traffic: " + DataGlobals.formatDoubleByteMul(data, 2)
+                        final boolean isNetLink = ((link.name != null) && (link.name.indexOf("NetLink") >= 0));
+
+                        String sDescription = ((isNetLink) ? "Capacity: " : "Traffic: ")
+                                + DataGlobals.formatDoubleByteMul(data, 2)
                         /*
                          * + "\nCapacity: " + DataGlobals.formatDoubleByteMul(link.speed/8, 2, false)
                          * + "\nUtilisation: " + (link.speed>0?""+((int)(data*100*8/link.speed)):"???")+"%"
                          */;
-                        
-                        hObjAttrs.put("Name", attrName + link.name);
+
+                        hObjAttrs.put("Name", ((isNetLink) ? "" : attrName) + link.name);
                         hObjAttrs.put("Description", sDescription);
                         hObjAttrs.put("Position", vLinkArrowBase);
                         hObjAttrs.put("Type", "netflow-link");
-                        if (alSelectedObjects == null)
+                        if (alSelectedObjects == null) {
                             alSelectedObjects = new ArrayList();
+                        }
                         alSelectedObjects.add(hObjAttrs);
                     }
                 }
@@ -3176,10 +3348,12 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                 for (Iterator it = hNetFlowDevices.values().iterator(); it.hasNext();) {
                     NetFlowDevice router = (NetFlowDevice) it.next();
                     coords = Globals.point2Dto3D(router.posLAT, router.posLONG, coords);
-                    if (coords == null)
+                    if (coords == null) {
                         continue;
+                    }
                     VectorO vPos = new VectorO(coords);
-                    if (Globals.sphereIntersection(vEyePosition, vDirection, vPos, radius) && Globals.isVisible(vEyePosition, vPos, fGlobeRadius)) {
+                    if (Globals.sphereIntersection(vEyePosition, vDirection, vPos, radius)
+                            && Globals.isVisible(vEyePosition, vPos, fGlobeRadius)) {
                         // add package to selected objects
                         HashMap hObjAttrs = new HashMap();// create hashmap to put this link's attributes in it
                         // TODO: this boolean could be used to indicate a source, an intermediary or a destination node
@@ -3190,8 +3364,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         // );
                         hObjAttrs.put("Position", vPos);
                         hObjAttrs.put("Type", "netflow-device");
-                        if (alSelectedObjects == null)
+                        if (alSelectedObjects == null) {
                             alSelectedObjects = new ArrayList();
+                        }
                         alSelectedObjects.add(hObjAttrs);
                     }
                 }
@@ -3248,6 +3423,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             // if animation is on and there is no animation timer started, start it
             BackgroundWorker.schedule(new TimerTask() {
 
+                @Override
                 public void run() {
                     Thread.currentThread().setName(" ( ML ) - JOGL - FarmsNodesRenderer - WAN animation Timer Thread");
                     bAnimateWANTimer = true;
@@ -3267,8 +3443,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                             // for each WAN link
                             for (Iterator it = wanAttrs.keySet().iterator(); it.hasNext();) {
                                 Object objLink = it.next();
-                                if (!(objLink instanceof ILink))
+                                if (!(objLink instanceof ILink)) {
                                     continue;
+                                }
                                 link = (ILink) objLink;
                                 hLinkAttrs = (HashMap) wanAttrs.get(link);
                                 updatePackages(hLinkAttrs, link.data, link.speed, link.name);
@@ -3277,17 +3454,20 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                             // for each NF link
                             for (Iterator it = nfAttrs.keySet().iterator(); it.hasNext();) {
                                 Object objLink = it.next();
-                                if (!(objLink instanceof NFLink))
+                                if (!(objLink instanceof NFLink)) {
                                     continue;
+                                }
                                 hLinkAttrs = (HashMap) nfAttrs.get(objLink);
-                                updatePackages(hLinkAttrs, ((NFLink) objLink).data, ((NFLink) objLink).speed, ((NFLink) objLink).name);
+                                updatePackages(hLinkAttrs, ((NFLink) objLink).data, ((NFLink) objLink).speed,
+                                        ((NFLink) objLink).name);
                             }
                             ;
 
                             bAnimationRecomputed = true;
                             JoglPanel.globals.canvas.repaint();
                         } catch (Exception ex) {
-                            logger.log(Level.WARNING, "Exception during animating WAN packages movement: " + ex.getMessage());
+                            logger.log(Level.WARNING,
+                                    "Exception during animating WAN packages movement: " + ex.getMessage());
                             ex.printStackTrace();
                         }
                     }
@@ -3302,7 +3482,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
 
                 /**
                  * updates coordinates for the packages for this current link
-                 * 
+                 *
                  * @author mluc
                  * @since Nov 15, 2006
                  * @param hLinkAttrs
@@ -3314,27 +3494,33 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     Object obj;
                     // get max steps per segment
                     obj = hLinkAttrs.get("WANSegmentSteps");
-                    if (obj == null || !(obj instanceof Integer))
+                    if ((obj == null) || !(obj instanceof Integer)) {
                         return;// no number of steps, so ignore it, it hasn't been computed
+                    }
                     int total_steps = ((Integer) obj).intValue();
-                    if (total_steps == 0)
+                    if (total_steps == 0) {
                         return;// no number of steps, so ignore it, it hasn't been computed
+                    }
                     // System.out.println("total steps: "+total_steps);
                     // get points that form the link
                     obj = hLinkAttrs.get("LinkPoints");
-                    if (obj == null || !(obj instanceof ArrayList))
+                    if ((obj == null) || !(obj instanceof ArrayList)) {
                         return;// no points, so ignore it, it hasn't been computed
+                    }
                     ArrayList alPoints = (ArrayList) obj;
                     // System.out.println("number of points: "+alPoints.size());
                     // get old current step
                     int current_step = 0;
                     obj = hLinkAttrs.get("WANSegmentCurrentStep");
-                    if (obj != null && obj instanceof Integer)
+                    if ((obj != null) && (obj instanceof Integer)) {
                         current_step = ((Integer) obj).intValue() + 1;
-                    if (current_step < 0)
+                    }
+                    if (current_step < 0) {
                         current_step = 0;
-                    if (current_step >= total_steps)
+                    }
+                    if (current_step >= total_steps) {
                         current_step = 0;
+                    }
                     // save new current step
                     hLinkAttrs.put("WANSegmentCurrentStep", Integer.valueOf(current_step));
                     // System.out.println("current step: "+current_step);
@@ -3342,9 +3528,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     // if vector doesn't exist, create it
                     Vector vPackages = null;
                     obj = hLinkAttrs.get("PackagesVector");
-                    if (obj != null && obj instanceof Vector)
+                    if ((obj != null) && (obj instanceof Vector)) {
                         vPackages = (Vector) obj;
-                    else {
+                    } else {
                         vPackages = new Vector();
                         hLinkAttrs.put("PackagesVector", vPackages);
                     }
@@ -3353,8 +3539,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                     // first, take in consideration the fact that the points may have changed,
                     // so try to remove excedentary packages
                     // so that, vPackages.size = alPoints.size-1
-                    while (vPackages.size() >= alPoints.size())
+                    while (vPackages.size() >= alPoints.size()) {
                         vPackages.remove(vPackages.size() - 1);
+                    }
                     // if current step is 0, a new package is to be create
                     if (current_step == 0) {
                         // if number of packages is equal with number of points-1 in link, remove last package and
@@ -3363,13 +3550,15 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         // removing last excedentary to be package
                         obj = null;
                         WANPackage newPackage = null;
-                        if (vPackages.size() == alPoints.size() - 1)
+                        if (vPackages.size() == (alPoints.size() - 1)) {
                             obj = vPackages.remove(vPackages.size() - 1);
+                        }
                         // obtain a new package
-                        if (obj != null && obj instanceof WANPackage)
+                        if ((obj != null) && (obj instanceof WANPackage)) {
                             newPackage = (WANPackage) obj;
-                        else
+                        } else {
                             newPackage = new WANPackage();
+                        }
                         // set some neccessary attributes
                         double data = 0;
                         newPackage.fraction_radius = 0f;
@@ -3380,13 +3569,15 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
                         } catch (Exception ex) {
                             Max = 0;
                         }
-                        if (objData != null && objData instanceof Double && (data = ((Double) (objData)).doubleValue()) != 0
-                                && /* link.speed */(data < Max && data < speed))
+                        if ((objData != null) && (objData instanceof Double)
+                                && ((data = ((Double) (objData)).doubleValue()) != 0)
+                                && /* link.speed */((data < Max) && (data < speed))) {
                             newPackage.fraction_radius = (float) (data / Max/* link.speed */);
-                        newPackage.fraction_radius = .5f + .4f * newPackage.fraction_radius;// if no data available, use
-                                                                                            // a standard size
-                        newPackage.sDescription = "WAN Package: " + name + " = " + (int) data + "/" + (int) speed + " Mbps -> "
-                                + (speed > 0 ? "" + (int) (data * 100 / speed) : "???") + "%";
+                        }
+                        newPackage.fraction_radius = .5f + (.4f * newPackage.fraction_radius);// if no data available, use
+                        // a standard size
+                        newPackage.sDescription = "WAN Package: " + name + " = " + (int) data + "/" + (int) speed
+                                + " Mbps -> " + (speed > 0 ? "" + (int) ((data * 100) / speed) : "???") + "%";
                         // add the new package
                         vPackages.add(0, newPackage);
                     }
@@ -3417,43 +3608,49 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
     /**
      * changes the subview mode, meaning that the position of same objects
      * is a little bit changed, but the data scene remains the same...
-     * 
+     *
      * @param subView
      */
+    @Override
     public void changeSubView(int subView) {
-        if (subView == 0)
+        if (subView == 0) {
             bOnTopView = false;
-        else if (subView == 1)
+        } else if (subView == 1) {
             bOnTopView = true;
+        }
     }
 
     /**
      * fills farm node tooltip with specific info
      */
+    @Override
     public void fillSelectedNodeInfo(rcNode n, HashMap hObjAttrs) {
-        if (n.UnitName.equals("upb") && vcf.vcfList.size() > 0) {
+        if (n.UnitName.equals("upb") && (vcf.vcfList.size() > 0)) {
             // do the trick to show monalisa developers from upb ;)
             long currentTime = System.currentTimeMillis();
-            if (lLastVcfChange == -1 || (lLastVcfChange + nVCF_SHOW_TIME < currentTime)) {
+            if ((lLastVcfChange == -1) || ((lLastVcfChange + nVCF_SHOW_TIME) < currentTime)) {
                 // change vcf
                 lLastVcfChange = currentTime;
                 nCurrentVcf++;
-                if (nCurrentVcf >= vcf.vcfList.size())
+                if (nCurrentVcf >= vcf.vcfList.size()) {
                     nCurrentVcf = 0;
+                }
             }
             // read vcf info and put in hash
             vcf v = (vcf) vcf.vcfList.get(nCurrentVcf);
             if (v != null) {
                 String fn = (String) v.hmData.get("FN");
-                if (fn != null)
+                if (fn != null) {
                     hObjAttrs.put("Name", fn);
-                else
+                } else {
                     hObjAttrs.put("Name", n.UnitName);
+                }
                 String email = (String) v.hmData.get("EMAIL");
-                if (email != null)
+                if (email != null) {
                     hObjAttrs.put("Description", email);
-                else
+                } else {
                     hObjAttrs.put("Description", "Site info:\nIp Address: " + n.IPaddress);
+                }
                 if (v.hmData.get("ImageID") != null) {
                     hObjAttrs.put("ImageID", v.hmData.get("ImageID"));
                     hObjAttrs.put("ImageWidth", v.hmData.get("ImageWidth"));
@@ -3481,8 +3678,9 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             int tparams = 0;
             for (int i = 0; i < v.size(); i++) {
                 v1 = ((MCluster) v.get(i)).getNodes();
-                for (int j = 0; j < v1.size(); j++)
+                for (int j = 0; j < v1.size(); j++) {
                     tparams += ((MNode) v1.get(j)).getParameterList().size();
+                }
             }
             ;
             // "<html>"+nrClusters+" cluster"+(nrClusters != 1 ? "s" : "")+"<br>"
@@ -3491,7 +3689,7 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
             // +tparams+" total param"+(tparams != 1 ? "s" : "")+"</html>";
             // n.client.
 
-            Gresult grLoad = (n == null || n.global_param == null ? null : (Gresult) n.global_param.get("Load5"));
+            Gresult grLoad = ((n == null) || (n.global_param == null) ? null : (Gresult) n.global_param.get("Load5"));
             /*
              * if (grLoad == null ) {
              * grLoad = (n==null || n.global_param == null?null:(Gresult) n.global_param.get("Load1" ));
@@ -3516,27 +3714,34 @@ public class FarmsNodesRenderer extends AbstractNodesRenderer implements GlobeLi
         return bAnimateWAN;
     }
 
+    @Override
     public void mouseClick(float LONG, float LAT) {
     }
 
+    @Override
     public void mouseDblClick(float LONG, float LAT) {
     }
 
+    @Override
     public void mouseMove(int mouse_x, int mouse_y) {
     }
 
+    @Override
     public void optionPanelChanged(int event) {
     }
 
+    @Override
     public void radiusChangeFinish() {
         bGlobeTransformIsOn = false;
     }
 
+    @Override
     public void radiusChangeStart() {
         bGlobeTransformIsOn = true;
         bAnimationRecomputed = false;
     }
 
+    @Override
     public void radiusChanged() {
     }
 

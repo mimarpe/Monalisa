@@ -1,4 +1,5 @@
 package lia.Monitor.modules;
+
 import java.io.BufferedReader;
 import java.net.InetAddress;
 import java.util.Hashtable;
@@ -16,10 +17,13 @@ import lia.Monitor.monitor.cmdExec;
 import lia.util.ntp.NTPDate;
 
 public class vrvsConn extends cmdExec implements MonitoringModule {
-    /** Logger Name */
-    private static final String COMPONENT = "lia.Monitor.modules";
-    /** The Logger */ 
-    private static final Logger logger = Logger.getLogger(COMPONENT);
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -2664905244494465045L;
+
+    /** The Logger */
+    private static final Logger logger = Logger.getLogger(vrvsConn.class.getName());
 
     static String[] tmetric = { "Quality", "LostPackages" };
 
@@ -36,6 +40,7 @@ public class vrvsConn extends cmdExec implements MonitoringModule {
         isRepetitive = true;
     }
 
+    @Override
     public MonModuleInfo init(MNode Node, String arg) {
         this.Node = Node;
         info.ResTypes = tmetric;
@@ -52,6 +57,7 @@ public class vrvsConn extends cmdExec implements MonitoringModule {
         return info;
     }
 
+    @Override
     public Object doProcess() throws Exception {
         BufferedReader buff1 = procOutput(cmd);
 
@@ -64,7 +70,7 @@ public class vrvsConn extends cmdExec implements MonitoringModule {
         Vector vec = null;
         try {
             vec = Parse(buff1);
-        }catch(Throwable t) {
+        } catch (Throwable t) {
             cleanup();
             throw new Exception(t);
         }
@@ -74,14 +80,15 @@ public class vrvsConn extends cmdExec implements MonitoringModule {
     public Vector Parse(BufferedReader buff) throws Exception {
 
         String lin = null;
-        
-        // Read until buffer emty or the PEER keyword found
-        for (lin = buff.readLine();
-            lin != null && lin.indexOf("PEER") == -1;
-            lin = buff.readLine());
 
-        if (lin == null)
+        // Read until buffer emty or the PEER keyword found
+        for (lin = buff.readLine(); (lin != null) && (lin.indexOf("PEER") == -1); lin = buff.readLine()) {
+            ;
+        }
+
+        if (lin == null) {
             return null;
+        }
 
         Result rr = null;
         Vector results = new Vector();
@@ -96,9 +103,9 @@ public class vrvsConn extends cmdExec implements MonitoringModule {
 
                 if (!peers.containsKey(peerNameIP)) {
                     try {
-                        peerName =
-                            InetAddress.getByName(peerNameIP).getHostName();
-                    } catch (Exception e) {}
+                        peerName = InetAddress.getByName(peerNameIP).getHostName();
+                    } catch (Exception e) {
+                    }
                     if (peerName == null) {
                         logger.log(Level.WARNING, "Failed to get Addrees for " + peerNameIP);
                         peers.put(peerNameIP, peerNameIP);
@@ -107,17 +114,11 @@ public class vrvsConn extends cmdExec implements MonitoringModule {
                         peers.put(peerNameIP, peerName);
                     }
                 }
-                
-                peerName = (String)peers.get(peerNameIP);
-                
-                if ( tz.hasMoreTokens() ) {
-                    rr =
-                        new Result(
-                            Node.getFarmName(),
-                            Node.getClusterName(),
-                            peerName,
-                            "vrvsConn",
-                            tmetric);
+
+                peerName = (String) peers.get(peerNameIP);
+
+                if (tz.hasMoreTokens()) {
+                    rr = new Result(Node.getFarmName(), Node.getClusterName(), peerName, "vrvsConn", tmetric);
 
                     String v1 = tz.nextToken().trim();
                     String vv1 = v1.substring(0, v1.length() - 1);
@@ -135,12 +136,17 @@ public class vrvsConn extends cmdExec implements MonitoringModule {
         return results;
     }
 
+    @Override
     public MonModuleInfo getInfo() {
         return info;
     }
+
+    @Override
     public String[] ResTypes() {
         return tmetric;
     }
+
+    @Override
     public String getOsName() {
         return "linux";
     }
@@ -157,8 +163,7 @@ public class vrvsConn extends cmdExec implements MonitoringModule {
             System.exit(-1);
         }
 
-        MonModuleInfo info =
-            aa.init(new MNode(host, ad, null, null), null, null);
+        MonModuleInfo info = aa.init(new MNode(host, ad, null, null), null, null);
 
         try {
 

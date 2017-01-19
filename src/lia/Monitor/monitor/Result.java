@@ -36,7 +36,7 @@ import java.util.Date;
  *  
  *  @see eResult 
  */
-public class Result implements java.io.Serializable {
+public class Result implements java.io.Serializable, TimestampedResult {
 
     /**
      * @since first version of MonALISA
@@ -123,7 +123,7 @@ public class Result implements java.io.Serializable {
     	// nothing
     }
 
-    public String toString() {
+	public String toString() {
         final StringBuilder sb = new StringBuilder(512);
 
         sb.append(" --> \t").append(NodeName);
@@ -207,5 +207,9 @@ public class Result implements java.io.Serializable {
         param = nparam;
         param_name = nparam_name;
     }
+
+	public long getTime() {
+		return time;
+	}
 
 }

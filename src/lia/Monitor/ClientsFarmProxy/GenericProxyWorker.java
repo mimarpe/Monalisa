@@ -1,5 +1,5 @@
 /*
- * $Id: GenericProxyWorker.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: GenericProxyWorker.java 7372 2013-04-04 15:38:50Z ramiro $
  */
 package lia.Monitor.ClientsFarmProxy;
 
@@ -27,7 +27,7 @@ public abstract class GenericProxyWorker implements tcpConnNotifier {
 
     protected final ConcurrentSkipListSet<UUID> appCtrlSessionSet = new ConcurrentSkipListSet<UUID>();
 
-   protected final InfoToFile infoToFile;
+    protected final InfoToFile infoToFile;
 
     protected GenericProxyWorker(ProxyTCPWorker ptw) { // ClientWorker
         lastUpdateFileInfo = System.currentTimeMillis();
@@ -36,14 +36,14 @@ public abstract class GenericProxyWorker implements tcpConnNotifier {
     }
 
     public long getSentBytes() {
-        if (ptw != null && ptw.conn != null) {
+        if ((ptw != null) && (ptw.conn != null)) {
             return ptw.conn.getSentBytes();
         }
         return 0;
     } // getSentBytes
 
     public long getConfSentBytes() {
-        if (ptw != null && ptw.conn != null) {
+        if ((ptw != null) && (ptw.conn != null)) {
             return ptw.conn.getConfSentBytes();
         }
         return 0;
@@ -58,10 +58,11 @@ public abstract class GenericProxyWorker implements tcpConnNotifier {
         msgsLastHourContor.getAndIncrement();
         processMsg(msg);
     } // sendMsg
-    
+
     public abstract boolean commInit();
 
     public abstract void processMsg(monMessage o);
+
     public abstract void processMsg(MonMessageClientsProxy o);
 
     public ConcurrentSkipListSet<UUID> getAppCtrlSessionSet() {

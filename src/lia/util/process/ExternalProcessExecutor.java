@@ -34,7 +34,7 @@ import lia.util.threads.MLExecutorsFactory;
  */
 class ExternalProcessExecutor {
 
-    static final Logger logger = Logger.getLogger(ExternalProcessExecutor.class.getName());
+    private static final Logger logger = Logger.getLogger(ExternalProcessExecutor.class.getName());
 
     static final ScheduledExecutorService executor;
 
@@ -53,7 +53,8 @@ class ExternalProcessExecutor {
 
         final Future<?> procWaitFuture;
 
-        InternalProcessDetails(ExternalProcess externalProcess, ScheduledFuture<?> timeoutTaskFuture, Future<String> stdErrFuture, Future<String> stdOutFuture, Future<?> procWaitFuture) {
+        InternalProcessDetails(ExternalProcess externalProcess, ScheduledFuture<?> timeoutTaskFuture,
+                Future<String> stdErrFuture, Future<String> stdOutFuture, Future<?> procWaitFuture) {
             this.externalProcess = externalProcess;
             this.timeoutTaskFuture = timeoutTaskFuture;
             this.stdErrFuture = stdErrFuture;
@@ -74,7 +75,9 @@ class ExternalProcessExecutor {
 
             // log this after canceling; it might blow
             if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, "Clean up ALL Future tasks for external proccess. Emotions in scheduling. Process: " + externalProcess);
+                logger.log(Level.FINE,
+                        "Clean up ALL Future tasks for external proccess. Emotions in scheduling. Process: "
+                                + externalProcess);
             }
         }
     }
@@ -84,14 +87,18 @@ class ExternalProcessExecutor {
         try {
             // set a "reasonable" max thread count for lia.util.process.MAX_POOL_THREADS_COUNT
             if (AppConfig.setPropertyIfAbsent("lia.util.process.MAX_POOL_THREADS_COUNT", "100") == null) {
-                logger.log(Level.FINE, "Setting default value for lia.util.process.MAX_POOL_THREADS_COUNT to " + AppConfig.getProperty("lia.util.process.MAX_POOL_THREADS_COUNT"));
+                logger.log(Level.FINE, "Setting default value for lia.util.process.MAX_POOL_THREADS_COUNT to "
+                        + AppConfig.getProperty("lia.util.process.MAX_POOL_THREADS_COUNT"));
             } else {
-                logger.log(Level.FINE, "Using predefined value for lia.util.process.MAX_POOL_THREADS_COUNT to " + AppConfig.getProperty("lia.util.process.MAX_POOL_THREADS_COUNT"));
+                logger.log(Level.FINE, "Using predefined value for lia.util.process.MAX_POOL_THREADS_COUNT to "
+                        + AppConfig.getProperty("lia.util.process.MAX_POOL_THREADS_COUNT"));
             }
             executor = MLExecutorsFactory.getScheduledExecutorService("lia.util.process");
         } catch (Throwable t) {
-            logger.log(Level.SEVERE, "Unable to instantiate lia.util.process executor. External processes will not work", t);
-            throw new RuntimeException("Unable to instantiate lia.util.process executor. External processes will not work", t);
+            logger.log(Level.SEVERE,
+                    "Unable to instantiate lia.util.process executor. External processes will not work", t);
+            throw new RuntimeException(
+                    "Unable to instantiate lia.util.process executor. External processes will not work", t);
         }
 
     }
@@ -99,13 +106,13 @@ class ExternalProcessExecutor {
     private static String getExecWrapper() {
         final boolean doNotUseWrapper = AppConfig.getb("lia.util.MLProcess.doNotUseWrapper", false);
 
-        if(doNotUseWrapper) {
-            if(logger.isLoggable(Level.FINEST)) {
+        if (doNotUseWrapper) {
+            if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, "lia.util.MLProcess.doNotUseWrapper is: " + doNotUseWrapper);
             }
             return null;
         }
-        
+
         String cWrapper = null;
 
         try {
@@ -113,7 +120,7 @@ class ExternalProcessExecutor {
             try {
                 mlHOME = AppConfig.getProperty("MonaLisa_HOME", "");
             } catch (Throwable t) {
-                if(logger.isLoggable(Level.FINEST)) {
+                if (logger.isLoggable(Level.FINEST)) {
                     logger.log(Level.FINEST, " [ getWrapper ] Unable to determine mlHOME. Cause: " + t);
                 }
                 mlHOME = "";
@@ -124,12 +131,13 @@ class ExternalProcessExecutor {
                 cWrapper = mlHOME + "/Service/CMD/cmd_run.sh";
             }
             File cwf = new File(cWrapper);
-            if(logger.isLoggable(Level.FINEST)) {
+            if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, " [ getWrapper ] possible wrapper: " + cwf);
             }
             if (!cwf.exists() || !cwf.canRead()) {
-                if(logger.isLoggable(Level.FINEST)) {
-                    logger.log(Level.FINEST, " [ getWrapper ] possible wrapper: " + cwf + " cannot be read or do not exist");
+                if (logger.isLoggable(Level.FINEST)) {
+                    logger.log(Level.FINEST, " [ getWrapper ] possible wrapper: " + cwf
+                            + " cannot be read or do not exist");
                 }
                 cWrapper = null;
             }
@@ -153,8 +161,8 @@ class ExternalProcessExecutor {
         final ProcessBuilder origBuilder = externalProcessBuilder.processBuilder;
         Process p = null;
         final String cWrapper = getExecWrapper();
-        
-        if(logger.isLoggable(Level.FINER)) {
+
+        if (logger.isLoggable(Level.FINER)) {
             if (cWrapper != null) {
                 logger.log(Level.FINER, "[ ExternalProcessExecutor ] using CMD_WRAPPER [" + cWrapper + "]");
             } else {
@@ -185,7 +193,8 @@ class ExternalProcessExecutor {
         }
 
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, " [ ExternalProcessExecutor ] executing cmd: '" + iBuilder.command() + "' OrigCmd: ' " + origBuilder.command() + "'");
+            logger.log(Level.FINER, " [ ExternalProcessExecutor ] executing cmd: '" + iBuilder.command()
+                    + "' OrigCmd: ' " + origBuilder.command() + "'");
         }
         // if we throw exception here (e.g. the script is not found) nothing has to be cleaned up
         p = iBuilder.start();
@@ -193,7 +202,8 @@ class ExternalProcessExecutor {
         return decorateProcess(p, shortCmd, externalProcessBuilder);
     }
 
-    private static ExternalProcess decorateProcess(Process p, String shortCmd, ExternalProcessBuilder externalProcessBuilder) {
+    private static ExternalProcess decorateProcess(Process p, String shortCmd,
+            ExternalProcessBuilder externalProcessBuilder) {
         final long timeoutNanos = externalProcessBuilder.getTimeout(TimeUnit.NANOSECONDS);
         ScheduledFuture<?> timeoutTask = null;
         Future<?> procWaitFuture = null;
@@ -203,8 +213,9 @@ class ExternalProcessExecutor {
 
         boolean bSchedOk = false;
         try {
-            retProcVal = new ExternalProcess(p, shortCmd, externalProcessBuilder.notifier(), externalProcessBuilder.returnOutputOnExit());
-            
+            retProcVal = new ExternalProcess(p, shortCmd, externalProcessBuilder.notifier(),
+                    externalProcessBuilder.returnOutputOnExit());
+
             ////////////////////////////////////////////////////////////////////////////////////////
             // KEEP THIS ORDER!
             //
@@ -222,14 +233,15 @@ class ExternalProcessExecutor {
             //END KEEP THIS ORDER. Start the stream readers first
             //////////////////////////////////////////////////////////
 
-            
             // we got the internal PID
             if (timeoutNanos > 0) {
                 // schedule the timeout
-                timeoutTask = executor.schedule(new ProcessWatchdogTask(retProcVal), timeoutNanos, TimeUnit.NANOSECONDS);
+                timeoutTask = executor
+                        .schedule(new ProcessWatchdogTask(retProcVal), timeoutNanos, TimeUnit.NANOSECONDS);
             }
 
-            procMap.put(retProcVal.getInternalPid(), new InternalProcessDetails(retProcVal, timeoutTask, stdErrFuture, stdOutFuture, procWaitFuture));
+            procMap.put(retProcVal.getInternalPid(), new InternalProcessDetails(retProcVal, timeoutTask, stdErrFuture,
+                    stdOutFuture, procWaitFuture));
 
             // start the feeders
             bSchedOk = true;
@@ -244,7 +256,9 @@ class ExternalProcessExecutor {
                 Utils.cancelFutureIgnoreException(stdErrFuture, true);
 
                 // log this after canceling; it might blow
-                logger.log(Level.FINE, "Clean up ALL Future tasks for external proccess. Emotions in scheduling. Process: " + externalProcessBuilder.command());
+                logger.log(Level.FINE,
+                        "Clean up ALL Future tasks for external proccess. Emotions in scheduling. Process: "
+                                + externalProcessBuilder.command());
             }
         }
 
@@ -273,8 +287,9 @@ class ExternalProcessExecutor {
      * @param id
      */
     static void cleanup(Long id) {
-        if (id == null)
+        if (id == null) {
             return;
+        }
         final InternalProcessDetails pd = procMap.remove(id);
         if (pd != null) {
             pd.cleanup();
@@ -282,8 +297,9 @@ class ExternalProcessExecutor {
     }
 
     static String getStdout(Long id) {
-        if (id == null)
+        if (id == null) {
             return "";
+        }
         final InternalProcessDetails pd = procMap.get(id);
         if (pd != null) {
             try {
@@ -307,8 +323,9 @@ class ExternalProcessExecutor {
     }
 
     static String getStderr(Long id) {
-        if (id == null)
+        if (id == null) {
             return "";
+        }
         final InternalProcessDetails pd = procMap.get(id);
         if (pd != null) {
             try {
@@ -316,7 +333,8 @@ class ExternalProcessExecutor {
             } catch (CancellationException ce) {
                 // time out
                 if (logger.isLoggable(Level.FINE)) {
-                    logger.log(Level.WARNING, " Got CancellationException waiting stderr for pid: " + id + " Cause: ", ce);
+                    logger.log(Level.WARNING, " Got CancellationException waiting stderr for pid: " + id + " Cause: ",
+                            ce);
                 }
             } catch (Throwable t) {
                 logger.log(Level.WARNING, " Got exception waiting stderr for pid: " + id + " Cause: ", t);

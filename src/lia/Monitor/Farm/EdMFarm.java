@@ -38,30 +38,36 @@ public class EdMFarm {
     }
 
     public void addEntry(String ecluster, String fnode, String module, long repeat, String param) {
-        if(logger.isLoggable(Level.FINEST)) {
-            logger.log(Level.FINEST, 
-                    " [ EdMFarm ] [ addEntry ] ecluster=" + ecluster
-                    + ", fnode=" + fnode + ", module=" + module 
-                    + ", repeat=" + repeat + ", param=" + param);
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.log(Level.FINEST, " [ EdMFarm ] [ addEntry ] ecluster=" + ecluster + ", fnode=" + fnode
+                    + ", module=" + module + ", repeat=" + repeat + ", param=" + param);
         }
         String cluster;
-        if (ecluster == null) return;
+        if (ecluster == null) {
+            return;
+        }
         int i1 = ecluster.indexOf("{");
         if (i1 != -1) {
             int i2 = ecluster.indexOf("}");
             String par = ecluster.substring(i1 + 1, i2);
             int i3 = ecluster.lastIndexOf("%");
             String eTime = null;
-            if (i3 != -1 && i3 > i2 && i3 < ecluster.length() - 1) {
+            if ((i3 != -1) && (i3 > i2) && (i3 < (ecluster.length() - 1))) {
                 eTime = ecluster.substring(i3 + 1);
             }
             StringTokenizer tz = new StringTokenizer(par, ",");
             String exMod = null;
-            if (tz.hasMoreTokens()) exMod = (tz.nextToken()).trim();
+            if (tz.hasMoreTokens()) {
+                exMod = (tz.nextToken()).trim();
+            }
             String exNode = null;
-            if (tz.hasMoreTokens()) exNode = (tz.nextToken()).trim();
+            if (tz.hasMoreTokens()) {
+                exNode = (tz.nextToken()).trim();
+            }
             String exPar = null;
-            if (tz.hasMoreTokens()) exPar = (tz.nextToken()).trim();
+            if (tz.hasMoreTokens()) {
+                exPar = (tz.nextToken()).trim();
+            }
             while (tz.hasMoreTokens()) {
                 exPar += "," + tz.nextToken();
             }
@@ -72,28 +78,33 @@ public class EdMFarm {
                 farm.getClusters().add(cl);
             }
             if (logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, " add external cluster" + cluster + " Module+" + cl.externalModule + " Node =" + cl.externalNode + " agrs=" + cl.externalParam);
+                logger.log(Level.FINER, " add external cluster" + cluster + " Module+" + cl.externalModule + " Node ="
+                        + cl.externalNode + " agrs=" + cl.externalParam);
             }
             cl.externalModule = exMod;
             cl.externalParam = exPar;
             cl.externalNode = exNode;
-            if (eTime != null) cl.externalParam += ("%^&" + eTime);
+            if (eTime != null) {
+                cl.externalParam += ("%^&" + eTime);
+            }
             return;
         }
         cluster = ecluster;
         MCluster cl = farm.getCluster(cluster);
         if (cl == null) {
-            if(logger.isLoggable(Level.FINER)) {
+            if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, " [ EdMFarm ] [ addEntry ] adding new cluster: " + cl);
             }
             cl = new MCluster(cluster, farm);
             farm.getClusters().add(cl);
         } else {
-            if(logger.isLoggable(Level.FINER)) {
+            if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, " [ EdMFarm ] [ addEntry ] cluster: " + cl + " already in the list");
             }
         }
-        if ((fnode == null) && (module == null)) return;
+        if ((fnode == null) && (module == null)) {
+            return;
+        }
         StringTokenizer tz = new StringTokenizer(fnode, " ");
         String node = tz.nextToken();
         MNode mn = cl.getNode(node);
@@ -103,12 +114,14 @@ public class EdMFarm {
             if (tz.hasMoreTokens()) {
                 mn.name_short = (tz.nextToken()).trim();
             }
-            if(logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, " [ EdMFarm ] [ addEntry ] added new node: " + node + " in the cluster: " + cl + " already in the list");
+            if (logger.isLoggable(Level.FINER)) {
+                logger.log(Level.FINER, " [ EdMFarm ] [ addEntry ] added new node: " + node + " in the cluster: " + cl
+                        + " already in the list");
             }
         } else {
-            if(logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, " [ EdMFarm ] [ addEntry ] node: " + node + " already in the cluster: " + cl + " already in the list");
+            if (logger.isLoggable(Level.FINER)) {
+                logger.log(Level.FINER, " [ EdMFarm ] [ addEntry ] node: " + node + " already in the cluster: " + cl
+                        + " already in the list");
             }
         }
         if (module != null) {
@@ -123,12 +136,16 @@ public class EdMFarm {
 
     public void removeNode(String cluster, MNode n) {
         MCluster cl = farm.getCluster(cluster);
-        if (cl != null) cl.removeNode(n);
+        if (cl != null) {
+            cl.removeNode(n);
+        }
     }
 
     public void removeCluster(String cluster) {
         MCluster cl = farm.getCluster(cluster);
-        if (cl != null) farm.removeCluster(cl);
+        if (cl != null) {
+            farm.removeCluster(cl);
+        }
     }
 
     public MNode[] getOrCreate(String cluster, String node) {
@@ -144,8 +161,9 @@ public class EdMFarm {
         if ((cluster.equals("*")) && ((node == null) || (node.equals("*")))) {
             Object[] obj = (farm.getNodes()).toArray();
             MNode[] nArr = new MNode[obj.length];
-            for (int i = 0; i < nArr.length; i++)
+            for (int i = 0; i < nArr.length; i++) {
                 nArr[i] = (MNode) obj[i];
+            }
             return nArr;
             // return (MNode[]) (farm.getNodes() ).toArray() ;
         }
@@ -154,12 +172,15 @@ public class EdMFarm {
         if (logger.isLoggable(Level.FINER)) {
             logger.log(Level.FINER, " added entry  " + cluster + "  " + node);
         }
-        if (node == null) return null;
+        if (node == null) {
+            return null;
+        }
         if (node.equals("*")) {
             Object[] obj = (cl.getNodes()).toArray();
             MNode[] nArr = new MNode[obj.length];
-            for (int i = 0; i < nArr.length; i++)
+            for (int i = 0; i < nArr.length; i++) {
                 nArr[i] = (MNode) obj[i];
+            }
             return nArr;
         }
         MNode mn = cl.getNode(node);
@@ -173,29 +194,40 @@ public class EdMFarm {
     }
 
     public void addModule(MNode n, String func, String[] param) {
-        if(logger.isLoggable(Level.FINEST)) {
-            logger.log(Level.FINEST, 
-                    " [ EdMFarm ] [ addModule ] MNode=" + n
-                    + ", func=" + func + ", param[]=" + Arrays.toString(param));
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.log(Level.FINEST,
+                    " [ EdMFarm ] [ addModule ] MNode=" + n + ", func=" + func + ", param[]=" + Arrays.toString(param));
         }
-        if ((n == null) || (func == null)) return;
+        if ((n == null) || (func == null)) {
+            return;
+        }
         if (!n.moduleList.contains(func)) {
             n.moduleList.add(func);
         }
-        if (param == null) return;
+        if (param == null) {
+            return;
+        }
         for (int i = 0; i < param.length; i++) {
-            if (!n.getParameterList().contains(param[i])) n.getParameterList().add(param[i]);
+            if (!n.getParameterList().contains(param[i])) {
+                n.getParameterList().add(param[i]);
+            }
         }
     }
 
     public void removeModule(MNode n, String func, String[] param) {
-        if ((n == null) || (func == null)) return;
+        if ((n == null) || (func == null)) {
+            return;
+        }
         if (n.moduleList.contains(func)) {
             n.removeModule(func);
         }
-        if (param == null) return;
-        for (int i = 0; i < param.length; i++) {
-            if (n.getParameterList().contains(param[i])) n.getParameterList().remove(param[i]);
+        if (param == null) {
+            return;
+        }
+        for (String element : param) {
+            if (n.getParameterList().contains(element)) {
+                n.getParameterList().remove(element);
+            }
         }
     }
 
@@ -204,10 +236,10 @@ public class EdMFarm {
             logger.log(Level.FINER, "[ EdMFarm ] Start to process config file " + ConfFile);
         }
         BufferedReader in = null;
-        if ( ConfFile == null ) {
+        if (ConfFile == null) {
             ConfFile = AppConfig.getProperty("FarmMonitor.conf");
         }
-        
+
         try {
             if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, "Try " + ConfFile);
@@ -230,6 +262,7 @@ public class EdMFarm {
             HashMap hptp = (HashMap) farmMonitor.modulesTimeoutConfig.get("monABPing");
             hptp.put("ParamTimeout", Long.valueOf(5 * 60 * 1000)); // 5 minutes
             hptp.put("NodeTimeout", Long.valueOf(5 * 60 * 1000)); // 5 minutes
+            hptp.put("ClusterTimeout", Long.valueOf(5 * 60 * 1000)); // 5 minutes
 
             // set timeout for results with "monUNKNOWN" module name
             farmMonitor.modulesTimeoutConfig.put(FarmMonitor.MON_UNKOWN_NAME, new HashMap());
@@ -237,24 +270,36 @@ public class EdMFarm {
             hptp.put("ParamTimeout", Long.valueOf(5 * 60 * 1000)); // 5 minutes
             hptp.put("NodeTimeout", Long.valueOf(5 * 60 * 1000)); // 5 minutes
             hptp.put("ClusterTimeout", Long.valueOf(5 * 60 * 1000)); // 5 minutes
-            
+
+            farmMonitor.modulesTimeoutConfig.put("OlimpsFLFilter", new HashMap());
+            hptp = (HashMap) farmMonitor.modulesTimeoutConfig.get("OlimpsFLFilter");
+            hptp.put("ParamTimeout", Long.valueOf(20 * 1000)); // 5 minutes
+            hptp.put("NodeTimeout", Long.valueOf(20 * 1000)); // 1 minute
+            hptp.put("ClusterTimeout", Long.valueOf(20 * 1000)); // 1 minutes
+
             while ((line = in.readLine()) != null) {
                 nline++;
-                if(logger.isLoggable(Level.FINEST)) {
+                if (logger.isLoggable(Level.FINEST)) {
                     logger.log(Level.FINEST, " [ EdMFarm ] read line: " + line + " count: " + nline);
                 }
                 final String cline = line.trim();
-                if (cline.length() <= 1) continue;
-                if (cline.startsWith("#")) continue;
+                if (cline.length() <= 1) {
+                    continue;
+                }
+                if (cline.startsWith("#")) {
+                    continue;
+                }
                 if (cline.startsWith("^")) {
                     moduleName = (cline.substring(1)).trim();
-                    if (moduleName == null || moduleName.length() == 0) continue;
+                    if ((moduleName == null) || (moduleName.length() == 0)) {
+                        continue;
+                    }
                     int sI = moduleName.indexOf("{");
                     int eI = moduleName.indexOf("}");
                     String nModuleName = null;
                     String param = null;
-                    String repTime = "" + 30 * 1000;
-                    if (sI != -1 && eI != -1) {
+                    String repTime = "" + (30 * 1000);
+                    if ((sI != -1) && (eI != -1)) {
                         nModuleName = moduleName.substring(0, sI);
                         param = moduleName.substring(sI + 1, eI);
                         moduleName = moduleName.substring(eI + 1);
@@ -266,15 +311,15 @@ public class EdMFarm {
                         try {
                             repTime = "" + (Integer.valueOf(repTime).longValue() * 1000);
                         } catch (Throwable t) {
-                            repTime = "" + 30 * 1000;
+                            repTime = "" + (30 * 1000);
                         }
                     }
-                    if (nModuleName != null && nModuleName.length() > 0) {
+                    if ((nModuleName != null) && (nModuleName.length() > 0)) {
                         moduleName = nModuleName;
                     }
-                    
+
                     // parse param for timeout params
-                    if (param != null && param.length() > 0) {
+                    if ((param != null) && (param.length() > 0)) {
                         String nparam = "";
                         StringTokenizer st = new StringTokenizer(param, ",");
                         HashMap hpt = (HashMap) farmMonitor.modulesTimeoutConfig.get(moduleName);
@@ -352,7 +397,7 @@ public class EdMFarm {
     private void fillNewTimeoutParam(HashMap hpt, String paramName, String token) {
         int ieq = token.indexOf("=");
         long timeout = -1;
-        if (ieq != -1 && ieq != token.length() - 1) {
+        if ((ieq != -1) && (ieq != (token.length() - 1))) {
             try {
                 timeout = Long.valueOf(token.substring(ieq + 1).trim()).longValue() * 1000;
             } catch (Throwable t) {

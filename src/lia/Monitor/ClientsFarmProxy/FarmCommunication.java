@@ -1,5 +1,5 @@
 /*
- * $Id: FarmCommunication.java 7112 2011-03-05 12:36:26Z ramiro $
+ * $Id: FarmCommunication.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 
 package lia.Monitor.ClientsFarmProxy;
@@ -7,7 +7,6 @@ package lia.Monitor.ClientsFarmProxy;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -46,10 +45,11 @@ import net.jini.core.lookup.ServiceItem;
 public final class FarmCommunication extends Thread implements AppConfigChangeListener {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.ClientsFarmProxy.FarmCommunication");
+    private static final Logger logger = Logger.getLogger(FarmCommunication.class.getName());
 
     // farm services found - key - FarmWorker
-    private static final ConcurrentSkipListMap<ServiceID, FarmWorker> mlServicesMap = new ConcurrentSkipListMap<ServiceID, FarmWorker>(ServiceIDComparator.getInstance());
+    private static final ConcurrentSkipListMap<ServiceID, FarmWorker> mlServicesMap = new ConcurrentSkipListMap<ServiceID, FarmWorker>(
+            ServiceIDComparator.getInstance());
 
     // agents related
     private static final AgentsPlatform agentsPlatform = new AgentsPlatform(mlServicesMap);
@@ -67,7 +67,8 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
 
     private static final AtomicLong nrAgentsMsg = new AtomicLong(0);
 
-    private static final TreeMap<ServiceID, Long> jiniHackSIDinLUSs = new TreeMap<ServiceID, Long>(ServiceIDComparator.getInstance());
+    private static final TreeMap<ServiceID, Long> jiniHackSIDinLUSs = new TreeMap<ServiceID, Long>(
+            ServiceIDComparator.getInstance());
 
     private static final AtomicBoolean shouldKeepInSyncWithTheLUS = new AtomicBoolean(false);
 
@@ -84,9 +85,11 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
         }
 
         try {
-            shouldKeepInSyncWithTheLUS.set(AppConfig.getb("lia.Monitor.ClientsFarmProxy.FarmCommunication.shouldKeepInSyncWithTheLUS", false));
+            shouldKeepInSyncWithTheLUS.set(AppConfig.getb(
+                    "lia.Monitor.ClientsFarmProxy.FarmCommunication.shouldKeepInSyncWithTheLUS", false));
         } catch (Throwable t1) {
-            logger.log(Level.WARNING, " Unable to get lia.Monitor.ClientsFarmProxy.FarmCommunication.shouldKeepInSyncWithTheLUS ", t1);
+            logger.log(Level.WARNING,
+                    " Unable to get lia.Monitor.ClientsFarmProxy.FarmCommunication.shouldKeepInSyncWithTheLUS ", t1);
             shouldKeepInSyncWithTheLUS.set(false);
         }
 
@@ -115,7 +118,7 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
             final ServiceItem si = fw.getServiceItem();
             final Entry[] entries = si.attributeSets;
             for (final Entry entry : entries) {
-                if (entry != null && entry instanceof MonaLisaEntry) {
+                if ((entry != null) && (entry instanceof MonaLisaEntry)) {
                     final MonaLisaEntry mle = (MonaLisaEntry) entry;
                     // getGroups
                     if (mle.Group != null) {
@@ -167,6 +170,7 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
         return farmCommunicationHashesLock;
     }
 
+    @Override
     public void run() {
 
         try {
@@ -190,16 +194,16 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
                         final Set<ServiceID> proccessedSIDs = new TreeSet<ServiceID>(ServiceIDComparator.getInstance());
                         for (final ServiceItem cServiceItem : serviceItems) {
                             final ServiceID cServiceID = cServiceItem.serviceID;
-                            
-                            if(proccessedSIDs.contains(cServiceID)) {
+
+                            if (proccessedSIDs.contains(cServiceID)) {
                                 continue;
                             }
-                            
+
                             proccessedSIDs.add(cServiceID);
                             jiniHackSIDinLUSs.put(cServiceID, NTPDate.currentTimeMillis() + ML_SERVICE_LUS_SID_TIMEOUT);
 
                             final FarmWorker cFW = mlServicesMap.get(cServiceID);
-                            
+
                             // for entry refresh
                             if (cFW != null) {
                                 final ServiceItem origSI = cFW.getServiceItem();
@@ -207,8 +211,8 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
                                 // do not update SiteInfoEntry ... it contains overwritten IP-s
                                 SiteInfoEntry orig_sie = (SiteInfoEntry) getEntry(origSI, SiteInfoEntry.class);
                                 SiteInfoEntry add_sie = (SiteInfoEntry) getEntry(cServiceItem, SiteInfoEntry.class);
-                                if (orig_sie != null && add_sie != null && !orig_sie.equals(add_sie)) {
-                                    if (orig_sie.IPAddress != null && orig_sie.IPAddress.length() > 0) {
+                                if ((orig_sie != null) && (add_sie != null) && !orig_sie.equals(add_sie)) {
+                                    if ((orig_sie.IPAddress != null) && (orig_sie.IPAddress.length() > 0)) {
                                         add_sie.IPAddress = orig_sie.IPAddress;
                                     }
                                 } // if
@@ -219,7 +223,7 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
                                     mustSendUpdates = true;
                                 }
 
-                                if(mustSendUpdates) {
+                                if (mustSendUpdates) {
                                     cFW.getAndSetServiceItem(cServiceItem);
                                 }
                             }// if
@@ -227,7 +231,8 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
 
                         if (mustSendUpdates) { // NEW ENTRIES. SEND UPDATE TO CLIENTS
                             // SEND BCAST MESSAGE WITH ALL FARMS TO ALL CLIENTS
-                            MonMessageClientsProxy mm = new MonMessageClientsProxy(monMessage.PROXY_MLSERVICES_TAG, null, getFarms(), null);
+                            MonMessageClientsProxy mm = new MonMessageClientsProxy(monMessage.PROXY_MLSERVICES_TAG,
+                                    null, getFarms(), null);
                             // ClientPriorMsg cpm = new ClientPriorMsg (5,monMessage.PROXY_MLSERVICES_TAG, mm);
                             ClientsCommunication.sendBcastMsg(mm);
                         } // IF
@@ -252,15 +257,18 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
 
     private static final Object getEntry(final ServiceItem si, Class<?> entryClass) {
 
-        if (si == null)
+        if (si == null) {
             return null;
+        }
         final Entry[] entries = si.attributeSets;
-        if (entries == null || entries.length == 0)
+        if ((entries == null) || (entries.length == 0)) {
             return null;
+        }
 
         for (final Entry entry : entries) {
-            if (entry.getClass() == entryClass)
+            if (entry.getClass() == entryClass) {
                 return entry;
+            }
         } // for
 
         return null;
@@ -275,14 +283,17 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
             fw = mlServicesMap.remove(id);
             agentsPlatform.deleteFarm(id);
         } catch (Throwable t) {
-            logger.log(Level.WARNING, "\n\n\n [ EXCEPTION !!! ] [ FarmCommunication ] Got exception removing service [ " + id + " ] from the proxy HASHES !!", t);
+            logger.log(Level.WARNING,
+                    "\n\n\n [ EXCEPTION !!! ] [ FarmCommunication ] Got exception removing service [ " + id
+                            + " ] from the proxy HASHES !!", t);
         } finally {
             farmCommunicationHashesLock.unlock();
         }
 
         // send notification to clients
         try {
-            MonMessageClientsProxy mm = new MonMessageClientsProxy(monMessage.PROXY_MLSERVICES_TAG, null, getFarms(), null);
+            MonMessageClientsProxy mm = new MonMessageClientsProxy(monMessage.PROXY_MLSERVICES_TAG, null, getFarms(),
+                    null);
             ClientsCommunication.sendBcastMsg(mm);
         } catch (Throwable th) {
             logger.log(Level.INFO, "Send mlServicesMap to clients .... got exception", th);
@@ -293,32 +304,32 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
         }
     } // deleteFarm
 
-//    public static final Vector<String> getGroup(ServiceID farmID) {
-//
-//        final ServiceItem si = mlServicesMap.get(farmID).siRef.get();
-//        final Vector<String> v = new Vector<String>();
-//
-//        if (si == null)
-//            return null;
-//
-//        Entry[] attr = si.attributeSets;
-//        if (attr == null)
-//            return null;
-//        for (int i = 0; i < attr.length; i++) {
-//            if (attr[i] instanceof MonaLisaEntry) {
-//                String groups = ((MonaLisaEntry) attr[i]).Group;
-//                if (groups != null) {
-//                    StringTokenizer st = new StringTokenizer(groups, ",");
-//                    while (st.hasMoreTokens()) {
-//                        v.add(st.nextToken());
-//                    }
-//                } // if
-//            }// if
-//        } // for
-//
-//        return v;
-//
-//    } // getGroup
+    //    public static final Vector<String> getGroup(ServiceID farmID) {
+    //
+    //        final ServiceItem si = mlServicesMap.get(farmID).siRef.get();
+    //        final Vector<String> v = new Vector<String>();
+    //
+    //        if (si == null)
+    //            return null;
+    //
+    //        Entry[] attr = si.attributeSets;
+    //        if (attr == null)
+    //            return null;
+    //        for (int i = 0; i < attr.length; i++) {
+    //            if (attr[i] instanceof MonaLisaEntry) {
+    //                String groups = ((MonaLisaEntry) attr[i]).Group;
+    //                if (groups != null) {
+    //                    StringTokenizer st = new StringTokenizer(groups, ",");
+    //                    while (st.hasMoreTokens()) {
+    //                        v.add(st.nextToken());
+    //                    }
+    //                } // if
+    //            }// if
+    //        } // for
+    //
+    //        return v;
+    //
+    //    } // getGroup
 
     public static final long getNrAgentsMsg() {
         return nrAgentsMsg.getAndSet(0L);
@@ -362,7 +373,8 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
             try {
                 fw.notifyConnectionClosed();
             } catch (Throwable t1) {
-                logger.log(Level.WARNING, " [ FarmComunication ] [ notifyConnectionClosed ] " + farmID + " got exception: ", t1);
+                logger.log(Level.WARNING, " [ FarmComunication ] [ notifyConnectionClosed ] " + farmID
+                        + " got exception: ", t1);
             }
         }
 
@@ -370,14 +382,14 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
 
     public static final void addMessageToSend(ServiceID farmID, MonMessageClientsProxy mmcp) {
         final FarmWorker fw = mlServicesMap.get(farmID);
-        if (fw != null && mmcp != null) {
+        if ((fw != null) && (mmcp != null)) {
             fw.sendMsg(mmcp);
         } // if
     }
-    
+
     public static final void addMessageToSend(ServiceID farmID, monMessage message) {
         final FarmWorker fw = mlServicesMap.get(farmID);
-        if (fw != null && message != null) {
+        if ((fw != null) && (message != null)) {
             fw.sendMsg(message);
         } // if
     } // addMessageToSend
@@ -396,7 +408,8 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
                 final SiteInfoEntry sie = (SiteInfoEntry) getEntry(farmItem, SiteInfoEntry.class);
                 GenericMLEntry gmle = (GenericMLEntry) getEntry(farmItem, GenericMLEntry.class);
 
-                if (gmle == null || gmle.hash == null || !gmle.hash.containsKey("hostName") || !gmle.hash.containsKey("ipAddress")) {
+                if ((gmle == null) || (gmle.hash == null) || !gmle.hash.containsKey("hostName")
+                        || !gmle.hash.containsKey("ipAddress")) {
                     boolean addEntry = false;
 
                     if (gmle == null) {
@@ -404,7 +417,8 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
                         addEntry = true;
                     } // if
 
-                    InetAddress IPAddress = (sie != null && sie.IPAddress != null) ? getInetAddr(sie.IPAddress) : null;
+                    InetAddress IPAddress = ((sie != null) && (sie.IPAddress != null)) ? getInetAddr(sie.IPAddress)
+                            : null;
                     if (IPAddress != null) {
                         gmle.hash.put("hostName", IPAddress.getHostName());
                         gmle.hash.put("ipAddress", IPAddress.getHostAddress());
@@ -426,7 +440,7 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
         } catch (Throwable t) {
             logger.log(Level.WARNING, " Got exc getFarms()", t);
         } finally {
-            if(logger.isLoggable(Level.FINER)) {
+            if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, " [ FarmCommunication ] [ getFarms ] returning " + v.size() + " services!");
             }
         }
@@ -448,19 +462,19 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
         Vector<String> groupNames = new Vector<String>();
 
         // quick hack for adding mlServicesMap in more than one group
-        for (int i = 0; i < groups.length; i++) {
-            String[] gs = getGroups(groups[i]);
-            if (gs != null && gs.length > 0) {
-                for (int gsi = 0; gsi < gs.length; gsi++) {
-                    if (gs[gsi] != null && gs[gsi].length() > 0) {
-                        groupNames.add(gs[gsi]);
+        for (String group2 : groups) {
+            String[] gs = getGroups(group2);
+            if ((gs != null) && (gs.length > 0)) {
+                for (String element : gs) {
+                    if ((element != null) && (element.length() > 0)) {
+                        groupNames.add(element);
                     }
                 }
             }
         } // for
 
         for (final FarmWorker fw : mlServicesMap.values()) {
-            
+
             final ServiceItem farmService = fw.getServiceItem();
             final Entry[] farmAttributes = farmService.attributeSets;
             if (farmAttributes != null) {
@@ -470,9 +484,9 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
 
                 if (mle != null) {
                     String[] mleGroups = getGroups(mle.Group);
-                    if (mleGroups != null && mleGroups.length > 0) {
-                        for (int ii = 0; ii < mleGroups.length; ii++) {
-                            if (groupNames.contains(mleGroups[ii])) {
+                    if ((mleGroups != null) && (mleGroups.length > 0)) {
+                        for (String mleGroup : mleGroups) {
+                            if (groupNames.contains(mleGroup)) {
 
                                 boolean addEntry = false;
 
@@ -481,7 +495,8 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
                                     addEntry = true;
                                 } // if
 
-                                InetAddress IPAddress = (sie != null && sie.IPAddress != null) ? getInetAddr(sie.IPAddress) : null;
+                                InetAddress IPAddress = ((sie != null) && (sie.IPAddress != null)) ? getInetAddr(sie.IPAddress)
+                                        : null;
                                 if (IPAddress != null) {
                                     gmle.hash.put("hostName", IPAddress.getHostName());
                                     gmle.hash.put("ipAddress", IPAddress.getHostAddress());
@@ -506,11 +521,14 @@ public final class FarmCommunication extends Thread implements AppConfigChangeLi
         return v;
     } // getFarmsByGroup
 
+    @Override
     public void notifyAppConfigChanged() {
         try {
-            shouldKeepInSyncWithTheLUS.set(AppConfig.getb("lia.Monitor.ClientsFarmProxy.FarmCommunication.shouldKeepInSyncWithTheLUS", false));
+            shouldKeepInSyncWithTheLUS.set(AppConfig.getb(
+                    "lia.Monitor.ClientsFarmProxy.FarmCommunication.shouldKeepInSyncWithTheLUS", false));
         } catch (Throwable t1) {
-            logger.log(Level.WARNING, " Unable to get lia.Monitor.ClientsFarmProxy.FarmCommunication.shouldKeepInSyncWithTheLUS ", t1);
+            logger.log(Level.WARNING,
+                    " Unable to get lia.Monitor.ClientsFarmProxy.FarmCommunication.shouldKeepInSyncWithTheLUS ", t1);
             shouldKeepInSyncWithTheLUS.set(false);
         }
     }

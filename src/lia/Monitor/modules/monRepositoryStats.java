@@ -63,13 +63,15 @@ public class monRepositoryStats extends SchJob implements MonitoringModule {
 
 		try {
 			vdData[0] = lia.web.utils.ThreadedPage.getRequestCount();
+			vdData[1] = lia.web.utils.ThreadedPage.getIPv4Requests();
+			vdData[2] = lia.web.utils.ThreadedPage.getIPv6Requests();
 		} catch (Throwable t) {
 			// if the class cannot be found then this is not a repository distribution, ignore the error
 		}
 
 		try {
 			for (int i = 0; i < lia.ws.MLWebServiceSoapBindingImpl.vsCounterNames.length; i++)
-				vdData[1 + i] = lia.ws.MLWebServiceSoapBindingImpl.vsCounterValues[i];
+				vdData[3 + i] = lia.ws.MLWebServiceSoapBindingImpl.vsCounterValues[i];
 		} catch (Throwable t) {
 			// ignore the error caused by missing WS classes
 		}
@@ -127,17 +129,32 @@ public class monRepositoryStats extends SchJob implements MonitoringModule {
 
 		try {
 			er.addSet("Requests_permin", (lia.web.utils.ThreadedPage.getRequestCount() - vdData[0]) * 60000d / (ls - lLastCall));
+			
+			final double dIPv4Delta = lia.web.utils.ThreadedPage.getIPv4Requests() - vdData[1];
+			final double dIPv6Delta = lia.web.utils.ThreadedPage.getIPv6Requests() - vdData[2];
+			
+			if (dIPv4Delta>=0)
+				er.addSet("Requestsv4_permin", dIPv4Delta * 60000d / (ls - lLastCall));
+			
+			if (dIPv6Delta>=0)
+				er.addSet("Requestsv6_permin", dIPv6Delta * 60000d / (ls - lLastCall));
 
 			vdData[0] = lia.web.utils.ThreadedPage.getRequestCount();
-		} catch (Throwable t) {
+			vdData[1] = lia.web.utils.ThreadedPage.getIPv4Requests();
+			vdData[2] = lia.web.utils.ThreadedPage.getIPv6Requests();
+			
+			if (dIPv4Delta>=0 && dIPv6Delta>=0 && (dIPv4Delta + dIPv6Delta>0)){
+				er.addSet("Requests_ipv6_percent", dIPv6Delta*100 / (dIPv6Delta + dIPv4Delta));
+			}
+		} catch (final Throwable t) {
 			// ignore the error caused by missing base Web classes
 		}
 
 		try {
 			for (int i = 0; i < lia.ws.MLWebServiceSoapBindingImpl.vsCounterNames.length; i++) {
-				er.addSet("WS_" + lia.ws.MLWebServiceSoapBindingImpl.vsCounterNames[i], (lia.ws.MLWebServiceSoapBindingImpl.vsCounterValues[i] - vdData[1 + i]) * 60000d / (ls - lLastCall));
+				er.addSet("WS_" + lia.ws.MLWebServiceSoapBindingImpl.vsCounterNames[i], (lia.ws.MLWebServiceSoapBindingImpl.vsCounterValues[i] - vdData[3 + i]) * 60000d / (ls - lLastCall));
 
-				vdData[1 + i] = lia.ws.MLWebServiceSoapBindingImpl.vsCounterValues[i];
+				vdData[3 + i] = lia.ws.MLWebServiceSoapBindingImpl.vsCounterValues[i];
 			}
 		} catch (Throwable t) {
 			// ignore a possible error caused by missing WS classes
@@ -359,7 +376,12 @@ public class monRepositoryStats extends SchJob implements MonitoringModule {
 			erVers.addSet("UsingProxy", sProxyIP != null ? sProxyIP : "<unknown>");
 			
 			if (!TransparentStoreFactory.isMemoryStoreOnly()){
-				final DB db = new DB("SELECT version();");
+				final DB db = new DB();
+				
+				db.setReadOnly(true);
+				
+				db.query("SELECT version();");
+				
 				final String sVers = db.gets(1);
 				
 				erVers.addSet("PgSQLFullVersion", sVers);

@@ -24,109 +24,117 @@ import com.sun.jini.tool.ClassServer;
  *	JiniClientREListener = Jini Client with Jini Remote Event Listener capabilities
  */
 public abstract class JiniClientREListener extends JiniClient implements ServiceDiscoveryListener {
-    /** Logger name */
-    private static final transient String COMPONENT = "lia.Monitor.JiniClient.CommonJini";
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(JiniClientREListener.class.getName());
 
-	public JiniClientREListener(){
-		super();
-	}
+    public JiniClientREListener() {
+        super();
+    }
 
-	public void init()  {
-		String webhost =  null ;
-		String webadd1 =null;
+    @Override
+    public void init() {
+        String webhost = null;
+        String webadd1 = null;
 
         //HACK For WebStart
-        Policy.setPolicy(
-        new Policy() {
-        public PermissionCollection getPermissions(CodeSource   codesource) {
-        Permissions perms = new Permissions();
-        perms.add(new AllPermission());
-        return(perms);
-        }
-        public void refresh() {}
+        Policy.setPolicy(new Policy() {
+            @Override
+            public PermissionCollection getPermissions(CodeSource codesource) {
+                Permissions perms = new Permissions();
+                perms.add(new AllPermission());
+                return (perms);
+            }
+
+            @Override
+            public void refresh() {
+            }
         });
         //END HACK For WebStart
 
-		try {
-		  webhost = InetAddress.getLocalHost().getHostAddress();
-		} catch ( Throwable t ) {
+        try {
+            webhost = InetAddress.getLocalHost().getHostAddress();
+        } catch (Throwable t) {
             logger.log(Level.WARNING, " Failed to get HOST address ", t);
-		}
+        }
 
-		if ( webhost != null ) {
-		   webadd1 ="http://"+webhost+":8588/client_mon_dl.jar";
-		} 
+        if (webhost != null) {
+            webadd1 = "http://" + webhost + ":8588/client_mon_dl.jar";
+        }
 
-		String forceWeb = AppConfig.getProperty("lia.Monitor.useCodeBase" );
+        String forceWeb = AppConfig.getProperty("lia.Monitor.useCodeBase");
 
-		if ( forceWeb != null ) {
-		 webadd1=forceWeb+"/client_mon_dl.jar";
-		}
+        if (forceWeb != null) {
+            webadd1 = forceWeb + "/client_mon_dl.jar";
+        }
 
-    
-		if ( (webadd1 != null) && (forceWeb == null ) ) { 
+        if ((webadd1 != null) && (forceWeb == null)) {
 
-		  try { 
-			 new ClassServer ( 8588, ".", true, true ).start();
-		  } catch ( Throwable t ) {
-              logger.log(Level.WARNING, " failed to start the WEB ", t);
-		  }
-		} 
+            try {
+                new ClassServer(8588, ".", true, true).start();
+            } catch (Throwable t) {
+                logger.log(Level.WARNING, " failed to start the WEB ", t);
+            }
+        }
 
         // set security manager
         if (System.getSecurityManager() == null) {
             System.setSecurityManager(new RMISecurityManager());
-        }  
-              
-		System.setProperty("java.rmi.server.codebase", webadd1 );
-		
-		// now call the jini registration
-		super.init();
-	}
-	
-	public void serviceAdded(ServiceDiscoveryEvent event) {
-        System.out.println( " added service ");
-		ServiceItem si = event.getPostEventServiceItem() ;
-		serviceInformation( si );
-		AddMonitorUnit ( si );
-	}
+        }
 
-	public void serviceRemoved(ServiceDiscoveryEvent event) {
-        System.out.println( " removed service ");
-		ServiceItem si = event.getPreEventServiceItem() ;
-		removeNode ( si.serviceID );
-	}
+        System.setProperty("java.rmi.server.codebase", webadd1);
 
-	public void serviceChanged(ServiceDiscoveryEvent event) {
-        System.out.println( " changed service ");
-		ServiceItem si = event.getPostEventServiceItem() ;	
-	}
+        // now call the jini registration
+        super.init();
+    }
 
-	public void serviceInformation( ServiceItem si ) {
-	 	Entry[] attrs = si.attributeSets ;
-	 	Name sname =  getName(attrs);
-        
-	 	System.out.println( " Service Name = " + sname);
-	}
+    @Override
+    public void serviceAdded(ServiceDiscoveryEvent event) {
+        System.out.println(" added service ");
+        ServiceItem si = event.getPostEventServiceItem();
+        serviceInformation(si);
+        AddMonitorUnit(si);
+    }
 
-	Name getName(Entry attrs[]) {
-			for(int x = 0; x < attrs.length; x++)
-				if(attrs[x] instanceof Name)
-					return (Name)attrs[x];
+    @Override
+    public void serviceRemoved(ServiceDiscoveryEvent event) {
+        System.out.println(" removed service ");
+        ServiceItem si = event.getPreEventServiceItem();
+        removeNode(si.serviceID);
+    }
 
-			return null;
-	}
+    @Override
+    public void serviceChanged(ServiceDiscoveryEvent event) {
+        System.out.println(" changed service ");
+        ServiceItem si = event.getPostEventServiceItem();
+    }
 
-//	abstract public void newResult(Object res);
-	
-	abstract public void verifyNodes();
+    public void serviceInformation(ServiceItem si) {
+        Entry[] attrs = si.attributeSets;
+        Name sname = getName(attrs);
 
-	abstract public boolean AddMonitorUnit(ServiceItem si);
+        System.out.println(" Service Name = " + sname);
+    }
 
-	abstract public void ErrorNode(ServiceID sid);
+    Name getName(Entry attrs[]) {
+        for (Entry attr : attrs) {
+            if (attr instanceof Name) {
+                return (Name) attr;
+            }
+        }
 
-	abstract public void removeNode(ServiceID id);
+        return null;
+    }
+
+    //	abstract public void newResult(Object res);
+
+    abstract public void verifyNodes();
+
+    @Override
+    abstract public boolean AddMonitorUnit(ServiceItem si);
+
+    abstract public void ErrorNode(ServiceID sid);
+
+    @Override
+    abstract public void removeNode(ServiceID id);
 
 }

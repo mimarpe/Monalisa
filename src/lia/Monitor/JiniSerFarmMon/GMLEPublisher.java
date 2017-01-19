@@ -1,5 +1,5 @@
 /*
- * $Id: GMLEPublisher.java 7112 2011-03-05 12:36:26Z ramiro $
+ * $Id: GMLEPublisher.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.JiniSerFarmMon;
 
@@ -39,7 +39,7 @@ import net.jini.lookup.JoinManager;
 public class GMLEPublisher implements AttributePublisher {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(GMLEPublisher.class.getName());
+    private static final Logger logger = Logger.getLogger(GMLEPublisher.class.getName());
     /** the one and only instance */
     private static final GMLEPublisher _thisInstance = new GMLEPublisher();
     /** temporary holder of attributes between updates */
@@ -56,6 +56,7 @@ public class GMLEPublisher implements AttributePublisher {
     private static final Object stateLock = new Object();
     private static final Callable<Object> _theRealTask = Executors.privilegedCallable(new Callable<Object>() {
 
+        @Override
         public Object call() throws Exception {
             _thisInstance.publishAndResched(true);
             return null;
@@ -63,6 +64,7 @@ public class GMLEPublisher implements AttributePublisher {
     });
     private static final Callable<Object> _theNaughtyTask = Executors.privilegedCallable(new Callable<Object>() {
 
+        @Override
         public Object call() throws Exception {
             _thisInstance.publishAndResched(false);
             return null;
@@ -74,13 +76,15 @@ public class GMLEPublisher implements AttributePublisher {
 
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
                 reloadConf();
             }
         });
 
         if (logger.isLoggable(Level.FINEST)) {
-            logger.log(Level.FINEST, " [ GMLEPublisher ] [ SCHED ] dumping thread: ", new Throwable("[ GMLEPublisher DEBUG Dump ]"));
+            logger.log(Level.FINEST, " [ GMLEPublisher ] [ SCHED ] dumping thread: ", new Throwable(
+                    "[ GMLEPublisher DEBUG Dump ]"));
         }
 
         MLAttributePublishers.addPublisher(_thisInstance);
@@ -147,12 +151,13 @@ public class GMLEPublisher implements AttributePublisher {
             }
 
             final Entry[] attributes = jmngr.getAttributes();
-            for (int i = 0; i < attributes.length; i++) {
-                if (attributes[i] instanceof GenericMLEntry) {
-                    gmle = (GenericMLEntry) attributes[i];
+            for (Entry attribute : attributes) {
+                if (attribute instanceof GenericMLEntry) {
+                    gmle = (GenericMLEntry) attribute;
 
                     if (logger.isLoggable(Level.FINER)) {
-                        sb.append("\n[ GMLEPublisherTask ] [ publishAttributes ] existing attributes: ").append(gmle.hash);
+                        sb.append("\n[ GMLEPublisherTask ] [ publishAttributes ] existing attributes: ").append(
+                                gmle.hash);
                     }
 
                     synchronized (attrToPublish) {
@@ -161,41 +166,50 @@ public class GMLEPublisher implements AttributePublisher {
                     }
 
                     if (logger.isLoggable(Level.FINER)) {
-                        sb.append("\n[ GMLEPublisherTask ] [ publishAttributes ] publishing new attributes: ").append(gmle.hash);
+                        sb.append("\n[ GMLEPublisherTask ] [ publishAttributes ] publishing new attributes: ").append(
+                                gmle.hash);
                     }
 
-                    jmngr.modifyAttributes(new GenericMLEntry[]{new GenericMLEntry()}, new GenericMLEntry[]{gmle});
+                    jmngr.modifyAttributes(new GenericMLEntry[] { new GenericMLEntry() }, new GenericMLEntry[] { gmle });
                     return;
                 }
             }
-            logger.log(Level.WARNING, "[ GMLEPublisherTask ] [ publishAttributes ] [ HANDLED ] GenericMLEntry attribute not found in the published attributes list!");
+            logger.log(
+                    Level.WARNING,
+                    "[ GMLEPublisherTask ] [ publishAttributes ] [ HANDLED ] GenericMLEntry attribute not found in the published attributes list!");
         } catch (Throwable t) {
-            logger.log(Level.WARNING, "[ GMLEPublisherTask ] [ publishAttributes ] [ HANDLED ] Exception publishing attrs to LUSs", t);
+            logger.log(Level.WARNING,
+                    "[ GMLEPublisherTask ] [ publishAttributes ] [ HANDLED ] Exception publishing attrs to LUSs", t);
             //do not loose any "unpublished" attrs
-            if (gmle != null && gmle.hash != null) {
+            if ((gmle != null) && (gmle.hash != null)) {
                 attrToPublish.putAll(gmle.hash);
             }
         } finally {
             if (logger.isLoggable(Level.FINE)) {
-                sb.append("\n[ GMLEPublisherTask ] [ publishAttributes ] publishing the attrs took: ").append(System.currentTimeMillis() - sTime).append(" ms");
+                sb.append("\n[ GMLEPublisherTask ] [ publishAttributes ] publishing the attrs took: ")
+                        .append(System.currentTimeMillis() - sTime).append(" ms");
                 logger.log(Level.FINE, sb.toString());
             }
         }
     }
 
+    @Override
     public void publish(final Object key, final Object value) {
         attrToPublish.put(key, value);
     }
 
+    @Override
     public void publish(final Map<?, ?> map) {
         attrToPublish.putAll(map);
     }
 
+    @Override
     public void publishNow(final Map<?, ?> map) {
         publish(map);
         checkAndStartPublishNow();
     }
 
+    @Override
     public void publishNow(final Object key, final Object value) {
         publish(key, value);
         checkAndStartPublishNow();
@@ -214,8 +228,8 @@ public class GMLEPublisher implements AttributePublisher {
 
     void publishAndResched(final boolean shouldResched) {
 
-        final String cTaskName = "[ GMLEPublisher ] [ publishAndResched ] shouldResched=" + shouldResched + " TName: " + Thread.currentThread().getName();
-
+        final String cTaskName = "[ GMLEPublisher ] [ publishAndResched ] shouldResched=" + shouldResched + " TName: "
+                + Thread.currentThread().getName();
 
         synchronized (stateLock) {
             if (!isAlreadyRunning) {
@@ -226,11 +240,13 @@ public class GMLEPublisher implements AttributePublisher {
                 isAlreadyRunning = true;
             } else {
                 if (logger.isLoggable(Level.FINEST)) {
-                    logger.log(Level.FINEST, cTaskName + " started ... isAlreadyRunning=" + isAlreadyRunning + " ... I will reschedule a normal publish");
+                    logger.log(Level.FINEST, cTaskName + " started ... isAlreadyRunning=" + isAlreadyRunning
+                            + " ... I will reschedule a normal publish");
                 }
                 //reschedule a normal publish
                 if (shouldResched) {
-                    MonALISAExecutors.getMLHelperExecutor().schedule(_theRealTask, publishDelay.get(), TimeUnit.SECONDS);
+                    MonALISAExecutors.getMLHelperExecutor()
+                            .schedule(_theRealTask, publishDelay.get(), TimeUnit.SECONDS);
                     return;
                 }
             }
@@ -245,7 +261,9 @@ public class GMLEPublisher implements AttributePublisher {
                 synchronized (stateLock) {
                     if (shouldForcePublish) {
                         if (logger.isLoggable(Level.FINEST)) {
-                            logger.log(Level.FINEST, cTaskName + " [ mainLoop ] ... isAlreadyRunning=" + isAlreadyRunning + " shouldForcePublish=" + shouldForcePublish + "... I rerun the main loop");
+                            logger.log(Level.FINEST, cTaskName + " [ mainLoop ] ... isAlreadyRunning="
+                                    + isAlreadyRunning + " shouldForcePublish=" + shouldForcePublish
+                                    + "... I rerun the main loop");
                         }
                         shouldForcePublish = false;
                         isAlreadyRunning = true;
@@ -258,15 +276,16 @@ public class GMLEPublisher implements AttributePublisher {
                 break;
             }
         } finally {
-            
+
             synchronized (stateLock) {
                 isAlreadyRunning = false;
             }
 
             if (logger.isLoggable(Level.FINEST)) {
-                logger.log(Level.FINEST, cTaskName + "... exits main loop. isAlreadyRunning=" + isAlreadyRunning + ", shouldForcePublish=" + shouldForcePublish + ", shouldResched=" + shouldResched);
+                logger.log(Level.FINEST, cTaskName + "... exits main loop. isAlreadyRunning=" + isAlreadyRunning
+                        + ", shouldForcePublish=" + shouldForcePublish + ", shouldResched=" + shouldResched);
             }
-            
+
             if (shouldResched) {
                 MonALISAExecutors.getMLHelperExecutor().schedule(_theRealTask, publishDelay.get(), TimeUnit.SECONDS);
             }

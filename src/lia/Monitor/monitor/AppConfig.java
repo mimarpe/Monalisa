@@ -1,6 +1,3 @@
-/*
- * $Id: AppConfig.java 6878 2010-10-12 20:20:16Z ramiro $
- */
 package lia.Monitor.monitor;
 
 import java.io.BufferedReader;
@@ -8,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +31,13 @@ import lia.util.Utils;
  * <br>
  * This class has only one instance for the entire application. <br>
  * The URL is specified by "lia.Monitor.ConfigURL" as a JVM System variable.
- * 
+ *
  * @author ramiro
  */
 public final class AppConfig implements Observer {
 
     /** Logger used by this class */
-    private static final Logger logger = Logger.getLogger("lia.Monitor.monitor.AppConfig");
+    private static final Logger logger = Logger.getLogger(AppConfig.class.getName());
 
     /** Properties used by this class. Loaded from lia.Monitor.ConfigURL */
     private static volatile Properties propertiesConfigApp = null;
@@ -52,7 +50,7 @@ public final class AppConfig implements Observer {
 
     /** Properties from inside app */
     private static volatile Properties internalConfigApp = null;
-    
+
     /** The Global Environment Variables stored as Properties */
     private static final Properties globalEnv;
 
@@ -74,7 +72,7 @@ public final class AppConfig implements Observer {
     private static final Lock wLock;
 
     private static final URL url;
-    
+
     static final class MLEnvProperties {
 
         private static final class Holder {
@@ -90,40 +88,41 @@ public final class AppConfig implements Observer {
 
         void reloadMLEnv() {
             final Properties tmpProp = new Properties();
-            String mlHomeApp = AppConfig.getProperty("MonaLisa_HOME", null); 
-            String mlHome = (mlHomeApp != null)?mlHomeApp:AppConfig.getGlobalEnvProperty("MonaLisa_HOME");
-            
+            String mlHomeApp = AppConfig.getProperty("MonaLisa_HOME", null);
+            String mlHome = (mlHomeApp != null) ? mlHomeApp : AppConfig.getGlobalEnvProperty("MonaLisa_HOME");
+
             if (mlHome != null) {
-                final File mlEnvFile = new File(mlHome + File.separator + "Service" + File.separator + "CMD" + File.separator + "ml_env");
+                final File mlEnvFile = new File(mlHome + File.separator + "Service" + File.separator + "CMD"
+                        + File.separator + "ml_env");
                 if (mlEnvFile.exists() && mlEnvFile.canRead()) {
                     FileReader fr = null;
                     BufferedReader br = null;
                     try {
                         fr = new FileReader(mlEnvFile);
                         br = new BufferedReader(fr);
-                        
+
                         tmpProp.load(br);
                         final Map<Object, Object> sMap = new HashMap<Object, Object>(tmpProp.size());
-                        for(Map.Entry<Object, Object> entry : tmpProp.entrySet()) {
+                        for (Map.Entry<Object, Object> entry : tmpProp.entrySet()) {
                             final Object key = entry.getKey();
-                            final String value = (String)entry.getValue();
-                            
+                            final String value = (String) entry.getValue();
+
                             String sValue = value.trim();
-                            while(sValue.startsWith("\"") || sValue.startsWith("'")) {
+                            while (sValue.startsWith("\"") || sValue.startsWith("'")) {
                                 sValue = sValue.substring(1);
                             }
-                            
-                            while(sValue.endsWith("\"") || sValue.endsWith("'")) {
+
+                            while (sValue.endsWith("\"") || sValue.endsWith("'")) {
                                 sValue = sValue.substring(0, sValue.length() - 1);
                             }
                             sMap.put(key, sValue.trim());
                         }
-                        synchronized(serviceMLEnvProperties) {
+                        synchronized (serviceMLEnvProperties) {
                             serviceMLEnvProperties.clear();
                             serviceMLEnvProperties.putAll(sMap);
                         }
                     } catch (Throwable t) {
-                        if(logger.isLoggable(Level.FINER)) {
+                        if (logger.isLoggable(Level.FINER)) {
                             logger.log(Level.WARNING, "Unable to load ml_env file. Cause: ", t);
                         }
                     } finally {
@@ -131,26 +130,27 @@ public final class AppConfig implements Observer {
                         Utils.closeIgnoringException(br);
                     }
                 }
-                if(logger.isLoggable(Level.FINER)) {
-                    logger.log(Level.WARNING, "Unable to load ml_env file because ml_env file: " + mlEnvFile + " is not readable");
+                if (logger.isLoggable(Level.FINER)) {
+                    logger.log(Level.WARNING, "Unable to load ml_env file because ml_env file: " + mlEnvFile
+                            + " is not readable");
                 }
             }
-            
-            if(logger.isLoggable(Level.FINER)) {
+
+            if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.WARNING, "Unable to load ml_env file because MonaLisa_HOME is undefined");
             }
         }
-        
+
         static final MLEnvProperties getInstance() {
             return Holder.theInstance;
         }
     }
-    
+
     static {
-        
+
         final ReadWriteLock rwLock = new ReentrantReadWriteLock();
         internalConfigApp = new Properties();
-        
+
         rLock = rwLock.readLock();
         wLock = rwLock.writeLock();
 
@@ -158,16 +158,44 @@ public final class AppConfig implements Observer {
 
         wLock.lock();
         try {
+
+            boolean fromWebStart = false;
+            try {
+                final String property = System.getProperty("lia.Monitor.AppConfig.WebStart");
+                if (property != null) {
+                    fromWebStart = true;
+                }
+            } catch (Throwable t) {
+                System.err.println(" UNABLE TO READ lia.Monitor.AppConfig.WebStart env variable");
+                t.printStackTrace();
+                throw new RuntimeException("UNABLE TO READ lia.Monitor.AppConfig.WebStart env variable", t);
+            }
+
             try {
                 tmpCfgURLStr = System.getProperty("lia.Monitor.ConfigURL");
             } catch (Throwable t) {
-                System.err.println(" UNABLE TO READ lia.Monitor.ConfigURL env variable");
+                System.err.println("UNABLE TO READ lia.Monitor.ConfigURL env variable");
                 t.printStackTrace();
+                if (fromWebStart) {
+                    throw new RuntimeException(
+                            "UNABLE TO READ lia.Monitor.ConfigURL env variable and started as web start application");
+                }
             }
 
-            
+            if (fromWebStart) {
+                logger.log(Level.INFO, "WebStart detected! Will try loading remote properties now...");
+                if ((tmpCfgURLStr == null) || tmpCfgURLStr.trim().isEmpty()) {
+                    logger.log(Level.SEVERE,
+                            "Unable to determine lia.Monitor.ConfigURL property and Application launched via WebStart!");
+                    throw new RuntimeException(
+                            "Unable to determine lia.Monitor.ConfigURL property and Application launched via WebStart!");
+                }
+            } else {
+                logger.log(Level.INFO, "Normal app config (no webstart)");
+            }
+
             propertiesConfigApp = new Properties();
-            
+
             String os = null;
             try {
                 os = System.getProperty("os.name").toLowerCase();
@@ -179,7 +207,6 @@ public final class AppConfig implements Observer {
 
             Properties tmpGlobalEnv = null;
 
-
             try {
                 tmpGlobalEnv = new Properties();
                 tmpGlobalEnv.putAll(System.getenv());
@@ -187,67 +214,100 @@ public final class AppConfig implements Observer {
                 logger.log(Level.WARNING, "[ AppConfig ] Cannot load Global Env", t);
                 tmpGlobalEnv = null;
             }
-            
+
             globalEnv = tmpGlobalEnv;
-            
+
             try {
                 MLEnvProperties.getInstance().reloadMLEnv();
-            }catch(Throwable ignore) {}
+            } catch (Throwable ignore) {
+                //not interested
+            }
             propertiesConfigApp.putAll(MLEnvProperties.getInstance().serviceMLEnvProperties);
-            
+
             configURLString = tmpCfgURLStr;
 
             URL tmpURL = null;
-            if (configURLString != null && configURLString.length() != 0) {
+            if ((configURLString != null) && (configURLString.length() != 0)) {
                 InputStream is = null;
+                URLConnection urlConnection = null;
 
                 try {
                     tmpURL = new URL(configURLString.trim());
-                    is = tmpURL.openStream();
+                    urlConnection = tmpURL.openConnection();
+                    if (fromWebStart) {
+                        try {
+                            urlConnection.setReadTimeout(10 * 1000);
+                            urlConnection.setDefaultUseCaches(false);
+                            urlConnection.setUseCaches(false);
+                        } catch (Throwable t) {
+                            logger.log(
+                                    Level.WARNING,
+                                    "[AppConfig] Unable to set connection paramters. May timeout after a long time ... Cause:",
+                                    t);
+                        }
+                        urlConnection.connect();
+                    }
+                    is = urlConnection.getInputStream();
                     propertiesConfigApp.load(is);
                     if (logger.isLoggable(Level.FINE)) {
                         logger.log(Level.FINE, "[ AppConfig ] lia.Monitor.ConfigURL: " + configURLString + " loaded.");
                     }
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, "[ AppConfig ] [ HANDLED ] Unable to load lia.Monitor.ConfigURL: " + configURLString + ". Cause: ", t);
+                    logger.log(Level.WARNING, "[ AppConfig ] [ HANDLED ] Unable to load lia.Monitor.ConfigURL: "
+                            + configURLString + ". Cause: ", t);
                     logger.log(Level.WARNING, "[ AppConfig ] [ HANDLED ] Using System.getProperty(...)");
+                    if (fromWebStart) {
+                        throw new RuntimeException("WebStart application but unable to load the env. Cause", t);
+                    }
                 } finally {
                     if (is != null) {
                         try {
                             is.close();
                         } catch (Throwable ignore) {
+                            //not interested
                         }
                     }
+
                 }
 
             }// if()
 
             url = tmpURL;
-
             DateFileWatchdog tmpDFW = null;
-            try {
-                if(url != null) {
-                    tmpDFW = DateFileWatchdog.getInstance(url.getFile(), 10 * 1000);
-                    tmpDFW.addObserver(new Observer() {
-                        public void update(Observable o, Object arg) {
-                            reloadProps();
-                        }
-                        
-                    });
-                } else {
-                    logger.log(Level.WARNING, "[ AppConfig ] No lia.Monitor.ConfigURL specified. Using JVM & local env.");
-                }
-            } catch (Throwable t) {
-                logger.log(Level.WARNING, "[ AppConfig ] Unable to subscribe for future changes for lia.Monitor.ConfigURL: " + configURLString + ". Cause:", t);
-            }
+            if (!fromWebStart) {
+                try {
+                    if (url != null) {
+                        tmpDFW = DateFileWatchdog.getInstance(url.getFile(), 10 * 1000);
+                        tmpDFW.addObserver(new Observer() {
+                            /**
+                             * @param o
+                             * @param arg
+                             */
+                            @Override
+                            public void update(Observable o, Object arg) {
+                                reloadProps();
+                            }
 
-            // DO NOT CHANGE THIS IN NTPDate.currentTimeMillis() !!!! or you will get a very nice
-            // deadlock
-            lastReloaded.set(System.currentTimeMillis());
+                        });
+                    } else {
+                        logger.log(Level.FINER,
+                                "[ AppConfig ] No lia.Monitor.ConfigURL specified. Using JVM & local env.");
+                    }
+                } catch (Throwable t) {
+                    logger.log(Level.WARNING,
+                            "[ AppConfig ] Unable to subscribe for future changes for lia.Monitor.ConfigURL: "
+                                    + configURLString + ". Cause:", t);
+                }
+
+                // DO NOT CHANGE THIS IN NTPDate.currentTimeMillis() !!!! or you will get a very nice
+                // deadlock
+                lastReloaded.set(System.currentTimeMillis());
+                logger.log(Level.INFO, "Properties loaded. Monitoring for changes...");
+            } else {
+                logger.log(Level.INFO, "Properties loaded via webstart...");
+            }
             dfw = tmpDFW;
 
-
-            
         } finally {
             wLock.unlock();
         }
@@ -269,7 +329,7 @@ public final class AppConfig implements Observer {
 
         Properties localPropertiesConfigAppTMP = new Properties();
         final String configURLString = System.getProperty("lia.Monitor.ConfigURL");
-        if (configURLString != null && configURLString.length() != 0) {
+        if ((configURLString != null) && (configURLString.length() != 0)) {
             try {
 
                 InputStream is = null;
@@ -284,18 +344,21 @@ public final class AppConfig implements Observer {
                         try {
                             is.close();
                         } catch (Throwable ignore) {
+                            //not interested
                         }
                     }
                 }
 
-                if (localPropertiesConfigAppTMP != null && localPropertiesConfigAppTMP.size() > 0) {
+                if ((localPropertiesConfigAppTMP != null) && (localPropertiesConfigAppTMP.size() > 0)) {
                     localPropsConfigApp = localPropertiesConfigAppTMP;
                 }
 
                 try {
                     MLEnvProperties.getInstance().reloadMLEnv();
-                }catch(Throwable ignore) {}
-                
+                } catch (Throwable ignore) {
+                    //not interested
+                }
+
                 wLock.lock();
                 try {
                     propertiesConfigApp.clear();
@@ -329,14 +392,14 @@ public final class AppConfig implements Observer {
     }
 
     /**
-     * @see java.lang.System.getProperty(String)
+     * @see #java.lang.System.getProperty(String)
      */
     public static final String getProperty(String key) {
         return getProperty(key, null);
     }
 
     /**
-     * @see java.lang.System.getProperty(String, String)
+     * @see #java.lang.System.getProperty(String, String)
      */
     public static final String getProperty(String key, String defaultValue) {
 
@@ -356,17 +419,19 @@ public final class AppConfig implements Observer {
     private static final String stripPropertyValue(final String value) {
         String rv = value;
 
-        if (rv == null)
+        if (rv == null) {
             return null;
+        }
 
         while (true) {
             int i1 = rv.indexOf("${");
             int i2 = rv.indexOf("}");
-            if (i1 != -1 && i2 != -1) {
+            if ((i1 != -1) && (i2 != -1)) {
                 String gps = getProperty(rv.substring(i1 + 2, i2).trim());
 
-                if (gps == null)
+                if (gps == null) {
                     return rv;
+                }
                 final String s1 = rv.substring(0, i1);
                 final String s2 = rv.substring(i2 + 1);
                 rv = s1 + gps + s2;
@@ -380,52 +445,52 @@ public final class AppConfig implements Observer {
 
     /**
      * Sets a property and returns previous value
-     * 
+     *
      * @param key
      * @param newValue
      * @return null in case no property was found
      */
     public static final String setProperty(String key, String newValue) {
-        wLock.lock(); 
+        wLock.lock();
         try {
-            if(newValue == null) {
+            if (newValue == null) {
                 internalConfigApp.remove(key);
-                return (String)propertiesConfigApp.remove(key);
+                return (String) propertiesConfigApp.remove(key);
             }
             internalConfigApp.setProperty(key, newValue);
-            return (String)propertiesConfigApp.setProperty(key, newValue);
-        }finally {
+            return (String) propertiesConfigApp.setProperty(key, newValue);
+        } finally {
             wLock.unlock();
         }
     }
-    
+
     /**
      * Sets an app property if it's not set already
-     * 
+     *
      * @param key
      * @param newValue
      * @return the existing value or null if no mapping was found
      */
     public static final String setPropertyIfAbsent(String key, String newValue) {
-        rLock.lock(); 
+        rLock.lock();
         String existing = null;
         try {
             existing = getProperty(key);
-            if(existing != null) {
+            if (existing != null) {
                 return existing;
             }
         } finally {
             rLock.unlock();
         }
-        
+
         wLock.lock();
         try {
-            //DCL - double check 
+            //DCL - double check
             existing = getProperty(key);
-            if(existing != null) {
+            if (existing != null) {
                 return existing;
             }
-            if(newValue == null) {
+            if (newValue == null) {
                 internalConfigApp.remove(key);
                 propertiesConfigApp.remove(key);
             } else {
@@ -437,6 +502,7 @@ public final class AppConfig implements Observer {
             wLock.unlock();
         }
     }
+
     public static final Properties getPropertiesConfigApp() {
         final Properties retv = new Properties();
         rLock.lock();
@@ -473,13 +539,15 @@ public final class AppConfig implements Observer {
             }
         }
 
-        if (props == null)
+        if (props == null) {
             return null;
+        }
 
         final String[] unstrippedProps = props.trim().split("(\\s)*,(\\s)*");
 
-        if (unstrippedProps == null || unstrippedProps.length == 0)
+        if ((unstrippedProps == null) || (unstrippedProps.length == 0)) {
             return null;
+        }
 
         final int len = unstrippedProps.length;
 
@@ -510,8 +578,9 @@ public final class AppConfig implements Observer {
             }
         }
 
-        if (props == null)
+        if (props == null) {
             return defaultValues;
+        }
 
         return props.trim().split("(\\s)*,(\\s)*");
     }
@@ -522,37 +591,43 @@ public final class AppConfig implements Observer {
 
     public static final String getGlobalEnvProperty(String key, String defaultValue) {
 
-        if (OS == null || (OS.indexOf("linux") == -1 && OS.indexOf("unix") == -1))
+        if ((OS == null) || ((OS.indexOf("linux") == -1) && (OS.indexOf("unix") == -1))) {
             return defaultValue;
+        }
 
-        if (globalEnv == null)
+        if (globalEnv == null) {
             return defaultValue;
+        }
 
         return getEnvProperty(key, defaultValue, globalEnv);
     }
 
     private static final String getEnvProperty(String key, String defaultValue, Properties prop) {
         String retV = prop.getProperty(key, defaultValue);
-        if (retV != null)
+        if (retV != null) {
             return retV.trim();
+        }
         return retV;
     }
 
     public static final void addNotifier(AppConfigChangeListener l) {
-        if (l == null)
+        if (l == null) {
             return;
+        }
         listeners.add(l);
     }
 
     static final void addLoggerNotifier(AppConfigChangeListener l) {
-        if (l == null)
+        if (l == null) {
             return;
+        }
         listeners.add(0, l);
     }
 
     public static final void removeNotifier(AppConfigChangeListener l) {
-        if (l == null)
+        if (l == null) {
             return;
+        }
         listeners.remove(l);
     }
 
@@ -564,11 +639,13 @@ public final class AppConfig implements Observer {
 
         new Thread() {
 
+            @Override
             public void run() {
                 setName(" ( ML ) AppConfigChangedNotifier ");
 
                 if (logger.isLoggable(Level.FINE)) {
-                    logger.log(Level.FINE, "Iterating through registered listeners [ " + listeners.size() + " ] : " + listeners);
+                    logger.log(Level.FINE, "Iterating through registered listeners [ " + listeners.size() + " ] : "
+                            + listeners);
                 }
 
                 try {
@@ -576,7 +653,8 @@ public final class AppConfig implements Observer {
                         try {
 
                             if (logger.isLoggable(Level.FINER)) {
-                                logger.log(Level.FINER, "[ AppConfigChangedNotifier ] Notifying : " + accl.getClass().getName());
+                                logger.log(Level.FINER, "[ AppConfigChangedNotifier ] Notifying : "
+                                        + accl.getClass().getName());
                             }
 
                             accl.notifyAppConfigChanged();
@@ -587,12 +665,17 @@ public final class AppConfig implements Observer {
 
                         } catch (Throwable ignore) {
                             if (logger.isLoggable(Level.FINE)) {
-                                logger.log(Level.FINE, "[ AppConfigChangedNotifier ] [ HANDLED ] Got exception notifying AppConfigChangeListener: " + accl, ignore);
+                                logger.log(Level.FINE,
+                                        "[ AppConfigChangedNotifier ] [ HANDLED ] Got exception notifying AppConfigChangeListener: "
+                                                + accl, ignore);
                             }
                         }
                     }// end for()
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, "[ AppConfigChangedNotifier ] [ HANDLED ] AppConfigChangedNotifier got exception in main loop", t);
+                    logger.log(
+                            Level.WARNING,
+                            "[ AppConfigChangedNotifier ] [ HANDLED ] AppConfigChangedNotifier got exception in main loop",
+                            t);
                 }
 
                 if (logger.isLoggable(Level.FINE)) {
@@ -602,15 +685,19 @@ public final class AppConfig implements Observer {
         }.start();
     }
 
+    /**
+     * @param arg
+     */
+    @Override
     public void update(Observable o, Object arg) {
-        if (dfw != null && o != null && dfw.equals(o)) {
+        if ((dfw != null) && (o != null) && dfw.equals(o)) {
             reloadProps();
         }
     }
 
     /**
      * Get the value of the integer parameter, with the default value 0 (if it is not defined or incorrectly specified)
-     * 
+     *
      * @param sParam
      *            the parameter name
      * @return the integer value of the parameter or 0 if there was an error (undefined or incorrectly specified)
@@ -621,7 +708,7 @@ public final class AppConfig implements Observer {
 
     /**
      * Get the value of the integer parameter, with the default value 0 (if it is not defined or incorrectly specified)
-     * 
+     *
      * @param sParam
      *            the parameter name
      * @param defaultVal
@@ -633,13 +720,13 @@ public final class AppConfig implements Observer {
         try {
 
             final String s = getProperty(sParam);
-            if (s != null && s.length() > 0) {
+            if ((s != null) && (s.length() > 0)) {
                 final Integer iR = Integer.valueOf(s);
-                
-                if(iR == null) {
+
+                if (iR == null) {
                     return defaultVal;
                 }
-                
+
                 return iR.intValue();
             }
 
@@ -651,7 +738,7 @@ public final class AppConfig implements Observer {
 
     /**
      * Get the value of the long parameter, with the default value 0 (if it is not defined or incorrectly specified)
-     * 
+     *
      * @param sParam
      *            the parameter name
      * @return the long value of the parameter or 0 if there was an error (undefined or incorrectly specified)
@@ -662,7 +749,7 @@ public final class AppConfig implements Observer {
 
     /**
      * Get the value of the long parameter, with the default value 0 (if it is not defined or incorrectly specified)
-     * 
+     *
      * @param sParam
      *            the parameter name
      * @param defaultVal
@@ -673,12 +760,12 @@ public final class AppConfig implements Observer {
     public static long getl(final String sParam, final long defaultVal) {
         try {
             final String s = getProperty(sParam);
-            if (s != null && s.length() > 0) {
+            if ((s != null) && (s.length() > 0)) {
                 final Long retV = Long.valueOf(s);
-                if(retV == null) {
+                if (retV == null) {
                     return defaultVal;
                 }
-                
+
                 return retV.longValue();
             }
 
@@ -690,7 +777,7 @@ public final class AppConfig implements Observer {
 
     /**
      * Get the boolean value of this configuration parameter.
-     * 
+     *
      * @param sParam
      *            the configuration key
      * @param bDefault
@@ -701,14 +788,16 @@ public final class AppConfig implements Observer {
     public static boolean getb(final String sParam, final boolean bDefault) {
         String s = getProperty(sParam);
 
-        if (s != null && s.length() > 0) {
+        if ((s != null) && (s.length() > 0)) {
             final char c = s.charAt(0);
 
-            if (c == 't' || c == 'T' || c == 'y' || c == 'Y' || c == '1')
+            if ((c == 't') || (c == 'T') || (c == 'y') || (c == 'Y') || (c == '1')) {
                 return true;
+            }
 
-            if (c == 'f' || c == 'F' || c == 'n' || c == 'N' || c == '0')
+            if ((c == 'f') || (c == 'F') || (c == 'n') || (c == 'N') || (c == '0')) {
                 return false;
+            }
         }
 
         return bDefault;
@@ -716,7 +805,7 @@ public final class AppConfig implements Observer {
 
     /**
      * Get the double (floating point) value of the configuration parameter
-     * 
+     *
      * @param sParam
      *            configuration parameter
      * @param dDefault
@@ -732,6 +821,3 @@ public final class AppConfig implements Observer {
     }
 
 }
-
-
-

@@ -28,7 +28,12 @@ import org.opennms.protocols.snmp.SnmpVarBind;
 
 public abstract class snmpMon extends SchJob implements SnmpHandler, Serializable {
 
-    private static final Logger logger = Logger.getLogger("lia.Monitor.monitor.snmpMon");
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -2299410475975189163L;
+
+    private static final Logger logger = Logger.getLogger(snmpMon.class.getName());
 
     public MNode Node;
 
@@ -129,30 +134,36 @@ public abstract class snmpMon extends SchJob implements SnmpHandler, Serializabl
         InetAddress laddr = null;
         try {
             String sLADDRD = AppConfig.getProperty("lia.Monitor.SNMP_localAddress", null);
-            if(sLADDRD != null) {
+            if (sLADDRD != null) {
                 try {
                     laddr = InetAddress.getByName(sLADDRD);
-                }catch(Throwable t) {
+                } catch (Throwable t) {
                     logger.log(Level.WARNING, "Cannot determine InetAddr for SNMP_localAddress " + sLADDRD, t);
                     laddr = null;
                 }
             }
-        }catch(Throwable t){
+        } catch (Throwable t) {
             laddr = null;
         }
-        if (m_port != -1) peer.setPort(m_port);
+        if (m_port != -1) {
+            peer.setPort(m_port);
+        }
         peer.setTimeout(m_timeout);
-        if(laddr != null) {
-            if(logger.isLoggable(Level.FINER)) {
+        if (laddr != null) {
+            if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, " Will use " + laddr + " as local IP Address");
             }
             peer.setServerAddress(laddr);
         }
-        if (m_retries >= 1) peer.setRetries(m_retries);
+        if (m_retries >= 1) {
+            peer.setRetries(m_retries);
+        }
         SnmpParameters parms = peer.getParameters();
         parms.setVersion(m_version);
         m_community = AppConfig.getProperty("lia.Monitor.SNMP_community");
-        if (m_community != null) parms.setReadCommunity(m_community.trim());
+        if (m_community != null) {
+            parms.setReadCommunity(m_community.trim());
+        }
         xres = new Vector[NR];
         session = null;
         return info;
@@ -187,11 +198,11 @@ public abstract class snmpMon extends SchJob implements SnmpHandler, Serializabl
 
         session.setDefaultHandler(this);
 
-        for (int i = 0; i < NR && hasToRun; i++) {
+        for (int i = 0; (i < NR) && hasToRun; i++) {
             xres[i] = new Vector();
         }
-        
-        for (int i = 0; i < NR && hasToRun; i++) {
+
+        for (int i = 0; (i < NR) && hasToRun; i++) {
             cpointer = i;
             SnmpObjectId id = new SnmpObjectId(sOid[i]);
             int[] ids = id.getIdentifiers();
@@ -199,7 +210,7 @@ public abstract class snmpMon extends SchJob implements SnmpHandler, Serializabl
             id.setIdentifiers(ids);
             m_stopAt = id;
 
-            SnmpVarBind[] vblist = { new SnmpVarBind(sOid[i])};
+            SnmpVarBind[] vblist = { new SnmpVarBind(sOid[i]) };
             SnmpPduRequest pdu = new SnmpPduRequest(SnmpPduPacket.GETNEXT, vblist);
             pdu.setRequestId(SnmpPduPacket.nextSequence());
             try {
@@ -214,6 +225,7 @@ public abstract class snmpMon extends SchJob implements SnmpHandler, Serializabl
         }
     }
 
+    @Override
     public void snmpReceivedPdu(SnmpSession session, int cmd, SnmpPduPacket pdu) {
         SnmpPduRequest req = null;
         if (pdu instanceof SnmpPduRequest) {
@@ -242,8 +254,8 @@ public abstract class snmpMon extends SchJob implements SnmpHandler, Serializabl
         }
 
         SnmpVarBind vb = pdu.getVarBindAt(0);
-        if (vb.getValue().typeId() == SnmpEndOfMibView.ASNTYPE
-                || (m_stopAt != null && m_stopAt.compare(vb.getName()) < 0)) {
+        if ((vb.getValue().typeId() == SnmpEndOfMibView.ASNTYPE)
+                || ((m_stopAt != null) && (m_stopAt.compare(vb.getName()) < 0))) {
             synchronized (session) {
                 session.notify();
             }
@@ -252,7 +264,7 @@ public abstract class snmpMon extends SchJob implements SnmpHandler, Serializabl
 
         xres[cpointer].add(vb);
 
-        SnmpVarBind[] vblist = { new SnmpVarBind(vb.getName())};
+        SnmpVarBind[] vblist = { new SnmpVarBind(vb.getName()) };
         SnmpPduRequest newReq = new SnmpPduRequest(SnmpPduPacket.GETNEXT, vblist);
         newReq.setRequestId(SnmpPduPacket.nextSequence());
         session.send(newReq);
@@ -272,6 +284,7 @@ public abstract class snmpMon extends SchJob implements SnmpHandler, Serializabl
         errorDescription = null;
     }
 
+    @Override
     public void snmpTimeoutError(SnmpSession session, SnmpSyntax pdu) {
         if (logger.isLoggable(Level.FINER)) {
             logger.log(Level.FINE, "The session timed out trying to communicate with the remote host "
@@ -283,6 +296,7 @@ public abstract class snmpMon extends SchJob implements SnmpHandler, Serializabl
         }
     }
 
+    @Override
     public void snmpInternalError(SnmpSession session, int err, SnmpSyntax pdu) {
         if (logger.isLoggable(Level.FINER)) {
             logger.log(Level.FINE, "An unexpected error occured trying to communicate with the remote host "
@@ -322,6 +336,7 @@ public abstract class snmpMon extends SchJob implements SnmpHandler, Serializabl
     }
 
     //this is forced STOPED
+    @Override
     public boolean stop() {
         if (session != null) {
             logger.log(Level.INFO, "Try to stop SNMP for = " + session.getPeer().getPeer() + " session " + session);

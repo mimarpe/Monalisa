@@ -25,13 +25,11 @@ import lia.util.security.MLLogin;
 import org.xml.sax.SAXException;
 
 public final class AuthZService {
-    /** Logger name */
-    private static final transient String COMPONENT = "lia.util.security.authz";
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(AuthZService.class.getName());
 
-    private Integer port;
-    private ServerSocket sEndpoint;
+    private final Integer port;
+    private final ServerSocket sEndpoint;
     Policy policy;
     /**
      * static fields
@@ -47,7 +45,7 @@ public final class AuthZService {
 
     public AuthZService(int iPort) throws IOException {
         this.port = iPort;
-        
+
         sEndpoint = new ServerSocket();
         InetSocketAddress socketAddress = new InetSocketAddress(port);
         sEndpoint.bind(socketAddress);
@@ -61,8 +59,9 @@ public final class AuthZService {
 
         String sXML = AppConfig.getProperty("policy.path");
 
-        if (sXML == null)
+        if (sXML == null) {
             sXML = "policy.xml";
+        }
 
         if (logger.isLoggable(Level.INFO)) {
             logger.log(Level.INFO, "Policy file:" + sXML);
@@ -86,6 +85,7 @@ public final class AuthZService {
                 final Socket connection = this.sEndpoint.accept();
 
                 Runnable r = new Runnable() {
+                    @Override
                     public void run() {
                         handleRequest(connection);
                     }
@@ -149,11 +149,11 @@ public final class AuthZService {
             int port = Integer.valueOf(AppConfig.getProperty("lia.util.security.authz.port", "36006")).intValue();
 
             AuthZService authzServer = new AuthZService(port);
-            
+
             authzServer.init();
-            
+
             authzServer.jiniInit();
-            
+
             authzServer.dispatch();
             logger.info("AuthZService is ready.");
         } catch (Throwable t) {
@@ -161,13 +161,14 @@ public final class AuthZService {
         }
     }
 
-	private void jiniInit() {
-	
-        System.out.println("registering in LUSs...");       
-        boolean useSecLUSs = Boolean.valueOf(AppConfig.getProperty("lia.util.security.authz.useSecureLUSs", "false")).booleanValue();        
-		if (useSecLUSs) {
-		    logger.log(Level.INFO,"Use Secure LUSs");
-            try {               
+    private void jiniInit() {
+
+        System.out.println("registering in LUSs...");
+        boolean useSecLUSs = Boolean.valueOf(AppConfig.getProperty("lia.util.security.authz.useSecureLUSs", "false"))
+                .booleanValue();
+        if (useSecLUSs) {
+            logger.log(Level.INFO, "Use Secure LUSs");
+            try {
                 /*
                  * set trustStore to empty string to accept any certificate in a
                  * SSL session (we don't want to authenticate the server (LUS)
@@ -188,14 +189,15 @@ public final class AuthZService {
                  */
                 MLLogin serviceCredentials = new MLLogin();
                 serviceCredentials.login(privateKeyPath, null, certChainPath);
-                
-                Subject ctxSubject=serviceCredentials.getSubject();
-                if(ctxSubject ==null) {
-                    logger.log(Level.WARNING,"Subject is null");
+
+                Subject ctxSubject = serviceCredentials.getSubject();
+                if (ctxSubject == null) {
+                    logger.log(Level.WARNING, "Subject is null");
                 }
-                logger.log(Level.FINE,"SUBJECT: "+ctxSubject);
-                
+                logger.log(Level.FINE, "SUBJECT: " + ctxSubject);
+
                 Subject.doAsPrivileged(ctxSubject, new PrivilegedAction() {
+                    @Override
                     public Object run() {
                         AuthZJiniService tjs = AuthZJiniService.getInstance();
                         tjs.setDaemon(false);
@@ -209,15 +211,16 @@ public final class AuthZService {
             }
         }//if (useSecLUSs) ...
         else {//start service 
-        AuthZJiniService tjs = AuthZJiniService.getInstance();
-        tjs.setDaemon(false);
-        tjs.start();
+            AuthZJiniService tjs = AuthZJiniService.getInstance();
+            tjs.setDaemon(false);
+            tjs.start();
         }
-    }    
-	
+    }
+
 }
 
 final class DaemonThreadFactory implements ThreadFactory {
+    @Override
     public Thread newThread(Runnable r) {
         Thread thread = new Thread(r);
         thread.setDaemon(true);

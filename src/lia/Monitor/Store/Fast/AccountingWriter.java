@@ -111,14 +111,14 @@ public class AccountingWriter extends Writer {
 			boolean bNew = false;
 
 			if (driverString.indexOf("postgres") >= 0)
-				bNew = db.query("CREATE TABLE " + tableName + " (" + "id integer," + "jobid text," + "value real," + "start_time integer," + "end_time integer" + ") WITHOUT OIDS;", true);
+				bNew = db.syncUpdateQuery("CREATE TABLE " + tableName + " (" + "id integer," + "jobid text," + "value real," + "start_time integer," + "end_time integer" + ") WITHOUT OIDS;", true);
 			else
-				bNew = db.query("CREATE TABLE " + tableName + " (" + "id int," + "jobid varchar(255)," + "value float," + "start_time int," + "end_time int" + ") TYPE=InnoDB;", true);
+				bNew = db.syncUpdateQuery("CREATE TABLE " + tableName + " (" + "id int," + "jobid varchar(255)," + "value float," + "start_time int," + "end_time int" + ") TYPE=InnoDB;", true);
 
 			if (bNew)
-				db.query("CREATE INDEX " + tableName + "_idx ON " + tableName + " (id, start_time, end_time);", true);
+				db.syncUpdateQuery("CREATE INDEX " + tableName + "_idx ON " + tableName + " (id, start_time, end_time);", true);
 		} else
-			db.query("CREATE TABLE " + tableName + " (" + "id int," + "jobid varchar(255)," + "value DOUBLE INDEX_NONE," + "start_time int," + "end_time int" + ") TYPE=InnoDB;", true);
+			db.syncUpdateQuery("CREATE TABLE " + tableName + " (" + "id int," + "jobid varchar(255)," + "value DOUBLE INDEX_NONE," + "start_time int," + "end_time int" + ") TYPE=InnoDB;", true);
 	}
 
 	private final void initDBStructure_10(Integer id) {
@@ -128,14 +128,14 @@ public class AccountingWriter extends Writer {
 			boolean bNew = false;
 
 			if (driverString.indexOf("postgres") >= 0)
-				bNew = db.query("CREATE TABLE " + tableName + "_" + id + " (" + "jobid text," + "value real," + "start_time integer," + "end_time integer" + ") WITHOUT OIDS;", true);
+				bNew = db.syncUpdateQuery("CREATE TABLE " + tableName + "_" + id + " (" + "jobid text," + "value real," + "start_time integer," + "end_time integer" + ") WITHOUT OIDS;", true);
 			else
-				bNew = db.query("CREATE TABLE " + tableName + "_" + id + " (" + "jobid varchar(255)," + "value float," + "start_time int," + "end_time int" + ") TYPE=InnoDB;", true);
+				bNew = db.syncUpdateQuery("CREATE TABLE " + tableName + "_" + id + " (" + "jobid varchar(255)," + "value float," + "start_time int," + "end_time int" + ") TYPE=InnoDB;", true);
 
 			if (bNew)
-				db.query("CREATE INDEX " + tableName + "_" + id + "_idx ON " + tableName + "_" + id + " (start_time, end_time);", true);
+				db.syncUpdateQuery("CREATE INDEX " + tableName + "_" + id + "_idx ON " + tableName + "_" + id + " (start_time, end_time);", true);
 		} else
-			db.query("CREATE TABLE " + tableName + "_" + id + " (" + "jobid varchar(255) INDEX_NONE," + "value DOUBLE INDEX_NONE," + "start_time int," + "end_time int" + ") TYPE=InnoDB;", true);
+			db.syncUpdateQuery("CREATE TABLE " + tableName + "_" + id + " (" + "jobid varchar(255) INDEX_NONE," + "value DOUBLE INDEX_NONE," + "start_time int," + "end_time int" + ") TYPE=InnoDB;", true);
 	}
 
 	/**
@@ -177,7 +177,11 @@ public class AccountingWriter extends Writer {
 
 		q += " ORDER BY start_time ASC, end_time ASC, id ASC;";
 
-		DB db = new DB(q);
+		DB db = new DB();
+		
+		db.setReadOnly(true);
+		
+		db.query(q);
 
 		long l1, l2;
 
@@ -218,7 +222,11 @@ public class AccountingWriter extends Writer {
 
 			q += " ORDER BY start_time ASC, end_time ASC;";
 
-			DB db = new DB(q);
+			DB db = new DB();
+			
+			db.setReadOnly(true);
+			
+			db.query(q);
 
 			long l1, l2;
 

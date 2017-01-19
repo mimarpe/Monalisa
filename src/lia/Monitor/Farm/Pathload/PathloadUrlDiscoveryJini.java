@@ -18,160 +18,157 @@ import net.jini.core.lookup.ServiceItem;
  *
  */
 public class PathloadUrlDiscoveryJini {
-	
-	private String myUrl;
-	private String myCommuniytName;
-	private String mySerial;
-	private String myServiceID;
-	
-	/**
-	 * My Logger Component
-	 */
-	private static final transient Logger logger = Logger.getLogger(
-			"lia.Monitor.Farm.Pathload.jini.PathloadUrlDiscoveryJini");	
-	
-	public PathloadUrlDiscoveryJini(String myCommunityName, String myUrl, String mySerial) {
-		this.myUrl = myUrl;
-		this.myCommuniytName = myCommunityName;
-		this.mySerial = mySerial;
-	}
-	
-	/**
-	 * @return Returns the myServiceID.
-	 */
-	public String getMyServiceID() {
-		return myServiceID;
-	}
 
-	/**
-	 * @param myServiceID The myServiceID to set.
-	 */
-	public void setMyServiceID(String myServiceID) {
-		this.myServiceID = myServiceID;
-	}
-	
-	/**
-	 * @return Returns the mySerial.
-	 */
-	public String getMySerial() {
-		return mySerial;
-	}
+    /**
+     * My Logger Component
+     */
+    private static final Logger logger = Logger.getLogger(PathloadUrlDiscoveryJini.class.getName());
 
-	/**
-	 * @param mySerial The mySerial to set.
-	 */
-	public void setMySerial(String mySerial) {
-		this.mySerial = mySerial;
-	}
+    private String myUrl;
+    private String myCommuniytName;
+    private String mySerial;
+    private String myServiceID;
 
-	/**
-	 * @return Returns the myCommuniytName.
-	 */
-	public String getMyCommuniytName() {
-		return myCommuniytName;
-	}
+    public PathloadUrlDiscoveryJini(String myCommunityName, String myUrl, String mySerial) {
+        this.myUrl = myUrl;
+        this.myCommuniytName = myCommunityName;
+        this.mySerial = mySerial;
+    }
 
-	/**
-	 * @param myCommuniytName The myCommuniytName to set.
-	 */
-	public void setMyCommuniytName(String myCommuniytName) {
-		this.myCommuniytName = myCommuniytName;
-	}
+    /**
+     * @return Returns the myServiceID.
+     */
+    public String getMyServiceID() {
+        return myServiceID;
+    }
 
-	/**
-	 * @return Returns the myUrl.
-	 */
-	public String getMyUrl() {
-		return myUrl;
-	}
+    /**
+     * @param myServiceID The myServiceID to set.
+     */
+    public void setMyServiceID(String myServiceID) {
+        this.myServiceID = myServiceID;
+    }
 
-	/**
-	 * @param myUrl The myUrl to set.
-	 */
-	public void setMyUrl(String myUrl) {
-		this.myUrl = myUrl;
-	}
-	
-	public boolean equals(Object obj) {
-		if ( this == obj ) return true;
-		if ( !(obj instanceof PathloadUrlDiscoveryJini))
-			return false;
-		
-		PathloadUrlDiscoveryJini pud  = (PathloadUrlDiscoveryJini) obj;
-		if ((myCommuniytName == null) ||
-				(myServiceID == null) ||
-				(myUrl == null) ||
-				(mySerial == null)) {
-			return false;
-		}
-		
-		return this.myCommuniytName.equals(pud.getMyCommuniytName()) &&
-			this.myServiceID.equals(pud.getMyServiceID()) &&
-			this.myUrl.equals(pud.getMyUrl()) &&
-			this.mySerial.equals(pud.getMySerial());
-	}
-	
-	public int hashCode() {
-		return this.toString().hashCode();
-	}
-	
-	public String toString() {		
-		return "[CommunityName: " + myCommuniytName + "] [URL: " + myUrl + "] [SID: " + myServiceID + 
-			"] [Serial: " + mySerial + "]";  
-	}	
-	
-	/**
-	 * 
-	 * @param peerGroupName
-	 * @return
-	 */
-	public static Vector getUrls(String peerGroupName) {
-		Vector vResult = new Vector();
-    	if (peerGroupName == null) {
-    		logger.log(Level.INFO, "Community Name is null. Please assign a community name " +
-    				"before issuing a query." );
-    		return null;
-    	}
-    	
-    	MLLUSHelper mllus = MLLUSHelper.getInstance();
-    	ServiceItem[] sis = mllus.getPathloadServices();
-    	if ((sis != null) && (sis.length != 0)) {    		
-	    	for (int i=0; i< sis.length; i++) {
-	    		ServiceItem s = sis[i];
-	    		Entry[] entries = s.attributeSets;
-	    		if (((entries != null) && (entries.length >0)) &&
-	    				((entries[0] != null) && (entries[0] instanceof GenericMLEntry))) {
-	    			GenericMLEntry glme = (GenericMLEntry) entries[0]; 
-	    			Hashtable hash = glme.hash;
-	    	    			
-	    			String community = null;
-	    			String url = null;
-	    			String serial = null;
-	    			if ((hash != null) && (hash.containsKey("COMMUNITY"))) {
-	    				community = (String) hash.get("COMMUNITY");
-	    			}
-	    			if ((hash != null) && (hash.containsKey("URL"))) {
-	    				url = (String) hash.get("URL");
-	    			}
-	    			if ((hash != null) && (hash.containsKey("SERIAL"))) {
-	    				serial = (String) hash.get("SERIAL");
-	    			}
-	    			
-	    			if ((community != null) && 
-	    					(url != null) &&
-	    					(serial !=null)) {
-	    				if (peerGroupName.equals(community)) {
-	    					PathloadUrlDiscoveryJini pud = 
-	    						new PathloadUrlDiscoveryJini(community, url, serial);
-	    					pud.setMyServiceID(s.serviceID.toString());
-	    					vResult.add(pud);
-	    					logger.log(Level.INFO, "[PathloadUrlDiscoveryJini] " + pud.toString() + " added to UrlCache.");
-	    				}
-	    			}
-	    		}
-	    	}
-    	}
-    	
-		return vResult;
-	}
+    /**
+     * @return Returns the mySerial.
+     */
+    public String getMySerial() {
+        return mySerial;
+    }
+
+    /**
+     * @param mySerial The mySerial to set.
+     */
+    public void setMySerial(String mySerial) {
+        this.mySerial = mySerial;
+    }
+
+    /**
+     * @return Returns the myCommuniytName.
+     */
+    public String getMyCommuniytName() {
+        return myCommuniytName;
+    }
+
+    /**
+     * @param myCommuniytName The myCommuniytName to set.
+     */
+    public void setMyCommuniytName(String myCommuniytName) {
+        this.myCommuniytName = myCommuniytName;
+    }
+
+    /**
+     * @return Returns the myUrl.
+     */
+    public String getMyUrl() {
+        return myUrl;
+    }
+
+    /**
+     * @param myUrl The myUrl to set.
+     */
+    public void setMyUrl(String myUrl) {
+        this.myUrl = myUrl;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof PathloadUrlDiscoveryJini)) {
+            return false;
+        }
+
+        PathloadUrlDiscoveryJini pud = (PathloadUrlDiscoveryJini) obj;
+        if ((myCommuniytName == null) || (myServiceID == null) || (myUrl == null) || (mySerial == null)) {
+            return false;
+        }
+
+        return this.myCommuniytName.equals(pud.getMyCommuniytName()) && this.myServiceID.equals(pud.getMyServiceID())
+                && this.myUrl.equals(pud.getMyUrl()) && this.mySerial.equals(pud.getMySerial());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.toString().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "[CommunityName: " + myCommuniytName + "] [URL: " + myUrl + "] [SID: " + myServiceID + "] [Serial: "
+                + mySerial + "]";
+    }
+
+    /**
+     * 
+     * @param peerGroupName
+     * @return
+     */
+    public static Vector getUrls(String peerGroupName) {
+        Vector vResult = new Vector();
+        if (peerGroupName == null) {
+            logger.log(Level.INFO, "Community Name is null. Please assign a community name "
+                    + "before issuing a query.");
+            return null;
+        }
+
+        MLLUSHelper mllus = MLLUSHelper.getInstance();
+        ServiceItem[] sis = mllus.getPathloadServices();
+        if ((sis != null) && (sis.length != 0)) {
+            for (ServiceItem s : sis) {
+                Entry[] entries = s.attributeSets;
+                if (((entries != null) && (entries.length > 0))
+                        && ((entries[0] != null) && (entries[0] instanceof GenericMLEntry))) {
+                    GenericMLEntry glme = (GenericMLEntry) entries[0];
+                    Hashtable hash = glme.hash;
+
+                    String community = null;
+                    String url = null;
+                    String serial = null;
+                    if ((hash != null) && (hash.containsKey("COMMUNITY"))) {
+                        community = (String) hash.get("COMMUNITY");
+                    }
+                    if ((hash != null) && (hash.containsKey("URL"))) {
+                        url = (String) hash.get("URL");
+                    }
+                    if ((hash != null) && (hash.containsKey("SERIAL"))) {
+                        serial = (String) hash.get("SERIAL");
+                    }
+
+                    if ((community != null) && (url != null) && (serial != null)) {
+                        if (peerGroupName.equals(community)) {
+                            PathloadUrlDiscoveryJini pud = new PathloadUrlDiscoveryJini(community, url, serial);
+                            pud.setMyServiceID(s.serviceID.toString());
+                            vResult.add(pud);
+                            logger.log(Level.INFO, "[PathloadUrlDiscoveryJini] " + pud.toString()
+                                    + " added to UrlCache.");
+                        }
+                    }
+                }
+            }
+        }
+
+        return vResult;
+    }
 }

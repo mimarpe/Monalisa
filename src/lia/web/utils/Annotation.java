@@ -103,6 +103,8 @@ public final class Annotation implements Comparable<Annotation> {
 	public Annotation(final int _id){
 		final DB db = new DB();
 		
+		db.setReadOnly(true);
+		
 		if (db.query("SELECT * FROM annotations WHERE a_id="+_id+";") && db.moveNext()){
 			init(db);
 		}
@@ -327,7 +329,11 @@ public final class Annotation implements Comparable<Annotation> {
 	 */
 	public String getDescription(){
 		if (description==null && id>0){
-			final DB db = new DB("SELECT a_fulldesc FROM annotations WHERE a_id="+id+";");
+			final DB db = new DB();
+			
+			db.setReadOnly(true);
+			
+			db.query("SELECT a_fulldesc FROM annotations WHERE a_id="+id+";");
 			
 			if (db.moveNext()){
 				description = db.getns(1);

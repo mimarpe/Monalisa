@@ -93,11 +93,13 @@ import net.jini.core.lookup.ServiceRegistrar;
 
 abstract public class MainBase extends JFrame implements ItemListener {
 
-    /** Logger name */
-    private static final transient String COMPONENT = "lia.Monitor.JiniClient.CommonGUI";
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -5856894978496565740L;
 
     /** Logger used by this class */
-    static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(MainBase.class.getName());
 
     public long nStartCreateMonitorTime = -1;
 
@@ -259,8 +261,9 @@ abstract public class MainBase extends JFrame implements ItemListener {
         super("MonALISA");
         // is this a grids client?
         bGridsClient = AppConfig.getProperty("ml_client.mainWindow.gridsClient", "false").equals("true");
-        if (bGridsClient)
+        if (bGridsClient) {
             setTitle("MonALISA LHC Computing GridMap");
+        }
         setSize(new Dimension(1000, 650));
         locateOnScreen(this);
         this.clientName = client;
@@ -320,8 +323,9 @@ abstract public class MainBase extends JFrame implements ItemListener {
 
         if (pan != null) {
             // System.out.println("graphical found... ");
-            if (pan.isVisible())
+            if (pan.isVisible()) {
                 bNewPanelVisible = true;
+            }
             jpMain.remove(pan);
             jpMain.repaint();
             vVisiblePanels.remove(pan);
@@ -436,6 +440,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
 
         jcb.addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 JCheckBox cb = (JCheckBox) e.getSource();
                 JPanel pan = (JPanel) htGraphicals.get(cb.getText());
@@ -483,6 +488,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
         htRadiobuttons.put(name, jrb);
         jrb.addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 JRadioButton rb = (JRadioButton) e.getSource();
                 if (rb.isSelected()) {
@@ -566,6 +572,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
         setSize(new Dimension(1000, 650));
         WindowListener wl = new WindowAdapter() {
 
+            @Override
             public void windowClosing(WindowEvent e) {
                 System.exit(0);
             }
@@ -606,6 +613,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             jpMenu.setSize(new Dimension(200, 650));
             jpMenu.addMouseWheelListener(new MouseWheelListener() {
 
+                @Override
                 public void mouseWheelMoved(MouseWheelEvent e) {
                     // System.out.println("mouse wheel moved for menu panel");
                     onSetNewAbsPos(-e.getWheelRotation() * 10);
@@ -617,15 +625,19 @@ abstract public class MainBase extends JFrame implements ItemListener {
             nAbsPosY = 0;
             jpMenu.addComponentListener(new ComponentListener() {
 
+                @Override
                 public void componentHidden(ComponentEvent e) {
                 }
 
+                @Override
                 public void componentMoved(ComponentEvent e) {
                 }
 
+                @Override
                 public void componentShown(ComponentEvent e) {
                 }
 
+                @Override
                 public void componentResized(ComponentEvent e) {
                     onMenuResized();
                 }
@@ -637,18 +649,23 @@ abstract public class MainBase extends JFrame implements ItemListener {
             jpMenu.add(jbArrowUp, BorderLayout.NORTH);
             jbArrowUp.addMouseListener(new MouseListener() {
 
+                @Override
                 public void mouseClicked(MouseEvent e) {
                 }
 
+                @Override
                 public void mouseEntered(MouseEvent e) {
                 }
 
+                @Override
                 public void mouseExited(MouseEvent e) {
                 }
 
+                @Override
                 public void mouseReleased(MouseEvent e) {
                 }
 
+                @Override
                 public void mousePressed(MouseEvent e) {
                     onSetNewAbsPos(20);
                 }
@@ -660,18 +677,23 @@ abstract public class MainBase extends JFrame implements ItemListener {
             // buttons
             jbArrowDown.addMouseListener(new MouseListener() {
 
+                @Override
                 public void mouseClicked(MouseEvent e) {
                 }
 
+                @Override
                 public void mouseEntered(MouseEvent e) {
                 }
 
+                @Override
                 public void mouseExited(MouseEvent e) {
                 }
 
+                @Override
                 public void mouseReleased(MouseEvent e) {
                 }
 
+                @Override
                 public void mousePressed(MouseEvent e) {
                     onSetNewAbsPos(-20);
                 }
@@ -690,6 +712,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
 
             jcbMultiView.addActionListener(new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     if (((JCheckBox) (e.getSource())).isSelected()) {
                         // we are switching from radiobuttons to checkboxes
@@ -773,6 +796,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             // when user closes a detached panel using window's close button
             childFramesListener = new WindowListener() {
 
+                @Override
                 public void windowClosing(WindowEvent e) {
                     String name = ((JFrame) e.getSource()).getTitle();
                     JFrame f = (JFrame) htOpenedFrames.get(name);
@@ -785,21 +809,27 @@ abstract public class MainBase extends JFrame implements ItemListener {
                     cb.setSelected(false);
                 }
 
+                @Override
                 public void windowActivated(WindowEvent e) {
                 }
 
+                @Override
                 public void windowClosed(WindowEvent e) {
                 }
 
+                @Override
                 public void windowDeactivated(WindowEvent e) {
                 }
 
+                @Override
                 public void windowDeiconified(WindowEvent e) {
                 }
 
+                @Override
                 public void windowIconified(WindowEvent e) {
                 }
 
+                @Override
                 public void windowOpened(WindowEvent e) {
                 }
             };
@@ -809,12 +839,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
         // hot key for topology panel or proxy menu
         addKeyListener(new KeyListener() {
 
+            @Override
             public void keyPressed(KeyEvent e) {
             }
 
+            @Override
             public void keyReleased(KeyEvent e) {
             }
 
+            @Override
             public void keyTyped(KeyEvent e) {
                 // if(e.getKeyChar() == 'T' || e.getKeyChar() == 'n' ) {
                 // if(! topologyShown){
@@ -823,30 +856,37 @@ abstract public class MainBase extends JFrame implements ItemListener {
                 // Topology", "topology");
                 // }
                 // }
-                if (e.getKeyChar() == 'P' || e.getKeyChar() == 'p') {
+                if ((e.getKeyChar() == 'P') || (e.getKeyChar() == 'p')) {
                     if (!proxyMenuShown) {
                         proxyMenuShown = true;
                         addProxyMenu();
                     }
-                } else if (e.getKeyChar() == 'R' || e.getKeyChar() == 'r') {
+                } else if ((e.getKeyChar() == 'R') || (e.getKeyChar() == 'r')) {
                     if (!removedNodesShown) {
                         removedNodesShown = true;
                         addRemovedNodesMenu();
                     }
-                } else if (e.getKeyChar() == 'N' || e.getKeyChar() == 'n') {
+                } else if ((e.getKeyChar() == 'N') || (e.getKeyChar() == 'n')) {
                     if (!nodesMenuShown) {
                         nodesMenuShown = true;
                         addNodesMenu();
                     }
-                } else if (e.getKeyChar() == 'd' || e.getKeyChar() == 'D') {
+                } else if ((e.getKeyChar() == 'd') || (e.getKeyChar() == 'D')) {
                     BackgroundWorker.schedule(new TimerTask() {
 
+                        @Override
                         public void run() {
                             StringBuilder sDumpList = new StringBuilder();
                             sDumpList.append("Dumping list of available nodes...\r\n");
                             // dumping to log the list of farms
                             for (final rcNode node : monitor.snodes.values()) {
-                                sDumpList.append(node.UnitName).append(" - ").append(node.IPaddress).append(" (").append(((node.client != null && node.client.mle != null) ? node.client.mle.Group : "???")).append(")\r\n");
+                                sDumpList
+                                        .append(node.UnitName)
+                                        .append(" - ")
+                                        .append(node.IPaddress)
+                                        .append(" (")
+                                        .append((((node.client != null) && (node.client.mle != null)) ? node.client.mle.Group
+                                                : "???")).append(")\r\n");
                             }
                             sDumpList.append("List ended, counted " + monitor.snodes.size() + " elements.");
                             logger.log(Level.INFO, sDumpList.toString());
@@ -874,6 +914,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             }
             jlbCaltechLogo.addMouseListener(new MouseListener() {
 
+                @Override
                 public void mouseClicked(MouseEvent e) {
                     if (e.getButton() == MouseEvent.BUTTON3) {
                         if (MouseEvent.getMouseModifiersText(e.getModifiers()).toLowerCase().indexOf("shift") != -1) {
@@ -892,15 +933,19 @@ abstract public class MainBase extends JFrame implements ItemListener {
                     }
                 }
 
+                @Override
                 public void mousePressed(MouseEvent e) {
                 }
 
+                @Override
                 public void mouseReleased(MouseEvent e) {
                 }
 
+                @Override
                 public void mouseEntered(MouseEvent e) {
                 }
 
+                @Override
                 public void mouseExited(MouseEvent e) {
                 }
             });
@@ -922,6 +967,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
         nodesMenu.add(mi);
         mi.addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("show config nodes frame");
                 cnFrame = new configNodesFrame(monitor);
@@ -933,6 +979,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
         nodesMenu.add(mi2);
         mi2.addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("set debug mode to " + mi2.isSelected());
                 ChangeRootTexture.setDebugLevel(mi2.isSelected());
@@ -946,6 +993,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
         nodesMenu.add(mi3);
         mi3.addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("set testing proxy messages buffer mechanism to " + mi3.isSelected());
                 monitor.setTestProxyBuf(mi3.isSelected());
@@ -956,6 +1004,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             nodesMenu.add(urlMenu);
             urlMenu.addActionListener(new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     ((FarmsSerMonitor) monitor).iNetGeo.clientFrame.setVisible(true);
                     ((FarmsSerMonitor) monitor).iNetGeo.clientFrame.toFront();
@@ -974,20 +1023,22 @@ abstract public class MainBase extends JFrame implements ItemListener {
     public void onSetNewAbsPos(int step) {
         int newAbsPosY = nAbsPosY + step;
         Component jpMenuOptions = jpAbsolutePos.getComponent(0);
-        if (step < 0 && nOptionsMenuHeight > jpAbsolutePos.getHeight()) {
+        if ((step < 0) && (nOptionsMenuHeight > jpAbsolutePos.getHeight())) {
             // check if I can move them any higher
-            if (newAbsPosY + nOptionsMenuHeight < jpAbsolutePos.getHeight())
+            if ((newAbsPosY + nOptionsMenuHeight) < jpAbsolutePos.getHeight()) {
                 newAbsPosY = jpAbsolutePos.getHeight() - nOptionsMenuHeight;
-            if (nAbsPosY != newAbsPosY && jpMenuOptions != null) {
+            }
+            if ((nAbsPosY != newAbsPosY) && (jpMenuOptions != null)) {
                 nAbsPosY = newAbsPosY;
                 jpMenuOptions.setLocation(0, nAbsPosY);
             }
             ;
         } else if (step > 0) {
-            if (newAbsPosY > 0)
+            if (newAbsPosY > 0) {
                 newAbsPosY = 0;
+            }
             // check if I can move them any lower
-            if (nAbsPosY != newAbsPosY && jpMenuOptions != null) {
+            if ((nAbsPosY != newAbsPosY) && (jpMenuOptions != null)) {
                 nAbsPosY = newAbsPosY;
                 jpMenuOptions.setLocation(0, nAbsPosY);
             }
@@ -1008,29 +1059,34 @@ abstract public class MainBase extends JFrame implements ItemListener {
         if (nOptionsMenuHeight > nMenuHeight) {// integral height of menu is
             // bigger than the one visible
             // show arrow buttons
-            if (!jbArrowDown.isVisible())
+            if (!jbArrowDown.isVisible()) {
                 jbArrowDown.setVisible(true);
-            if (!jbArrowUp.isVisible())
+            }
+            if (!jbArrowUp.isVisible()) {
                 jbArrowUp.setVisible(true);
+            }
             // if the user has resized the menu so that there is some free space
             // between the menu items and the bottom of menu
             // push the items down by correcting nAbsPosY
-            if (nAbsPosY + nOptionsMenuHeight < jpAbsolutePos.getHeight() /*
-                                                                           * nMenuHeight - jbArrowDown.getHeight() -
-                                                                           * jbArrowUp.getHeight()
-                                                                           */) {
+            if ((nAbsPosY + nOptionsMenuHeight) < jpAbsolutePos.getHeight() /*
+                                                                            * nMenuHeight - jbArrowDown.getHeight() -
+                                                                            * jbArrowUp.getHeight()
+                                                                            */) {
                 nAbsPosY = jpAbsolutePos.getHeight() - nOptionsMenuHeight;
                 Component jpMenuOptions = jpAbsolutePos.getComponent(0);
-                if (jpMenuOptions != null)
+                if (jpMenuOptions != null) {
                     jpMenuOptions.setLocation(0, nAbsPosY);
+                }
             }
             ;
         } else {// all items in menu are visible
             // hide arrow buttons
-            if (jbArrowUp.isVisible())
+            if (jbArrowUp.isVisible()) {
                 jbArrowUp.setVisible(false);
-            if (jbArrowDown.isVisible())
+            }
+            if (jbArrowDown.isVisible()) {
                 jbArrowDown.setVisible(false);
+            }
             if (nAbsPosY != 0) {
                 nAbsPosY = 0;
                 /**
@@ -1038,8 +1094,9 @@ abstract public class MainBase extends JFrame implements ItemListener {
                  * buttons
                  */
                 Component jpMenuOptions = jpAbsolutePos.getComponent(0);
-                if (jpMenuOptions != null)
+                if (jpMenuOptions != null) {
                     jpMenuOptions.setLocation(0, nAbsPosY);
+                }
             }
             ;
         }
@@ -1053,13 +1110,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
     public int getOptionsMenuHeight() {
         int total_height = 0;
         JPanel jpItems;
-        if (jcbMultiView.isSelected())
+        if (jcbMultiView.isSelected()) {
             jpItems = jpCheckboxes;
-        else
+        } else {
             jpItems = jpRadioButtons;
+        }
         // compute check-boxes height
-        for (int i = 0; i < jpItems.getComponentCount(); i++)
+        for (int i = 0; i < jpItems.getComponentCount(); i++) {
             total_height += jpItems.getComponent(i).getHeight();
+        }
         // total_height += jcbMultiView.getHeight();
         return total_height;
     }
@@ -1105,8 +1164,9 @@ abstract public class MainBase extends JFrame implements ItemListener {
                 logger.log(Level.WARNING, "Error maximizing main window.", ex);
                 pack();
             }
-        } else
+        } else {
             pack();
+        }
         setVisible(true);
         // CardLayout cl = (CardLayout)(jpMain.getLayout());
         // cl.first(jpMain);
@@ -1130,21 +1190,23 @@ abstract public class MainBase extends JFrame implements ItemListener {
         // }
         // System.out.println("");
 
-        if (!bGridsClient)
+        if (!bGridsClient) {
             updateGroups();
-        // } else {
-        // //grids client
-        // // moved the updateGroups a bit down to give it time to initialize...
-        // monitor.populateSGroups();
-        // updateGroups() ;
-        // }
+            // } else {
+            // //grids client
+            // // moved the updateGroups a bit down to give it time to initialize...
+            // monitor.populateSGroups();
+            // updateGroups() ;
+            // }
+        }
     }
 
     public void loadMenuIcons(boolean bSmallSize) {
         if (bSmallSize) {
             szMenuImagesPath = "lia/images/menu/small/";
-        } else
+        } else {
             szMenuImagesPath = "lia/images/menu/";
+        }
         ImageIcon imgArrowUp = loadIcon(szMenuImagesPath + "up_1.gif");
         jbArrowUp.setIcon(imgArrowUp);
         ImageIcon imgArrowDown = loadIcon(szMenuImagesPath + "down_1.gif");
@@ -1205,12 +1267,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
             // exitMenuItem.setMnemonic('x');
             exitMenuItem.addActionListener(new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     BackgroundWorker.schedule(new TimerTask() {
 
+                        @Override
                         public void run() {
                             try {
-                                Thread.currentThread().setName("MAINBase - FullScreenFrame Timer - change to window mode");
+                                Thread.currentThread().setName(
+                                        "MAINBase - FullScreenFrame Timer - change to window mode");
                                 setVisible(false);
                                 // if ( !(jp instanceof JoglPanel) ) {
                                 remove(jp);
@@ -1343,6 +1408,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
         exitMenuItem.setMnemonic('x');
         exitMenuItem.addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 System.exit(0);
             }
@@ -1358,14 +1424,18 @@ abstract public class MainBase extends JFrame implements ItemListener {
         try {
             if (hasGraphical("3D Map")) { // we have the 3D panel
                 Globals.bShowCities = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.ShowCities", sTrue));
-                Globals.bShowCountriesBorders = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.ShowCountriesBorders", sTrue));
+                Globals.bShowCountriesBorders = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.ShowCountriesBorders",
+                        sTrue));
                 if (AppConfig.getProperty("jogl.rederer.map.noBorder", "false").equals(sTrue)) {
                     Globals.bShowCountriesBorders = false;
                 }
                 Globals.bUpdateShadow = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.UpdateShadow", sTrue));
-                Globals.bShowRotationBar = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.ShowRotationBar", AppConfig.getProperty("ToolbarMenu.3DSubMenu.ShowRotationBar", sTrue)));
-                Globals.bShowRotationBarTooltip = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.ShowRotationBarTooltip", sTrue));
-                JoglPanel.globals.myMapsClassLoader.bDownloadNewFiles = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.DownloadNewTextures", sTrue));
+                Globals.bShowRotationBar = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.ShowRotationBar",
+                        AppConfig.getProperty("ToolbarMenu.3DSubMenu.ShowRotationBar", sTrue)));
+                Globals.bShowRotationBarTooltip = sTrue.equals(prefs.get(
+                        "ToolbarMenu.3DSubMenu.ShowRotationBarTooltip", sTrue));
+                JoglPanel.globals.myMapsClassLoader.bDownloadNewFiles = sTrue.equals(prefs.get(
+                        "ToolbarMenu.3DSubMenu.DownloadNewTextures", sTrue));
                 Shadow.bShowNight = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.ShowNight", sTrue));
                 Shadow.bHideLights = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.HideLights", sTrue));
                 Globals.bHideMoon = sTrue.equals(prefs.get("ToolbarMenu.3DSubMenu.HideMoon", sTrue));
@@ -1381,12 +1451,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
                 } catch (Exception ex) {
                     nRotSpeed = 0;
                 }
-                if (nRotSpeed > 100)
+                if (nRotSpeed > 100) {
                     nRotSpeed = 100;
-                if (nRotSpeed < 0)
+                }
+                if (nRotSpeed < 0) {
                     nRotSpeed = 0;
-                if (nRotSpeed > 0)
+                }
+                if (nRotSpeed > 0) {
                     JoglPanel.globals.mainPanel.timeSlider.setValue(nRotSpeed);
+                }
             }
         } catch (Exception ex) {
             System.out.println("[MainBase] 3D Map not available, will not be shown in menu, error: " + ex.getMessage());
@@ -1397,6 +1470,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             JCheckBoxMenuItem miIconSize = new JCheckBoxMenuItem("small icons", bSmallMenuIcons);
             miIconSize.addItemListener(new ItemListener() {
 
+                @Override
                 public void itemStateChanged(ItemEvent e) {
                     int nPositionState = e.getStateChange();
                     if (nPositionState == ItemEvent.SELECTED) {
@@ -1409,7 +1483,9 @@ abstract public class MainBase extends JFrame implements ItemListener {
                         Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                         prefs.put("ToolbarMenu.ShowSmallIcons", Boolean.toString(bSmallMenuIcons));
                     } catch (Exception ex) {
-                        System.out.println("[MainBase] Could not save preference for toolbar menu option Small Icons, error: " + ex.getMessage());
+                        System.out
+                                .println("[MainBase] Could not save preference for toolbar menu option Small Icons, error: "
+                                        + ex.getMessage());
                     }
                     loadMenuIcons(bSmallMenuIcons);
                 }
@@ -1426,6 +1502,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             JCheckBoxMenuItem miFullscreen = new JCheckBoxMenuItem("set fullscreen", bTrueFullscreen);
             miFullscreen.addItemListener(new ItemListener() {
 
+                @Override
                 public void itemStateChanged(ItemEvent e) {
                     int nPositionState = e.getStateChange();
                     boolean bFS = (nPositionState == ItemEvent.SELECTED);
@@ -1433,7 +1510,9 @@ abstract public class MainBase extends JFrame implements ItemListener {
                         Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                         prefs.put("ToolbarMenu.ShowTrueFullScreen", Boolean.toString(bFS));
                     } catch (Exception ex) {
-                        System.out.println("[MainBase] Could not save preference for toolbar menu option True Full Screen, error: " + ex.getMessage());
+                        System.out
+                                .println("[MainBase] Could not save preference for toolbar menu option True Full Screen, error: "
+                                        + ex.getMessage());
                     }
                     setFullScreenMode();
                 }
@@ -1444,12 +1523,14 @@ abstract public class MainBase extends JFrame implements ItemListener {
         viewMenu.add(miStats);
         miStats.addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 // System.out.println("show statistics frame");
                 if (frmStatistics == null) {
                     frmStatistics = new ClientTransferStatsFrame(sMon);
-                    if (threadUpStats != null)
+                    if (threadUpStats != null) {
                         threadUpStats.updateNow();
+                    }
                     frmStatistics.setVisible(true);
                 } else {
                     frmStatistics.setVisible(true);
@@ -1469,20 +1550,25 @@ abstract public class MainBase extends JFrame implements ItemListener {
                 // fileMenu.add(miFullScreen);
                 JMenuItem resMenuItem = panel3DMenu.add(new JMenuItem("Map options"));
                 JCheckBoxMenuItem miShowCities = new JCheckBoxMenuItem("show cities", Globals.bShowCities);
-                JCheckBoxMenuItem miCBorders = new JCheckBoxMenuItem("show countries borders", Globals.bShowCountriesBorders);
+                JCheckBoxMenuItem miCBorders = new JCheckBoxMenuItem("show countries borders",
+                        Globals.bShowCountriesBorders);
                 if (AppConfig.getProperty("jogl.rederer.map.noBorder", "false").equals("true")) {
                     miCBorders.setEnabled(false);
                 }
                 JCheckBoxMenuItem miUpdateShadow = new JCheckBoxMenuItem("update shadow", Globals.bUpdateShadow);
                 JCheckBoxMenuItem miRotationBar = new JCheckBoxMenuItem("show rotation bar", Globals.bShowRotationBar);
-                final JCheckBoxMenuItem miRotationBarTT = new JCheckBoxMenuItem("show rotation bar tooltip", Globals.bShowRotationBarTooltip);
-                if (Globals.bShowRotationBar == false)
+                final JCheckBoxMenuItem miRotationBarTT = new JCheckBoxMenuItem("show rotation bar tooltip",
+                        Globals.bShowRotationBarTooltip);
+                if (Globals.bShowRotationBar == false) {
                     miRotationBarTT.setEnabled(false);
-                JCheckBoxMenuItem miTextDown = new JCheckBoxMenuItem("download new images", JoglPanel.globals.myMapsClassLoader.bDownloadNewFiles);
+                }
+                JCheckBoxMenuItem miTextDown = new JCheckBoxMenuItem("download new images",
+                        JoglPanel.globals.myMapsClassLoader.bDownloadNewFiles);
                 JCheckBoxMenuItem miNightShadow = new JCheckBoxMenuItem("show night shadow", Shadow.bShowNight);
                 final JCheckBoxMenuItem miNightLights = new JCheckBoxMenuItem("show night lights", !Shadow.bHideLights);
-                if (Shadow.bShowNight == false)
+                if (Shadow.bShowNight == false) {
                     miNightLights.setEnabled(false);
+                }
                 JCheckBoxMenuItem miHideMoon = new JCheckBoxMenuItem("show moon", !Globals.bHideMoon);
                 JCheckBoxMenuItem miNiceRendering = new JCheckBoxMenuItem("nice maps rendering", Texture.bNiceRendering);
                 JCheckBoxMenuItem miNiceLinks = new JCheckBoxMenuItem("antialiased links", Globals.bNiceLinks);
@@ -1533,6 +1619,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
 
                 resMenuItem.addActionListener(new ActionListener() {
 
+                    @Override
                     public void actionPerformed(ActionEvent e) {
                         if (crFrame == null) {
                             crFrame = new ChangeResFrame(monitor);
@@ -1543,6 +1630,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
                 });
                 miShowCities.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1554,12 +1642,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                             prefs.put("ToolbarMenu.3DSubMenu.ShowCities", Boolean.toString(Globals.bShowCities));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Cities, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Cities, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 miCBorders.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1569,14 +1660,18 @@ abstract public class MainBase extends JFrame implements ItemListener {
                         }
                         try {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
-                            prefs.put("ToolbarMenu.3DSubMenu.ShowCountriesBorders", Boolean.toString(Globals.bShowCountriesBorders));
+                            prefs.put("ToolbarMenu.3DSubMenu.ShowCountriesBorders",
+                                    Boolean.toString(Globals.bShowCountriesBorders));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Countries Borders, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Countries Borders, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 miUpdateShadow.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1588,12 +1683,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                             prefs.put("ToolbarMenu.3DSubMenu.UpdateShadow", Boolean.toString(Globals.bUpdateShadow));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Update Shadow, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Update Shadow, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 miRotationBar.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1607,14 +1705,18 @@ abstract public class MainBase extends JFrame implements ItemListener {
                         }
                         try {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
-                            prefs.put("ToolbarMenu.3DSubMenu.ShowRotationBar", Boolean.toString(Globals.bShowRotationBar));
+                            prefs.put("ToolbarMenu.3DSubMenu.ShowRotationBar",
+                                    Boolean.toString(Globals.bShowRotationBar));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Rotation Bar, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Rotation Bar, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 miRotationBarTT.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1624,14 +1726,18 @@ abstract public class MainBase extends JFrame implements ItemListener {
                         }
                         try {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
-                            prefs.put("ToolbarMenu.3DSubMenu.ShowRotationBarTooltip", Boolean.toString(Globals.bShowRotationBarTooltip));
+                            prefs.put("ToolbarMenu.3DSubMenu.ShowRotationBarTooltip",
+                                    Boolean.toString(Globals.bShowRotationBarTooltip));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Rotation Bar Tooltip, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Rotation Bar Tooltip, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 miTextDown.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1641,14 +1747,18 @@ abstract public class MainBase extends JFrame implements ItemListener {
                         }
                         try {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
-                            prefs.put("ToolbarMenu.3DSubMenu.DownloadNewTextures", Boolean.toString(JoglPanel.globals.myMapsClassLoader.bDownloadNewFiles));
+                            prefs.put("ToolbarMenu.3DSubMenu.DownloadNewTextures",
+                                    Boolean.toString(JoglPanel.globals.myMapsClassLoader.bDownloadNewFiles));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Download New Texture Files, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Download New Texture Files, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 miNightShadow.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1664,9 +1774,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                             prefs.put("ToolbarMenu.3DSubMenu.ShowNight", Boolean.toString(Shadow.bShowNight));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Night, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Night, error: "
+                                            + ex.getMessage());
                         }
-                        ChangeRootTexture.init(Texture.nInitialLevel, (Shadow.bShowNight ? ChangeRootTexture.CRT_KEY_MODE_DO_SHADOW : ChangeRootTexture.CRT_KEY_MODE_REMOVE_SHADOW), JoglPanel.globals.mainPanel.monitor.main.jpbTextLoadProgress, JoglPanel.globals.mainPanel.monitor.main.jTextLoadBar);
+                        ChangeRootTexture.init(Texture.nInitialLevel,
+                                (Shadow.bShowNight ? ChangeRootTexture.CRT_KEY_MODE_DO_SHADOW
+                                        : ChangeRootTexture.CRT_KEY_MODE_REMOVE_SHADOW),
+                                JoglPanel.globals.mainPanel.monitor.main.jpbTextLoadProgress,
+                                JoglPanel.globals.mainPanel.monitor.main.jTextLoadBar);
                         // ChangeRootTexture crtMonitor = new ChangeRootTexture(TextureParams.nInitialLevel,
                         // (Shadow.bShowNight?ChangeRootTexture.CRT_KEY_MODE_DO_SHADOW:ChangeRootTexture.CRT_KEY_MODE_REMOVE_SHADOW));
                         // crtMonitor.setProgressBar(JoglPanel.globals.mainPanel.monitor.main.jpbTextLoadProgress,
@@ -1679,6 +1795,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
                 });
                 miNightLights.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1690,9 +1807,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                             prefs.put("ToolbarMenu.3DSubMenu.HideLights", Boolean.toString(Shadow.bHideLights));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Hide Lights, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Hide Lights, error: "
+                                            + ex.getMessage());
                         }
-                        ChangeRootTexture.init(Texture.nInitialLevel, (Shadow.bHideLights ? ChangeRootTexture.CRT_KEY_MODE_REMOVE_LIGHTS : ChangeRootTexture.CRT_KEY_MODE_DO_LIGHTS), JoglPanel.globals.mainPanel.monitor.main.jpbTextLoadProgress, JoglPanel.globals.mainPanel.monitor.main.jTextLoadBar);
+                        ChangeRootTexture.init(Texture.nInitialLevel,
+                                (Shadow.bHideLights ? ChangeRootTexture.CRT_KEY_MODE_REMOVE_LIGHTS
+                                        : ChangeRootTexture.CRT_KEY_MODE_DO_LIGHTS),
+                                JoglPanel.globals.mainPanel.monitor.main.jpbTextLoadProgress,
+                                JoglPanel.globals.mainPanel.monitor.main.jTextLoadBar);
                         // ChangeRootTexture crtMonitor = new ChangeRootTexture(TextureParams.nInitialLevel,
                         // (Shadow.bHideLights?ChangeRootTexture.CRT_KEY_MODE_REMOVE_LIGHTS:ChangeRootTexture.CRT_KEY_MODE_DO_LIGHTS));
                         // crtMonitor.setProgressBar(JoglPanel.globals.mainPanel.monitor.main.jpbTextLoadProgress,
@@ -1704,6 +1827,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
                 });
                 miHideMoon.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1715,12 +1839,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                             prefs.put("ToolbarMenu.3DSubMenu.HideMoon", Boolean.toString(Globals.bHideMoon));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Hide Moon, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Hide Moon, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 miNiceRendering.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1730,14 +1857,18 @@ abstract public class MainBase extends JFrame implements ItemListener {
                         }
                         try {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
-                            prefs.put("ToolbarMenu.3DSubMenu.NiceMapsRendering", Boolean.toString(Texture.bNiceRendering));
+                            prefs.put("ToolbarMenu.3DSubMenu.NiceMapsRendering",
+                                    Boolean.toString(Texture.bNiceRendering));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Nice Rendering, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Nice Rendering, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 miNiceLinks.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1749,13 +1880,16 @@ abstract public class MainBase extends JFrame implements ItemListener {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                             prefs.put("ToolbarMenu.3DSubMenu.NiceLinks", Boolean.toString(Globals.bNiceLinks));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Nice Links, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Nice Links, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
 
                 miShowClouds.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -1767,12 +1901,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                             prefs.put("ToolbarMenu.3DSubMenu.ShowClouds", Boolean.toString(Globals.bShowClouds));
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Clouds, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Show Clouds, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 smallSizeMI.addActionListener(new ActionListener() {
 
+                    @Override
                     public void actionPerformed(ActionEvent ae) {
                         Globals.ROTATION_BAR_HEIGHT = 11;// 20;
                         Globals.ROTATION_BAR_BORDER = 1;// 2;
@@ -1780,12 +1917,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                             prefs.put("ToolbarMenu.3DSubMenu.RotationBarSize", "thin");
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Rotation Bar Size Thin, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Rotation Bar Size Thin, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 normalSizeMI.addActionListener(new ActionListener() {
 
+                    @Override
                     public void actionPerformed(ActionEvent ae) {
                         Globals.ROTATION_BAR_HEIGHT = 20;
                         Globals.ROTATION_BAR_BORDER = 2;
@@ -1793,12 +1933,15 @@ abstract public class MainBase extends JFrame implements ItemListener {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                             prefs.put("ToolbarMenu.3DSubMenu.RotationBarSize", "normal");
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Rotation Bar Size Normal, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Rotation Bar Size Normal, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
                 bigSizeMI.addActionListener(new ActionListener() {
 
+                    @Override
                     public void actionPerformed(ActionEvent ae) {
                         Globals.ROTATION_BAR_HEIGHT = 30;
                         Globals.ROTATION_BAR_BORDER = 2;
@@ -1806,14 +1949,17 @@ abstract public class MainBase extends JFrame implements ItemListener {
                             Preferences prefs = Preferences.userNodeForPackage(monitor.mainClientClass);
                             prefs.put("ToolbarMenu.3DSubMenu.RotationBarSize", "thick");
                         } catch (Exception ex) {
-                            System.out.println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Rotation Bar Size Thick, error: " + ex.getMessage());
+                            System.out
+                                    .println("[MainBase] Could not save preference for toolbar menu, 3D Map submenu, option Rotation Bar Size Thick, error: "
+                                            + ex.getMessage());
                         }
                     }
                 });
             }
             ;
         } catch (Exception ex) {
-            System.out.println("[MainBase] 3D Map not available, will not be shown in menu, error2: " + ex.getMessage());
+            System.out
+                    .println("[MainBase] 3D Map not available, will not be shown in menu, error2: " + ex.getMessage());
         }
 
         // check if table exists
@@ -1833,6 +1979,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             addLocator.setMnemonic('L');
             addLocator.addActionListener(new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent ae) {
                     addLocator();
                 }
@@ -1843,6 +1990,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             remLocator.setMnemonic('O');
             remLocator.addActionListener(new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     removeLocator();
                 }
@@ -1856,6 +2004,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             addGroup.setMnemonic('G');
             addGroup.addActionListener(new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent ae) {
                     addGroup();
                 }
@@ -1866,6 +2015,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             remGroup.setMnemonic('R');
             remGroup.addActionListener(new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     removeGroup();
                 }
@@ -1884,16 +2034,18 @@ abstract public class MainBase extends JFrame implements ItemListener {
             nGroupMenuStartPos++;
             miSelectAllGroups.addActionListener(new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
-                    if (groupMenu == null)
+                    if (groupMenu == null) {
                         return;
+                    }
                     try {
                         StringBuilder buf = new StringBuilder();
                         Object obj;
                         boolean bSetSelected = false;
                         for (int i = nGroupMenuStartPos; i < groupMenu.getItemCount(); i++) {
                             obj = groupMenu.getItem(i);
-                            if (obj != null && obj instanceof JCheckBoxMenuItem) {
+                            if ((obj != null) && (obj instanceof JCheckBoxMenuItem)) {
                                 JCheckBoxMenuItem groupMI = (JCheckBoxMenuItem) obj;
                                 if (!groupMI.isSelected()) {
                                     synchronized (rangeOfGroups) {
@@ -1901,8 +2053,9 @@ abstract public class MainBase extends JFrame implements ItemListener {
                                     }
                                     bSetSelected = true;
                                     groupMI.setSelected(true);
-                                    if (buf.length() != 0)
+                                    if (buf.length() != 0) {
                                         buf.append(",");
+                                    }
                                     String mitx = groupMI.getText();
                                     buf.append(mitx);
                                     monitor.SGroups.put(mitx, Integer.valueOf(1));
@@ -1924,16 +2077,18 @@ abstract public class MainBase extends JFrame implements ItemListener {
             });
             miUnSelectAllGroups.addActionListener(new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
-                    if (groupMenu == null)
+                    if (groupMenu == null) {
                         return;
+                    }
                     try {
                         StringBuilder buf = new StringBuilder();
                         Object obj;
                         boolean bSetUnSelected = false;
                         for (int i = nGroupMenuStartPos; i < groupMenu.getItemCount(); i++) {
                             obj = groupMenu.getItem(i);
-                            if (obj != null && obj instanceof JCheckBoxMenuItem) {
+                            if ((obj != null) && (obj instanceof JCheckBoxMenuItem)) {
                                 JCheckBoxMenuItem groupMI = (JCheckBoxMenuItem) obj;
                                 if (groupMI.isSelected()) {
                                     synchronized (rangeOfGroups) {
@@ -1941,8 +2096,9 @@ abstract public class MainBase extends JFrame implements ItemListener {
                                     }
                                     bSetUnSelected = true;
                                     groupMI.setSelected(false);
-                                    if (buf.length() != 0)
+                                    if (buf.length() != 0) {
                                         buf.append(",");
+                                    }
                                     String mitx = groupMI.getText();
                                     buf.append(mitx);
                                     monitor.SGroups.put(mitx, Integer.valueOf(0));
@@ -1978,28 +2134,33 @@ abstract public class MainBase extends JFrame implements ItemListener {
                 // long lastCall = 0;
                 // long expire = 15 * 1000;
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     try {
                         // if (System.currentTimeMillis() - lastCall < expire) return;
                         // load key store
                         UserPasswordGather auth = new UserPasswordGather();
                         int ret = auth.doAuth();
-                        if (monitor != null && ret == UserPasswordGather.ID_OK) {
+                        if ((monitor != null) && (ret == UserPasswordGather.ID_OK)) {
                             System.setProperty("lia.Monitor.KeyStore", auth.getUser());
                             System.setProperty("keystore", auth.getUser());
                             System.setProperty("lia.Monitor.KeyStorePass", auth.getPassword());
                             System.setProperty("keystore_pwd", auth.getPassword());
                             System.setProperty("keystore_alias", auth.getAlias());
-                            if (monitor.basicPanel != null)
+                            if (monitor.basicPanel != null) {
                                 monitor.basicPanel.refreshKeyStore();
+                            }
                             MonitorControl.mc.clear();
-                            if (SerMonitorBase.controlModules != null)
+                            if (SerMonitorBase.controlModules != null) {
                                 SerMonitorBase.controlModules.clear();
-                            if (SerMonitorBase.osControlModules != null)
+                            }
+                            if (SerMonitorBase.osControlModules != null) {
                                 SerMonitorBase.osControlModules.clear();
-                            for (final rcNode n: monitor.snodes.values()) {
-                                if (n == null)
+                            }
+                            for (final rcNode n : monitor.snodes.values()) {
+                                if (n == null) {
                                     continue;
+                                }
                                 n.client.redoOS(n.client.OSInfo, false);
                             }
                             // lastCall = System.currentTimeMillis();
@@ -2020,9 +2181,11 @@ abstract public class MainBase extends JFrame implements ItemListener {
             // insert position option only for farm client
             if (clientName.compareTo("Farms Client") == 0) {
                 positionMenu = new JMenu("Position");
-                JCheckBoxMenuItem newMI = new JCheckBoxMenuItem("automatic", bAutomaticPosition = getBoolUserPref("farms.automatic.position", bAutomaticPosition));
+                JCheckBoxMenuItem newMI = new JCheckBoxMenuItem("automatic", bAutomaticPosition = getBoolUserPref(
+                        "farms.automatic.position", bAutomaticPosition));
                 newMI.addItemListener(new ItemListener() {
 
+                    @Override
                     public void itemStateChanged(ItemEvent e) {
                         int nPositionState = e.getStateChange();
                         if (nPositionState == ItemEvent.SELECTED) {
@@ -2054,12 +2217,14 @@ abstract public class MainBase extends JFrame implements ItemListener {
         examples.setMnemonic('E');
         examples.addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    if (!bGridsClient)
+                    if (!bGridsClient) {
                         help.showOnlineHelp("http://monalisa.caltech.edu/ml_client/monalisa__Documentation__User_Interface_Guide.html");
-                    else
+                    } else {
                         help.showOnlineHelp("http://monalisa.caltech.edu/ml_client/monalisa__Documentation__Grids_Client.html");
+                    }
                 } catch (Exception ex) {
                     logger.warning("Got exception " + ex.getLocalizedMessage());
                 }
@@ -2070,11 +2235,13 @@ abstract public class MainBase extends JFrame implements ItemListener {
         about.setMnemonic('A');
         about.addActionListener(new ActionListener() {
 
+            @Override
             public void actionPerformed(ActionEvent e) {
-                if (abw != null && abw.isShowing())
+                if ((abw != null) && abw.isShowing()) {
                     abw.toFront();
-                else
+                } else {
                     abw = AboutWindow.display(clientName);
+                }
             }
         });
 
@@ -2103,24 +2270,30 @@ abstract public class MainBase extends JFrame implements ItemListener {
         jlbChoiceArrow.setToolTipText("Left or Right Click to change type of statistics shown");
         jlbChoiceArrow.addMouseListener(new MouseListener() {
 
+            @Override
             public void mouseClicked(MouseEvent e) {
                 // change choice that will be visible at next timer execution
-                if (e.getButton() == MouseEvent.BUTTON3)
+                if (e.getButton() == MouseEvent.BUTTON3) {
                     sMon.changeType(true);
-                else
+                } else {
                     sMon.changeType(false);
+                }
                 jlbStatistics.setText(sMon.getStatistics());
             }
 
+            @Override
             public void mouseEntered(MouseEvent e) {
             }
 
+            @Override
             public void mouseExited(MouseEvent e) {
             }
 
+            @Override
             public void mousePressed(MouseEvent e) {
             }
 
+            @Override
             public void mouseReleased(MouseEvent e) {
             }
         });
@@ -2171,15 +2344,16 @@ abstract public class MainBase extends JFrame implements ItemListener {
             if (System.getProperty("os.name").equals("Mac OS X")) {
                 System.out.println("Applying Mac OS X workaround to display under menu bar.");
                 setBounds(0, ins.top, dim.width, dim.height - ins.top);
-            } else
+            } else {
                 setBounds(0, 0, dim.width, dim.height);
+            }
         }
         toFront();
     }
 
     class StatsUpdateThread extends Thread {
 
-        private boolean should_run = true;
+        private final boolean should_run = true;
 
         private volatile boolean update_now = false;
 
@@ -2187,13 +2361,14 @@ abstract public class MainBase extends JFrame implements ItemListener {
             update_now = true;
         }
 
+        @Override
         public void run() {
             Thread.currentThread().setName(" ( ML ) - MainBase - show statistics Thread");
             long lastRun = NTPDate.currentTimeMillis();
             long curRun;
             while (should_run) {
                 curRun = NTPDate.currentTimeMillis();
-                if (curRun < lastRun || curRun - lastRun >= StatisticsMonitor.TIME_UNIT || update_now) {
+                if ((curRun < lastRun) || ((curRun - lastRun) >= StatisticsMonitor.TIME_UNIT) || update_now) {
                     sMon.updateDataAndWindow();
                     update_now = false;
                     lastRun = curRun;
@@ -2213,14 +2388,17 @@ abstract public class MainBase extends JFrame implements ItemListener {
 
         proxyMenu.addMenuListener(new MenuListener() {
 
+            @Override
             public void menuSelected(MenuEvent arg0) {
                 // System.out.println("something happened!!!");
                 bgRefreshProxyMenu();
             }
 
+            @Override
             public void menuDeselected(MenuEvent arg0) {
             }
 
+            @Override
             public void menuCanceled(MenuEvent arg0) {
             }
         });
@@ -2245,28 +2423,32 @@ abstract public class MainBase extends JFrame implements ItemListener {
         JMenuBar menuBar = getJMenuBar();
         removedNodesMenu.addMouseListener(new MouseListener() {
 
+            @Override
             public void mouseClicked(MouseEvent arg0) {
-//                refreshRemovedNodesMenu();
-//                removedNodesListDialog.setVisible(true);
-//                removedNodesMenu.setArmed(false);
-//                removedNodesMenu.setSelected(false);
-//
-//                removedNodesMenu.menuSelectionChanged(true);
-//
-//                removedNodesMenu.setSelected(false);
-//
-//                removedNodesMenu.transferFocus();
-//                removedNodesMenu.transferFocusBackward();
-//
-//                arg0.consume();
+                //                refreshRemovedNodesMenu();
+                //                removedNodesListDialog.setVisible(true);
+                //                removedNodesMenu.setArmed(false);
+                //                removedNodesMenu.setSelected(false);
+                //
+                //                removedNodesMenu.menuSelectionChanged(true);
+                //
+                //                removedNodesMenu.setSelected(false);
+                //
+                //                removedNodesMenu.transferFocus();
+                //                removedNodesMenu.transferFocusBackward();
+                //
+                //                arg0.consume();
             }
 
+            @Override
             public void mouseEntered(MouseEvent arg0) {
             }
 
+            @Override
             public void mouseExited(MouseEvent arg0) {
             }
 
+            @Override
             public void mousePressed(MouseEvent arg0) {
                 refreshRemovedNodesMenu();
                 removedNodesListDialog.setVisible(true);
@@ -2283,10 +2465,11 @@ abstract public class MainBase extends JFrame implements ItemListener {
                 arg0.consume();
             }
 
+            @Override
             public void mouseReleased(MouseEvent arg0) {
             }
         });
-        
+
         menuBar.add(removedNodesMenu, 3);
         menuBar.revalidate();
 
@@ -2297,6 +2480,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             Timer t = new Timer();
             t.schedule(new TimerTask() {
 
+                @Override
                 public void run() {
                     Thread.currentThread().setName(" ( ML ) - Client - Proxy Menu refresh action Thread");
                     refreshProxyMenu();
@@ -2312,21 +2496,25 @@ abstract public class MainBase extends JFrame implements ItemListener {
             proxyAddress[0] = null;
             proxyAddress[1] = null;
         }
-        if (si == null)
+        if (si == null) {
             return null;
+        }
         Entry[] proxyEntry = si.attributeSets;
-        if (proxyEntry == null)
+        if (proxyEntry == null) {
             return null;
+        }
         if (proxyEntry.length > 0) {
             int crtProxyPort = ((ProxyServiceEntry) proxyEntry[0]).proxyPort.intValue();
             String crtProxyIP = ((ProxyServiceEntry) proxyEntry[0]).ipAddress;
             String crtProxyName = ((ProxyServiceEntry) proxyEntry[0]).proxyName;
-            if (crtProxyName == null)
+            if (crtProxyName == null) {
                 crtProxyName = IpAddrCache.getHostName(crtProxyIP, true);
-            else
+            } else {
                 IpAddrCache.putIPandHostInCache(crtProxyIP, crtProxyName);
-            if (crtProxyName == null)
+            }
+            if (crtProxyName == null) {
                 crtProxyName = crtProxyIP;
+            }
             String crtProxy = crtProxyName + ":" + crtProxyPort;
             if (proxyAddress != null) {
                 proxyAddress[0] = crtProxyIP + ":" + crtProxyPort;
@@ -2340,10 +2528,11 @@ abstract public class MainBase extends JFrame implements ItemListener {
     void refreshRemovedNodesMenu() {
 
         Set<String> list = new TreeSet<String>();
-        if (monitor.removedNodes != null)
+        if (monitor.removedNodes != null) {
             for (final String rNode : monitor.removedNodes.values()) {
                 list.add(rNode);
             }
+        }
         String l[] = list.toArray(new String[0]);
         removedNodesListDialog = ListDialog.initialize(this, l, "Removed nodes", list.size() + " removed nodes");
         removedNodesListDialog.setLocationRelativeTo(this);
@@ -2356,7 +2545,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
 
         private static String value = "";
 
-        private JList list;
+        private final JList list;
 
         private static JLabel label;
 
@@ -2366,10 +2555,11 @@ abstract public class MainBase extends JFrame implements ItemListener {
          */
         public static JDialog initialize(Component comp, String[] possibleValues, String title, String labelText) {
             Frame frame = JOptionPane.getFrameForComponent(comp);
-            if (dialog == null)
+            if (dialog == null) {
                 dialog = new ListDialog(frame, possibleValues, title, labelText);
-            else
+            } else {
                 dialog.redoList(possibleValues);
+            }
             label.setText(labelText);
             return dialog;
         }
@@ -2380,6 +2570,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             JButton okButton = new JButton("OK");
             okButton.addActionListener(new ActionListener() {
 
+                @Override
                 public void actionPerformed(ActionEvent e) {
                     ListDialog.dialog.setVisible(false);
                 }
@@ -2420,13 +2611,16 @@ abstract public class MainBase extends JFrame implements ItemListener {
         }
 
         public void redoList(Object possibleValues[]) {
-            if (list == null)
+            if (list == null) {
                 return;
+            }
             ((DefaultListModel) list.getModel()).clear();
-            if (possibleValues == null || possibleValues.length == 0)
+            if ((possibleValues == null) || (possibleValues.length == 0)) {
                 return;
-            for (int i = 0; i < possibleValues.length; i++)
-                ((DefaultListModel) list.getModel()).addElement(possibleValues[i]);
+            }
+            for (Object possibleValue : possibleValues) {
+                ((DefaultListModel) list.getModel()).addElement(possibleValue);
+            }
         }
 
     }
@@ -2452,22 +2646,24 @@ abstract public class MainBase extends JFrame implements ItemListener {
 
         ServiceItem[] sip = MLLUSHelper.getInstance().getProxies();
 
-        if (sip != null && sip.length > 0) {
-            for (int i = 0; i < sip.length; i++) {
-                ServiceItem si = sip[i];
-                if (si == null)
+        if ((sip != null) && (sip.length > 0)) {
+            for (ServiceItem si : sip) {
+                if (si == null) {
                     continue;
+                }
                 Entry[] proxyEntry = si.attributeSets;
-                if (proxyEntry == null)
+                if (proxyEntry == null) {
                     continue;
+                }
                 if (proxyEntry.length > 0) {
                     getProxyMenuItem(si, proxyAddress);
                     final String proxyItemIp = proxyAddress[0];
                     String proxyItemName = proxyAddress[1];
-                    if (proxyItemIp == null)
+                    if (proxyItemIp == null) {
                         continue;
+                    }
                     boolean selected = (crtProxyIp != null ? proxyItemIp.equals(crtProxyIp) : false);
-                    boolean bNextProxy = (nxtProxyIp != null && proxyItemIp.equals(nxtProxyIp)) ? true : false;
+                    boolean bNextProxy = ((nxtProxyIp != null) && proxyItemIp.equals(nxtProxyIp)) ? true : false;
                     // System.out.println("proxy @ "+proxyItem+" "+selected);
                     // ensure that ip:port menuItem exists in proxyMenu and has
                     // the appropriate selection
@@ -2477,10 +2673,11 @@ abstract public class MainBase extends JFrame implements ItemListener {
                         if (proxyItemIp.equals(mi.getText()) || proxyItemName.equals(mi.getText())) {
                             mi.setText(proxyItemName);
                             mi.setSelected(selected);
-                            if (bNextProxy)
+                            if (bNextProxy) {
                                 mi.setBackground(Color.LIGHT_GRAY);
-                            else
+                            } else {
                                 mi.setBackground(getBackground());
+                            }
                             for (int k = 0; k < oldProxies.size(); k++) {
                                 JRadioButtonMenuItem old = (JRadioButtonMenuItem) existingProxies.get(k);
                                 if (proxyItemIp.equals(old.getText()) || proxyItemName.equals(old.getText())) {
@@ -2493,21 +2690,22 @@ abstract public class MainBase extends JFrame implements ItemListener {
                         }
                     }
                     if (!found) {
-                        final JRadioButtonMenuItem mi = new JRadioButtonMenuItem((proxyItemName == null ? proxyItemIp : proxyItemName), selected);
+                        final JRadioButtonMenuItem mi = new JRadioButtonMenuItem((proxyItemName == null ? proxyItemIp
+                                : proxyItemName), selected);
                         proxyMenu.add(mi);
                         existingProxies.add(mi);
                         // System.out.println("Adding it");
                         mi.addActionListener(new ActionListener() {
 
+                            @Override
                             public void actionPerformed(ActionEvent ae) {
                                 try {
                                     String[] proxyAddress = new String[2];
                                     getProxyMenuItem(monitor.proxyService, proxyAddress);
                                     if (!proxyItemIp.equals(proxyAddress[0])) {
                                         ServiceItem[] sip = MLLUSHelper.getInstance().getProxies();
-                                        if (sip != null && sip.length > 0) {
-                                            for (int i = 0; i < sip.length; i++) {
-                                                final ServiceItem si = sip[i];
+                                        if ((sip != null) && (sip.length > 0)) {
+                                            for (final ServiceItem si : sip) {
                                                 getProxyMenuItem(si, proxyAddress);
                                                 if (proxyItemIp.equals(proxyAddress[0])) {
                                                     // Component[] items = proxyMenu.getMenuComponents();
@@ -2521,8 +2719,11 @@ abstract public class MainBase extends JFrame implements ItemListener {
                                                     Timer t = new Timer();
                                                     t.schedule(new TimerTask() {
 
+                                                        @Override
                                                         public void run() {
-                                                            Thread.currentThread().setName(" ( ML ) - Client - Proxy Menu change proxy thread");
+                                                            Thread.currentThread()
+                                                                    .setName(
+                                                                            " ( ML ) - Client - Proxy Menu change proxy thread");
                                                             monitor.addProxyToGet(si);
                                                             refreshProxyMenu();
                                                             proxyMenu.revalidate();
@@ -2558,8 +2759,9 @@ abstract public class MainBase extends JFrame implements ItemListener {
      * It inserts the new groups in case insensitive order
      */
     public void updateGroups() {
-        if (groupMenu == null)
+        if (groupMenu == null) {
             return;
+        }
         for (Map.Entry<String, Integer> entry : monitor.SGroups.entrySet()) {
             final String group = entry.getKey();
             boolean selected = entry.getValue().intValue() != 0;
@@ -2589,14 +2791,16 @@ abstract public class MainBase extends JFrame implements ItemListener {
             if (appendIt) {
                 JCheckBoxMenuItem newMI = new JCheckBoxMenuItem(group, selected);
                 newMI.addItemListener(this);
-                if (i < n)
+                if (i < n) {
                     groupMenu.add(newMI, i);
-                else
+                } else {
                     groupMenu.add(newMI);
+                }
             }
         }
     }
 
+    @Override
     public void itemStateChanged(ItemEvent e) {
         Object source = e.getItemSelectable();
 
@@ -2629,7 +2833,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
     public void showLocator() {
 
         ServiceRegistrar[] regs = monitor.lookupDiscoveryManager.getRegistrars();
-        if (regs == null || regs.length == 0) {
+        if ((regs == null) || (regs.length == 0)) {
             JOptionPane.showMessageDialog(this, "There are no Reggie services ", "Locator Error", 0);
             return;
         }
@@ -2644,7 +2848,7 @@ abstract public class MainBase extends JFrame implements ItemListener {
             }
         }
 
-        if (logger.isLoggable(Level.FINE) && sb != null) {
+        if (logger.isLoggable(Level.FINE) && (sb != null)) {
             logger.log(Level.FINE, sb.toString());
         }
 
@@ -2655,8 +2859,9 @@ abstract public class MainBase extends JFrame implements ItemListener {
         String input = JOptionPane.showInputDialog("Enter a Locator to discover host[:port]");
         if (input != null) {
             int portIndex = input.indexOf(":");
-            if (portIndex == -1)
+            if (portIndex == -1) {
                 port = 4160;
+            }
             if (input.startsWith("http://") || input.startsWith("jini://")) {
                 String s = input.substring(0, 5);
                 JOptionPane.showMessageDialog(this, "Remove the [" + s + "] and resubmit", "Locator Format Error", 0);
@@ -2674,18 +2879,20 @@ abstract public class MainBase extends JFrame implements ItemListener {
                         portError = true;
                         errorReason = "Not a valid number";
                     }
-                    if (port <= 0 || port >= 0x10000) {
+                    if ((port <= 0) || (port >= 0x10000)) {
                         portError = true;
                         errorReason = "port number out of range";
                     }
                     if (portError) {
-                        JOptionPane.showMessageDialog(this, "The provided port is invalid : " + errorReason, "Locator Port Error", 0);
+                        JOptionPane.showMessageDialog(this, "The provided port is invalid : " + errorReason,
+                                "Locator Port Error", 0);
                         return;
                     }
                 }
                 monitor.addLUS(host, port);
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Exception trying to add Locator [" + e.getClass().getName() + "]", "Locator Addition Error", 0);
+                JOptionPane.showMessageDialog(this, "Exception trying to add Locator [" + e.getClass().getName() + "]",
+                        "Locator Addition Error", 0);
 
             }
         }
@@ -2693,17 +2900,16 @@ abstract public class MainBase extends JFrame implements ItemListener {
 
     public void removeLocator() {
         LookupLocator locators[] = monitor.lookupDiscoveryManager.getLocators();
-        if (locators == null || locators.length == 0) {
+        if ((locators == null) || (locators.length == 0)) {
             JOptionPane.showMessageDialog(this, "There are no locators to remove", "Zero Locator Error", 0);
             return;
         }
-        LookupLocator selected = (LookupLocator) JOptionPane.showInputDialog(null, "Select a Locator to Remove", "Locator Removal Selector", 1, null, locators, locators[0]);
+        LookupLocator selected = (LookupLocator) JOptionPane.showInputDialog(null, "Select a Locator to Remove",
+                "Locator Removal Selector", 1, null, locators, locators[0]);
         if (selected == null) {
             return;
         }
-        monitor.lookupDiscoveryManager.removeLocators(new LookupLocator[] {
-            selected
-        });
+        monitor.lookupDiscoveryManager.removeLocators(new LookupLocator[] { selected });
         return;
     }
 
@@ -2726,7 +2932,8 @@ abstract public class MainBase extends JFrame implements ItemListener {
             // }
             try {
                 if (monitor.SGroups.containsKey(group)) {
-                    JOptionPane.showMessageDialog(this, "The [" + group + "] group is already part of the discovery listener", "Group Addition Error", 0);
+                    JOptionPane.showMessageDialog(this, "The [" + group
+                            + "] group is already part of the discovery listener", "Group Addition Error", 0);
                 } else {
                     monitor.SGroups.put(group, Integer.valueOf(1));
                     // monitor.lookupDiscoveryManager.addGroups(new String[] {
@@ -2748,16 +2955,18 @@ abstract public class MainBase extends JFrame implements ItemListener {
      * @param groups
      */
     public void addGroups(String[] groups) {
-        if (groups == null || groups.length == 0)
+        if ((groups == null) || (groups.length == 0)) {
             return;
+        }
         try {
             int nAdded = 0;
             String bannedGroups = AppConfig.getProperty("lia.Monitor.group.ban", null);
-            if (bannedGroups != null)
+            if (bannedGroups != null) {
                 bannedGroups = "," + bannedGroups + ",";
+            }
             for (int i = 0; i < groups.length; i++) {
                 // if this group is banned, continue
-                if (bannedGroups != null && bannedGroups.indexOf("," + groups[i].trim() + ",") != -1) {
+                if ((bannedGroups != null) && (bannedGroups.indexOf("," + groups[i].trim() + ",") != -1)) {
                     continue;
                 }
                 if (!monitor.SGroups.containsKey(groups[i])) {
@@ -2765,9 +2974,10 @@ abstract public class MainBase extends JFrame implements ItemListener {
                     nAdded++;
                 }
             }
-            if (nAdded > 0)
+            if (nAdded > 0) {
                 updateGroups();
-            // logger.info("MainBase > Service Ids vector received > "+nAdded+" groups added to menu.");
+                // logger.info("MainBase > Service Ids vector received > "+nAdded+" groups added to menu.");
+            }
         } catch (Exception e) {
         }
     }
@@ -2776,12 +2986,13 @@ abstract public class MainBase extends JFrame implements ItemListener {
         // String groups[] = monitor.lookupDiscoveryManager.getGroups();
         // if(groups == null || groups.length == 0)
         final String groups[] = monitor.SGroups.keySet().toArray(new String[0]);
-        if (groups == null || groups.length == 0) {
+        if ((groups == null) || (groups.length == 0)) {
             JOptionPane.showMessageDialog(this, "There are no groups to remove", "Zero Group Error", 0);
             updateGroups();
             return;
         }
-        String selected = (String) JOptionPane.showInputDialog(null, "Select a Group to Remove", "Group Removal Selector", 1, null, groups, groups[0]);
+        String selected = (String) JOptionPane.showInputDialog(null, "Select a Group to Remove",
+                "Group Removal Selector", 1, null, groups, groups[0]);
         if (selected == null) {
             updateGroups();
             return;
@@ -2795,21 +3006,23 @@ abstract public class MainBase extends JFrame implements ItemListener {
         boolean bWasSelected = false;
         for (int i = nGroupMenuStartPos; i < groupMenu.getItemCount(); i++) {
             JMenuItem mi = groupMenu.getItem(i);
-            if (mi != null && mi instanceof JCheckBoxMenuItem) {
+            if ((mi != null) && (mi instanceof JCheckBoxMenuItem)) {
                 // JCheckBoxMenuItem cmi = (JCheckBoxMenuItem) mi;
                 String mitx = mi.getText();
                 if (!monitor.SGroups.containsKey(mitx)) {
                     groupMenu.remove(mi);
                     // if this group that is selected is removed, then the proxy should know about it
-                    if (mi.isSelected())
+                    if (mi.isSelected()) {
                         bWasSelected = true;
+                    }
                 }
             }
         }
         updateGroups();
         // groups menu changed its selections, so the list of configurations for farms should be updated also
-        if (bWasSelected)
+        if (bWasSelected) {
             monitor.GroupViewUpdate();
+        }
 
         return;
     }

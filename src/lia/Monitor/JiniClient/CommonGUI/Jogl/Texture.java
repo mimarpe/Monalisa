@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.media.opengl.GL;
+import javax.media.opengl.GL2;
 
 import lia.Monitor.JiniClient.CommonGUI.Jogl.util.ChangeRootTexture;
 import lia.Monitor.JiniClient.CommonGUI.Jogl.util.NetResourceClassLoader;
@@ -26,11 +27,8 @@ import lia.util.ntp.NTPDate;
  */
 public class Texture extends TextureParams {
 
-    /** Logger name */
-    private static final transient String COMPONENT = "lia.Monitor.JiniClient.CommonGUI.Jogl";
-
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(Texture.class.getName());
 
     public static Level logLevel = Level.FINEST;// ;//for debug use Level.INFO, for normal use Level.FINEST
 
@@ -42,7 +40,7 @@ public class Texture extends TextureParams {
 
     /**
      * constuctor to initialize a node in the tree
-     * 
+     *
      * @param tex_id
      *            opengl id for texture
      */
@@ -54,7 +52,7 @@ public class Texture extends TextureParams {
     /**
      * constuctor to initialize a node in the tree
      * having associated the world positions and dimensions
-     * 
+     *
      * @param tex_id
      *            opengl id for texture
      * @param wX
@@ -83,7 +81,7 @@ public class Texture extends TextureParams {
      * constuctor to initialize a node in the tree
      * having associated the world positions and dimensions
      * and a given status
-     * 
+     *
      * @param tex_id
      *            opengl id for texture
      * @param wX
@@ -109,7 +107,7 @@ public class Texture extends TextureParams {
      * constuctor to initialize a node in the tree
      * having associated the world positions and dimensions<br>
      * and the slice coordinates in texture
-     * 
+     *
      * @param tex_id
      *            opengl id for texture
      * @param wX
@@ -141,7 +139,7 @@ public class Texture extends TextureParams {
      * Loads a texture from file into an byte array<br>
      * first check if an weak reference to data exists and if it is valid<br>
      * if not, loads from file
-     * 
+     *
      * @param fileName
      *            the full path to file
      * @param data
@@ -155,12 +153,12 @@ public class Texture extends TextureParams {
     }
 
     public static void loadTextureFromFile(TextureLoadJobResult result, NetResourceClassLoader myMCL) { // (NetResourceClassLoader
-                                                                                                        // myMapsClassLoader,
-                                                                                                        // String
-                                                                                                        // fileName,
-                                                                                                        // byte[] data,
-                                                                                                        // int level,
-                                                                                                        // int[] vbType)
+        // myMapsClassLoader,
+        // String
+        // fileName,
+        // byte[] data,
+        // int level,
+        // int[] vbType)
         int loadedFrom;// stores place where from last image was loaded
         // range: 0 - disc, 1 - memory -> must be less than 256
         long startTime = NTPDate.currentTimeMillis();
@@ -178,8 +176,9 @@ public class Texture extends TextureParams {
                 Object[] objStream = myMCL.getResourceAsStream(result.path/* +".oct" */);
                 BufferedInputStream bis = null;
                 int retVal = 0;
-                if (objStream != null && objStream.length > 1 && objStream[1] instanceof Integer)
+                if ((objStream != null) && (objStream.length > 1) && (objStream[1] instanceof Integer)) {
                     retVal = ((Integer) objStream[1]).intValue();
+                }
                 if (retVal == NetResourceClassLoader.FIND_RESOURCE_MAX_LEVEL.intValue()) {
                     // System.out.println("texture "+result.path+" is at max level");
                     result.isMaxLevel = true;
@@ -187,7 +186,8 @@ public class Texture extends TextureParams {
                     // data is null
                     result.errReason = TextureLoadJobResult.ERR_ISDOWNLOADING;
                 }
-                if (objStream != null && objStream.length > 0 && objStream[0] != null && objStream[0] instanceof InputStream) {
+                if ((objStream != null) && (objStream.length > 0) && (objStream[0] != null)
+                        && (objStream[0] instanceof InputStream)) {
                     bis = new BufferedInputStream((InputStream) objStream[0]);
                     int file_length = nTextureFileLength;
                     // create a new memory space
@@ -201,7 +201,7 @@ public class Texture extends TextureParams {
                     bis.close();
                     // result.data = data;
                     // cast shadow on image, if the case
-                    if (data != null && result.texture.checkSpecialFlag(S_SPECIAL_NO_NIGHT) == false) {
+                    if ((data != null) && (result.texture.checkSpecialFlag(S_SPECIAL_NO_NIGHT) == false)) {
                         int width, height;
                         width = OCT_WIDTH;
                         height = OCT_HEIGHT;
@@ -220,9 +220,10 @@ public class Texture extends TextureParams {
                         int multiplier = (result.level == 0 ? 1 : (int) Math.pow(2, result.level));
                         int resolutionXlevel = resolutionX0 * multiplier;
                         int resolutionYlevel = resolutionY0 * multiplier;
-                        mapx = (int) (worldX * resolutionXlevel / Globals.MAP_WIDTH);
-                        mapy = (int) (worldY * resolutionYlevel / Globals.MAP_HEIGHT);
-                        Shadow.setShadow(data, width, height, mapx, mapy, resolutionXlevel, resolutionYlevel, result.texture.getSpecialFlags());
+                        mapx = (int) ((worldX * resolutionXlevel) / Globals.MAP_WIDTH);
+                        mapy = (int) ((worldY * resolutionYlevel) / Globals.MAP_HEIGHT);
+                        Shadow.setShadow(data, width, height, mapx, mapy, resolutionXlevel, resolutionYlevel,
+                                result.texture.getSpecialFlags());
                     }
                 }
             } catch (MalformedURLException e2) {
@@ -252,8 +253,9 @@ public class Texture extends TextureParams {
         long endTime = NTPDate.currentTimeMillis();
         // logger.log( logLevel,
         // "Loaded file "+result.sFileName+" ...  "+(loadedFrom==1?"from memory":"from disc")+"  in "+(endTime-startTime)+" ms.");
-        logger.log(logLevel, "Loaded file " + result.path + " ... " + (loadedFrom == 1 ? "from memory" : "from disc") + " in "
-                + (endTime - startTime) + " ms. data=" + (result.data == null ? "null" : "ok") + " joglID=" + result.joglID);
+        logger.log(logLevel, "Loaded file " + result.path + " ... " + (loadedFrom == 1 ? "from memory" : "from disc")
+                + " in " + (endTime - startTime) + " ms. data=" + (result.data == null ? "null" : "ok") + " joglID="
+                + result.joglID);
         result.loadedFrom = loadedFrom;
         // if ( result.data==null )
         // System.out.println("error, data not available for "+result.path);
@@ -261,7 +263,7 @@ public class Texture extends TextureParams {
 
     /**
      * doesn't caches in memory
-     * 
+     *
      * @param myMapsClassLoader
      * @param fileName
      * @param data
@@ -312,7 +314,7 @@ public class Texture extends TextureParams {
      */
     /**
      * loads initial textures, no optimisation required
-     * 
+     *
      * @param gl
      *            opengl graphical context
      * @return array of textures id that were loaded into opengl memory
@@ -368,7 +370,7 @@ public class Texture extends TextureParams {
     /**
      * constructs an opengl texture from an byte array, with given width and height,
      * the byte array represent the 3-byte color array for an image
-     * 
+     *
      * @param gl
      * @param data
      *            3-byte array
@@ -398,8 +400,8 @@ public class Texture extends TextureParams {
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE);
             if (gl.glGetError() == GL.GL_INVALID_ENUM) {
                 logger.log(Level.INFO, "No nice rendering, fall back to default.");
-                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
-                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
+                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL2.GL_CLAMP);
+                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL2.GL_CLAMP);
                 gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
                 gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
             } else {
@@ -410,19 +412,20 @@ public class Texture extends TextureParams {
         } else {
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL2.GL_CLAMP);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL2.GL_CLAMP);
         }
         gl.glTexImage2D(GL.GL_TEXTURE_2D, 0, 3, width, height, 0, GL.GL_RGB, GL.GL_UNSIGNED_BYTE, dest);
         data = null;// free the image data, because it is now in opengl memory
         long endTime = NTPDate.currentTimeMillis();
-        logger.log(logLevel, "Generated OpenGL texture with id=" + textures[0] + " in " + (endTime - startTime) + " ms.");
+        logger.log(logLevel, "Generated OpenGL texture with id=" + textures[0] + " in " + (endTime - startTime)
+                + " ms.");
         return textures[0];
     }
 
     /**
      * constructs the initial tree of textures
-     * 
+     *
      * @param crtMonitor
      *            monitoring unit for loading all textures
      * @return tree's root
@@ -433,17 +436,19 @@ public class Texture extends TextureParams {
         Texture root = null;
         int treeid = 0;
         // get the tree id to create a unique path for textures
-        if (crtMonitor != null)
+        if (crtMonitor != null) {
             treeid = crtMonitor.getTreeID();
-        else
+        } else {
             treeid = JoglPanel.globals.nTreeID;
+        }
         // int initial_level = nInitialLevel;
         // int[] textures = loadInitialTextures( gl, initial_level);
         synchronized (syncObject_Texture) {
             // textureDataSpace.invalidateAllSlabs();
             root = new Texture(0, S_NONE | S_SHOULD_LOAD | S_LOADED | S_SET | S_ALWAYS);
             // root.setCoordinates( -180, 180, 90, -90);
-            root.setSpecialFlags((Shadow.bShowNight ? 0 : S_SPECIAL_NO_NIGHT) | (Shadow.bHideLights ? S_SPECIAL_NO_LIGHTS : 0));
+            root.setSpecialFlags((Shadow.bShowNight ? 0 : S_SPECIAL_NO_NIGHT)
+                    | (Shadow.bHideLights ? S_SPECIAL_NO_LIGHTS : 0));
             // JoglPanel.globals.root.texture_id = 0;
             int nx = 1, ny = 1;
             int stepX, stepY;
@@ -467,29 +472,32 @@ public class Texture extends TextureParams {
                     ny *= 2;
                 }
             }
-            if (crtMonitor != null)
+            if (crtMonitor != null) {
                 crtMonitor.setNoTotalTextures(nx * ny);
+            }
             root.children = new Texture[nx * ny];
             Texture child;
             for (int y = 0; y < ny; y++) {
                 for (int x = 0; x < nx; x++) {
                     // set world position and texture id for each children
                     // for first children in tree set always flag to stay forever
-                    child = new Texture(0, root.nWorldX + stepX * x, root.nWorldY + stepY * y, stepX, stepY, S_NONE | S_ALWAYS/*
-                                                                                                                               * |
-                                                                                                                               * S_SHOULD_LOAD
-                                                                                                                               * |
-                                                                                                                               * S_LOADED
-                                                                                                                               * |
-                                                                                                                               * S_SET
-                                                                                                                               */);
-                    root.children[y * nx + x] = child;
+                    child = new Texture(0, root.nWorldX + (stepX * x), root.nWorldY + (stepY * y), stepX, stepY, S_NONE
+                            | S_ALWAYS/*
+                                      * |
+                                      * S_SHOULD_LOAD
+                                      * |
+                                      * S_LOADED
+                                      * |
+                                      * S_SET
+                                      */);
+                    root.children[(y * nx) + x] = child;
                     child.setParent(root);
                     child.setStatus(S_SHOULD_LOAD);
                     String path = child.textCreatePathDyn(initial_level).toString();
                     // for textures at level 0, load them from resources
-                    if (initial_level == 0)
+                    if (initial_level == 0) {
                         path = "*" + path;
+                    }
 
                     TextureLoadJobResult tres = new TextureLoadJobResult();
                     tres.texture = child;
@@ -508,11 +516,11 @@ public class Texture extends TextureParams {
     // private static int nCounterZoomChangedBetweenRepaints=0;
     /**
      * draws the tree of textures to cover the map
-     * 
+     *
      * @param gl
      *            opengl graphical context
      */
-    public static void drawTree(GL gl) {
+    public static void drawTree(GL2 gl) {
         /*
          * synchronized (syncObject_Texture) {
          * if ( bInDrawFunction )
@@ -534,10 +542,12 @@ public class Texture extends TextureParams {
             // nCounterZoomChangedBetweenRepaints = 0;
             // System.out.println("syncObject_Texture begin");
             // JoglPanel.globals.root.textDraw( gl, -1);
-            for (int i = 0; i < JoglPanel.globals.root.children.length; i++)
-                if (JoglPanel.globals.root.children[i] != null)
-                    JoglPanel.globals.root.children[i].textDraw(gl, nInitialLevel);
-            // System.out.println("syncObject_Texture end");
+            for (Texture element : JoglPanel.globals.root.children) {
+                if (element != null) {
+                    element.textDraw(gl, nInitialLevel);
+                    // System.out.println("syncObject_Texture end");
+                }
+            }
         }
         ;
         /*
@@ -564,24 +574,29 @@ public class Texture extends TextureParams {
         /** end should section */
         // compute new global desired level for sphere projection
         // to make a stronger condition, check also the angle to be
-        if (JoglPanel.globals.globeRadius != -1 && JoglPanel.globals.mapAngle == 90) {
+        if ((JoglPanel.globals.globeRadius != -1) && (JoglPanel.globals.mapAngle == 90)) {
             float depth = (float) JoglPanel.globals.EyePosition.getRadius() - JoglPanel.globals.globeRadius;
-            if (JoglPanel.globals.charPressed == 'D')
+            if (JoglPanel.globals.charPressed == 'D') {
                 System.out.println("current depth: " + depth);
+            }
             int desiredLevel = nInitialLevel;
             if (depth > 0) {
                 for (int i = nInitialLevel/* 0 */; i < depthZ.length; i++) {
-                    if (JoglPanel.globals.charPressed == 'D')
+                    if (JoglPanel.globals.charPressed == 'D') {
                         System.out.println("depthZ[" + i + "]=" + depthZ[i]);
-                    if (depth > depthZ[i] * 2)
+                    }
+                    if (depth > (depthZ[i] * 2)) {
                         break;
+                    }
                     desiredLevel = i + 1;
-                    if (JoglPanel.globals.charPressed == 'D')
+                    if (JoglPanel.globals.charPressed == 'D') {
                         System.out.println("depth: " + depth + "depthZ[" + i + "]=" + depthZ[i] + " desiredLevel=" + i);
+                    }
                 }
             }
-            if (JoglPanel.globals.charPressed == 'D')
+            if (JoglPanel.globals.charPressed == 'D') {
                 System.out.println("=> desired level: " + desiredLevel);
+            }
             JoglPanel.globals.globalSphereDesiredLevel = desiredLevel;
         }
         /** compute intersection params for any projection */
@@ -592,8 +607,9 @@ public class Texture extends TextureParams {
 
         synchronized (syncObject_Texture) {
             // nCounterZoomChangedBetweenRepaints++;
-            for (int i = 0; i < JoglPanel.globals.root.children.length; i++)
-                JoglPanel.globals.root.children[i].textZoomChanged(nInitialLevel);
+            for (Texture element : JoglPanel.globals.root.children) {
+                element.textZoomChanged(nInitialLevel);
+            }
         }
         // call to redraw scene for maybe there where textures unloaded
         JoglPanel.globals.canvas.repaint();
@@ -646,16 +662,18 @@ public class Texture extends TextureParams {
             } catch (InterruptedException iex) {
                 continue;
             }
-            if (tres.texture == null)
+            if (tres.texture == null) {
                 continue;
+            }
             boolean bLoad = false;
             synchronized (syncObject_Texture) {
                 // check to see if the texture still should be loaded
                 // but first check to see if texture still exists
                 if (tres.texture.checkStatus(S_DEREFERENCED)) {
                     tres.texture = null;
-                } else if (tres.texture.checkStatus(S_SHOULD_LOAD))
+                } else if (tres.texture.checkStatus(S_SHOULD_LOAD)) {
                     bLoad = true;
+                }
             }
             if (bLoad) {
                 logger.log(logLevel, "try to load file: " + pathToTextures + tres.path + Texture.sMapExt);
@@ -666,8 +684,9 @@ public class Texture extends TextureParams {
 
     private boolean textIsParentAtMaxLevel() {
         if (parent != null) {
-            if (parent.checkStatus(S_MAX_LEVEL))
+            if (parent.checkStatus(S_MAX_LEVEL)) {
                 return true;
+            }
             return parent.textIsParentAtMaxLevel();
         }
         return false;
@@ -677,7 +696,7 @@ public class Texture extends TextureParams {
      * 1) loads image into memory<br>
      * 2) set it for texture object to be transformed into opengl texture
      * Sep 29, 2005 6:07:40 PM - mluc<br>
-     * 
+     *
      * @param result
      */
     public static void loadNewTextures2(TextureLoadJobResult result) {
@@ -685,9 +704,10 @@ public class Texture extends TextureParams {
         // and then set it for tranformation into opengl texture
         boolean bAdded2Set = false;
         if (t == null) {
-            if (result.crtMonitor != null) // tuplu.length>3 && result.tuplu[3] instanceof ChangeRootTexture &&
-                                           // (crtMonitor=(ChangeRootTexture)result.tuplu[3])!=null )
+            if (result.crtMonitor != null) {
+                // (crtMonitor=(ChangeRootTexture)result.tuplu[3])!=null )
                 result.crtMonitor.notifyNewTextureSet();
+            }
             return;
         }
         boolean bShouldLoad = true;
@@ -698,8 +718,9 @@ public class Texture extends TextureParams {
                 result.texture = null;
                 t = null;
                 bShouldLoad = false;
-            } else if (t.textIsParentAtMaxLevel())
+            } else if (t.textIsParentAtMaxLevel()) {
                 bShouldLoad = false;
+            }
         }
         if (bShouldLoad) {
             // first load image into memory
@@ -718,11 +739,11 @@ public class Texture extends TextureParams {
                     t = null;
                 } else if (t.checkStatus(S_SHOULD_LOAD)) {
                     // System.out.println("data: "+data);
-                    if (result.data == null && result.errReason == TextureLoadJobResult.ERR_ISDOWNLOADING) {
+                    if ((result.data == null) && (result.errReason == TextureLoadJobResult.ERR_ISDOWNLOADING)) {
                         logger.log(logLevel, "readd job to queue: " + result.path);
                         texturesToLoad.offer(result);
                         return;
-                    } else if (result.data == null && result.joglID == 0) {
+                    } else if ((result.data == null) && (result.joglID == 0)) {
                         t.setStatus(S_FILE_NOT_FOUND);
                     } else {
                         t.setStatus(S_LOADED);
@@ -734,16 +755,18 @@ public class Texture extends TextureParams {
             }
         }
         if (!bAdded2Set) {// if texture will not get to set thread, and it will be discarded, increase the number of
-                          // monitorized textures
+            // monitorized textures
             // this texture was not set anymore, so we can release it
-            if (result.data != null)
+            if (result.data != null) {
                 // textureDataSpace.releaseSlab( result.getResultID(), result.data, true);
                 textureDataSpace.releaseSlab(result.data);
+            }
 
             // inform monitoring unit that a new texture was loaded and set into gl memory
-            if (result.crtMonitor != null) // tuplu.length>3 && result.tuplu[3] instanceof ChangeRootTexture &&
-                                           // (crtMonitor=(ChangeRootTexture)result.tuplu[3])!=null )
+            if (result.crtMonitor != null) {
+                // (crtMonitor=(ChangeRootTexture)result.tuplu[3])!=null )
                 result.crtMonitor.notifyNewTextureSet();
+            }
         }
         result = null;
         JoglPanel.globals.canvas.repaint();
@@ -905,7 +928,7 @@ public class Texture extends TextureParams {
      * checks for loaded from file textures and updates the tree to show them,
      * instead of the old ones<br>
      * if there are sufficient child textures, parent texture is unloaded
-     * 
+     *
      * @param gl
      */
     public static void setTreeTextures(GL gl) {
@@ -913,18 +936,20 @@ public class Texture extends TextureParams {
         long lStartTime, lEndTime;
         lStartTime = NTPDate.currentTimeMillis();
         TextureLoadJobResult result;
-        while (nCountRealSet < 10 && (result = texturesToSet.poll()) != null) {
+        while ((nCountRealSet < 10) && ((result = texturesToSet.poll()) != null)) {
             nCountSetTextures++;
-            if (result.crtMonitor != null)
+            if (result.crtMonitor != null) {
                 nCountBackgroundSet++;
+            }
             // generate opengl texture from byte array if it isn't already in jogl space
             int t_id;
             if (result.joglID > 0) {
                 logger.log(logLevel, "reusing texture_id " + result.joglID);
                 t_id = result.joglID;
             } else {
-                if (result.crtMonitor == null)// not in background
+                if (result.crtMonitor == null) {
                     nCountRealSet++;
+                }
                 t_id = setTexture(gl, result.data);
                 logger.log(logLevel, "generating jogl texture_id " + t_id);
             }
@@ -948,30 +973,36 @@ public class Texture extends TextureParams {
                             if (t.children != null) {
                                 // set for existing children that don't have their own texture this node's parent
                                 // texture
-                                for (int i = 0; i < t.children.length; i++)
-                                    if (t.children[i] != null /* && !children[i].checkStatus(S_SET) */)
-                                        t.children[i].textSetParentTexture();
+                                for (Texture element : t.children) {
+                                    if (element != null /* && !children[i].checkStatus(S_SET) */) {
+                                        element.textSetParentTexture();
+                                    }
+                                }
                             }
                             // check to see if parent texture should be cleared
                             // recompute child textures parent id
-                            if (t.getParent() != null)
+                            if (t.getParent() != null) {
                                 t.getParent().textUnsetParentTexture(gl);
+                            }
                         }
                     }
                 }
             }
             // textureDataSpace.releaseSlab( result.getResultID(), result, true);
-            if (result.data != null)
+            if (result.data != null) {
                 textureDataSpace.releaseSlab(result.data);
+            }
             // ChangeRootTexture crtMonitor=null;
             // inform monitoring unit that a new texture was loaded and set into gl memory
-            if (result.crtMonitor != null) // tuplu.length>3 && tuplu[3] instanceof ChangeRootTexture &&
-                                           // (crtMonitor=(ChangeRootTexture)tuplu[3])!=null )
+            if (result.crtMonitor != null) {
+                // (crtMonitor=(ChangeRootTexture)tuplu[3])!=null )
                 result.crtMonitor.notifyNewTextureSet();
+            }
         }
         lEndTime = NTPDate.currentTimeMillis();
-        logger.log(logLevel, "set textures took " + (lEndTime - lStartTime) + "ms and tested " + nCountSetTextures + " textures, from which "
-                + nCountBackgroundSet + " were in background and " + nCountRealSet + " were really set.");
+        logger.log(logLevel, "set textures took " + (lEndTime - lStartTime) + "ms and tested " + nCountSetTextures
+                + " textures, from which " + nCountBackgroundSet + " were in background and " + nCountRealSet
+                + " were really set.");
     }
 
     /**
@@ -979,7 +1010,7 @@ public class Texture extends TextureParams {
      * and not on the correct depth<br>
      * <b>Updated to:</b>This textures have already been put into an array texturesToUnSet, and
      * the only thing to be done is to delete them from opengl one by one.
-     * 
+     *
      * @param gl
      */
     public static void unsetTreeTextures(GL gl) {
@@ -992,10 +1023,10 @@ public class Texture extends TextureParams {
         // get the textures to be deleted, i.e. expired from cache
         textureDataSpace.offerTexturesToDelete(texturesToUnSet);
 
-        while ((jct = (JoGLCachedTexture) texturesToUnSet.poll()) != null) {
+        while ((jct = texturesToUnSet.poll()) != null) {
             nCountSetTextures++;
             if (gl.glIsTexture(jct.joglID)) {// this check also includes (children[i].texture_id!= tex_id &&
-                                             // children[i].texture_id>0)
+                // children[i].texture_id>0)
                 textures[0] = jct.joglID;
                 gl.glDeleteTextures(1, textures, 0);
                 logger.log(logLevel, "unsetTreeTextures -> Delete texture with id: " + jct.joglID);
@@ -1003,7 +1034,8 @@ public class Texture extends TextureParams {
             }
         }
         lEndTime = NTPDate.currentTimeMillis();
-        logger.log(logLevel, "unset textures took " + (lEndTime - lStartTime) + "ms and deleted " + nCountSetTextures + " textures");
+        logger.log(logLevel, "unset textures took " + (lEndTime - lStartTime) + "ms and deleted " + nCountSetTextures
+                + " textures");
         // synchronized ( syncObject_Texture ) {
         // for ( int i=0; i<Main.globals.root.children.length; i++)
         // Main.globals.root.children[i].unsetTexture2( gl, 0);
@@ -1016,14 +1048,14 @@ public class Texture extends TextureParams {
      * then check to see if this node has children<br>
      * then check to see if has an valid id... ( optional, if second is false )<br>
      * each condition stops the traversal<br>
-     * 
+     *
      * @param gl
      *            opengl rendering context
      * @param currentLevel
      *            indicates the current level reached in the tree, neccessary
      *            to compute position of child node if it is not defined
      */
-    private void textDraw(GL gl, int currentLevel) {
+    private void textDraw(GL2 gl, int currentLevel) {
         /**
          * 0. a small visibility test to reduce algorithm complexity, and to avoid
          * duplicates (one on each side of the sphere) is:
@@ -1075,7 +1107,7 @@ public class Texture extends TextureParams {
             if (local_children != null) {// has children
                 currentLevel++;
                 // System.out.println("has children");
-                for (int i = 0; i < local_children.length; i++)
+                for (int i = 0; i < local_children.length; i++) {
                     if (local_children[i] != null) {
                         // System.out.println("children["+i+"] autodraw");
                         local_children[i].textDraw(gl, currentLevel);
@@ -1092,12 +1124,12 @@ public class Texture extends TextureParams {
                             nx = ny = 2;
                         }
                         float lT, rT, tT, bT;
-                        float tx = (rightT - leftT) / (float) nx;
-                        float ty = (topT - bottomT) / (float) ny;
-                        lT = leftT + tx * (float) (i % nx);
+                        float tx = (rightT - leftT) / nx;
+                        float ty = (topT - bottomT) / ny;
+                        lT = leftT + (tx * (i % nx));
                         rT = lT + tx;
                         int ipeny = (i / ny);
-                        tT = topT - ty * (float) ipeny;
+                        tT = topT - (ty * ipeny);
                         bT = tT - ty;
                         if (!gl.glIsTexture(texture_id)) {
                             // logger.log(logLevel, "ERROR! children draw: not a valid texture id1 ("+texture_id+")");
@@ -1106,10 +1138,11 @@ public class Texture extends TextureParams {
                             rT = 1;
                             bT = 0;
                             tT = 1;
-                        } else
+                        } else {
                             gl.glBindTexture(GL.GL_TEXTURE_2D, texture_id);
+                        }
                         // gl.glBegin(GL.GL_TRIANGLES);
-                        if (nWidth == 1 || nHeight == 1) {
+                        if ((nWidth == 1) || (nHeight == 1)) {
                             if (grid != null) {
                                 // the second checking is futile because if
                                 // nWidth is one, or nHeight is one and this node
@@ -1120,27 +1153,30 @@ public class Texture extends TextureParams {
                                 wY = (i / nx);
                                 // logger.log(logLevel, "draw missing dynamic child["+i+"]");
                                 drawMapSlice(gl, grid, wX, wY, w, h, lT, bT, rT, tT);
-                            } else
+                            } else {
                                 logger.log(logLevel, "ERROR! children draw: No position available to draw at.");// I
-                                                                                                                // should
-                                                                                                                // draw
-                                                                                                                // the
-                                                                                                                // parent
-                                                                                                                // texture
+                                // should
+                                // draw
+                                // the
+                                // parent
+                                // texture
+                            }
                         } else {// dynamic node, so use own grid to draw children
                             w = nWidth / nx;
                             h = nHeight / ny;
-                            wX = nWorldX + w * (i % nx);
-                            wY = nWorldY + h * (i / nx);
+                            wX = nWorldX + (w * (i % nx));
+                            wY = nWorldY + (h * (i / nx));
                             // logger.log(logLevel, "draw missing static child["+i+"]");
                             drawMapSlice(gl, Globals.points, wX, wY, w, h, lT, bT, rT, tT);
                         }
                         // gl.glEnd();
-                    } else
+                    } else {
                         logger.log(logLevel, "ERROR! children draw: No parent texture available to draw.");// I should
-                                                                                                           // draw the
-                                                                                                           // parent
-                                                                                                           // texture
+                        // draw the
+                        // parent
+                        // texture
+                    }
+                }
             } else if (texture_id != 0) {// texture is valid
                 float lT, rT, tT, bT;
                 lT = leftT;
@@ -1154,21 +1190,22 @@ public class Texture extends TextureParams {
                     rT = 1;
                     bT = 0;
                     tT = 1;
-                } else
+                } else {
                     gl.glBindTexture(GL.GL_TEXTURE_2D, texture_id);
+                }
                 // gl.glBegin(GL.GL_TRIANGLES);
-                if (!bDynamicGrid) // if node is on static grid
+                if (!bDynamicGrid) {
                     drawMapSlice(gl, Globals.points, nWorldX, nWorldY, nWidth, nHeight, lT, bT, rT, tT);
-                else {// node is on parent grid
-                      // System.out.println("draw dynamic node");
+                } else {// node is on parent grid
+                    // System.out.println("draw dynamic node");
                     drawMapSlice(gl, parent.grid, nWorldX, nWorldY, nWidth, nHeight, lT, bT, rT, tT);
                 }
                 // gl.glEnd();
                 // logger.log(logLevel, "Draw texture with id: "+texture_id);
             } /*
-               * else
-               * logger.log(logLevel, "ERROR! parent draw: No texture available to draw.");
-               */
+              * else
+              * logger.log(logLevel, "ERROR! parent draw: No texture available to draw.");
+              */
         } else {
             // logger.log(logLevel, "not draw texture "+texture_id+" worldx="+nWorldX+" worldy="+nWorldY);
         }
@@ -1181,7 +1218,7 @@ public class Texture extends TextureParams {
      * also latitudinal.<br>
      * it checks for intersection of rectangle given by functions' params
      * and the circle determined by global intersection point and global intersection radius.
-     * 
+     *
      * @param longS
      *            start longitude of texture's rectangle
      * @param longE
@@ -1208,11 +1245,11 @@ public class Texture extends TextureParams {
      * if ( text!=null ) text.bIsVisible = true;
      * return true;
      *//**
-     * transform (long,lat) from coordinates relative to earth rotation axis (y)
-     * to vEyeAxis (vector from map center to eye ).
-     * For that, transform to chartezian coordinates (x,y,z) and then
-     * to (long,lat) relative to vEyeAxis.
-     */
+       * transform (long,lat) from coordinates relative to earth rotation axis (y)
+       * to vEyeAxis (vector from map center to eye ).
+       * For that, transform to chartezian coordinates (x,y,z) and then
+       * to (long,lat) relative to vEyeAxis.
+       */
     /*
      * coords3D = Globals.point2Dto3D( latS, longS, coords3D);
      * System.out.println("old coords for (longS,latS)=("+longS+","+latS+")");
@@ -1243,7 +1280,7 @@ public class Texture extends TextureParams {
     /**
      * tests to see if a texture starting in grid at (x,y) and having nx units on x axis
      * and ny units on y axis, is visible or not (that is in the view frustum === the pyramid)
-     * 
+     *
      * @param x
      * @param y
      * @param nx
@@ -1253,31 +1290,33 @@ public class Texture extends TextureParams {
      * @return boolean value to indicate visibility
      */
     private static boolean textVisible(int x, int y, int nx, int ny, boolean bDynamic, Texture parent, Texture text/*
-                                                                                                                    * ,
-                                                                                                                    * boolean
-                                                                                                                    * bNotUsed
-                                                                                                                    */) {
-        if (bDynamic && parent == null) {
+                                                                                                                   * ,
+                                                                                                                   * boolean
+                                                                                                                   * bNotUsed
+                                                                                                                   */) {
+        if (bDynamic && (parent == null)) {
             // logger.log(logLevel, "Texture x="+x+" y="+y+" is dynamic and doesn't have a parent");
             return false;// if this is a dynamic texture, but there is no parent, it must be an error, so
             // return false
         }
-        if (text != null && !text.bCheckVisibility) {
+        if ((text != null) && !text.bCheckVisibility) {
             // logger.log(logLevel,
             // "Texture x="+x+" y="+y+" and id="+text.texture_id+" doesn't check visibility and is "+(text.bIsVisible?"":"not")+" visible");
             return text.bIsVisible;
         }
-        if (text != null)
+        if (text != null) {
             text.bCheckVisibility = false;
+        }
 
-        if (JoglPanel.globals.globeRadius != -1 && JoglPanel.globals.mapAngle == 90) {
+        if ((JoglPanel.globals.globeRadius != -1) && (JoglPanel.globals.mapAngle == 90)) {
             // use second type of checking
         }
 
         // set the grid from where points are taken: static or dynamic
         float[][][] grid_pointer = Globals.points;
-        if (bDynamic)
+        if (bDynamic) {
             grid_pointer = parent.grid;
+        }
         // System.out.println("x="+x+" y="+y+" nx="+nx+" ny="+ny);
         /**
          * 0. a small visibility test to reduce algorithm complexity, and to avoid
@@ -1326,7 +1365,7 @@ public class Texture extends TextureParams {
          */
         int nStepX, nStepY;
         // for dynamic grid or plane projection check only heads
-        if (bDynamic || JoglPanel.globals.globeRadius == -1) {
+        if (bDynamic || (JoglPanel.globals.globeRadius == -1)) {
             nStepX = nx;
             nStepY = ny;
         } else {
@@ -1345,21 +1384,22 @@ public class Texture extends TextureParams {
         // recheck visibility test using latitude and longitude -> invalid test, will never work!!!!!
         // 1. eye direction vector
         VectorO Vd = JoglPanel.globals.EyeDirection;// new VectorO(Main.globals.EyeDirection[0],
-                                                    // Main.globals.EyeDirection[1], Main.globals.EyeDirection[2]);
+        // Main.globals.EyeDirection[1], Main.globals.EyeDirection[2]);
         // Vd.Normalize();
         // 2. eye normal vector
         VectorO Vn = JoglPanel.globals.EyeNormal;// new VectorO(Main.globals.EyeNormal[0], Main.globals.EyeNormal[1],
-                                                 // Main.globals.EyeNormal[2]);
+        // Main.globals.EyeNormal[2]);
         // Vd.Normalize();
         // 3. second axis
         VectorO Vm = Vd.CrossProduct(Vn);
         // compute maximal distance
         float maxDist = 0;
         if (JoglPanel.globals.globeRadius != -1) {
-            maxDist = JoglPanel.globals.globeRadius * JoglPanel.globals.globeRadius + JoglPanel.globals.EyePosition.getX()
-                    * JoglPanel.globals.EyePosition.getX() + JoglPanel.globals.EyePosition.getY() * JoglPanel.globals.EyePosition.getY()
-                    + (JoglPanel.globals.EyePosition.getZ() + JoglPanel.globals.globeRadius - JoglPanel.globals.globeVirtualRadius)
-                    * (JoglPanel.globals.EyePosition.getZ() + JoglPanel.globals.globeRadius - JoglPanel.globals.globeVirtualRadius);
+            maxDist = (JoglPanel.globals.globeRadius * JoglPanel.globals.globeRadius)
+                    + (JoglPanel.globals.EyePosition.getX() * JoglPanel.globals.EyePosition.getX())
+                    + (JoglPanel.globals.EyePosition.getY() * JoglPanel.globals.EyePosition.getY())
+                    + (((JoglPanel.globals.EyePosition.getZ() + JoglPanel.globals.globeRadius) - JoglPanel.globals.globeVirtualRadius) * ((JoglPanel.globals.EyePosition
+                            .getZ() + JoglPanel.globals.globeRadius) - JoglPanel.globals.globeVirtualRadius));
             maxDist = (float) Math.sqrt(maxDist);
         }
 
@@ -1399,7 +1439,8 @@ public class Texture extends TextureParams {
                 Vp4.SubstractVector(JoglPanel.globals.EyePosition);
                 bUseLast = true;
                 if (JoglPanel.globals.globeRadius != -1) {
-                    if (Vp1.getRadius() > maxDist && Vp2.getRadius() > maxDist && Vp3.getRadius() > maxDist && Vp4.getRadius() > maxDist) {
+                    if ((Vp1.getRadius() > maxDist) && (Vp2.getRadius() > maxDist) && (Vp3.getRadius() > maxDist)
+                            && (Vp4.getRadius() > maxDist)) {
                         // System.out.println("texture ["+x+","+y+"], piece ("+i+","+j+"), test 1 failed");
                         continue;// texture behind
                     }
@@ -1430,14 +1471,14 @@ public class Texture extends TextureParams {
                 float dp4;
                 dp4 = (float) Vp4.DotProduct(Vd);
                 // 6.1.0 negative projections
-                if (dp1 <= 0 && dp2 <= 0 && dp3 <= 0 && dp4 <= 0) {
+                if ((dp1 <= 0) && (dp2 <= 0) && (dp3 <= 0) && (dp4 <= 0)) {
                     // System.out.println("hide texture");
                     // System.out.println("texture ["+x+","+y+"], piece ("+i+","+j+"), test 2 failed");
                     continue;
                 }
                 // 6.2 frustum
                 float fm1, fn1;
-                float tan = (float) Math.tan(Globals.FOV_ANGLE / 2f * Math.PI / 180f);
+                float tan = (float) Math.tan(((Globals.FOV_ANGLE / 2f) * Math.PI) / 180f);
                 fm1 = dp1 * tan;
                 fn1 = fm1 / JoglPanel.globals.fAspect;
                 float fm2, fn2;
@@ -1455,21 +1496,21 @@ public class Texture extends TextureParams {
                 // xc = EyePosition.dotProduct(Vm);
                 // same for yc on Vn axis
                 // 7. check if at least 1 point is well positioned
-                if (pm1 > fm1 && pm2 > fm2 && pm3 > fm3 && pm4 > fm4) {
+                if ((pm1 > fm1) && (pm2 > fm2) && (pm3 > fm3) && (pm4 > fm4)) {
                     // System.out.println("texture ["+x+","+y+"], piece ("+i+","+j+"), test 3 failed");
                     continue;
                 }
                 ;
-                if (pm1 < -fm1 && pm2 < -fm2 && pm3 < -fm3 && pm4 < -fm4) {
+                if ((pm1 < -fm1) && (pm2 < -fm2) && (pm3 < -fm3) && (pm4 < -fm4)) {
                     // System.out.println("texture ["+x+","+y+"], piece ("+i+","+j+"), test 4 failed");
                     continue;
                 }
-                if (pn1 > fn1 && pn2 > fn2 && pn3 > fn3 && pn4 > fn4) {
+                if ((pn1 > fn1) && (pn2 > fn2) && (pn3 > fn3) && (pn4 > fn4)) {
                     // System.out.println("texture ["+x+","+y+"], piece ("+i+","+j+"), test 5 failed");
                     continue;
                 }
                 ;
-                if (pn1 < -fn1 && pn2 < -fn2 && pn3 < -fn3 && pn4 < -fn4) {
+                if ((pn1 < -fn1) && (pn2 < -fn2) && (pn3 < -fn3) && (pn4 < -fn4)) {
                     // System.out.println("texture ["+x+","+y+"], piece ("+i+","+j+"), test 6 failed");
                     continue;
                 }
@@ -1479,18 +1520,20 @@ public class Texture extends TextureParams {
             }
         }
         if (!bIsVisible) {
-            if (text != null)
+            if (text != null) {
                 text.bIsVisible = false;
+            }
             return false;
         }
-        if (text != null)
+        if (text != null) {
             text.bIsVisible = true;
+        }
         return true;
     }
 
     /**
      * deletes children and sets their valid textures for unload from memory
-     * 
+     *
      * @return a boolean value to indicate if there are children left ( the ones with ALWAYS flag set)<br>
      *         The function will probably return always true because the only textures with this flag set are the ones
      *         on
@@ -1514,7 +1557,8 @@ public class Texture extends TextureParams {
                         } else {
                             children[i].resetStatus();// = S_NONE;
                             // texturesToUnSet.offer( Integer.valueOf(children[i].texture_id));
-                            textureDataSpace.cacheTexture(new JoGLCachedTexture(children[i].resultID, children[i].texture_id));
+                            textureDataSpace.cacheTexture(new JoGLCachedTexture(children[i].resultID,
+                                    children[i].texture_id));
                         }
                         ;
                     }
@@ -1561,10 +1605,10 @@ public class Texture extends TextureParams {
              */
             texture_id = parent.texture_id;
             if (!isBDynamicGrid()) {
-                leftT = parent.leftT + (nWorldX - parent.nWorldX) * (parent.rightT - parent.leftT) / parent.nWidth;
-                rightT = leftT + nWidth * (parent.rightT - parent.leftT) / parent.nWidth;
-                topT = parent.topT - (nWorldY - parent.nWorldY) * (parent.topT - parent.bottomT) / parent.nHeight;
-                bottomT = topT - nHeight * (parent.topT - parent.bottomT) / parent.nHeight;
+                leftT = parent.leftT + (((nWorldX - parent.nWorldX) * (parent.rightT - parent.leftT)) / parent.nWidth);
+                rightT = leftT + ((nWidth * (parent.rightT - parent.leftT)) / parent.nWidth);
+                topT = parent.topT - (((nWorldY - parent.nWorldY) * (parent.topT - parent.bottomT)) / parent.nHeight);
+                bottomT = topT - ((nHeight * (parent.topT - parent.bottomT)) / parent.nHeight);
             } else {
                 int nx;
                 int ny;
@@ -1573,19 +1617,21 @@ public class Texture extends TextureParams {
                  */
                 nx = parent.grid[0][0].length - 1;
                 ny = parent.grid[0].length - 1;
-                leftT = parent.leftT + (float) nWorldX * (parent.rightT - parent.leftT) / (float) nx;
-                rightT = leftT + (parent.rightT - parent.leftT) / (float) nx;
-                topT = parent.topT - nWorldY * (parent.topT - parent.bottomT) / (float) ny;
-                bottomT = topT - (parent.topT - parent.bottomT) / (float) ny;
+                leftT = parent.leftT + ((nWorldX * (parent.rightT - parent.leftT)) / nx);
+                rightT = leftT + ((parent.rightT - parent.leftT) / nx);
+                topT = parent.topT - ((nWorldY * (parent.topT - parent.bottomT)) / ny);
+                bottomT = topT - ((parent.topT - parent.bottomT) / ny);
 
             }
         }
         ;
         if (children != null) {
             // set for existing children that don't have their own texture this node's parent texture
-            for (int i = 0; i < children.length; i++)
-                if (children[i] != null /* && !children[i].checkStatus(S_SET) */)
-                    children[i].textSetParentTexture();
+            for (Texture element : children) {
+                if (element != null /* && !children[i].checkStatus(S_SET) */) {
+                    element.textSetParentTexture();
+                }
+            }
         }
     }
 
@@ -1593,7 +1639,7 @@ public class Texture extends TextureParams {
      * This one considers the image surface as composed of two triangles in space and
      * computes the minimal distance to each of them, and then selects the minimum from the
      * two values.<br>
-     * 
+     *
      * @see Texture#distancePoint2Triangle
      * @param vP
      * @param vP1
@@ -1646,7 +1692,7 @@ public class Texture extends TextureParams {
      * c. If P' is outside, find minimal distance:<br>
      * for each side of the 3 sides of the triangle compute minimal distance from a point to any point on the
      * segment. This is achieved by the following computation:<br>
-     * 
+     *
      * @see Texture#distancePoint2Triangle
      * @param vP
      * @param vP1
@@ -1722,7 +1768,7 @@ public class Texture extends TextureParams {
      * - project P'P1 on vector computed previously<br>
      * - use module of this value<br>
      * }<br>
-     * 
+     *
      * @param vPprim
      * @param vP1
      * @param vP2
@@ -1813,17 +1859,19 @@ public class Texture extends TextureParams {
      * - algorithm may behave badly for sphere shape not centered<br>
      * - not used distance, but projection so that the algorithm behave the same as the one
      * for plane projection<br>
-     * 
+     *
      * @param currentLevel
      *            level for this node
      * @return boolean value to indicate validity
      * @see Texture#distancePoint2Quadrilater
      */
     private boolean textZoomChanged(int currentLevel) {
-        if (currentLevel > depthZ.length)
+        if (currentLevel > depthZ.length) {
             return false;
-        if (nMaximumLevel != -1 && currentLevel > nMaximumLevel)
+        }
+        if ((nMaximumLevel != -1) && (currentLevel > nMaximumLevel)) {
             return false;
+        }
         // System.out.println("text zoom changed");
         /**
          * Algorithm for setting the, hopefully, correct LOD(level of detail) for a texture.
@@ -1860,8 +1908,9 @@ public class Texture extends TextureParams {
             float depth;
             float centerX, centerY, centerZ;
             float[][][] grid_pointer = Globals.points;
-            if (bDynamicGrid)
+            if (bDynamicGrid) {
                 grid_pointer = parent.grid;
+            }
             /**
              * if the center is not on the static grid (h or w==1), or
              * it is a dynamic grid, that has no point for center on it,
@@ -1869,21 +1918,24 @@ public class Texture extends TextureParams {
              * points that limit the texture.
              */
             int desiredLevel = nInitialLevel;
-            if (JoglPanel.globals.globeRadius != -1 && JoglPanel.globals.mapAngle == 90) {
+            if ((JoglPanel.globals.globeRadius != -1) && (JoglPanel.globals.mapAngle == 90)) {
                 desiredLevel = JoglPanel.globals.globalSphereDesiredLevel;
             } else {
-                if (nHeight == 1 || nWidth == 1) {// compute the center of this node
+                if ((nHeight == 1) || (nWidth == 1)) {// compute the center of this node
                     // based on its dynamic grid position properties
                     centerX = (grid_pointer[0][nWorldY][nWorldX] + grid_pointer[0][nWorldY + nHeight][nWorldX]
-                            + grid_pointer[0][nWorldY][nWorldX + nWidth] + grid_pointer[0][nWorldY + nHeight][nWorldX + nWidth]) / 4f;
+                            + grid_pointer[0][nWorldY][nWorldX + nWidth] + grid_pointer[0][nWorldY + nHeight][nWorldX
+                            + nWidth]) / 4f;
                     centerY = (grid_pointer[1][nWorldY][nWorldX] + grid_pointer[1][nWorldY + nHeight][nWorldX]
-                            + grid_pointer[1][nWorldY][nWorldX + nWidth] + grid_pointer[1][nWorldY + nHeight][nWorldX + nWidth]) / 4f;
+                            + grid_pointer[1][nWorldY][nWorldX + nWidth] + grid_pointer[1][nWorldY + nHeight][nWorldX
+                            + nWidth]) / 4f;
                     centerZ = (grid_pointer[2][nWorldY][nWorldX] + grid_pointer[2][nWorldY + nHeight][nWorldX]
-                            + grid_pointer[2][nWorldY][nWorldX + nWidth] + grid_pointer[2][nWorldY + nHeight][nWorldX + nWidth]) / 4f;
+                            + grid_pointer[2][nWorldY][nWorldX + nWidth] + grid_pointer[2][nWorldY + nHeight][nWorldX
+                            + nWidth]) / 4f;
                 } else {
-                    centerX = Globals.points[0][nWorldY + nHeight / 2][nWorldX + nWidth / 2];
-                    centerY = Globals.points[1][nWorldY + nHeight / 2][nWorldX + nWidth / 2];
-                    centerZ = Globals.points[2][nWorldY + nHeight / 2][nWorldX + nWidth / 2];
+                    centerX = Globals.points[0][nWorldY + (nHeight / 2)][nWorldX + (nWidth / 2)];
+                    centerY = Globals.points[1][nWorldY + (nHeight / 2)][nWorldX + (nWidth / 2)];
+                    centerZ = Globals.points[2][nWorldY + (nHeight / 2)][nWorldX + (nWidth / 2)];
                 }
                 ;
                 VectorO Vp = new VectorO(centerX, centerY, centerZ);
@@ -1895,11 +1947,13 @@ public class Texture extends TextureParams {
                 ;
 
                 // 3. compare currentLevel with desiredLevel
-                for (int i = nInitialLevel/* 0 */; i < depthZ.length; i++)
-                    if (depth > depthZ[i])
+                for (int i = nInitialLevel/* 0 */; i < depthZ.length; i++) {
+                    if (depth > depthZ[i]) {
                         break;
-                    else
+                    } else {
                         desiredLevel = i + 1;
+                    }
+                }
             }
             ;
             // 4. LODc > LODd
@@ -1910,33 +1964,36 @@ public class Texture extends TextureParams {
                 bNoChildLeft = textDeleteChildren();
                 // set for unload this texture if is SET and is not ALWAYS
                 // and set this node for deletion in parent
-                if (checkStatus(S_SET))
-                    if (checkStatus(S_ALWAYS))
+                if (checkStatus(S_SET)) {
+                    if (checkStatus(S_ALWAYS)) {
                         return true;
-                    else {
+                    } else {
                         // set current texture for unload and revert to parent texture
                         // texturesToUnSet.offer( Integer.valueOf(texture_id));
                         textureDataSpace.cacheTexture(new JoGLCachedTexture(resultID, texture_id));
                         resetStatus();
                         textSetParentTexture();
                     }
-                if (bNoChildLeft)
+                }
+                if (bNoChildLeft) {
                     return false;
+                }
             } else if (currentLevel < desiredLevel) {
                 boolean bShouldLoad = true;
                 // 5. LODc < LODd
                 // if still allowed to load new textures:
                 // if not without child textures, or not at maximum level
                 // System.out.println("texture "+resultID+" at max level? "+checkStatus(S_MAX_LEVEL));
-                if (!checkStatus(S_MAX_LEVEL) && (Texture.nMaximumLevel == -1 || currentLevel < Texture.nMaximumLevel)) {// not
-                                                                                                                         // max
-                                                                                                                         // level
+                if (!checkStatus(S_MAX_LEVEL)
+                        && ((Texture.nMaximumLevel == -1) || (currentLevel < Texture.nMaximumLevel))) {// not
+                    // max
+                    // level
                     // 5.1 create/set children
                     // compute the slice path
                     float stepTX, stepTY;
                     int nx/* = texturesX[currentLevel+1] */;
                     int ny/* = texturesY[currentLevel+1] */;
-                    if (currentLevel + 1 == 0) {
+                    if ((currentLevel + 1) == 0) {
                         nx = texturesX0;
                         ny = texturesY0;
                     } else {
@@ -1948,7 +2005,7 @@ public class Texture extends TextureParams {
                     boolean bDynamicChildren = false;
                     // test to see if children will be created based on the static grid for this node, or the parent
                     // has to create a dynamic grid for them
-                    if ((nWidth == 1 || nHeight == 1) || bDynamicGrid) {
+                    if (((nWidth == 1) || (nHeight == 1)) || bDynamicGrid) {
                         bDynamicChildren = true;
                         // the conditions to create a dynamic grid are:
                         // there are no points left to divide the static grid on x or on y, or
@@ -1987,25 +2044,22 @@ public class Texture extends TextureParams {
                         startX = nWorldX;
                         startY = nWorldY;
                     }
-                    if (children == null)
+                    if (children == null) {
                         children = new Texture[nx * ny];
+                    }
                     int k;
-                    for (int y = 0; y < ny; y++)
+                    for (int y = 0; y < ny; y++) {
                         for (int x = 0; x < nx; x++) {
-                            k = y * nx + x;
-                            if (textVisible(startX + stepX * x, startY + stepY * y, stepX, stepY, bDynamicChildren, this, null)) {
+                            k = (y * nx) + x;
+                            if (textVisible(startX + (stepX * x), startY + (stepY * y), stepX, stepY, bDynamicChildren,
+                                    this, null)) {
                                 // System.out.println("child visible (x,y,width,height)=("+(nWorldX+stepX*x)+","+(nWorldY+stepY*y)+","+stepX+","+stepY+")");
                                 // 5.2 set base texture
                                 if (children[k] == null) {// if visible child is null, create it
                                     children[k] = new Texture(texture_id,// parent texture for the moment
-                                                              startX + stepX * x,
-                                                              startY + stepY * y,
-                                                              stepX,
-                                                              stepY,
-                                                              leftT + x * stepTX,
-                                                              topT - (y + 1) * stepTY,
-                                                              leftT + (x + 1) * stepTX,
-                                                              topT - y * stepTY);// set texture coordonates
+                                            startX + (stepX * x), startY + (stepY * y), stepX, stepY, leftT
+                                                    + (x * stepTX), topT - ((y + 1) * stepTY), leftT
+                                                    + ((x + 1) * stepTX), topT - (y * stepTY));// set texture coordonates
                                     children[k].setParent(this);
                                     children[k].setBDynamicGrid(bDynamicChildren);
                                 }
@@ -2017,8 +2071,9 @@ public class Texture extends TextureParams {
                                     children[k] = null;
                                 }
                                 // todo: check if this hypothesis is correct
-                                else
+                                else {
                                     bShouldLoad = true;// ? false;//5.4 if one child is valid, this should not load
+                                }
                             } else {
                                 // System.out.println("child not visible (x,y,width,height)=("+(nWorldX+stepX*x)+","+(nWorldY+stepY*y)+","+stepX+","+stepY+")");
                                 // 5.1 delete the rest
@@ -2028,10 +2083,11 @@ public class Texture extends TextureParams {
                                     // set for unload this texture if is its texture and is not set as ALWAYS
                                     if (children[k].checkStatus(S_SET) && !children[k].checkStatus(S_ALWAYS)) {
                                         // texturesToUnSet.offer( Integer.valueOf(children[k].texture_id));
-                                        textureDataSpace.cacheTexture(new JoGLCachedTexture(children[k].resultID, children[k].texture_id));
+                                        textureDataSpace.cacheTexture(new JoGLCachedTexture(children[k].resultID,
+                                                children[k].texture_id));
                                         children[k].resetStatus();// = S_NONE;
                                         children[k].textSetParentTexture();// although there is no need for this line,
-                                                                           // as the node is deleted anyway
+                                        // as the node is deleted anyway
                                     }
                                     ;
                                     if (bNoChildLeft && !children[k].checkStatus(S_ALWAYS)) {
@@ -2042,6 +2098,7 @@ public class Texture extends TextureParams {
                                 }
                             }// endif ( textVisible(nWorldX+stepX*x, nWorldY+stepY*y, stepX, stepY) )
                         }
+                    }
                     ;// endfor ( int x=0; x<nx; x++ )
                 }// endif ( !checkStatus(S_MAX_LEVEL) ) {
                  // 5.4 no valid child and hasn't been already set for loading
@@ -2090,15 +2147,18 @@ public class Texture extends TextureParams {
             boolean bNoChildLeft = textDeleteChildren();
             // set for unload this texture if is its texture and is not set as ALWAYS
             // and set this node for deletion in parent
-            if (checkStatus(S_SET))
-                if (checkStatus(S_ALWAYS))
+            if (checkStatus(S_SET)) {
+                if (checkStatus(S_ALWAYS)) {
                     return true;
+                }
+            }
             // texturesToUnSet.offer( Integer.valueOf(texture_id));
             textureDataSpace.cacheTexture(new JoGLCachedTexture(resultID, texture_id));
             resetStatus();// = S_NONE;
             textSetParentTexture();
-            if (bNoChildLeft)
+            if (bNoChildLeft) {
                 return false;
+            }
         }
         return true;
     }
@@ -2121,30 +2181,37 @@ public class Texture extends TextureParams {
      * the parent can unload its<br>
      * sets a texture to parent texture if all possible children have their own
      * texture
-     * 
+     *
      * @param gl
      */
     private void textUnsetParentTexture(GL gl) {
         // if there is no parent, no unset neccessary
-        if (parent == null)
+        if (parent == null) {
             return;// keep the texture if last texture...
-        if (texture_id == 0) // no texture, so nothing to be done
+        }
+        if (texture_id == 0) {
             return;// somehow similar to first conditions as both apply to root texture
+        }
         // if this texture is set forever, no unset to do for this or parents
-        if (checkStatus(S_ALWAYS))
+        if (checkStatus(S_ALWAYS)) {
             return;
+        }
         // if this texture is using it's parent texture, then has nothing to be
         // unset, and the parent cannot unload it's texture
-        if (!checkStatus(S_SET))/* texture_id!=parent.texture_id && texture_id>0 */
+        if (!checkStatus(S_SET)) {
             return;
+        }
         // if no children, no need to unset, to lose its texture
-        if (children == null || children.length == 0)
+        if ((children == null) || (children.length == 0)) {
             return;
+        }
         // check to see if all children are set
         // if one is not set then nothing to do for this texture
-        for (int i = 0; i < children.length; i++)
-            if (children[i] == null || !children[i].checkStatus(S_SET)/* children[i].texture_id==texture_id */)
+        for (int i = 0; i < children.length; i++) {
+            if ((children[i] == null) || !children[i].checkStatus(S_SET)/* children[i].texture_id==texture_id */) {
                 return;
+            }
+        }
         // unload texture from memory, because ABSOLUTELY no one else is using IT!
         if (gl.glIsTexture(texture_id)) {
             // int[] textures = {texture_id};
@@ -2163,20 +2230,20 @@ public class Texture extends TextureParams {
          */
         texture_id = parent.texture_id;
         if (!isBDynamicGrid()) {
-            leftT = parent.leftT + (nWorldX - parent.nWorldX) * (parent.rightT - parent.leftT) / parent.nWidth;
-            rightT = leftT + nWidth * (parent.rightT - parent.leftT) / parent.nWidth;
-            topT = parent.topT - (nWorldY - parent.nWorldY) * (parent.topT - parent.bottomT) / parent.nHeight;
-            bottomT = topT - nHeight * (parent.topT - parent.bottomT) / parent.nHeight;
+            leftT = parent.leftT + (((nWorldX - parent.nWorldX) * (parent.rightT - parent.leftT)) / parent.nWidth);
+            rightT = leftT + ((nWidth * (parent.rightT - parent.leftT)) / parent.nWidth);
+            topT = parent.topT - (((nWorldY - parent.nWorldY) * (parent.topT - parent.bottomT)) / parent.nHeight);
+            bottomT = topT - ((nHeight * (parent.topT - parent.bottomT)) / parent.nHeight);
         } else {
             int nx;
             int ny;
             // deduce nx and ny = the number of points for x and y so called axis
             nx = parent.grid[0][0].length - 1;
             ny = parent.grid[0].length - 1;
-            leftT = parent.leftT + (float) nWorldX * (parent.rightT - parent.leftT) / (float) nx;
-            rightT = leftT + (parent.rightT - parent.leftT) / (float) nx;
-            topT = parent.topT - nWorldY * (parent.topT - parent.bottomT) / (float) ny;
-            bottomT = topT - (parent.topT - parent.bottomT) / (float) ny;
+            leftT = parent.leftT + ((nWorldX * (parent.rightT - parent.leftT)) / nx);
+            rightT = leftT + ((parent.rightT - parent.leftT) / nx);
+            topT = parent.topT - ((nWorldY * (parent.topT - parent.bottomT)) / ny);
+            bottomT = topT - ((parent.topT - parent.bottomT) / ny);
 
         }
         // logger.log( Level.FINEST, "unsetTexture -> New texture id from parent: "+texture_id);
@@ -2189,8 +2256,9 @@ public class Texture extends TextureParams {
             // ret[1] += "_"+(nWorldY+1)+"."+(nWorldX+1);
             // ret[0] += pathSeparator+"map"+(currentLevel+1)+ret[1];
             // new
-            if (ret.length() > 0)
+            if (ret.length() > 0) {
                 ret.append(pathSeparator);
+            }
             ret.append((nWorldY + 1) + "." + (nWorldX + 1));
             return ret;
         }
@@ -2200,7 +2268,7 @@ public class Texture extends TextureParams {
     /**
      * another unset method that tranverses the tree from root to leaves
      * and unloads textures that are not visible or not on the correct depth
-     * 
+     *
      * @param gl
      */
     /*
@@ -2251,7 +2319,7 @@ public class Texture extends TextureParams {
      */
     /**
      * direct unset of loaded texture, without any aditional visibility checking
-     * 
+     *
      * @param gl
      */
     /*
@@ -2294,7 +2362,7 @@ public class Texture extends TextureParams {
      * loaded and set, return name of this texture.<br>
      * After a texture name is returned, the file name is stripped from path and
      * returned.
-     * 
+     *
      * @param LONG
      *            longitude of mouse point
      * @param LAT
@@ -2303,14 +2371,15 @@ public class Texture extends TextureParams {
      */
     public static String findAtCoords(float LONG, float LAT) {
         float x, y;
-        x = LONG * Globals.MAP_WIDTH / 360f;
-        y = LAT * Globals.MAP_HEIGHT / 180f;
+        x = (LONG * Globals.MAP_WIDTH) / 360f;
+        y = (LAT * Globals.MAP_HEIGHT) / 180f;
         String path = null;// = JoglPanel.globals.root.textFindUnderCursor( 0, x, y);
-        for (int i = 0; i < JoglPanel.globals.root.children.length; i++) {
-            path = JoglPanel.globals.root.children[i].textFindUnderCursor(0, x, y);
+        for (Texture element : JoglPanel.globals.root.children) {
+            path = element.textFindUnderCursor(0, x, y);
             // if valid children, return it
-            if (path != null)
+            if (path != null) {
                 break;
+            }
         }
         // if ( path!=null ) {
         // int nFileStart = path.lastIndexOf('/');
@@ -2329,7 +2398,7 @@ public class Texture extends TextureParams {
      * contains the point, and, if so, return the value return by the child.<br>
      * If no valid child contains this point, then, if this has it's own texture,
      * loaded and set, return name of this texture.
-     * 
+     *
      * @param level
      *            level for texture
      * @param x
@@ -2360,21 +2429,24 @@ public class Texture extends TextureParams {
         float[] values = findDinamicPosition();
         // w = values[1];
         // h = values[3];
-        worldX = values[0] - Globals.MAP_WIDTH / 2f;
-        worldY = -values[2] + Globals.MAP_HEIGHT / 2f;
+        worldX = values[0] - (Globals.MAP_WIDTH / 2f);
+        worldY = -values[2] + (Globals.MAP_HEIGHT / 2f);
         // System.out.println("texture at (x,y)=("+worldX+","+worldY+") and (w,h)=("+w+","+h+")");
-        if (worldX <= x && worldX + w >= x && worldY >= y && worldY - h <= y) {// cursor in this texture
+        if ((worldX <= x) && ((worldX + w) >= x) && (worldY >= y) && ((worldY - h) <= y)) {// cursor in this texture
             // check its children if any
-            if (children != null)
-                for (int i = 0; i < children.length; i++) {
-                    if (children[i] != null)
-                        ret = children[i].textFindUnderCursor(level + 1, x, y);
+            if (children != null) {
+                for (Texture element : children) {
+                    if (element != null) {
+                        ret = element.textFindUnderCursor(level + 1, x, y);
+                    }
                     // if valid children, return it
-                    if (ret != null)
+                    if (ret != null) {
                         break;
+                    }
                 }
+            }
             // if no valid child texture, check to see if this texture is valid
-            if (ret == null && checkStatus(S_SET)) {
+            if ((ret == null) && checkStatus(S_SET)) {
                 ret = textCreatePathDyn(level).toString();
                 // and if so, return this one
             }
@@ -2418,7 +2490,7 @@ public class Texture extends TextureParams {
      * starting resolution. Also, in the same operation, atomically, it updates
      * the initial level to be considered for the new resolution.<br>
      * <b>Old texture tree must be dealocated from open gl!!!!</b>
-     * 
+     *
      * @param new_root
      *            new root texture to replace JoglPanel.globals.root
      * @param new_level
@@ -2441,8 +2513,9 @@ public class Texture extends TextureParams {
         // delete all gl textures from old root texture
         // take out the ALWAYS flag so that the child textures can be deleted
         if (old_root != null) {
-            for (int i = 0; i < old_root.children.length; i++)
-                old_root.children[i].clearStatus(S_ALWAYS);
+            for (Texture element : old_root.children) {
+                element.clearStatus(S_ALWAYS);
+            }
             // the root has no texture to be deleted.
             old_root.textDeleteChildren();
         }
@@ -2455,10 +2528,11 @@ public class Texture extends TextureParams {
     private void textCheckVisible() {
         bCheckVisibility = true;
         if (children != null) {// has children
-            for (int i = 0; i < children.length; i++)
-                if (children[i] != null) {
-                    children[i].textCheckVisible();
+            for (Texture element : children) {
+                if (element != null) {
+                    element.textCheckVisible();
                 }
+            }
         }
     }
 
@@ -2473,26 +2547,29 @@ public class Texture extends TextureParams {
     /**
      * goes into old texture to level of new texture<br>
      * creates a new reference to old one for each texture.
-     * 
+     *
      * @param new_root
      * @param new_level
      */
     public static int loadRestOfTextures(ChangeRootTexture crtMonitor, Texture new_root, int new_level) {
         Texture old_root = JoglPanel.globals.root;
         int old_level = Texture.nInitialLevel;
-        if (old_level > new_level)
+        if (old_level > new_level) {
             return 0; // nothing to be done
-        if (old_level < new_level)
+        }
+        if (old_level < new_level) {
             return 0; // a job too complex for me
+        }
         // TODO: load rest of textures for different initial levels
         int nRestTextToLoad = 0;
         try {
             // both new and old textures have the base textures
             // so their children should be synchronized
             // System.out.println("load other textures");
-            for (int i = 0; i < old_root.children.length; i++)
+            for (int i = 0; i < old_root.children.length; i++) {
                 // should be the same as with new_root
                 nRestTextToLoad += new_root.children[i].textSync(crtMonitor, old_root.children[i], new_level + 1);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -2506,7 +2583,7 @@ public class Texture extends TextureParams {
     /**
      * syncronizes this texture, new texture, with the old one<br>
      * That means, make the same children available and with the same kind of textures
-     * 
+     *
      * @param oldT
      */
     private int textSync(ChangeRootTexture crtMonitor, Texture oldT, int current_level) {
@@ -2517,9 +2594,10 @@ public class Texture extends TextureParams {
             if (oldT.children != null) {
                 children = new Texture[oldT.children.length];
                 float[][][] grid_pointer = Globals.points;
-                if (bDynamicGrid)
+                if (bDynamicGrid) {
                     grid_pointer = parent.grid;
-                if ((nWidth == 1 || nHeight == 1) || bDynamicGrid) {
+                }
+                if (((nWidth == 1) || (nHeight == 1)) || bDynamicGrid) {
                     bDynamicChildren = true;
                     // the conditions to create a dynamic grid are:
                     // there are no points left to divide the static grid on x or on y, or
@@ -2549,15 +2627,12 @@ public class Texture extends TextureParams {
                         initDynamicGrid(grid);
                     }
                 }
-                for (int i = 0; i < oldT.children.length; i++)
+                for (int i = 0; i < oldT.children.length; i++) {
                     if (oldT.children[i] != null) {
                         child = new Texture(0,
-                        // set world position and texture id for each children
-                                            oldT.children[i].nWorldX,
-                                            oldT.children[i].nWorldY,
-                                            oldT.children[i].nWidth,
-                                            oldT.children[i].nHeight,
-                                            S_NONE);
+                                // set world position and texture id for each children
+                                oldT.children[i].nWorldX, oldT.children[i].nWorldY, oldT.children[i].nWidth,
+                                oldT.children[i].nHeight, S_NONE);
                         children[i] = child;
                         child.setParent(this);
                         child.setStatus(S_SHOULD_LOAD);
@@ -2582,6 +2657,7 @@ public class Texture extends TextureParams {
                         nTextToLoad += child.textSync(crtMonitor, oldT.children[i], current_level + 1);
                         // add all child textures set for loading
                     }
+                }
             }
         } catch (Exception ex) {
             // old texture could have become unavailable

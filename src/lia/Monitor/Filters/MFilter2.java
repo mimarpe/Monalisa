@@ -1,5 +1,5 @@
 /*
- * $Id: MFilter2.java 7062 2011-02-25 09:41:43Z ramiro $
+ * $Id: MFilter2.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.Filters;
 
@@ -23,39 +23,42 @@ import lia.util.ntp.NTPDate;
  */
 public class MFilter2 extends GenericMLFilter {
 
-    /** Logger name */
-    private static final transient String COMPONENT = "lia.Monitor.Filters.MFilter2";
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -1768041657354379587L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(MFilter2.class.getName());
 
     public static final String Name = "MFilter2";
     public static long MF2_SLEEP_TIME;
-    
+
     //consider a param no longer aveilable after PARAM_EXPIRE time
     private static long PARAM_EXPIRE;
 
-    String[][] interest = { { "PN", "Load5", "Load1", "Load", "CPU_usr", "CPU_sys", "CPU_nice", "TotalIO_Rate_IN", "TotalIO_Rate_OUT", "FreeDsk", "UsedDsk", "NoCPUs", "MEM_free", "MEM_total", "MEM_shared",
-            "MEM_cached", "MEM_buffers"}
-    };
-    
+    String[][] interest = { { "PN", "Load5", "Load1", "Load", "CPU_usr", "CPU_sys", "CPU_nice", "TotalIO_Rate_IN",
+            "TotalIO_Rate_OUT", "FreeDsk", "UsedDsk", "NoCPUs", "MEM_free", "MEM_total", "MEM_shared", "MEM_cached",
+            "MEM_buffers" } };
+
     static {
         MF2_SLEEP_TIME = 20 * 1000;
         try {
-            MF2_SLEEP_TIME = Long.valueOf(AppConfig.getProperty("lia.Monitor.Filters.MFilter2.SLEEP_TIME", "20000").trim()).longValue();
-        }catch(Throwable t1){
+            MF2_SLEEP_TIME = Long.valueOf(
+                    AppConfig.getProperty("lia.Monitor.Filters.MFilter2.SLEEP_TIME", "20000").trim()).longValue();
+        } catch (Throwable t1) {
             MF2_SLEEP_TIME = 20 * 1000;
         }
-        
+
         PARAM_EXPIRE = 600000;
-        
+
         try {
-            PARAM_EXPIRE = Long.valueOf(AppConfig.getProperty("lia.Monitor.Filters.PARAM_EXPIRE", "600")).longValue() * 1000;    
-        }catch(Throwable t){
+            PARAM_EXPIRE = Long.valueOf(AppConfig.getProperty("lia.Monitor.Filters.PARAM_EXPIRE", "600")).longValue() * 1000;
+        } catch (Throwable t) {
             PARAM_EXPIRE = 600000;
         }
     }
-    
+
     Vector old_ans;
 
     int tot;
@@ -90,6 +93,7 @@ public class MFilter2 extends GenericMLFilter {
         clust_ref = new Hashtable();
     }
 
+    @Override
     public String getName() {
         return Name;
     }
@@ -102,26 +106,27 @@ public class MFilter2 extends GenericMLFilter {
                 for (Enumeration e1 = hparam.keys(); e1.hasMoreElements();) {
                     String para = (String) e1.nextElement();
                     Hashtable hnodes = (Hashtable) hparam.get(para);
-                    if (hnodes != null && hnodes.size() > 0) {
+                    if ((hnodes != null) && (hnodes.size() > 0)) {
                         for (Enumeration e2 = hnodes.keys(); e2.hasMoreElements();) {
                             Object key = e2.nextElement();
                             long endLease = ((ExpireResult) hnodes.get(key)).endLease;
                             if (endLease < NTPDate.currentTimeMillis()) {
                                 if (logger.isLoggable(Level.FINEST)) {
-                                    logger.log(Level.FINEST, " Removing node [ " + key + " ] for [ " + clus + ", " + para + " ] ");
+                                    logger.log(Level.FINEST, " Removing node [ " + key + " ] for [ " + clus + ", "
+                                            + para + " ] ");
                                 }
                                 hnodes.remove(key);
                             }
                         }
                     }
-                    if (hnodes != null && hnodes.size() == 0) {
+                    if ((hnodes != null) && (hnodes.size() == 0)) {
                         if (logger.isLoggable(Level.FINEST)) {
                             logger.log(Level.FINEST, " Removing param [ " + para + " ] for all nodes! ");
                         }
                         hparam.remove(para);
                     }
                 }
-                if (hparam != null && hparam.size() == 0) {
+                if ((hparam != null) && (hparam.size() == 0)) {
                     if (logger.isLoggable(Level.FINEST)) {
                         logger.log(Level.FINEST, " Removing cluster [ " + clus + " ] for all params! ");
                     }
@@ -132,7 +137,9 @@ public class MFilter2 extends GenericMLFilter {
     }
 
     void updateResults() {
-        if (buff.size() == 0) return;
+        if (buff.size() == 0) {
+            return;
+        }
         synchronized (buff) {
             buff1.clear();
             buff1.addAll(buff);
@@ -147,46 +154,51 @@ public class MFilter2 extends GenericMLFilter {
     }
 
     void update(Result r) {
-    	if ( r == null || r.param_name == null 
-                || r.param_name.length == 0
-                || r.param == null
-                || r.param.length == 0
-                || r.param.length != r.param_name.length
-           ) {
-    		return;
+        if ((r == null) || (r.param_name == null) || (r.param_name.length == 0) || (r.param == null)
+                || (r.param.length == 0) || (r.param.length != r.param_name.length)) {
+            return;
         }
-    	
-    	/* maybe we should make a copy of r here, before modifying it */
-    	
-    	/* if the result comes fromm the PN_Condor or PN_PBS modules, send
-    	 * Load1 as Load5 because Load5 is not available
-    	 */
-    	if (r.ClusterName.indexOf("PN_Condor") != -1 || 
-    			r.ClusterName.indexOf("PN_PBS") != -1 ||
-    			r.ClusterName.indexOf("PN_LSF") != -1
-    	) {
-    		int idx = r.getIndex("Load1");
-    		if (idx >= 0)
-    			r.addSet("Load5", r.param[idx]);
-    	}
-    	
-    	/* add the "Load" parameter (which is either Load1 or Load5) */
-    	int idx = r.getIndex("Load5");
-		if (idx >= 0)
-			r.addSet("Load", r.param[idx]);
-		
-        for (int k = 0; k < interest.length; k++) {
-            if (r.ClusterName.indexOf(interest[k][0]) != -1) {
+
+        /* maybe we should make a copy of r here, before modifying it */
+
+        /* if the result comes fromm the PN_Condor or PN_PBS modules, send
+         * Load1 as Load5 because Load5 is not available
+         */
+        if ((r.ClusterName.indexOf("PN_Condor") != -1) || (r.ClusterName.indexOf("PN_PBS") != -1)
+                || (r.ClusterName.indexOf("PN_LSF") != -1)) {
+            int idx = r.getIndex("Load1");
+            if (idx >= 0) {
+                r.addSet("Load5", r.param[idx]);
+            }
+        }
+
+        /* add the "Load" parameter (which is either Load1 or Load5) */
+        int idx = r.getIndex("Load5");
+        if (idx >= 0) {
+            r.addSet("Load", r.param[idx]);
+        }
+
+        for (String[] element : interest) {
+            if (r.ClusterName.indexOf(element[0]) != -1) {
                 if (!hs.containsKey(r.ClusterName)) {
                     hs.put(r.ClusterName, new Hashtable());
-                    clust_ref.put(r.ClusterName, farm.getCluster(r.ClusterName));
+
+                    MCluster cluster = farm.getCluster(r.ClusterName);
+
+                    if (cluster == null) {
+                        cluster = new MCluster(r.ClusterName, farm);
+                        farm.addClusterIfAbsent(cluster);
+                    }
+
+                    clust_ref.put(r.ClusterName, cluster);
                 }
+
                 Hashtable parameters = (Hashtable) hs.get(r.ClusterName);
 
-                for (int l = 0;  l < r.param_name.length; l++) {
-                    for (int kk = 1; kk < interest[k].length; kk++) {
-                        String para = interest[k][kk];
-                        if (para.equals(r.param_name[l])) {
+                for (String element2 : r.param_name) {
+                    for (int kk = 1; kk < element.length; kk++) {
+                        String para = element[kk];
+                        if (para.equals(element2)) {
                             if (!parameters.containsKey(para)) {
                                 parameters.put(para, new Hashtable());
                             }
@@ -199,7 +211,8 @@ public class MFilter2 extends GenericMLFilter {
         }
 
     }
-    
+
+    @Override
     public Object expressResults() {
         updateResults();
 
@@ -225,44 +238,49 @@ public class MFilter2 extends GenericMLFilter {
             String clus = (String) e.nextElement();
             int NoOfNodes = ((MCluster) clust_ref.get(clus)).getNodes().size();
             Hashtable hparam = (Hashtable) hs.get(clus);
-            if (hparam != null && hparam.size() > 0) {
-            	/*
-            	if (hparam.containsKey("Load5"))
-            		logger.info("### Have load5! " + clus);
-            	if (hparam.containsKey("Load1"))
-            		logger.info("### Have load1!" + clus);
-            		*/
+            if ((hparam != null) && (hparam.size() > 0)) {
+                /*
+                if (hparam.containsKey("Load5"))
+                	logger.info("### Have load5! " + clus);
+                if (hparam.containsKey("Load1"))
+                	logger.info("### Have load1!" + clus);
+                	*/
                 for (Enumeration e1 = hparam.keys(); e1.hasMoreElements();) {
 
                     String para = (String) e1.nextElement();
 
-                    if (para != null && para.indexOf("MEM_free") != -1) {
+                    if ((para != null) && (para.indexOf("MEM_free") != -1)) {
                         if (hparam.containsKey("MEM_total")) {
                             Hashtable hn_free = (Hashtable) hparam.get("MEM_free");
                             Hashtable hn_total = (Hashtable) hparam.get("MEM_total");
 
-                            if (hn_free == null || hn_total == null || hn_free.size() == 0 || hn_total.size() == 0) {
+                            if ((hn_free == null) || (hn_total == null) || (hn_free.size() == 0)
+                                    || (hn_total.size() == 0)) {
                                 continue;
                             }
 
                             Vector memr = new Vector();
                             for (Enumeration ef = hn_free.keys(); ef.hasMoreElements();) {
                                 String nname = (String) ef.nextElement();
-                                if ( nname != null ){
+                                if (nname != null) {
                                     ExpireResult er = (ExpireResult) hn_free.get(nname);
                                     Result rmf = null;
                                     Result rmt = null;
-                                    if ( er != null ) {
+                                    if (er != null) {
                                         rmf = er.r;
                                     }
                                     er = ((ExpireResult) hn_total.get(nname));
-                                    if ( er != null ) {
+                                    if (er != null) {
                                         rmt = er.r;
                                     }
-                                    if (rmf == null || rmt == null) continue;
+                                    if ((rmf == null) || (rmt == null)) {
+                                        continue;
+                                    }
                                     int idx_f = rmf.getIndex("MEM_free");
                                     int idx_t = rmf.getIndex("MEM_total");
-                                    if (idx_f == -1 || idx_t == -1) continue;
+                                    if ((idx_f == -1) || (idx_t == -1)) {
+                                        continue;
+                                    }
                                     double mf = rmf.param[idx_f];
                                     double mt = rmf.param[idx_t];
                                     if (logger.isLoggable(Level.FINEST)) {
@@ -291,7 +309,7 @@ public class MFilter2 extends GenericMLFilter {
 
                     Hashtable hnodes = (Hashtable) hparam.get(para);
 
-                    if (hnodes != null && hnodes.size() > 0) {
+                    if ((hnodes != null) && (hnodes.size() > 0)) {
                         xr.Nodes = hnodes.size();
 
                         if (values.length < hnodes.size()) {
@@ -302,10 +320,10 @@ public class MFilter2 extends GenericMLFilter {
                         for (Enumeration e2 = hnodes.elements(); e2.hasMoreElements();) {
                             ExpireResult er = ((ExpireResult) e2.nextElement());
                             Result rr = null;
-                            if ( er != null ) {
+                            if (er != null) {
                                 rr = er.r;
                             }
-                            if ( rr != null ) {
+                            if (rr != null) {
                                 int indx = rr.getIndex(para);
                                 values[ynd++] = rr.param[indx];
                             }
@@ -346,12 +364,12 @@ public class MFilter2 extends GenericMLFilter {
             max = Math.max(max, val);
         }
 
-        xr.mean = sum / (double) ynd;
+        xr.mean = sum / ynd;
         xr.sum = sum;
         xr.max = max;
         xr.min = min;
 
-        double pas = (max - min) / (double) nbin;
+        double pas = (max - min) / nbin;
         if (para.indexOf("Load") != -1) {
             nbin = 5;
             pas = 0.25;
@@ -381,6 +399,7 @@ public class MFilter2 extends GenericMLFilter {
     /** (non-Javadoc)
      * @see lia.Monitor.Filters.GenericMLFilter#getSleepTime()
      */
+    @Override
     public long getSleepTime() {
         return MF2_SLEEP_TIME;
     }
@@ -388,6 +407,7 @@ public class MFilter2 extends GenericMLFilter {
     /**
      * @see lia.Monitor.Filters.GenericMLFilter#getFilterPred()
      */
+    @Override
     public monPredicate[] getFilterPred() {
         return null;
     }
@@ -395,9 +415,10 @@ public class MFilter2 extends GenericMLFilter {
     /**
      * @see lia.Monitor.Filters.GenericMLFilter#notifyResult(java.lang.Object)
      */
+    @Override
     public void notifyResult(Object o) {
-        if (o != null && o instanceof Result) {
-            buff.add(o);   
+        if ((o != null) && (o instanceof Result)) {
+            buff.add(o);
         }
     }
 

@@ -66,9 +66,10 @@ import lia.util.threads.MonALISAExecutors;
 public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceiver, DropEvent {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(Cache.class.getName());
+    private static final Logger logger = Logger.getLogger(Cache.class.getName());
 
-    private static final boolean SHOULD_STORE_CONF = AppConfig.getb("lia.Monitor.Store.TransparentStoreFast.SHOULD_STORE_CONF", false);
+    private static final boolean SHOULD_STORE_CONF = AppConfig.getb(
+            "lia.Monitor.Store.TransparentStoreFast.SHOULD_STORE_CONF", false);
 
     transient volatile AgentsEngine agentsEngine;
 
@@ -100,7 +101,7 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
 
     private static MFarm farm;
 
-    private FarmMonitor main;
+    private final FarmMonitor main;
 
     private static TransparentStoreInt store;
 
@@ -113,7 +114,7 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
     private static final AtomicLong defaultAnnounceUpdate = new AtomicLong(2 * 60 * 1000);
 
     // used to count total number of collected values ( params in Result )
-    private AtomicLong collectedValues = new AtomicLong(0);
+    private final AtomicLong collectedValues = new AtomicLong(0);
 
     private static Cache _thisInstance;
 
@@ -197,7 +198,8 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         store();
                     }
 
-                    if (SHOULD_STORE_CONF && newConf.get() && lastConfWrite + 10 * 60 * 1000 < System.currentTimeMillis()) {
+                    if (SHOULD_STORE_CONF && newConf.get()
+                            && ((lastConfWrite + (10 * 60 * 1000)) < System.currentTimeMillis())) {
                         if (store != null) {
 
                             if (logger.isLoggable(Level.FINER)) {
@@ -210,10 +212,12 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         }
                     }
                 } catch (InterruptedException ie) {
-                    logger.log(Level.WARNING, " [ Cache ] [ HANDLED ] StoreFlusher got InterruptedException in main loop", ie);
+                    logger.log(Level.WARNING,
+                            " [ Cache ] [ HANDLED ] StoreFlusher got InterruptedException in main loop", ie);
                     Thread.interrupted();
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ Cache ] [ HANDLED ] StoreFlusher got general exception in main loop", t);
+                    logger.log(Level.WARNING, " [ Cache ] [ HANDLED ] StoreFlusher got general exception in main loop",
+                            t);
                 }
             }
         }
@@ -230,7 +234,8 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                 final long currentModCount = farm.modCount();
 
                 if (logger.isLoggable(Level.FINE)) {
-                    logger.log(Level.FINE, "[ ConfCheckerTask ] lastModCount = " + lastModCount + " farm.modCount() = " + currentModCount);
+                    logger.log(Level.FINE, "[ ConfCheckerTask ] lastModCount = " + lastModCount + " farm.modCount() = "
+                            + currentModCount);
                 }
 
                 if (currentModCount != lastModCount) {
@@ -244,10 +249,14 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                 ScheduledFuture<?> sf = null;
                 while (sf == null) {
                     try {
-                        sf = MonALISAExecutors.getMLHelperExecutor().schedule(this, defaultAnnounceUpdate.get() + Math.round(Math.random() * 100), TimeUnit.MILLISECONDS);
+                        sf = MonALISAExecutors.getMLHelperExecutor().schedule(this,
+                                defaultAnnounceUpdate.get() + Math.round(Math.random() * 100), TimeUnit.MILLISECONDS);
                     } catch (Throwable t) {
                         sf = null;
-                        logger.log(Level.WARNING, " [ ConfCheckerTask ] Unable to schedule for the moment ... Retry in a few millis. Cause:", t);
+                        logger.log(
+                                Level.WARNING,
+                                " [ ConfCheckerTask ] Unable to schedule for the moment ... Retry in a few millis. Cause:",
+                                t);
                     }
 
                     if (sf != null) {
@@ -285,8 +294,9 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                     final String fkey = entry.getKey();
                     final MonitorFilter fa = entry.getValue();
 
-                    if (!fa.isAlive())
+                    if (!fa.isAlive()) {
                         stopFilter(fkey, fa);
+                    }
                 }
 
                 if (logger.isLoggable(Level.FINE)) {
@@ -340,14 +350,16 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
             shouldCreateStore = AppConfig.getb("lia.Monitor.CreatePersistentStore", true);
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, "[ DataCache ] [<init>] Exception parsing lia.Monitor.CreatePersistentStore. Cause: ", t);
+                logger.log(Level.FINE,
+                        "[ DataCache ] [<init>] Exception parsing lia.Monitor.CreatePersistentStore. Cause: ", t);
             }
             shouldCreateStore = true;
         }
 
         if (!shouldCreateStore) {
             store = null;
-            logger.log(Level.INFO, "\n\n[ DataCache ] [<init>] MonALISA will not use a PersistentStore ... no persistent history available!");
+            logger.log(Level.INFO,
+                    "\n\n[ DataCache ] [<init>] MonALISA will not use a PersistentStore ... no persistent history available!");
         } else {
             logger.log(Level.INFO, "[ Cache ] Trying to create store");
             store = TransparentStoreFactory.getStore();
@@ -362,10 +374,11 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
 
         try {
             String forceIP = AppConfig.getProperty("lia.Monitor.useIPaddress");
-            if (forceIP != null)
+            if (forceIP != null) {
                 myIPaddress = (InetAddress.getByName(forceIP)).getHostAddress();
-            else
+            } else {
                 myIPaddress = (InetAddress.getLocalHost()).getHostAddress();
+            }
 
             if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, "CACHE use IP: " + myIPaddress);
@@ -472,7 +485,7 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
         boolean initedAgentPlatform = false;
         for (;;) {
             try {
-                if (!initedAgentPlatform && pw.proxyConnectionsCount() != 0) {
+                if (!initedAgentPlatform && (pw.proxyConnectionsCount() != 0)) {
 
                     initedAgentPlatform = true;
 
@@ -487,20 +500,25 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                     // agentsEngine.addAgent (ta);
 
                     final boolean startMLCP = AppConfig.getb("lia.Monitor.DataCache.Cache.StartMLCopyAgent", false);
-                    final String mlCopyAgentGroup = AppConfig.getProperty("lia.Monitor.DataCache.Cache.MLCopyAgent_group", null);
-                    final String mlCopyAgentProtocolVersion = AppConfig.getProperty("lia.Monitor.DataCache.Cache.MLCopyAgent_ProtocolVersion", "v1");
+                    final String mlCopyAgentGroup = AppConfig.getProperty(
+                            "lia.Monitor.DataCache.Cache.MLCopyAgent_group", null);
+                    final String mlCopyAgentProtocolVersion = AppConfig.getProperty(
+                            "lia.Monitor.DataCache.Cache.MLCopyAgent_ProtocolVersion", "v1");
 
                     if (startMLCP) {
                         if (mlCopyAgentGroup == null) {
-                            logger.log(Level.WARNING, " Cannot start MLCopyAgent ... please specify a grup in ml.properties");
+                            logger.log(Level.WARNING,
+                                    " Cannot start MLCopyAgent ... please specify a grup in ml.properties");
                         } else {
-                            if (mlCopyAgentProtocolVersion != null && mlCopyAgentProtocolVersion.equals("v2")) {
-                                OpticalPathAgent_v2 mlca = new OpticalPathAgent_v2("OpticalPathAgent_v2", mlCopyAgentGroup + "_v2", RegFarmMonitor.getServiceItem().serviceID.toString());
+                            if ((mlCopyAgentProtocolVersion != null) && mlCopyAgentProtocolVersion.equals("v2")) {
+                                OpticalPathAgent_v2 mlca = new OpticalPathAgent_v2("OpticalPathAgent_v2",
+                                        mlCopyAgentGroup + "_v2", RegFarmMonitor.getServiceItem().serviceID.toString());
                                 agentsEngine.addAgent(mlca);
                                 mlca.initCache(this);
                                 this.addFilter(mlca);
                             } else {
-                                MLCopyAgent mlca = new MLCopyAgent("MLCopyAgent", mlCopyAgentGroup, RegFarmMonitor.getServiceItem().serviceID.toString());
+                                MLCopyAgent mlca = new MLCopyAgent("MLCopyAgent", mlCopyAgentGroup,
+                                        RegFarmMonitor.getServiceItem().serviceID.toString());
                                 agentsEngine.addAgent(mlca);
                                 mlca.initCache(this);
                                 this.addFilter(mlca);
@@ -510,9 +528,11 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                     } // if
 
                     // start the IDSAgent?
-                    final boolean startMLIDSAgent = AppConfig.getb("lia.Monitor.DataCache.Cache.StartMLIDSAgent", false);
+                    final boolean startMLIDSAgent = AppConfig
+                            .getb("lia.Monitor.DataCache.Cache.StartMLIDSAgent", false);
                     if (startMLIDSAgent) {
-                        IDSAgent mlids = new IDSAgent("MLIDSAgent", "MLIDSAgentGroup", RegFarmMonitor.getServiceItem().serviceID.toString());
+                        IDSAgent mlids = new IDSAgent("MLIDSAgent", "MLIDSAgentGroup",
+                                RegFarmMonitor.getServiceItem().serviceID.toString());
                         agentsEngine.addAgent(mlids);
                         mlids.initCache(this);
                         // add IDSFilter
@@ -520,9 +540,11 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         logger.log(Level.INFO, "MLIDSAgent started.");
                     }
 
-                    final boolean startMLAFOXAgent = AppConfig.getb("lia.Monitor.DataCache.Cache.StartMLAFOXAgent", false);
+                    final boolean startMLAFOXAgent = AppConfig.getb("lia.Monitor.DataCache.Cache.StartMLAFOXAgent",
+                            false);
                     if (startMLAFOXAgent) {
-                        AFOXAgent mlids = new AFOXAgent("AFOXAgent", "MLTopoAgentGroup", RegFarmMonitor.getServiceItem().serviceID.toString());
+                        AFOXAgent mlids = new AFOXAgent("AFOXAgent", "MLTopoAgentGroup",
+                                RegFarmMonitor.getServiceItem().serviceID.toString());
                         agentsEngine.addAgent(mlids);
                         mlids.initCache(this);
                         // add IDSFilter
@@ -530,9 +552,11 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         logger.log(Level.INFO, "MLTopoAgent started.");
                     }
 
-                    final boolean startMLComputerHostAgent = AppConfig.getb("lia.Monitor.DataCache.Cache.StartComputerHostAgent", false);
+                    final boolean startMLComputerHostAgent = AppConfig.getb(
+                            "lia.Monitor.DataCache.Cache.StartComputerHostAgent", false);
                     if (startMLComputerHostAgent) {
-                        ComputerHostAgent mlids = new ComputerHostAgent("ComputerHostAgent", "MLTopoAgentGroup", RegFarmMonitor.getServiceItem().serviceID.toString());
+                        ComputerHostAgent mlids = new ComputerHostAgent("ComputerHostAgent", "MLTopoAgentGroup",
+                                RegFarmMonitor.getServiceItem().serviceID.toString());
                         agentsEngine.addAgent(mlids);
                         mlids.initCache(this);
                         // add IDSFilter
@@ -540,9 +564,11 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         logger.log(Level.INFO, "ComputerHostAgent started.");
                     }
 
-                    final boolean startForce10Agent = AppConfig.getb("lia.Monitor.DataCache.Cache.StartForce10Agent", false);
+                    final boolean startForce10Agent = AppConfig.getb("lia.Monitor.DataCache.Cache.StartForce10Agent",
+                            false);
                     if (startForce10Agent) {
-                        Force10Agent mlids = new Force10Agent("Force10Agent", "MLTopoAgentGroup", RegFarmMonitor.getServiceItem().serviceID.toString());
+                        Force10Agent mlids = new Force10Agent("Force10Agent", "MLTopoAgentGroup",
+                                RegFarmMonitor.getServiceItem().serviceID.toString());
                         agentsEngine.addAgent(mlids);
                         mlids.initCache(this);
                         // add IDSFilter
@@ -550,9 +576,11 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         logger.log(Level.INFO, "Force10Agent started.");
                     }
 
-                    final boolean startCienaAgent = AppConfig.getb("lia.Monitor.DataCache.Cache.StartCienaAgent", false);
+                    final boolean startCienaAgent = AppConfig
+                            .getb("lia.Monitor.DataCache.Cache.StartCienaAgent", false);
                     if (startCienaAgent) {
-                        CienaAgent mlids = new CienaAgent("CienaAgent", "MLTopoAgentGroup", RegFarmMonitor.getServiceItem().serviceID.toString());
+                        CienaAgent mlids = new CienaAgent("CienaAgent", "MLTopoAgentGroup",
+                                RegFarmMonitor.getServiceItem().serviceID.toString());
                         agentsEngine.addAgent(mlids);
                         mlids.initCache(this);
                         // add IDSFilter
@@ -570,10 +598,15 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                     ScheduledFuture<?> sf = null;
                     while (sf == null) {
                         try {
-                            sf = MonALISAExecutors.getMLHelperExecutor().schedule(new ConfCheckerTask(), defaultAnnounceUpdate.get() + Math.round(Math.random() * 100), TimeUnit.MILLISECONDS);
+                            sf = MonALISAExecutors.getMLHelperExecutor().schedule(new ConfCheckerTask(),
+                                    defaultAnnounceUpdate.get() + Math.round(Math.random() * 100),
+                                    TimeUnit.MILLISECONDS);
                         } catch (Throwable t) {
                             sf = null;
-                            logger.log(Level.WARNING, " [ ConfCheckerTask ] Unable to schedule for the moment ... Retry in a few millis. Cause:", t);
+                            logger.log(
+                                    Level.WARNING,
+                                    " [ ConfCheckerTask ] Unable to schedule for the moment ... Retry in a few millis. Cause:",
+                                    t);
                         }
 
                         if (sf != null) {
@@ -589,7 +622,8 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         }
                     }
 
-                    MonALISAExecutors.getMLHelperExecutor().scheduleWithFixedDelay(new ClientsVerifierTask(), 91 + Math.round(Math.random() * 2), 120 + Math.round(Math.random() * 8), TimeUnit.SECONDS);
+                    MonALISAExecutors.getMLHelperExecutor().scheduleWithFixedDelay(new ClientsVerifierTask(),
+                            91 + Math.round(Math.random() * 2), 120 + Math.round(Math.random() * 8), TimeUnit.SECONDS);
                     break;
                 }
 
@@ -600,8 +634,9 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
     }
 
     public void notifyInternalResults(Vector<?> v) {
-        if (v != null && v.size() > 0)
+        if ((v != null) && (v.size() > 0)) {
             main.addResults(v);
+        }
     }
 
     @Override
@@ -709,8 +744,9 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
         try {
             for (MonitorFilter fa : filters.values()) {
                 try {
-                    if (fa.isAlive())
+                    if (fa.isAlive()) {
                         fa.confChanged();
+                    }
                 } catch (Throwable t) {
                     logger.log(Level.WARNING, " Got exc while notif config changed for filter .... " + fa.getName(), t);
                 }
@@ -834,7 +870,7 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
      * @throws java.rmi.RemoteException
      */
     @Override
-	public void addFilter(MonitorFilter f) throws java.rmi.RemoteException {
+    public void addFilter(MonitorFilter f) throws java.rmi.RemoteException {
         String name = f.getName();
         if (filters.containsKey(name)) {
             logger.log(Level.WARNING, " Filter " + name + " is active can not add it");
@@ -920,11 +956,13 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                 if (p.bLastVals) {
                     v = lia.Monitor.Store.Cache.getLastValues(p);
                     if (logger.isLoggable(Level.FINER)) {
-                        logger.log(Level.FINER, " Got RT query [ " + p + " ] returning " + (v == null ? "null" : "" + v.size()) + " values");
+                        logger.log(Level.FINER,
+                                " Got RT query [ " + p + " ] returning " + (v == null ? "null" : "" + v.size())
+                                        + " values");
                     }
                 }
 
-                if (v == null || v.size() == 0) {
+                if ((v == null) || (v.size() == 0)) {
                     if (store != null) {
                         v = store.select(p);
                     } else {
@@ -933,12 +971,15 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         }
                     }
                 }
-                if (v != null && v.size() != 0)
+                if ((v != null) && (v.size() != 0)) {
                     retV.addAll(v);
+                }
             }
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, " [ Cache ] Got exception looking for lia.Monitor.Store.Cache.getLastValues || store.select( " + p + ") ", t);
+                logger.log(Level.FINER,
+                        " [ Cache ] Got exception looking for lia.Monitor.Store.Cache.getLastValues || store.select( "
+                                + p + ") ", t);
             }
         }
 
@@ -946,12 +987,13 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
             for (final dbStore db : dbStores) {
                 try {
                     Vector<?> v = db.select(p);
-                    if (v != null && v.size() > 0) {
+                    if ((v != null) && (v.size() > 0)) {
                         retV.addAll(v);
                     }
                 } catch (Throwable t) {
                     if (logger.isLoggable(Level.FINER)) {
-                        logger.log(Level.FINER, " [ Cache ] Got exception looking dbStores " + db + " predicate: " + p, t);
+                        logger.log(Level.FINER, " [ Cache ] Got exception looking dbStores " + db + " predicate: " + p,
+                                t);
                     }
                 }
             }
@@ -960,8 +1002,9 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
     }
 
     public void updateDBStores(Vector<dbStore> dbStores) {
-        if (dbStores == null || dbStores.size() == 0)
+        if ((dbStores == null) || (dbStores.size() == 0)) {
             return;
+        }
         synchronized (this.dbStores) {
             this.dbStores.clear();
             this.dbStores.addAll(dbStores);
@@ -995,8 +1038,9 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
         // }
 
         for (final MonitorFilter fa : filters.values()) {
-            if (fa.isAlive())
+            if (fa.isAlive()) {
                 fa.addNewResult(r);
+            }
         }
     }
 
@@ -1028,14 +1072,17 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
         }
 
         try {
-            defaultAnnounceUpdate.set(AppConfig.getl("lia.Monitor.DataCache.defaultAnnounceUpdate", defaultAnnounceUpdate.get()));
+            defaultAnnounceUpdate.set(AppConfig.getl("lia.Monitor.DataCache.defaultAnnounceUpdate",
+                    defaultAnnounceUpdate.get()));
         } catch (Throwable t) {
-            logger.log(Level.INFO, " [ Cache ] [ reloadConfig ] got exception setting lia.Monitor.DataCache.defaultAnnounceUpdate ", t);
+            logger.log(Level.INFO,
+                    " [ Cache ] [ reloadConfig ] got exception setting lia.Monitor.DataCache.defaultAnnounceUpdate ", t);
             defaultAnnounceUpdate.set(2 * 60 * 1000);
         }
 
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, " [ Cache ] reloadedConf. Logging level: " + loggingLevel + " lia.Monitor.DataCache.defaultAnnounceUpdate =" + defaultAnnounceUpdate.get());
+            logger.log(Level.FINER, " [ Cache ] reloadedConf. Logging level: " + loggingLevel
+                    + " lia.Monitor.DataCache.defaultAnnounceUpdate =" + defaultAnnounceUpdate.get());
         }
     }
 
@@ -1061,18 +1108,22 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                     }
 
                     try {
-                        logger.log(Level.WARNING, "\n\n[ Cache ] [ dropEvent ] - Database buffer full, switching to memory storage\n\n");
+                        logger.log(Level.WARNING,
+                                "\n\n[ Cache ] [ dropEvent ] - Database buffer full, switching to memory storage\n\n");
                         System.setProperty("lia.Monitor.Store.TransparentStoreFast.web_writes", "0");
                         store.reload();
                         logger.log(Level.INFO, "\n\n[ Cache ] [ dropEvent ] - Storage switching complete\n\n");
                     } catch (Throwable t) {
-                        logger.log(Level.SEVERE, "\n\n[ Cache ] [ dropEvent ] Unable to switch to memory storage. Cause:", t);
+                        logger.log(Level.SEVERE,
+                                "\n\n[ Cache ] [ dropEvent ] Unable to switch to memory storage. Cause:", t);
                         switchException = t;
                     }
 
                     sb = new StringBuilder(16384);
                     if (switchException != null) {
-                        sb.append("\n\n [ Cache ] [ dropEvent ] Database buffer full and switching to memory storage got exception:\n").append(Utils.getStackTrace(switchException));
+                        sb.append(
+                                "\n\n [ Cache ] [ dropEvent ] Database buffer full and switching to memory storage got exception:\n")
+                                .append(Utils.getStackTrace(switchException));
                     } else {
                         sb.append("\n\n [ Cache ] [ dropEvent ] Database buffer full, switching to memory storage was successful ... more to follow:\n");
                     }
@@ -1081,16 +1132,22 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                     sb.append("----------------------\n");
 
                     try {
-                        int nr = Integer.parseInt(AppConfig.getProperty("lia.Monitor.Store.TransparentStoreFast.web_writes", "0"));
+                        int nr = Integer.parseInt(AppConfig.getProperty(
+                                "lia.Monitor.Store.TransparentStoreFast.web_writes", "0"));
                         sb.append("\nWriters : ").append(nr);
                         sb.append("\n");
 
                         for (int i = 0; i < nr; i++) {
-                            final long lTotalTime = Long.parseLong(AppConfig.getProperty("lia.Monitor.Store.TransparentStoreFast.writer_" + i + ".total_time", "0").trim()) * 1000;
-                            final long lSamples = Long.parseLong(AppConfig.getProperty("lia.Monitor.Store.TransparentStoreFast.writer_" + i + ".samples", "1").trim());
-                            final String sTableName = AppConfig.getProperty("lia.Monitor.Store.TransparentStoreFast.writer_" + i + ".table_name", "writer_" + i).trim();
+                            final long lTotalTime = Long.parseLong(AppConfig.getProperty(
+                                    "lia.Monitor.Store.TransparentStoreFast.writer_" + i + ".total_time", "0").trim()) * 1000;
+                            final long lSamples = Long.parseLong(AppConfig.getProperty(
+                                    "lia.Monitor.Store.TransparentStoreFast.writer_" + i + ".samples", "1").trim());
+                            final String sTableName = AppConfig
+                                    .getProperty("lia.Monitor.Store.TransparentStoreFast.writer_" + i + ".table_name",
+                                            "writer_" + i).trim();
 
-                            final int iWriteMode = Integer.parseInt(AppConfig.getProperty("lia.Monitor.Store.TransparentStoreFast.writer_" + i + ".writemode", "0").trim());
+                            final int iWriteMode = Integer.parseInt(AppConfig.getProperty(
+                                    "lia.Monitor.Store.TransparentStoreFast.writer_" + i + ".writemode", "0").trim());
 
                             sb.append("\nTotal time: ").append(lTotalTime);
                             sb.append("\nSamples   : ").append(lSamples);
@@ -1108,8 +1165,11 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         final String sFarmHome = AppConfig.getProperty("lia.Monitor.Farm.HOME", null);
 
                         sb.append("\nAccount: ").append(realFromAddress);
-                        sb.append("\nFarm: ").append(getUnitName()).append(" (").append(getIPAddress()).append(") : ").append(getMLVersion());
-                        sb.append("\nMemory: ").append(Runtime.getRuntime().freeMemory()).append(" free / ").append(Runtime.getRuntime().totalMemory()).append(" total / ").append(Runtime.getRuntime().maxMemory()).append(" max");
+                        sb.append("\nFarm: ").append(getUnitName()).append(" (").append(getIPAddress()).append(") : ")
+                                .append(getMLVersion());
+                        sb.append("\nMemory: ").append(Runtime.getRuntime().freeMemory()).append(" free / ")
+                                .append(Runtime.getRuntime().totalMemory()).append(" total / ")
+                                .append(Runtime.getRuntime().maxMemory()).append(" max");
                         sb.append("\nML Home: ").append(AppConfig.getProperty("MonaLisa_HOME", null));
                         sb.append("\nFarm Home: ").append(sFarmHome);
                         sb.append("\n");
@@ -1119,10 +1179,13 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         sb.append("\nepgsql : " + AppConfig.getProperty("lia.Monitor.use_epgsqldb", "false") + "\n");
                         sb.append("\nstoreType : " + TransparentStoreFactory.getStoreType() + "\n");
                         sb.append("\n");
-                        sb.append("\ndriver : ").append(AppConfig.getProperty("lia.Monitor.jdbcDriverString", "default_driver_string"));
-                        sb.append("\nserver : ").append(AppConfig.getProperty("lia.Monitor.ServerName", "127.0.0.1")).append(":").append(AppConfig.getProperty("lia.Monitor.DatabasePort", "0"));
+                        sb.append("\ndriver : ").append(
+                                AppConfig.getProperty("lia.Monitor.jdbcDriverString", "default_driver_string"));
+                        sb.append("\nserver : ").append(AppConfig.getProperty("lia.Monitor.ServerName", "127.0.0.1"))
+                                .append(":").append(AppConfig.getProperty("lia.Monitor.DatabasePort", "0"));
                         sb.append("\ndbname : ").append(AppConfig.getProperty("lia.Monitor.DatabaseName", "mon_data"));
-                        sb.append("\naccount: ").append(AppConfig.getProperty("lia.Monitor.UserName", "username")).append(":").append(AppConfig.getProperty("lia.Monitor.Pass", ""));
+                        sb.append("\naccount: ").append(AppConfig.getProperty("lia.Monitor.UserName", "username"))
+                                .append(":").append(AppConfig.getProperty("lia.Monitor.Pass", ""));
                         sb.append("\n");
 
                         if (sFarmHome != null) {
@@ -1168,30 +1231,38 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
                         sb.append("\n");
 
                         String os = getFileContents("/etc/redhat-release", false);
-                        if (os != null)
+                        if (os != null) {
                             sb.append("OS: RedHat: " + os + "\n\n");
+                        }
 
                         os = getFileContents("/etc/slackware-version", false);
-                        if (os != null)
+                        if (os != null) {
                             sb.append("OS: Slackware: " + os + "\n\n");
+                        }
 
                         os = getFileContents("/etc/SuSE-release", false);
-                        if (os != null)
+                        if (os != null) {
                             sb.append("OS: SuSE: " + os + "\n\n");
+                        }
 
                         os = getFileContents("/etc/debian_version", false);
-                        if (os != null)
+                        if (os != null) {
                             sb.append("OS: Debian: " + os + "\n\n");
+                        }
 
                     } catch (Throwable t) {
                         if (sb != null) {
-                            sb.append("\n\nGot Exception gathering local env informations: \n").append(Utils.getStackTrace(t));
+                            sb.append("\n\nGot Exception gathering local env informations: \n").append(
+                                    Utils.getStackTrace(t));
                         }
                     } finally {
                         try {
-                            MailFactory.getMailSender().sendMessage(realFromAddress, "mlstatus@monalisa.cern.ch", new String[] {
-                                    "mlstatus@monalisa.cern.ch", "ramiro.voicu@gmail.com"
-                            }, "[ Cache ] [ dropEvent ] Storage problem at " + getUnitName() + " / " + AppConfig.getProperty("lia.Monitor.group", null), sb.toString());
+                            MailFactory.getMailSender().sendMessage(
+                                    realFromAddress,
+                                    "mlstatus@monalisa.cern.ch",
+                                    new String[] { "mlstatus@monalisa.cern.ch", "ramiro.voicu@gmail.com" },
+                                    "[ Cache ] [ dropEvent ] Storage problem at " + getUnitName() + " / "
+                                            + AppConfig.getProperty("lia.Monitor.group", null), sb.toString());
                         } catch (Throwable ignore) {
                         }
                     }
@@ -1222,14 +1293,16 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
             return null;
         } finally {
             try {
-                if (br != null)
+                if (br != null) {
                     br.close();
+                }
             } catch (Throwable ignore) {
             }
 
             try {
-                if (fr != null)
+                if (fr != null) {
                     fr.close();
+                }
             } catch (Throwable ignore) {
             }
 
@@ -1241,14 +1314,15 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
         bt.start();
 
         for (int i = 0; i < iWait; i++) {
-            if (bt.sOutput == null)
+            if (bt.sOutput == null) {
                 try {
                     Thread.sleep(iDivision);
                 } catch (InterruptedException ie) {
                     return "interrupted while waiting for " + cmd + " to be executed\n";
                 }
-            else
+            } else {
                 return bt.sOutput;
+            }
         }
 
         return bt.killProcess();
@@ -1269,21 +1343,21 @@ public class Cache implements DataReceiver, DataStore, Runnable, ShutdownReceive
         @Override
         public void run() {
             try {
-                pro = MLProcess.exec(new String[] {
-                        "/bin/sh", "-c", cmd
-                });
+                pro = MLProcess.exec(new String[] { "/bin/sh", "-c", cmd });
                 StringBuilder sb = new StringBuilder();
                 String sLine = null;
 
                 pro.getOutputStream().close();
 
                 BufferedReader br = new BufferedReader(new InputStreamReader(pro.getInputStream()));
-                while ((sLine = br.readLine()) != null)
+                while ((sLine = br.readLine()) != null) {
                     sb.append(sLine + "\n");
+                }
 
                 br = new BufferedReader(new InputStreamReader(pro.getErrorStream()));
-                while ((sLine = br.readLine()) != null)
+                while ((sLine = br.readLine()) != null) {
                     sb.append("stderr: " + sLine + "\n");
+                }
 
                 pro.waitFor();
 

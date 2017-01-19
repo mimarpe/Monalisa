@@ -97,7 +97,7 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
             for (final Map.Entry<RemoteResource, ManifestEntry> entry : resourcesMap.entrySet()) {
                 final RemoteResource rr = entry.getKey();
                 final long tSize = entry.getValue().size;
-                final long dSize = downloadedMap.get(rr);
+                final long dSize = downloadedMap.get(rr).longValue();
                 remaining += (tSize - dSize);
             }
             return remaining;
@@ -106,13 +106,15 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
         @Override
         public void run() {
             if (updater.updateStarted) {
-                updater.logOut("Download stats: remaining " + Util.valToString(computeRemaining(), Util.VALUE_2_STRING_SHORT_UNIT) + "Bytes out of " + Util.valToString(toDownload, Util.VALUE_2_STRING_SHORT_UNIT) + "Bytes");
+                updater.logOut("Download stats: remaining "
+                        + Util.valToString(computeRemaining(), Util.VALUE_2_STRING_SHORT_UNIT) + "Bytes out of "
+                        + Util.valToString(toDownload, Util.VALUE_2_STRING_SHORT_UNIT) + "Bytes");
             }
         }
 
     }
 
-    private static final transient Logger logger = Logger.getLogger(AppRemoteURLUpdater.class.getName());
+    private static final Logger logger = Logger.getLogger(AppRemoteURLUpdater.class.getName());
 
     private static final AtomicInteger CONNECT_TIMEOUT = new AtomicInteger((int) TimeUnit.SECONDS.toMillis(30));
 
@@ -173,20 +175,21 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
                         fh.setLevel(Level.ALL);
                         logger.setUseParentHandlers(false);
                         logger.addHandler(fh);
-                        //try check the logging level
+                        // try check the logging level
                         final String possibleLevel = AppConfig.getProperty("lia.util.update.level");
-                        if(possibleLevel != null) {
-                            
+                        if (possibleLevel != null) {
+
                             try {
                                 ll = Level.parse(possibleLevel);
-                            }catch(Throwable t) {
+                            } catch (Throwable t) {
                                 ll = Level.INFO;
                             }
-                            
+
                         }
-                        
+
                         logger.setLevel(ll);
-                        logger.log(Level.INFO, "Logging properties set. file logger: " + fh.getLevel() + " my logger: " + ll);
+                        logger.log(Level.INFO, "Logging properties set. file logger: " + fh.getLevel() + " my logger: "
+                                + ll);
                     } else {
                         logger.log(Level.INFO, "Null FARM_HOME env var ... will log only @ console");
                     }
@@ -196,7 +199,8 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
             }
 
         } catch (Throwable t) {
-            System.err.println("[ AppRemoteURLUpdater ] [ static init ] [ logging ] Unable to check/load default logger props. Cause:");
+            System.err
+                    .println("[ AppRemoteURLUpdater ] [ static init ] [ logging ] Unable to check/load default logger props. Cause:");
             t.printStackTrace();
         }
 
@@ -226,8 +230,9 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
      * @throws MalformedURLException
      */
     private static List<URL> getAppURLs(final String[] URLList, final String fullAppName) throws MalformedURLException {
-        if (URLList == null || URLList.length == 0)
+        if ((URLList == null) || (URLList.length == 0)) {
             return Collections.emptyList();
+        }
 
         List<URL> urlList = new ArrayList<URL>();
         for (final String sURL : URLList) {
@@ -241,7 +246,8 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
 
         if (cacheDir.exists()) {
             if (!cacheDir.isDirectory()) {
-                throw new Exception("AppRemoteURLUpdater: The destination cache dir: " + cacheDir + " is not a directory");
+                throw new Exception("AppRemoteURLUpdater: The destination cache dir: " + cacheDir
+                        + " is not a directory");
             }
 
             if (destDir.exists()) {
@@ -250,21 +256,33 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
                 }
             } else {
                 if (destDir.mkdirs()) {
-
+                    // we're good
                 } else {
                     throw new Exception("AppRemoteURLUpdater: Unable to create destination directory: " + destDir);
                 }
             }
         } else {
             if (cacheDir.mkdirs()) {
-
+                // we're good
             } else {
                 throw new Exception("AppRemoteURLUpdater: Unable to create cache directory: " + cacheDir);
             }
         }
     }
 
-    private Map<RemoteResource, ManifestEntry> synchronizeCache(UpdaterManifest umf, URL codeBaseURL, final File cacheDir) throws InterruptedException, ExecutionException, IOException, NoSuchAlgorithmException {
+    /**
+     * 
+     * @param umf
+     * @param codeBaseURL
+     * @param cacheDir
+     * @return
+     * @throws InterruptedException
+     * @throws ExecutionException
+     * @throws IOException
+     * @throws NoSuchAlgorithmException
+     */
+    private Map<RemoteResource, ManifestEntry> synchronizeCache(UpdaterManifest umf, URL codeBaseURL,
+            final File cacheDir) throws InterruptedException, ExecutionException, IOException, NoSuchAlgorithmException {
         final Map<RemoteResource, ManifestEntry> retMap = new HashMap<RemoteResource, ManifestEntry>();
         final Map<RemoteResource, Future<DigestResult>> cacheDigest = new HashMap<RemoteResource, Future<DigestResult>>();
 
@@ -306,11 +324,22 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
             final RemoteResource rr = entry.getKey();
             final ManifestEntry me = retMap.get(rr);
             final DigestResult dr = entry.getValue().get();
-            if (dr.file.lastModified() == me.lastModified && dr.file.length() == me.size && me.digest.equals(UpdaterUtils.toHexString(dr.digest))) {
-                continue;
+
+            final boolean bTimeOK = upArgs.checkTimestamp() ? dr.file.lastModified() == me.lastModified : true;
+            final boolean bSizeOK = upArgs.checkSize() ? dr.file.length() == me.size : true;
+            final boolean bCryptoHashOK = upArgs.ignoreCryptoHash() ? true : me.digest.equals(UpdaterUtils
+                    .toHexString(dr.digest));
+
+            if (!upArgs.isFullUpdateSet()) {
+                if (bTimeOK && bSizeOK && bCryptoHashOK) {
+                    continue;
+                }
             }
+
             if (bLogFine) {
-                logger.log(Level.FINE, "[ syncCache ] download for " + rr);
+                logger.log(Level.FINE, "[ syncCache ] download for " + rr + " timeStampCheck=" + bTimeOK
+                        + ", sizeCheck=" + bSizeOK + ", cryptoHashCheck=" + bCryptoHashOK + ", isFullUpdateSet="
+                        + upArgs.isFullUpdateSet());
             }
             if (standAlone) {
                 reportingTask.addResource(rr, me);
@@ -320,9 +349,11 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
         // start the reporting task
         if (standAlone) {
             if (reportingTask.toDownload > 0) {
-                logOut("Need to download " + Util.valToString(reportingTask.toDownload, Util.VALUE_2_STRING_SHORT_UNIT) + "Bytes");
+                logOut("Need to download " + Util.valToString(reportingTask.toDownload, Util.VALUE_2_STRING_SHORT_UNIT)
+                        + "Bytes");
                 reportingTaskFuture = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
 
+                    @Override
                     public Thread newThread(Runnable r) {
                         final Thread thread = new Thread(r);
                         thread.setName("ConsoleReporting task worker");
@@ -348,31 +379,35 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
             final String remoteDigest = me.digest;
 
             if (!dwldDigest.equals(remoteDigest)) {
-                throw new IllegalStateException("Error for " + me.name + " different checksums: expected=" + remoteDigest + "; dwld: " + dwldDigest);
+                throw new IllegalStateException("Error for " + me.name + " different checksums: expected="
+                        + remoteDigest + "; dwld: " + dwldDigest);
             }
 
             UpdaterUtils.setRWOwnerOnly(rr.destinationFile);
         }
 
         // cancel the reporting
-        if (standAlone && reportingTaskFuture != null) {
+        if (standAlone && (reportingTaskFuture != null)) {
             reportingTaskFuture.cancel(false);
             logOut("Download finished");
         }
 
         // cancel downloader
-        if (downloader != null && !downloader.cancelAndShutdown()) {
+        if ((downloader != null) && !downloader.cancelAndShutdown()) {
             logger.log(Level.WARNING, "Unable to cancel downloader");
         }
 
         return retMap;
     }
 
-    private final UpdaterManifest getRemoteUpdaterManifest(final URL url, final AppProperties appProperties) throws IOException, NoSuchAlgorithmException, InterruptedException, ExecutionException {
+    private final UpdaterManifest getRemoteUpdaterManifest(final URL url, final AppProperties appProperties)
+            throws IOException, NoSuchAlgorithmException, InterruptedException, ExecutionException {
         final File parentDir = appProperties.cacheDestinationDir;
         final String sURL = stripURL(url) + "/app.upmf";
 
-        DownloadResult dr = downloader.asyncDownload(new RemoteResource(new URL(sURL), new File(parentDir.getAbsolutePath() + File.separator + "app.upmf"), appProperties.digestAlgo)).get();
+        DownloadResult dr = downloader.asyncDownload(
+                new RemoteResource(new URL(sURL), new File(parentDir.getAbsolutePath() + File.separator + "app.upmf"),
+                        appProperties.digestAlgo)).get();
         return new UpdaterManifest(dr.getRemoteResource().destinationFile, appProperties);
     }
 
@@ -384,7 +419,8 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
         return strippedURL;
     }
 
-    public AppProperties getRemoteAppProperties(String[] remoteURLs, final File cacheDestinationDir, final String appName) throws IOException {
+    public AppProperties getRemoteAppProperties(String[] remoteURLs, final File cacheDestinationDir,
+            final String appName) throws IOException {
         final List<URL> updateURLList = getAppURLs(remoteURLs, appName);
         Throwable lastException = null;
         downloader = DownloadManager.newInstance("lia.util.update", 5, CONNECT_TIMEOUT.get(), READ_TIMEOUT.get());
@@ -409,7 +445,8 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
         throw new IOException("Unable to get the app properties. errors privided.");
     }
 
-    private final AppProperties syncAndGetAppProperties(final List<URL> updateURLList, final File cacheDestinationDir, final File appDestDir) throws IOException {
+    private final AppProperties syncAndGetAppProperties(final List<URL> updateURLList, final File cacheDestinationDir,
+            final File appDestDir) throws IOException {
 
         Throwable lastException = null;
         for (final URL url : updateURLList) {
@@ -430,7 +467,8 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
         throw new IOException("Unable to get the app properties. errors privided.");
     }
 
-    private final AppProperties downloadAndGetAppProperties(final URL url, final File destCacheDir, final File destAppDir, boolean tmpFile) throws IOException, InterruptedException, ExecutionException {
+    private final AppProperties downloadAndGetAppProperties(final URL url, final File destCacheDir,
+            final File destAppDir, boolean tmpFile) throws IOException, InterruptedException, ExecutionException {
         File dstFile = null;
         try {
             final URL manifestPropertiesURL = new URL(stripURL(url) + "/app.upmf.properties");
@@ -457,7 +495,7 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
             }
             return new AppProperties(p, destCacheDir, destAppDir);
         } finally {
-            if (tmpFile && dstFile != null) {
+            if (tmpFile && (dstFile != null)) {
                 dstFile.delete();
             }
         }
@@ -517,18 +555,27 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
             final AppProperties appProperties = syncAndGetAppProperties(updateURLList, destinationCacheDir, appDestDir);
             if (!appProperties.stableBuild) {
                 if (AppConfig.getb("lia.util.update.stableBuildOnly", true)) {
-                    logger.log(Level.INFO, "Remote version of " + appName + " is a development build. Current configuration accepts only stable builds. No changes performed.");
+                    logger.log(
+                            Level.INFO,
+                            "Remote version of "
+                                    + appName
+                                    + " is a development build. Current configuration accepts only stable builds. No changes performed.");
                     bError = false;
                     return false;
                 }
-                logger.log(Level.WARNING, "Remote version of " + appName + " is a development build and current configuration accepts such snapshots. Updater will continue.");
+                logger.log(
+                        Level.WARNING,
+                        "Remote version of "
+                                + appName
+                                + " is a development build and current configuration accepts such snapshots. Updater will continue.");
             } else {
                 logger.log(Level.INFO, "Remote version of " + appName + " is a stable build. ");
             }
 
             final String fullAppName = appName + '_' + appProperties.appVersion;
             // for now I know the application and the version
-            final List<URL> appURLList = (upArgs.hasAppVersion()) ? updateURLList : getAppURLs(splittedURLs, fullAppName);
+            final List<URL> appURLList = (upArgs.hasAppVersion()) ? updateURLList : getAppURLs(splittedURLs,
+                    fullAppName);
 
             final Map<File, File> appBkpFiles = new HashMap<File, File>();
             final Map<File, File> appNewFiles = new HashMap<File, File>();
@@ -545,13 +592,14 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
                     final Map<RemoteResource, ManifestEntry> cacheMap = synchronizeCache(umf, url, cacheDir);
 
                     // local cache in sync
-                    logOut("Local cache synchronized in " + toSecondsAndMillis(Utils.nanoNow() - nanoStart) + " seconds");
-                    
-                    if(onlyCacheSync) {
+                    logOut("Local cache synchronized in " + toSecondsAndMillis(Utils.nanoNow() - nanoStart)
+                            + " seconds");
+
+                    if (onlyCacheSync) {
                         bError = false;
                         return true;
                     }
-                    
+
                     logOut("Start commiting changes to local installation");
 
                     final long nanoStartLocal = Utils.nanoNow();
@@ -575,9 +623,26 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
                         final RemoteResource rr = entry.getKey();
                         final ManifestEntry me = cacheMap.get(rr);
                         final DigestResult dr = entry.getValue().get();
-                        if (dr.file.lastModified() == me.lastModified && dr.file.length() == me.size && me.digest.equals(UpdaterUtils.toHexString(dr.digest))) {
-                            continue;
+
+                        final boolean bTimeOK = upArgs.checkTimestamp() ? dr.file.lastModified() == me.lastModified
+                                : true;
+                        final boolean bSizeOK = upArgs.checkSize() ? dr.file.length() == me.size : true;
+                        final boolean bCryptoHashOK = upArgs.ignoreCryptoHash() ? true : me.digest.equals(UpdaterUtils
+                                .toHexString(dr.digest));
+
+                        if (!upArgs.isFullUpdateSet()) {
+
+                            if (bTimeOK && bSizeOK && bCryptoHashOK) {
+                                continue;
+                            }
                         }
+
+                        if (bLogFine) {
+                            logger.log(Level.FINE, "[ doUpdate ] Resource " + rr + " added to copyMap timeStampCheck="
+                                    + bTimeOK + ", sizeCheck=" + bSizeOK + ", cryptoHashCheck=" + bCryptoHashOK
+                                    + ", isFullUpdateSet=" + upArgs.isFullUpdateSet());
+                        }
+
                         copyMap.put(rr, dr.file);
                     }
 
@@ -594,26 +659,32 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
                         final File newFileUpdate = File.createTempFile(appFile.getName(), ".UPDATE", pDir);
                         UpdaterUtils.copyFile2File(cacheFile, newFileUpdate);
                         appNewFiles.put(appFile, newFileUpdate);
-                        
+
                         if (appFile.exists()) {
                             final File bkpFile = File.createTempFile(appFile.getName(), ".BKP", pDir);
-                            if(appFile.renameTo(bkpFile)) {
-                                if(logger.isLoggable(Level.FINER)) {
-                                    logger.log(Level.FINER, "[ Updater ] [ COMMIT CHANGES ] moved " + appFile + " to bkp file: " + bkpFile);
+                            if (appFile.renameTo(bkpFile)) {
+                                if (logger.isLoggable(Level.FINER)) {
+                                    logger.log(Level.FINER, "[ Updater ] [ COMMIT CHANGES ] moved " + appFile
+                                            + " to bkp file: " + bkpFile);
                                 }
                             } else {
-                                logger.log(Level.SEVERE, "[ Updater ] [ COMMIT CHANGES ] unable to backup the appFile '" + appFile + "' to temp file: '" + bkpFile + "'");
-                                throw new Exception("[ Updater ] [ COMMIT CHANGES ] unable to backup the appFile '" + appFile + "' to temp file: '" + bkpFile + "'");
+                                logger.log(Level.SEVERE,
+                                        "[ Updater ] [ COMMIT CHANGES ] unable to backup the appFile '" + appFile
+                                                + "' to temp file: '" + bkpFile + "'");
+                                throw new Exception("[ Updater ] [ COMMIT CHANGES ] unable to backup the appFile '"
+                                        + appFile + "' to temp file: '" + bkpFile + "'");
                             }
                             appBkpFiles.put(appFile, bkpFile);
                         }
-                        
+
                         UpdaterUtils.setRWOwnerOnly(appFile);
-                        if(newFileUpdate.renameTo(appFile)) {
-                            logger.log(Level.FINE, " [ OK ] TMP update file " + newFileUpdate + " moved to application file: " + appFile);
+                        if (newFileUpdate.renameTo(appFile)) {
+                            logger.log(Level.FINE, " [ OK ] TMP update file " + newFileUpdate
+                                    + " moved to application file: " + appFile);
                         } else {
-                            //shit happens
-                            throw new Exception(" Unable to move TMP update file " + newFileUpdate + " to application file: " + appFile);
+                            // shit happens
+                            throw new Exception(" Unable to move TMP update file " + newFileUpdate
+                                    + " to application file: " + appFile);
                         }
                     }
 
@@ -623,11 +694,12 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
                     deleteBkps(appNewFiles);
                     appNewFiles.clear();
 
-                    logOut("Finished commiting changes in " + toSecondsAndMillis(Utils.nanoNow() - nanoStartLocal) + " seconds");
-                    
-                    //we are ok!
+                    logOut("Finished commiting changes in " + toSecondsAndMillis(Utils.nanoNow() - nanoStartLocal)
+                            + " seconds");
+
+                    // we are ok!
                     bError = false;
-                    
+
                     return true;
                 } catch (Throwable t) {
                     if (standAlone) {
@@ -642,8 +714,8 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
                         appBkpRollback(appBkpFiles);
                         appBkpFiles.clear();
                     }
-                    
-                    if(appNewFiles.size() > 0) {
+
+                    if (appNewFiles.size() > 0) {
                         deleteBkps(appNewFiles);
                         appNewFiles.clear();
                     }
@@ -651,7 +723,8 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
             }
 
         } finally {
-            logOut("Update finished " + (bError?"NOT":"") + " OK in " + toSecondsAndMillis(Utils.nanoNow() - sTime) + " seconds");
+            logOut("Update finished " + (bError ? "NOT" : "") + " OK in " + toSecondsAndMillis(Utils.nanoNow() - sTime)
+                    + " seconds");
             logOut("** AppRemoteURLUpdater finished **");
         }
         return bError;
@@ -660,7 +733,7 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
     private static void deleteBkps(Map<File, File> appBkpFiles) {
         for (final File bkpFile : appBkpFiles.values()) {
             bkpFile.deleteOnExit();
-            //not so much to check; I may throw some errors here
+            // not so much to check; I may throw some errors here
             bkpFile.delete();
         }
     }
@@ -675,8 +748,12 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
                 bkpFile.delete();
             } catch (Throwable t) {
                 // because shit happens; cosmic ray hit lucky ones
-                logger.log(Level.SEVERE, "[ SEVERE ERROR ] Unable to restore app jars from a failed download. Please check your FS for I/O errors: " + appFile, t);
-                throw new IOException("[ SEVERE ERROR ] Unable to restore app jars from a failed download. Please your FS for I/O errors. Full log in Service/myFarm/update*.log. File with errors: " + appFile, t);
+                logger.log(Level.SEVERE,
+                        "[ SEVERE ERROR ] Unable to restore app jars from a failed download. Please check your FS for I/O errors: "
+                                + appFile, t);
+                throw new IOException(
+                        "[ SEVERE ERROR ] Unable to restore app jars from a failed download. Please your FS for I/O errors. Full log in Service/myFarm/update*.log. File with errors: "
+                                + appFile, t);
             }
         }
     }
@@ -694,7 +771,7 @@ public class AppRemoteURLUpdater implements DownloadNotifier {
 
     @Override
     public void notifyDownloadEvent(DownloadEvent event) {
-        if (!updateStarted && event.eventType == DownloadEvent.Type.DOWNLOAD_STARTED) {
+        if (!updateStarted && (event.eventType == DownloadEvent.Type.DOWNLOAD_STARTED)) {
             updateStarted = true;
         }
 

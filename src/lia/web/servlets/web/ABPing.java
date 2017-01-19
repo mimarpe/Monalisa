@@ -51,25 +51,25 @@ public class ABPing extends ServletExtension {
 			return;
 
 		final DB db = new DB();
-		db.query("CREATE TABLE abping (mfarmsource varchar(100), mfarmdest varchar(100), is_connected int default 0);", true);
-		db.query("CREATE TABLE colors (sitename varchar(100), R int default 0, G int default 0, B int default 0);", true);
-		db.query("CREATE TABLE abping_aliases (ip varchar(100), name varchar(100), version varchar(100));", true);
-		db.query("CREATE UNIQUE INDEX abping_src_dest_uidx ON abping(mfarmsource, mfarmdest);", true);
-		db.query("CREATE UNIQUE INDEX abping_aliases_ip_name_uidx ON abping_aliases(ip, name);", true);
-		db.query("ALTER TABLE abping_aliases ADD COLUMN version varchar(100);", true);
-		db.query("ALTER TABLE abping_aliases ADD COLUMN geo_lat varchar(50);", true);
-		db.query("ALTER TABLE abping_aliases ADD COLUMN geo_long varchar(50);", true);
-		db.query("ALTER TABLE abping_aliases ADD COLUMN java_ver varchar(50);", true);
-		db.query("ALTER TABLE abping_aliases ADD COLUMN libc_ver varchar(50);", true);
-		db.query("ALTER TABLE abping_aliases ADD COLUMN autoupdate int;", true);
-		db.query("ALTER TABLE abping_aliases ADD COLUMN contact_email varchar(250);", true);
-		db.query("ALTER TABLE abping_aliases ADD COLUMN contact_name varchar(250);", true);
+		db.syncUpdateQuery("CREATE TABLE abping (mfarmsource varchar(100), mfarmdest varchar(100), is_connected int default 0);", true);
+		db.syncUpdateQuery("CREATE TABLE colors (sitename varchar(100), R int default 0, G int default 0, B int default 0);", true);
+		db.syncUpdateQuery("CREATE TABLE abping_aliases (ip varchar(1000), name varchar(100), version varchar(100));", true);
+		db.syncUpdateQuery("CREATE UNIQUE INDEX abping_src_dest_uidx ON abping(mfarmsource, mfarmdest);", true);
+		db.syncUpdateQuery("CREATE UNIQUE INDEX abping_aliases_ip_name_uidx ON abping_aliases(ip, name);", true);
+		db.syncUpdateQuery("ALTER TABLE abping_aliases ADD COLUMN version varchar(100);", true);
+		db.syncUpdateQuery("ALTER TABLE abping_aliases ADD COLUMN geo_lat varchar(50);", true);
+		db.syncUpdateQuery("ALTER TABLE abping_aliases ADD COLUMN geo_long varchar(50);", true);
+		db.syncUpdateQuery("ALTER TABLE abping_aliases ADD COLUMN java_ver varchar(50);", true);
+		db.syncUpdateQuery("ALTER TABLE abping_aliases ADD COLUMN libc_ver varchar(50);", true);
+		db.syncUpdateQuery("ALTER TABLE abping_aliases ADD COLUMN autoupdate int;", true);
+		db.syncUpdateQuery("ALTER TABLE abping_aliases ADD COLUMN contact_email varchar(250);", true);
+		db.syncUpdateQuery("ALTER TABLE abping_aliases ADD COLUMN contact_name varchar(250);", true);
 
-		db.query("CREATE TABLE abping_aliases_extra (ip varchar(100), name varchar(100));", true);
+		db.syncUpdateQuery("CREATE TABLE abping_aliases_extra (ip varchar(1000), name varchar(100));", true);
 		
-		db.query("ALTER TABLE colors ADD COLUMN shape char(1) DEFAULT '"+sDefaultShape+"';", true);
+		db.syncUpdateQuery("ALTER TABLE colors ADD COLUMN shape char(1) DEFAULT '"+sDefaultShape+"';", true);
 		
-		db.query("CREATE TABLE hidden_sites (name text primary key);", true);
+		db.syncUpdateQuery("CREATE TABLE hidden_sites (name text primary key);", true);
 		
 		bDatabaseInitialized = true;
 	}
@@ -337,10 +337,12 @@ public class ABPing extends ServletExtension {
 		if (ip.length() > 0 && un.length() > 0) {
 			DB db = new DB();
 
-			db.query("DELETE FROM abping_aliases_extra WHERE ip='" + ip + "';");
-			db.query("DELETE FROM abping_aliases_extra WHERE name='" + un + "';");
-			db.query("INSERT INTO abping_aliases_extra (ip, name) VALUES ('" + ip + "', '" + un + "');");
+			db.syncUpdateQuery("DELETE FROM abping_aliases_extra WHERE ip='" + ip + "';");
+			db.syncUpdateQuery("DELETE FROM abping_aliases_extra WHERE name='" + un + "';");
+			db.syncUpdateQuery("INSERT INTO abping_aliases_extra (ip, name) VALUES ('" + ip + "', '" + un + "');");
 
+			db.setReadOnly(true);
+			
 			if (db.query("SELECT mfarmsource FROM abping WHERE mfarmsource='" + ip + "';", true) && !db.moveNext()) {
 				DB db2 = new DB();
 

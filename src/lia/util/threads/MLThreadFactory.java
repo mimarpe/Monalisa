@@ -12,24 +12,25 @@ import java.util.concurrent.atomic.AtomicLong;
  * 
  * @author ramiro
  */
-final class MLThreadFactory implements ThreadFactory {
+public final class MLThreadFactory implements ThreadFactory {
 
-    private final AtomicLong SEQ = new AtomicLong(1);
+	private final AtomicLong SEQ = new AtomicLong(1);
 
-    private final String name;
+	private final String name;
 
-    MLThreadFactory(final String name) {
-        if(name.startsWith("lia.")) {
-            this.name = name.substring("lia.".length());
-        } else {
-            this.name = name;
-        }
-    }
+	MLThreadFactory(final String name) {
+		if (name.startsWith("lia.")) {
+			this.name = name.substring("lia.".length());
+		}
+		else {
+			this.name = name;
+		}
+	}
 
-    @Override
-    public Thread newThread(Runnable r) {
-        final Thread t = new Thread(r, "(ML ThP) [ " + name + " ] Worker " + SEQ.getAndIncrement() + ", started: " + new Date());
-        t.setDaemon(true);
-        return t;
-    }
+	@Override
+	public Thread newThread(Runnable r) {
+		final Thread t = new Thread(r, "(ML ThP) [ " + name + " ] Worker " + SEQ.getAndIncrement() + ", started: " + new Date());
+		t.setDaemon(true);
+		return t;
+	}
 }

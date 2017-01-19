@@ -1,5 +1,6 @@
 package lia.util.telnet;
 
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,15 +15,15 @@ import lia.Monitor.monitor.AppConfig;
 public class CienaTelnet extends TL1Telnet {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(TL1Telnet.class.getName());
+    private static final Logger logger = Logger.getLogger(TL1Telnet.class.getName());
     private static volatile boolean monitorInited;
     //private static CienaTelnet _controlInstance = null;
     private static CienaTelnet _monitorInstance = null;
     private static final String INHIBIT_AUTONOMOUS_MSGS_TL1_CMD = "INH-MSG-ALL:::inh;\n";
 
-    public CienaTelnet(String username, String passwd, String hostName, int port) throws Exception {
-        super(username, passwd, hostName, port);
-    // TODO Auto-generated constructor stub
+    public CienaTelnet(String username, String passwd, String hostName, int port, boolean failOnFirstAttempt)
+            throws Exception {
+        super(username, passwd, hostName, port, failOnFirstAttempt);
     }
 
     public static CienaTelnet getMonitorInstance() throws Exception {
@@ -31,18 +32,21 @@ public class CienaTelnet extends TL1Telnet {
             synchronized (CienaTelnet.class) {
                 if (!monitorInited) {
                     final String username = AppConfig.getProperty("lia.util.telnet.CienaMonitorUsername");
-                    if(username == null || username.trim().length() == 0) {
-                        throw new Exception("[ CienaTelnet ] CienaMonitorUsername MUST BE != null. (The property lia.util.telnet.CienaMonitorUsername is not set )");
+                    if ((username == null) || (username.trim().length() == 0)) {
+                        throw new Exception(
+                                "[ CienaTelnet ] CienaMonitorUsername MUST BE != null. (The property lia.util.telnet.CienaMonitorUsername is not set )");
                     }
-                    
+
                     final String passwd = AppConfig.getProperty("lia.util.telnet.CienaMonitorPasswd");
-                    if(passwd == null || passwd.trim().length() == 0) {
-                        throw new Exception("[ CienaTelnet ] CienaMonitorPasswd MUST BE != null. (The property lia.util.telnet.CienaMonitorPasswd is not set )");
+                    if ((passwd == null) || (passwd.trim().length() == 0)) {
+                        throw new Exception(
+                                "[ CienaTelnet ] CienaMonitorPasswd MUST BE != null. (The property lia.util.telnet.CienaMonitorPasswd is not set )");
                     }
-                    
+
                     final String hostName = AppConfig.getProperty("lia.util.telnet.CienaMonitorHostname");
-                    if(hostName == null || hostName.trim().length() == 0) {
-                        throw new Exception("[ CienaTelnet ] CienaMonitorHostname MUST BE != null. (The property lia.util.telnet.CienaMonitorHostname is not set )");
+                    if ((hostName == null) || (hostName.trim().length() == 0)) {
+                        throw new Exception(
+                                "[ CienaTelnet ] CienaMonitorHostname MUST BE != null. (The property lia.util.telnet.CienaMonitorHostname is not set )");
                     }
 
                     int port = 10201;
@@ -59,7 +63,6 @@ public class CienaTelnet extends TL1Telnet {
                 }//if - sync
             }//end sync
 
-
         }//if - not sync
 
         return _monitorInstance;
@@ -73,10 +76,11 @@ public class CienaTelnet extends TL1Telnet {
      * @return a new instance
      * @throws Exception
      */
-    public static CienaTelnet newInstance(final String userName, final String passwd, final String hostName) throws Exception {
-        return new CienaTelnet(userName.trim(), passwd.trim(), hostName.trim(), 10201);
+    public static CienaTelnet newInstance(final String userName, final String passwd, final String hostName)
+            throws Exception {
+        return new CienaTelnet(userName.trim(), passwd.trim(), hostName.trim(), 10201, false);
     }
-    
+
     /**
      * 
      * @param userName
@@ -86,8 +90,14 @@ public class CienaTelnet extends TL1Telnet {
      * @return a new instance
      * @throws Exception
      */
-    public static CienaTelnet newInstance(final String userName, final String passwd, final String hostName, final int port) throws Exception {
-        return new CienaTelnet(userName.trim(), passwd.trim(), hostName.trim(), port);
+    public static CienaTelnet newInstance(final String userName, final String passwd, final String hostName,
+            final int port) throws Exception {
+        return new CienaTelnet(userName.trim(), passwd.trim(), hostName.trim(), port, false);
+    }
+
+    public static CienaTelnet newInstance(final String userName, final String passwd, final String hostName,
+            final int port, boolean failOnFirstAttempt) throws Exception {
+        return new CienaTelnet(userName.trim(), passwd.trim(), hostName.trim(), port, failOnFirstAttempt);
     }
 
     @Override
@@ -96,8 +106,18 @@ public class CienaTelnet extends TL1Telnet {
             execCmd(INHIBIT_AUTONOMOUS_MSGS_TL1_CMD, "inh");
             logger.log(Level.INFO, " [ CienaTelnet ] connected; sent " + INHIBIT_AUTONOMOUS_MSGS_TL1_CMD);
         } catch (Throwable t) {
-            logger.log(Level.WARNING, "\n\n !!!! [ CienaTelnet ] [ connected ] Got exception trying to disable autonomous messages", t);
+            logger.log(Level.WARNING,
+                    "\n\n !!!! [ CienaTelnet ] [ connected ] Got exception trying to disable autonomous messages", t);
         }
+    }
+
+    /* (non-Javadoc)
+     * @see lia.util.telnet.TL1Telnet#doAuth(java.lang.String, java.lang.String)
+     */
+    @Override
+    protected void doAuth(String userName, String passwd) throws OSTelnetException, IOException {
+        internalExec(true, "act-user::" + userName + ":" + AUTH_CONN_CTAG + "::" + passwd + TL1_FINISH_CMD + "\n",
+                AUTH_CONN_CTAG, TL1_COMPLD_TAG);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * $Id: UDPAccessConf.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: UDPAccessConf.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.modules;
 
@@ -31,7 +31,7 @@ import lia.util.net.NetMatcher;
  */
 public class UDPAccessConf implements Observer {
 
-    private static final transient Logger logger = Logger.getLogger(UDPAccessConf.class.getName());
+    private static final Logger logger = Logger.getLogger(UDPAccessConf.class.getName());
 
     private final static class IPAclEntry {
 
@@ -46,6 +46,7 @@ public class UDPAccessConf implements Observer {
             this.policy = policy;
         }
 
+        @Override
         public String toString() {
             return " IPAclEntry :- NetMatcher: " + ipMatch + " policy: " + policy;
         }
@@ -65,10 +66,12 @@ public class UDPAccessConf implements Observer {
             this.policy = policy;
         }
 
+        @Override
         public String toString() {
             return " RegExAcl :- pattern: " + pattern + " policy: " + policy;
         }
     }
+
     /**
      * the conf file which this object encapsulates
      */
@@ -108,7 +111,6 @@ public class UDPAccessConf implements Observer {
 
         this.accessConfFile = accessConfFile;
 
-
         if (!accessConfFile.exists()) {
             throw new IOException("[ UDPAccessConf ] The AccessConfFile [ " + accessConfFile + " ] does not exist!");
         }
@@ -125,7 +127,8 @@ public class UDPAccessConf implements Observer {
             DateFileWatchdog dfw = DateFileWatchdog.getInstance(accessConfFile, 5 * 1000);
             dfw.addObserver(this);
         } catch (Throwable t) {
-            logger.log(Level.WARNING, "[ UDPAccessConf ] Cannot instantiate DateFileWatchdog for " + accessConfFile + ". The file cannot be monitored for changes ....", t);
+            logger.log(Level.WARNING, "[ UDPAccessConf ] Cannot instantiate DateFileWatchdog for " + accessConfFile
+                    + ". The file cannot be monitored for changes ....", t);
         }
 
         reloadCfg();
@@ -144,7 +147,7 @@ public class UDPAccessConf implements Observer {
         confWriteLock.lock();
         try {
             this.password = password;
-            if (this.password == null || this.password.length() == 0) {
+            if ((this.password == null) || (this.password.length() == 0)) {
                 isPasswdDefined = false;
             } else {
                 isPasswdDefined = true;
@@ -161,7 +164,7 @@ public class UDPAccessConf implements Observer {
             if (!isPasswdDefined) {
                 return true;
             }
-            if (passToCheck == null || passToCheck.length() == 0) {
+            if ((passToCheck == null) || (passToCheck.length() == 0)) {
                 return false;
             }
 
@@ -216,9 +219,10 @@ public class UDPAccessConf implements Observer {
         }
     }
 
-    private static final boolean checkRegExParam(final String param, final List regExAclList, final boolean defaultPolicy) {
+    private static final boolean checkRegExParam(final String param, final List regExAclList,
+            final boolean defaultPolicy) {
 
-        if (regExAclList == null || regExAclList.size() == 0) {
+        if ((regExAclList == null) || (regExAclList.size() == 0)) {
             return defaultPolicy;
         }
 
@@ -256,13 +260,15 @@ public class UDPAccessConf implements Observer {
         return defaultIPAclPolicy;
     }
 
+    @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder(2048);
         sb.append("\n\nPassword: ").append(password);
         int i = 0;
         for (Iterator ipIt = ipListAcl.iterator(); ipIt.hasNext();) {
             IPAclEntry entry = (IPAclEntry) ipIt.next();
-            sb.append("\n[").append(i).append("] = ").append(entry.ipMatch.toString()).append(" [").append(entry.policy).append("]");
+            sb.append("\n[").append(i).append("] = ").append(entry.ipMatch.toString()).append(" [")
+                    .append(entry.policy).append("]");
             i++;
         }
         sb.append("\n\n");
@@ -297,7 +303,7 @@ public class UDPAccessConf implements Observer {
                     ///////////////
                     //ignore comments ( line that starts with # )
                     //////////////
-                    if (line.length() == 0 || line.startsWith("#")) {
+                    if ((line.length() == 0) || line.startsWith("#")) {
                         continue;
                     }
 
@@ -306,11 +312,11 @@ public class UDPAccessConf implements Observer {
                     //////////////
                     if (line.toLowerCase().indexOf("password") != -1) {
                         String[] tokens = line.split("(\\s)*=(\\s)*");
-                        if (tokens == null || tokens.length != 2) {
+                        if ((tokens == null) || (tokens.length != 2)) {
                             logger.log(Level.WARNING, " [ UDPAccessConf ] reloadCfg: Ignoring line: " + line);
                             continue;
                         }
-                        if (tokens[1] == null || tokens[1].trim().length() == 0) {
+                        if ((tokens[1] == null) || (tokens[1].trim().length() == 0)) {
                             continue;
                         }
                         newPasswd = tokens[1].trim();
@@ -370,13 +376,15 @@ public class UDPAccessConf implements Observer {
                     //ip line
                     ///////////////////////
                     String[] tokens = line.split("(\\s)+");
-                    if (tokens == null || tokens.length != 2) {
+                    if ((tokens == null) || (tokens.length != 2)) {
                         logger.log(Level.WARNING, " [ UDPAccessConf ] reloadCfg: Ignoring line: " + line);
                         continue;
                     }
 
-                    if (tokens[0] == null || tokens[1] == null || tokens[0].trim().length() == 0 || tokens[1].trim().length() == 0) {
-                        logger.log(Level.WARNING, " [ UDPAccessConf ] reloadCfg: Cannot process line [ " + line + " ]. Ignoring...");
+                    if ((tokens[0] == null) || (tokens[1] == null) || (tokens[0].trim().length() == 0)
+                            || (tokens[1].trim().length() == 0)) {
+                        logger.log(Level.WARNING, " [ UDPAccessConf ] reloadCfg: Cannot process line [ " + line
+                                + " ]. Ignoring...");
                         continue;
                     }
 
@@ -388,18 +396,21 @@ public class UDPAccessConf implements Observer {
                         } else if (sPolicy.toLowerCase().indexOf("deny") != -1) {
                             policy = false;
                         } else {
-                            logger.log(Level.WARNING, " [ UDPAccessConf ] reloadCfg: Cannot process line [ " + line + " ]. Ignoring...Please specify a policy [ allow | deny ]");
+                            logger.log(Level.WARNING, " [ UDPAccessConf ] reloadCfg: Cannot process line [ " + line
+                                    + " ]. Ignoring...Please specify a policy [ allow | deny ]");
                             continue;
                         }
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, " [ UDPAccessConf ] reloadCfg: Cannot process line [ " + line + " ]. Ignoring...", t);
+                        logger.log(Level.WARNING, " [ UDPAccessConf ] reloadCfg: Cannot process line [ " + line
+                                + " ]. Ignoring...", t);
                         continue;
                     }
 
-                    newIPAcl.add(new IPAclEntry(new NetMatcher(new String[]{tokens[0].trim()}), policy));
+                    newIPAcl.add(new IPAclEntry(new NetMatcher(new String[] { tokens[0].trim() }), policy));
 
                 } catch (Throwable t1) {
-                    logger.log(Level.WARNING, " [ UDPAccessConf ]  Got Exeption while parsing entry [ " + line + " ] ... ignoring it");
+                    logger.log(Level.WARNING, " [ UDPAccessConf ]  Got Exeption while parsing entry [ " + line
+                            + " ] ... ignoring it");
                 }
             }//while
 
@@ -459,17 +470,22 @@ public class UDPAccessConf implements Observer {
                 sb.append("\n\n [ UDPAccessConf ] reload conf: ");
                 sb.append("\n Password: ").append(password).append(" isPasswdEnabled: ").append(isPasswdDefined);
                 sb.append("\n IpListAcl: ").append(ipListAcl).append(" defaultIPPolicy: ").append(defaultIPAclPolicy);
-                sb.append("\n ClustersAcl: ").append(clustersListAcl).append(" defaultClustersPolicy: ").append(defaultClustersPolicy);
-                sb.append("\n NodesAcl: ").append(nodesListAcl).append(" defaultNodesPolicy: ").append(defaultNodesPolicy).append("\n\n");
+                sb.append("\n ClustersAcl: ").append(clustersListAcl).append(" defaultClustersPolicy: ")
+                        .append(defaultClustersPolicy);
+                sb.append("\n NodesAcl: ").append(nodesListAcl).append(" defaultNodesPolicy: ")
+                        .append(defaultNodesPolicy).append("\n\n");
                 logger.log(Level.FINEST, sb.toString());
             } finally {
                 confReadLock.unlock();
             }
         }
 
-        logger.log(Level.INFO, " [ UDPAccessConf ] : Finished (RE)Loading conf. It took: " + (System.currentTimeMillis() - sTime) + " ms");
+        logger.log(Level.INFO,
+                " [ UDPAccessConf ] : Finished (RE)Loading conf. It took: " + (System.currentTimeMillis() - sTime)
+                        + " ms");
     }
 
+    @Override
     public void update(Observable o, Object arg) {
         reloadCfg();
     }
@@ -479,14 +495,14 @@ public class UDPAccessConf implements Observer {
         try {
             if (line.toLowerCase().indexOf("default_ip_policy") != -1) {
                 String[] tokens = line.split("(\\s)*=(\\s)*");
-                if (tokens == null || tokens.length != 2) {
+                if ((tokens == null) || (tokens.length != 2)) {
                     logger.log(Level.WARNING, " [ UDPAccessConf ] reloadCfg: Ignoring line: " + line);
-                } else if (tokens[1] == null || tokens[1].trim().length() == 0) {
+                } else if ((tokens[1] == null) || (tokens[1].trim().length() == 0)) {
                     logger.log(Level.WARNING, " [ UDPAccessConf ] reloadCfg: Ignoring line: " + line);
                 } else {
                     char c = tokens[1].charAt(0);
 
-                    if (c == '1' || c == 't' || c == 'a' || c == 'A' || c == 'T') {
+                    if ((c == '1') || (c == 't') || (c == 'a') || (c == 'A') || (c == 'T')) {
                         ret = true;
                     } else {
                         ret = defaultValue;
@@ -494,10 +510,12 @@ public class UDPAccessConf implements Observer {
                 }
             }
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ UDPAccessConf ] [ parseKeyBooleanValue ]: Ignoring line  [" + line + "] got exception: ", t);
+            logger.log(Level.WARNING, " [ UDPAccessConf ] [ parseKeyBooleanValue ]: Ignoring line  [" + line
+                    + "] got exception: ", t);
         } finally {
             if (logger.isLoggable(Level.FINEST)) {
-                logger.log(Level.WARNING, " [ UDPAccessConf ] [ parseKeyBooleanValue ]: for line [ " + line + " ] returning: " + ret);
+                logger.log(Level.WARNING, " [ UDPAccessConf ] [ parseKeyBooleanValue ]: for line [ " + line
+                        + " ] returning: " + ret);
             }
         }
         return ret;
@@ -518,7 +536,8 @@ public class UDPAccessConf implements Observer {
                 logger.log(Level.WARNING, " [ UDPAccessConf ] [ parseClusterNodeAclLine ]: Ignoring line: " + line);
             }
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ UDPAccessConf ] [ parseClusterNodeAclLine ]: Ignoring line  [" + line + "]    got exception: ", t);
+            logger.log(Level.WARNING, " [ UDPAccessConf ] [ parseClusterNodeAclLine ]: Ignoring line  [" + line
+                    + "]    got exception: ", t);
         }
     }
 }

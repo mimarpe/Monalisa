@@ -25,8 +25,14 @@ import snmp.SNMPCounter32;
  * @since ML 2.0.0
  */
 public class snmp_CPU_v2 extends snmpMon2 implements MonitoringModule {
+
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -7501839404260208908L;
+
     /** The Logger */
-    private static final Logger logger = Logger.getLogger("lia.Monitor.modules.snmp_CPU_v2");
+    private static final Logger logger = Logger.getLogger(snmp_CPU_v2.class.getName());
 
     static public String ModuleName = "snmp_CPU_v2";
     static public String[] ResTypes = { "CPU_usr", "CPU_nice", "CPU_sys", "CPU_idle" };
@@ -37,7 +43,8 @@ public class snmp_CPU_v2 extends snmpMon2 implements MonitoringModule {
      * UCD-SNMP-MIB::ssCpuRawSystem.0 = Counter32 (1.3.6.1.4.1.2021.13.52)
      * UCD-SNMP-MIB::ssCpuRawIdle.0 = Counter32 (1.3.6.1.4.1.2021.14.53)
      */
-    static String[] sOids = { "1.3.6.1.4.1.2021.11.50.0", "1.3.6.1.4.1.2021.11.51.0", "1.3.6.1.4.1.2021.11.52.0", "1.3.6.1.4.1.2021.11.53.0" };
+    static String[] sOids = { "1.3.6.1.4.1.2021.11.50.0", "1.3.6.1.4.1.2021.11.51.0", "1.3.6.1.4.1.2021.11.52.0",
+            "1.3.6.1.4.1.2021.11.53.0" };
     static public String OsName = "*";
 
     long[] old_count = null;
@@ -46,12 +53,13 @@ public class snmp_CPU_v2 extends snmpMon2 implements MonitoringModule {
     long last_measured;
     long[] diff = new long[ResTypes.length];
 
-    private static final long MAX_COUNTER32 = (2 << 32 - 1);
+    private static final long MAX_COUNTER32 = (2 << (32 - 1));
 
     public snmp_CPU_v2() {
         super(sOids);
     }
 
+    @Override
     public MonModuleInfo init(MNode node, String args) {
         try {
             init(node);
@@ -68,29 +76,33 @@ public class snmp_CPU_v2 extends snmpMon2 implements MonitoringModule {
         return info;
     }
 
+    @Override
     public String[] ResTypes() {
         return ResTypes;
     }
 
+    @Override
     public String getOsName() {
         return OsName;
     }
 
-    public Object doProcess()   throws Exception{
-        
-        if (info.getState()!=0){
+    @Override
+    public Object doProcess() throws Exception {
+
+        if (info.getState() != 0) {
             throw new IOException("[snmp_CPU_v2 ERR] Module could not be initialized");
         }
-        
+
         Map res = null;
         try {
             res = snmpBulkGet();
         } catch (Throwable t) {
-            if(logger.isLoggable(Level.FINE))
-		logger.log(Level.FINE, "Got exc for Node [ " + Node.getName() + " ] :",t);
-	    else if(logger.isLoggable(Level.WARNING))
-    		logger.log(Level.WARNING, "Got exc for Node [ " + Node.getName() + " ] :"+t.getMessage());
-	    
+            if (logger.isLoggable(Level.FINE)) {
+                logger.log(Level.FINE, "Got exc for Node [ " + Node.getName() + " ] :", t);
+            } else if (logger.isLoggable(Level.WARNING)) {
+                logger.log(Level.WARNING, "Got exc for Node [ " + Node.getName() + " ] :" + t.getMessage());
+            }
+
             res = null;
         }
 
@@ -102,12 +114,13 @@ public class snmp_CPU_v2 extends snmpMon2 implements MonitoringModule {
         Result result = new Result(Node.getFarmName(), Node.getClusterName(), Node.getName(), ModuleName, ResTypes);
         result.time = NTPDate.currentTimeMillis();
 
-        if (res.size() < 4)
+        if (res.size() < 4) {
             return null;
+        }
 
         for (int i = 0; i < sOids.length; i++) {
             Object oValue = res.get(sOids[i]);
-            if (oValue != null && oValue instanceof SNMPCounter32) {
+            if ((oValue != null) && (oValue instanceof SNMPCounter32)) {
                 SNMPCounter32 oc32Value = (SNMPCounter32) oValue;
                 cur[i] = ((BigInteger) oc32Value.getValue()).longValue();
             }
@@ -134,8 +147,9 @@ public class snmp_CPU_v2 extends snmpMon2 implements MonitoringModule {
         }
 
         for (int i = 0; i < ResTypes.length; i++) {
-            if (sum > 0)
+            if (sum > 0) {
                 result.param[i] = 100.0 * ((double) diff[i] / (double) sum);
+            }
         }
 
         xtmp = old_count;
@@ -162,7 +176,7 @@ public class snmp_CPU_v2 extends snmpMon2 implements MonitoringModule {
         MonModuleInfo info = aa.init(new MNode(host, ad, null, null), null);
         try {
             Object bb = aa.doProcess();
-        } catch (Exception e1) {        
+        } catch (Exception e1) {
             e1.printStackTrace();
         }
         while (true) {
@@ -170,10 +184,10 @@ public class snmp_CPU_v2 extends snmpMon2 implements MonitoringModule {
                 Thread.sleep(10000);
             } catch (Exception e) {
             }
-            Result cc=null;
+            Result cc = null;
             try {
                 cc = (Result) aa.doProcess();
-            } catch (Exception e) {              
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             System.out.println("[SIM]  Result" + cc);

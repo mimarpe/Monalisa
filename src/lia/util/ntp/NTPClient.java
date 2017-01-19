@@ -18,7 +18,7 @@ import lia.Monitor.monitor.AppConfig;
 
 class NTPClient {
 
-    private static final transient Logger logger = Logger.getLogger(NTPClient.class.getName());
+    private static final Logger logger = Logger.getLogger(NTPClient.class.getName());
 
     private static final long SEVENTY_OFFSET; // offset (in ms) between 1900 and 1970
 
@@ -39,9 +39,8 @@ class NTPClient {
     // "193.204.114.231"
     // };
 
-    private static final String DEFAULT_vsServers[] = {
-            "0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org", "3.pool.ntp.org"
-    };
+    private static final String DEFAULT_vsServers[] = { "0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org",
+            "3.pool.ntp.org" };
 
     private static String vsServers[] = DEFAULT_vsServers;
 
@@ -51,13 +50,14 @@ class NTPClient {
         } catch (Throwable t) {
             vsServers = null;
         }
-        if (vsServers == null)
+        if (vsServers == null) {
             vsServers = DEFAULT_vsServers;
+        }
         if (logger.isLoggable(Level.FINE)) {
             StringBuilder sb = new StringBuilder();
             sb.append("{");
             for (int i = 0; i < vsServers.length; i++) {
-                sb.append(vsServers[i]).append(i < vsServers.length - 1 ? "," : "");
+                sb.append(vsServers[i]).append(i < (vsServers.length - 1) ? "," : "");
             }
             sb.append("}");
             logger.log(Level.FINE, "NTPClient :- Using: " + sb.toString());
@@ -66,7 +66,7 @@ class NTPClient {
 
     byte[] NTPData;
 
-    private int NTPPort = 123; // NTP always uses port 123
+    private final int NTPPort = 123; // NTP always uses port 123
 
     // Offsets in NTPData for each timestamp
     private final byte referenceOffset = 16;
@@ -105,11 +105,11 @@ class NTPClient {
 
     private int counter;
 
-    private long[] localOffset;
+    private final long[] localOffset;
 
-    private long[] rtDelay;
+    private final long[] rtDelay;
 
-    private boolean[] validResponse;
+    private final boolean[] validResponse;
 
     private String refID;
 
@@ -150,10 +150,12 @@ class NTPClient {
 
     public long toLong(int offset) {
 
-        long intPart = ((((long) NTPData[offset + 3]) & 0xFF)) + ((((long) NTPData[offset + 2]) & 0xFF) << 8) + ((((long) NTPData[offset + 1]) & 0xFF) << 16) + ((((long) NTPData[offset + 0]) & 0xFF) << 24);
+        long intPart = ((((long) NTPData[offset + 3]) & 0xFF)) + ((((long) NTPData[offset + 2]) & 0xFF) << 8)
+                + ((((long) NTPData[offset + 1]) & 0xFF) << 16) + ((((long) NTPData[offset + 0]) & 0xFF) << 24);
 
-        long fracPart = ((((long) NTPData[offset + 7]) & 0xFF)) + ((((long) NTPData[offset + 6]) & 0xFF) << 8) + ((((long) NTPData[offset + 5]) & 0xFF) << 16) + ((((long) NTPData[offset + 4]) & 0xFF) << 24);
-        long millisLong = (intPart * 1000) + (fracPart * 1000) / 0X100000000L;
+        long fracPart = ((((long) NTPData[offset + 7]) & 0xFF)) + ((((long) NTPData[offset + 6]) & 0xFF) << 8)
+                + ((((long) NTPData[offset + 5]) & 0xFF) << 16) + ((((long) NTPData[offset + 4]) & 0xFF) << 24);
+        long millisLong = (intPart * 1000) + ((fracPart * 1000) / 0X100000000L);
 
         return millisLong;
     }
@@ -341,7 +343,8 @@ class NTPClient {
 
                 } catch (Throwable e) {
                     if (logger.isLoggable(Level.FINE)) {
-                        logger.log(Level.FINE, "Time server [ " + counter + " ] cannot be reached:  (" + vsServers[counter] + ")", e);
+                        logger.log(Level.FINE, "Time server [ " + counter + " ] cannot be reached:  ("
+                                + vsServers[counter] + ")", e);
                     }
                 } finally {
                     if (NTPSocket != null) {
@@ -371,7 +374,7 @@ class NTPClient {
         boolean firstIter = true;
         final Set<Integer> avgNotOkServI = new HashSet<Integer>();
 
-        while (firstIter || countOk <= 1) {
+        while (firstIter || (countOk <= 1)) {
             firstIter = false;
 
             for (int i = 0; i < vsServers.length; i++) {
@@ -381,30 +384,35 @@ class NTPClient {
                 }
             }
 
-            if (countOk <= 1)
+            if (countOk <= 1) {
                 return false;
+            }
 
             average /= countOk;
 
             for (int i = 0; i < vsServers.length; i++) {
                 if (validResponse[i] && (Math.abs(localOffset[i] - average) > 10000)) {
-                    logger.log(Level.WARNING, "NTP responses sanity check failed : server " + vsServers[i] + " thinks the offset is " + localOffset[i] + ", but the average value is " + average + ". Recomputing avg without this server.");
+                    logger.log(Level.WARNING, "NTP responses sanity check failed : server " + vsServers[i]
+                            + " thinks the offset is " + localOffset[i] + ", but the average value is " + average
+                            + ". Recomputing avg without this server.");
                     avgNotOkServI.add(i);
                     continue;
                 }
             }
 
-            if(logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, "Computed a reliable average for " + Arrays.toString(vsServers) 
-                           + "\n avg=" + average + ", countOk=" + countOk
-                           + "\n offsets=" + Arrays.toString(localOffset) + ", validResponse=" + Arrays.toString(validResponse) + ", avgNotOkServI=" + avgNotOkServI.toString());
+            if (logger.isLoggable(Level.FINER)) {
+                logger.log(Level.FINER,
+                        "Computed a reliable average for " + Arrays.toString(vsServers) + "\n avg=" + average
+                                + ", countOk=" + countOk + "\n offsets=" + Arrays.toString(localOffset)
+                                + ", validResponse=" + Arrays.toString(validResponse) + ", avgNotOkServI="
+                                + avgNotOkServI.toString());
             }
             return true;
         }
 
-        logger.log(Level.WARNING, "Unable to compute a reliable average for " + Arrays.toString(vsServers) 
-                   + "\n avg=" + average + ", countOk=" + countOk
-                   + "\n offsets=" + Arrays.toString(localOffset) + ", validResponse=" + Arrays.toString(validResponse) + ", avgNotOkServI=" + avgNotOkServI.toString());
+        logger.log(Level.WARNING, "Unable to compute a reliable average for " + Arrays.toString(vsServers) + "\n avg="
+                + average + ", countOk=" + countOk + "\n offsets=" + Arrays.toString(localOffset) + ", validResponse="
+                + Arrays.toString(validResponse) + ", avgNotOkServI=" + avgNotOkServI.toString());
         return false;
     }
 

@@ -22,7 +22,7 @@ import lia.Monitor.monitor.AppConfig;
  */
 public class UpdaterUtils {
 
-    private static final transient Logger logger = Logger.getLogger(UpdaterUtils.class.getName());
+    private static final Logger logger = Logger.getLogger(UpdaterUtils.class.getName());
 
     static final String HEXES = "0123456789abcdef";
 
@@ -34,7 +34,7 @@ public class UpdaterUtils {
      * 
      * @param prefix
      * @param url
-     * @return
+     * @return the full path based on the specified URL
      */
     public static final File getLocalDestinationForURL(final String prefix, final URL url) {
         final String path = url.getPath();
@@ -79,7 +79,8 @@ public class UpdaterUtils {
             c.close();
         } catch (Throwable ignore) {
             if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, " [ UpdaterUtils ] [ closeIgnoringException ] exception closing: " + c + " Cause: ", ignore);
+                logger.log(Level.FINE, " [ UpdaterUtils ] [ closeIgnoringException ] exception closing: " + c
+                        + " Cause: ", ignore);
             }
         }
     }
@@ -94,8 +95,9 @@ public class UpdaterUtils {
             final byte buff[] = new byte[DISK_BUFFER_SIZE];
             for (;;) {
                 final int len = bis.read(buff);
-                if (len < 0)
+                if (len < 0) {
                     break;
+                }
                 digest.update(buff, 0, len);
             }
         } finally {
@@ -125,7 +127,7 @@ public class UpdaterUtils {
 
         for (int i = 0; i < args.length; i++) {
             if (option.equals(args[i])) {
-                if (args.length > i + 1) {
+                if (args.length > (i + 1)) {
                     return (args[i + 1].startsWith("-")) ? "" : args[i + 1];
                 }
 
@@ -140,18 +142,23 @@ public class UpdaterUtils {
         // Create channel on the source
         FileChannel srcChannel = null;
         FileChannel dstChannel = null;
+        FileInputStream fis = null;
+        FileOutputStream fos = null;
         try {
             setRWOwnerOnly(destination);
 
-            srcChannel = new FileInputStream(source).getChannel();
-            dstChannel = new FileOutputStream(destination).getChannel();
+            fis = new FileInputStream(source);
+            fos = new FileOutputStream(destination);
+            srcChannel = fis.getChannel();
+            dstChannel = fos.getChannel();
             long tr = dstChannel.transferFrom(srcChannel, 0, srcChannel.size());
 
             final long ss = srcChannel.size();
             final long ds = dstChannel.size();
 
-            if (ss != ds || ss != tr) {
-                throw new IOException("Cannot copy SourceFileSize [ " + ss + " ] DestinationFileSize [ " + ds + " ] Transferred [ " + tr + " ] ");
+            if ((ss != ds) || (ss != tr)) {
+                throw new IOException("Cannot copy SourceFileSize [ " + ss + " ] DestinationFileSize [ " + ds
+                        + " ] Transferred [ " + tr + " ] ");
             }
 
             // set the update time
@@ -161,6 +168,8 @@ public class UpdaterUtils {
         } finally {
             closeIgnoringException(srcChannel);
             closeIgnoringException(dstChannel);
+            closeIgnoringException(fis);
+            closeIgnoringException(fos);
         }
 
     }
@@ -179,12 +188,12 @@ public class UpdaterUtils {
                 bRet = bRet && f.setWritable(true, true);
                 return bRet;
             }
-            
+
             return false;
         } catch (Throwable t) {
             logger.log(Level.WARNING, "AppRemoteURLUpdater unable to set RWOwnerOnly", t);
         }
-        
+
         return false;
     }
 

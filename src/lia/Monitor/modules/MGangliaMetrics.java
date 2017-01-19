@@ -8,36 +8,30 @@ import lia.Monitor.monitor.AppConfig;
 
 public class MGangliaMetrics {
 
-    /** Logger Name */
-    private static final transient String COMPONENT = "lia.Monitor.modules";
-
     /** The Logger */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(MGangliaMetrics.class.getName());
 
     // ganglia specific
     public static final int MIN_RESERVED_KEY = 25;
 
     public static final int MAX_RESERVED_KEY = 28;
 
-    private static final String gDefaultMetrics[] = {
-            "user_defined", "cpu_num", "cpu_speed", "mem_total", "swap_total", "boottime", "sys_clock", "machine_type", "os_name", "os_release",
+    private static final String gDefaultMetrics[] = { "user_defined", "cpu_num", "cpu_speed", "mem_total",
+            "swap_total", "boottime", "sys_clock", "machine_type", "os_name", "os_release",
 
-            "cpu_user", "cpu_nice", "cpu_system", "cpu_idle", "cpu_aidle", "load_one", "load_five", "load_fifteen", "proc_run", "proc_total", "mem_free", "mem_shared", "mem_buffers", "mem_cached", "swap_free",
+            "cpu_user", "cpu_nice", "cpu_system", "cpu_idle", "cpu_aidle", "load_one", "load_five", "load_fifteen",
+            "proc_run", "proc_total", "mem_free", "mem_shared", "mem_buffers", "mem_cached", "swap_free",
             /* internal.. ignore ... just for index! */
-            "gexec", "heartbeat", "mtu", "location"
-    };
+            "gexec", "heartbeat", "mtu", "location" };
 
-    private static final String gSolarisMetrics[] = {
-            "cpu_wio", "bread_sec", "bwrite_sec", "lread_sec", "lwrite_sec", "phread_sec", "phwrite_sec", "rcache", "wcache"
-    };
+    private static final String gSolarisMetrics[] = { "cpu_wio", "bread_sec", "bwrite_sec", "lread_sec", "lwrite_sec",
+            "phread_sec", "phwrite_sec", "rcache", "wcache" };
 
-    private static final String gLinuxMetrics[] = {
-            "bytes_in", "bytes_out", "pkts_in", "pkts_out", "disk_total", "disk_free", "part_max_used"
-    };
+    private static final String gLinuxMetrics[] = { "bytes_in", "bytes_out", "pkts_in", "pkts_out", "disk_total",
+            "disk_free", "part_max_used" };
 
-    private static final String gHPUXMetrics[] = {
-            "cpu_intr", "cpu_ssys", "cpu_wait", "cpu_arm", "cpu_rm", "cpu_avm", "cpu_vm"
-    };
+    private static final String gHPUXMetrics[] = { "cpu_intr", "cpu_ssys", "cpu_wait", "cpu_arm", "cpu_rm", "cpu_avm",
+            "cpu_vm" };
 
     public static String[] gMetrics = null;
     static {

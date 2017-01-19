@@ -1,5 +1,5 @@
 /*
- * $Id: FarmWorker.java 7273 2012-06-26 15:47:08Z ramiro $
+ * $Id: FarmWorker.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.ClientsFarmProxy;
 
@@ -43,7 +43,7 @@ import net.jini.core.lookup.ServiceItem;
  */
 public class FarmWorker extends GenericProxyWorker {
 
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.ClientsFarmProxy.FarmWorker");
+    private static final Logger logger = Logger.getLogger(FarmWorker.class.getName());
 
     private static final AppCtrlSessionManager appCtrlSessMgr = AppCtrlSessionManager.getInstance();
 
@@ -74,27 +74,31 @@ public class FarmWorker extends GenericProxyWorker {
     private final AtomicReference<MFarmClientConfigInfo> clientConfigInfoRef = new AtomicReference<MFarmClientConfigInfo>();
 
     static {
-        ThreadPoolExecutor texecutor = new ThreadPoolExecutor(3, 3, 2 * 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
+        ThreadPoolExecutor texecutor = new ThreadPoolExecutor(3, 3, 2 * 60, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
 
-            AtomicLong l = new AtomicLong(0);
+                    AtomicLong l = new AtomicLong(0);
 
-            public Thread newThread(Runnable r) {
-                return new Thread(r, "( ML ) ProxyTCPWorkerTask " + l.getAndIncrement());
-            }
-        });
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, "( ML ) ProxyTCPWorkerTask " + l.getAndIncrement());
+                    }
+                });
         // it will be added in 1.6
         texecutor.allowCoreThreadTimeOut(true);
         texecutor.prestartAllCoreThreads();
         mailThPool = texecutor;
 
-        ThreadPoolExecutor texecutor2 = new ThreadPoolExecutor(3, 3, 2 * 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
+        ThreadPoolExecutor texecutor2 = new ThreadPoolExecutor(3, 3, 2 * 60, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<Runnable>(), new ThreadFactory() {
 
-            AtomicLong l = new AtomicLong(0);
+                    AtomicLong l = new AtomicLong(0);
 
-            public Thread newThread(Runnable r) {
-                return new Thread(r, "( ML ) ProxyTCPWorkerTask " + l.getAndIncrement());
-            }
-        });
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, "( ML ) ProxyTCPWorkerTask " + l.getAndIncrement());
+                    }
+                });
         // it will be added in 1.6
         texecutor.allowCoreThreadTimeOut(true);
         texecutor2.prestartAllCoreThreads();
@@ -113,6 +117,7 @@ public class FarmWorker extends GenericProxyWorker {
             this.fw = fw;
         }
 
+        @Override
         public void run() {
             try {
                 if (message instanceof MLLogMsg) {
@@ -160,6 +165,7 @@ public class FarmWorker extends GenericProxyWorker {
             this.fw = fw;
         }
 
+        @Override
         public void run() {
             try {
                 if (message instanceof EMsg) {
@@ -198,6 +204,7 @@ public class FarmWorker extends GenericProxyWorker {
     }
 
     // moved here from run()
+    @Override
     public boolean commInit() {
 
         if (infoToFile.enabled()) {
@@ -219,6 +226,7 @@ public class FarmWorker extends GenericProxyWorker {
         return true;
     }
 
+    @Override
     public void processMsg(final MonMessageClientsProxy mm) {
         monMessage sentMessage = new monMessage(mm.tag, mm.ident, mm.result);
         ServiceCommunication.incSendMsg();
@@ -247,6 +255,7 @@ public class FarmWorker extends GenericProxyWorker {
         }
     }
 
+    @Override
     public void processMsg(monMessage msg) {
         try {
             /* a messae from farm */
@@ -257,7 +266,7 @@ public class FarmWorker extends GenericProxyWorker {
              * ------------------------------------------------------------------ log how many messages came on this
              * connection
              */
-            if (infoToFile.enabled() && (System.currentTimeMillis() - lastUpdateFileInfo >= 3600000)) {
+            if (infoToFile.enabled() && ((System.currentTimeMillis() - lastUpdateFileInfo) >= 3600000)) {
 
                 lastUpdateFileInfo = System.currentTimeMillis();
 
@@ -267,14 +276,15 @@ public class FarmWorker extends GenericProxyWorker {
 
                 long lastHourMsgsSize = 0;
 
-                if (lastSizeMsg == 0 || lastSizeMsg > sizeMsgs) {
+                if ((lastSizeMsg == 0) || (lastSizeMsg > sizeMsgs)) {
                     lastHourMsgsSize = sizeMsgs;
                 } else {
                     lastHourMsgsSize = sizeMsgs - lastSizeMsg;
                 } // if = else
                 lastSizeMsg = sizeMsgs;
 
-                infoToFile.writeToFile((new Date()) + " : " + strToFile + nrMsg + " \n\t\t[size] " + (lastHourMsgsSize / 1000000) + "\n\n");
+                infoToFile.writeToFile((new Date()) + " : " + strToFile + nrMsg + " \n\t\t[size] "
+                        + (lastHourMsgsSize / 1000000) + "\n\n");
 
             } // if
             /**
@@ -286,6 +296,7 @@ public class FarmWorker extends GenericProxyWorker {
         }
     }
 
+    @Override
     public void notifyMessage(Object o) {
 
         monMessage mFarm = (monMessage) o;
@@ -300,7 +311,7 @@ public class FarmWorker extends GenericProxyWorker {
 
                     if (agentAddr != null) {
                         String sAddr = agentAddr.substring(agentAddr.indexOf("@") + 1);
-                        if (sAddr != null && sAddr.equals(id.toString())) {
+                        if ((sAddr != null) && sAddr.equals(id.toString())) {
                             sent = true;
                             if (mFarm.tag.startsWith(monMessage.ML_AGENT_CTRL_TAG)) {
                                 String ctrl = mFarm.tag.substring(mFarm.tag.indexOf(":") + 1);
@@ -358,10 +369,12 @@ public class FarmWorker extends GenericProxyWorker {
         }
     } // notifyMessage
 
+    @Override
     public String toString() {
         return "FarmWorker [ " + strName + " SID: " + id + " ]";
     }
 
+    @Override
     public void notifyConnectionClosed() {
         try {
             if (notified.compareAndSet(false, true)) {
@@ -375,13 +388,14 @@ public class FarmWorker extends GenericProxyWorker {
                     long nrMsg = msgsLastHourContor.getAndSet(0L);
                     long sizeMsgs = getSentBytes();
                     long lastHourMsgsSize = 0;
-                    if (lastSizeMsg == 0 || lastSizeMsg > sizeMsgs) {
+                    if ((lastSizeMsg == 0) || (lastSizeMsg > sizeMsgs)) {
                         lastHourMsgsSize = sizeMsgs;
                     } else {
                         lastHourMsgsSize = sizeMsgs - lastSizeMsg;
                     } // if = else
                     lastSizeMsg = sizeMsgs;
-                    infoToFile.writeToFile((new Date()) + " [LastInfoBecauseIDie] " + strToFile + nrMsg + " \n\t\t[size] " + lastHourMsgsSize + "\n\n");
+                    infoToFile.writeToFile((new Date()) + " [LastInfoBecauseIDie] " + strToFile + nrMsg
+                            + " \n\t\t[size] " + lastHourMsgsSize + "\n\n");
                 } // if
             }
         } catch (Throwable t) {
@@ -407,9 +421,10 @@ public class FarmWorker extends GenericProxyWorker {
         if (si != null) {
             final MonaLisaEntry mle = Utils.getEntry(si, MonaLisaEntry.class);
             final String[] groups = Utils.getSplittedListFields(mle.Group);
-            if (groups != null && groups.length > 0) {
-                for (final String group : groups)
+            if ((groups != null) && (groups.length > 0)) {
+                for (final String group : groups) {
                     newGroups.add(group);
+                }
             }
         } // if
 

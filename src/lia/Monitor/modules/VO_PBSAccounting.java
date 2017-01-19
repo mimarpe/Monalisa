@@ -22,7 +22,7 @@ import lia.util.logging.MLLogEvent;
  */
 public class VO_PBSAccounting {
 
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.modules.VO_PBSAccounting");
+    private static final Logger logger = Logger.getLogger(VO_PBSAccounting.class.getName());
 
     private static final long SEC_MILLIS = 1000;
 
@@ -66,7 +66,7 @@ public class VO_PBSAccounting {
             }
         } else {
             logger.log(Level.INFO,
-                       "No PBS history information will be provided (either the feature was disabled or the logs were not found)");
+                    "No PBS history information will be provided (either the feature was disabled or the logs were not found)");
             watcher = null;
         }
 
@@ -82,8 +82,9 @@ public class VO_PBSAccounting {
     public Vector<Hashtable<String, Object>> getHistoryInfo() {
         Vector<Hashtable<String, Object>> histInfo = new Vector<Hashtable<String, Object>>();
         logger.log(Level.FINEST, "Checking PBS logs...");
-        if (watcher == null)
+        if (watcher == null) {
             return null;
+        }
 
         try {
             BufferedReader br = watcher.getNewChunk();
@@ -112,11 +113,13 @@ public class VO_PBSAccounting {
         }
 
         while ((line = br.readLine()) != null) {
-            if (logger.isLoggable(Level.FINEST))
+            if (logger.isLoggable(Level.FINEST)) {
                 logger.finest("Parsing line from PBS log: " + line);
+            }
             Hashtable<String, Object> histJobInfo = parseLogRecord(line);
-            if (histJobInfo != null)
+            if (histJobInfo != null) {
                 jobsInfo.add(histJobInfo);
+            }
         }
     }
 
@@ -124,12 +127,14 @@ public class VO_PBSAccounting {
         Hashtable<String, Object> jobInfo = new Hashtable<String, Object>();
         String[] recList = line.split(";");
 
-        if (recList.length != 4)
+        if (recList.length != 4) {
             throw new Exception("Error parsing PBS log - line: " + line);
+        }
 
         /* we only process "E" (exit) records */
-        if (!recList[1].equals("E"))
+        if (!recList[1].equals("E")) {
             return null;
+        }
 
         /* process the completion date of the job */
         try {
@@ -143,19 +148,24 @@ public class VO_PBSAccounting {
         jobInfo.put("sId", recList[2]);
 
         String[] accList = SPACE_PATTERN.split(recList[3]);
-        for (int i = 0; i < accList.length; i++) {
-            String[] params = EQ_PATTERN.split(accList[i]);
-            if (params.length != 2)
-                throw new Exception("Error parsing PBS log - parameter: " + accList[i]);
+        for (String element : accList) {
+            String[] params = EQ_PATTERN.split(element);
+            if (params.length != 2) {
+                throw new Exception("Error parsing PBS log - parameter: " + element);
+            }
 
-            if (params[0].equals("user"))
+            if (params[0].equals("user")) {
                 jobInfo.put("sOwner", params[1]);
-            if (params[0].equals("resources_used.cput"))
+            }
+            if (params[0].equals("resources_used.cput")) {
                 jobInfo.put("dCpuTime", Double.valueOf(parsePBSTime(params[1]) / ((double) SEC_MILLIS)));
-            if (params[0].equals("resources_used.walltime"))
+            }
+            if (params[0].equals("resources_used.walltime")) {
                 jobInfo.put("dWallClockTime", Double.valueOf(parsePBSTime(params[1]) / ((double) SEC_MILLIS)));
-            if (params[0].equals("Exit_status"))
+            }
+            if (params[0].equals("Exit_status")) {
                 jobInfo.put("iExitCode", Integer.valueOf(params[1]));
+            }
             if (params[0].equals("start")) {
                 long lVal = Long.parseLong(params[1]) * 1000;
                 jobInfo.put("lStartDate", Long.valueOf(lVal));
@@ -178,7 +188,8 @@ public class VO_PBSAccounting {
      * @return A Vector with JobInfoExt objects correspunding to the current jobs
      * @throws Exception
      */
-    public static Vector<JobInfoExt> parsePBSOutput(BufferedReader buff, int nCommandsToCheck, boolean checkExitStatus) throws Exception {
+    public static Vector<JobInfoExt> parsePBSOutput(BufferedReader buff, int nCommandsToCheck, boolean checkExitStatus)
+            throws Exception {
         /*
          * Job states:
          * R - job is running.
@@ -211,21 +222,24 @@ public class VO_PBSAccounting {
             String lin = buff.readLine();
 
             // --- end of file ----
-            if (lin == null)
+            if (lin == null) {
                 break;
+            }
 
-            if (lineCnt < 10)
+            if (lineCnt < 10) {
                 firstLines.append(lin + "\n");
+            }
             lineCnt++;
-            if (logger.isLoggable(Level.FINEST))
+            if (logger.isLoggable(Level.FINEST)) {
                 logger.finest("Parsing line from PBS qstat output: " + lin);
+            }
 
             if (lin.startsWith(VO_Utils.okString)) {
                 okCnt++;
                 continue;
             }
 
-            if (lin.indexOf("Name") >= 0 && lin.indexOf("User") >= 0) {
+            if ((lin.indexOf("Name") >= 0) && (lin.indexOf("User") >= 0)) {
                 if (htQIndex == null) {
                     String tmpLin = lin.replaceFirst("Job id", "Job_id").replaceFirst("Time Use", "Time_Use");
                     htQIndex = VO_Utils.getParamIndex(tmpLin);
@@ -236,8 +250,9 @@ public class VO_PBSAccounting {
                 startParsing = true;
                 continue;
             }
-            if (startParsing == false)
+            if (startParsing == false) {
                 continue;
+            }
 
             // if ( lin.equals("") ) break;
 
@@ -275,19 +290,17 @@ public class VO_PBSAccounting {
                     Integer errCode = VO_Utils.jobMgrRecordErrors.get(VO_Utils.PBS);
                     MLLogEvent<String, Integer> mlle = new MLLogEvent<String, Integer>();
                     mlle.logParameters.put("Error Code", errCode);
-                    logger.log(Level.INFO, "Error parsing PBS qstat line: " + lin + "\n", new Object[] {
-                            mlle, e
-                    });
+                    logger.log(Level.INFO, "Error parsing PBS qstat line: " + lin + "\n", new Object[] { mlle, e });
                 }
                 ret.add(jobInfo);
             } // end if > 4
 
         } // end of for
 
-        if (okCnt < nCommandsToCheck && checkExitStatus) {
+        if ((okCnt < nCommandsToCheck) && checkExitStatus) {
             // logger.warning("Error output from PBS qstat: " + firstLines.toString());
-            throw new ModuleException("The PBS qstat command returned with error - command output: \n" + firstLines.toString(),
-                                      retErrCode.intValue());
+            throw new ModuleException("The PBS qstat command returned with error - command output: \n"
+                    + firstLines.toString(), retErrCode.intValue());
         }
 
         return ret;
@@ -308,7 +321,8 @@ public class VO_PBSAccounting {
      *         jobs, indexed by the job IDs.
      * @throws Exception
      */
-    public static Hashtable<String, JobInfoExt> parseQstatAOutput(BufferedReader buff, int nCommandsToCheck, boolean checkExitStatus) throws Exception {
+    public static Hashtable<String, JobInfoExt> parseQstatAOutput(BufferedReader buff, int nCommandsToCheck,
+            boolean checkExitStatus) throws Exception {
         /*
          * Job states:
          * R - job is running.
@@ -341,11 +355,13 @@ public class VO_PBSAccounting {
             String lin = buff.readLine();
 
             // --- end of file ----
-            if (lin == null)
+            if (lin == null) {
                 break;
+            }
 
-            if (lineCnt < 10)
+            if (lineCnt < 10) {
                 firstLines.append(lin + "\n");
+            }
             lineCnt++;
             logger.finest("Parsing line from PBS qstat output: " + lin);
 
@@ -354,7 +370,7 @@ public class VO_PBSAccounting {
                 continue;
             }
 
-            if (lin.indexOf("Job ID") >= 0 && lin.indexOf("Time") >= 0) {
+            if ((lin.indexOf("Job ID") >= 0) && (lin.indexOf("Time") >= 0)) {
                 if (htQIndex == null) {
                     String tmpLin = lin.replaceFirst("Job ID", "Job_ID").replaceFirst("Time", "RTime");
                     htQIndex = VO_Utils.getParamIndex(tmpLin);
@@ -365,8 +381,9 @@ public class VO_PBSAccounting {
                 startParsing = true;
                 continue;
             }
-            if (startParsing == false)
+            if (startParsing == false) {
                 continue;
+            }
 
             // if ( lin.equals("") ) break;
 
@@ -403,19 +420,17 @@ public class VO_PBSAccounting {
                     Integer errCode = VO_Utils.jobMgrRecordErrors.get(VO_Utils.PBS);
                     MLLogEvent<String, Integer> mlle = new MLLogEvent<String, Integer>();
                     mlle.logParameters.put("Error Code", errCode);
-                    logger.log(Level.FINE, "Error parsing PBS qstat -a line: " + lin + "\n", new Object[] {
-                            mlle, e
-                    });
+                    logger.log(Level.FINE, "Error parsing PBS qstat -a line: " + lin + "\n", new Object[] { mlle, e });
                 }
                 ret.put(jobInfo.id, jobInfo);
             }
 
         } // end of for
 
-        if (okCnt < nCommandsToCheck && checkExitStatus) {
+        if ((okCnt < nCommandsToCheck) && checkExitStatus) {
             // logger.warning("Error output from PBS qstat: " + firstLines.toString());
-            throw new ModuleException("The PBS qstat -a command returned with error - command output: \n" + firstLines.toString(),
-                                      retErrCode.intValue());
+            throw new ModuleException("The PBS qstat -a command returned with error - command output: \n"
+                    + firstLines.toString(), retErrCode.intValue());
         }
 
         return ret;
@@ -433,11 +448,10 @@ public class VO_PBSAccounting {
 
         String[] hms = COL_PATTERN.split(cpuTime);
         if (hms.length == 3) {
-            sum += (Long.valueOf(hms[0]).longValue() * HOUR_MILLIS + Long.valueOf(hms[1]).longValue() * MIN_MILLIS + Long.valueOf(hms[2])
-                                                                                                                         .longValue()
-                    * SEC_MILLIS);
+            sum += ((Long.valueOf(hms[0]).longValue() * HOUR_MILLIS) + (Long.valueOf(hms[1]).longValue() * MIN_MILLIS) + (Long
+                    .valueOf(hms[2]).longValue() * SEC_MILLIS));
         } else if (hms.length == 2) {
-            sum += (Long.valueOf(hms[0]).longValue() * MIN_MILLIS + Long.valueOf(hms[1]).longValue() * SEC_MILLIS);
+            sum += ((Long.valueOf(hms[0]).longValue() * MIN_MILLIS) + (Long.valueOf(hms[1]).longValue() * SEC_MILLIS));
         } else if (hms.length == 1) {
             sum += Long.valueOf(hms[0]).longValue() * SEC_MILLIS;
         }
@@ -455,7 +469,7 @@ public class VO_PBSAccounting {
 
         String[] hms = COL_PATTERN.split(cpuTime);
         if (hms.length == 2) {
-            sum += (Long.valueOf(hms[0]).longValue() * HOUR_MILLIS + Long.valueOf(hms[1]).longValue() * MIN_MILLIS);
+            sum += ((Long.valueOf(hms[0]).longValue() * HOUR_MILLIS) + (Long.valueOf(hms[1]).longValue() * MIN_MILLIS));
         } else if (hms.length == 1) {
             sum += (Long.valueOf(hms[0]).longValue() * MIN_MILLIS);
         }
@@ -468,8 +482,9 @@ public class VO_PBSAccounting {
      */
     public static String getLastLog(File logDir) {
         File[] logs = logDir.listFiles();
-        if (logs == null || logs.length == 0)
+        if ((logs == null) || (logs.length == 0)) {
             return null;
+        }
 
         String lastLog = logs[0].getName();
         int idx = 0;

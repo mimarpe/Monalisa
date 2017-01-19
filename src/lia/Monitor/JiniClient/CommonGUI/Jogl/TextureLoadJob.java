@@ -5,35 +5,32 @@
  */
 package lia.Monitor.JiniClient.CommonGUI.Jogl;
 
+public class TextureLoadJob implements Runnable {
 
-public class TextureLoadJob implements Runnable {   
-
-	/** Logger used by this class */
-    //private static final transient Logger logger = Logger.getLogger("lia.Monitor.JiniClient.CommonGUI.Jogl.TextureLoadJob");
-    
     public TextureLoadJobResult result;
-    
+
     public static final int nSleepTime = 1000;
-    
-    public TextureLoadJob(TextureLoadJobResult result)
-    {
+
+    public TextureLoadJob(TextureLoadJobResult result) {
         this.result = result;
     }
-    
-    public void run(){
-    	try{
-    		if ( result.errReason == TextureLoadJobResult.ERR_ISDOWNLOADING )
-				try {
-					Thread.sleep(nSleepTime);
-				} catch (InterruptedException e) {
-					//e.printStackTrace();
-				}
+
+    @Override
+    public void run() {
+        try {
+            if (result.errReason == TextureLoadJobResult.ERR_ISDOWNLOADING) {
+                try {
+                    Thread.sleep(nSleepTime);
+                } catch (InterruptedException e) {
+                    //e.printStackTrace();
+                }
+            }
             Texture.loadNewTextures2(result);
-    	}catch(Exception ex){
+        } catch (Exception ex) {
             //an exception here??? that has to be an error
-            System.out.println("Texture Load Worker ERROR: "+result.path);
+            System.out.println("Texture Load Worker ERROR: " + result.path);
             ex.printStackTrace();
-    	}
+        }
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: ProxyWorker.java 7273 2012-06-26 15:47:08Z ramiro $
+ * $Id: ProxyWorker.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.DataCache;
 
@@ -46,7 +46,7 @@ import net.jini.core.lookup.ServiceItem;
 public class ProxyWorker extends Thread {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(ProxyWorker.class.getName());
+    private static final Logger logger = Logger.getLogger(ProxyWorker.class.getName());
 
     /** maximum time to connect with the other endPoint */
     private static final int CONNECT_TIMEOUT = 30 * 1000; // 30s
@@ -89,7 +89,38 @@ public class ProxyWorker extends Thread {
 
     private static final AtomicLong newPItemsChanged = new AtomicLong(0L);
 
-    private static class ProxyInfo {
+    private static final class ProxyAddress {
+        private final String proxyHostName;
+        private final InetAddress[] addresses;
+        private final int[] ports;
+
+        /**
+         * @param addresses
+         * @param proxyHostName
+         * @param ports
+         */
+        private ProxyAddress(String proxyHostName, InetAddress[] addresses, int[] ports) {
+            this.addresses = addresses;
+            this.proxyHostName = proxyHostName;
+            this.ports = ports;
+        }
+
+        static final ProxyAddress fromServiceItem(ServiceItem serviceItem) {
+
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("ProxyAddress [proxyHostName=").append(proxyHostName).append(", addresses=")
+                    .append(Arrays.toString(addresses)).append(", ports=").append(Arrays.toString(ports)).append("]");
+            return builder.toString();
+        }
+
+    }
+
+    private static final class ProxyInfo {
 
         final tcpClientWorker tcw;
 
@@ -163,11 +194,12 @@ public class ProxyWorker extends Thread {
 
         System.setProperty("MonALISA_ServiceID", si.serviceID.toString());
 
-        if (myServiceItem.serviceID.equals(si.serviceID))
+        if (myServiceItem.serviceID.equals(si.serviceID)) {
             return;
+        }
 
         // I've got a different SID
-        logger.log(Level.INFO, "ProxyWorker GOT A NEW SID [" + si.serviceID + "]...Old one [" + myServiceItem.serviceID + "]");
+        logger.log(Level.INFO, "ProxyWorker NEW SID: " + si.serviceID + "; Old one: " + myServiceItem.serviceID);
         newSIDChanged.incrementAndGet();
 
         try {
@@ -181,15 +213,14 @@ public class ProxyWorker extends Thread {
             long ntpLongDate = NTPDate.currentTimeMillis();
             long cLongDate = System.currentTimeMillis();
 
-            MailFactory.getMailSender().sendMessage(FarmMonitor.realFromAddress,
-                                                    "mlstatus@monalisa.cern.ch",
-                                                    new String[] {
-                                                        "mlstatus@monalisa.cern.ch"
-                                                    },
-                                                    " [ LUS -- SID CHANGED ] @ " + subjToAdd,
-                                                    "NTPDate: " + new Date(ntpLongDate) + " / " + ntpLongDate + "\n" + "SysDate: "
-                                                            + new Date(cLongDate) + " / " + cLongDate + "\n" + "NEW SID = " + si.serviceID
-                                                            + "\nOLD SID = " + myServiceItem.serviceID);
+            MailFactory.getMailSender().sendMessage(
+                    FarmMonitor.realFromAddress,
+                    "mlstatus@monalisa.cern.ch",
+                    new String[] { "mlstatus@monalisa.cern.ch" },
+                    " [ LUS -- SID CHANGED ] @ " + subjToAdd,
+                    "NTPDate: " + new Date(ntpLongDate) + " / " + ntpLongDate + "\n" + "SysDate: "
+                            + new Date(cLongDate) + " / " + cLongDate + "\n" + "NEW SID = " + si.serviceID
+                            + "\nOLD SID = " + myServiceItem.serviceID);
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, " [ ProxyWorker ] Unable to send status mail. Cause:", t);
@@ -205,14 +236,16 @@ public class ProxyWorker extends Thread {
 
     private final static class ProxyWorkerTask implements Runnable {
 
+        @Override
         public void run() {
             try {
                 final ServiceItem[] sitems = mlLusHelper.getProxies();
-                if (sitems != null && sitems.length > 0) {
+                if ((sitems != null) && (sitems.length > 0)) {
                     if (proxyServices != sitems) {
 
                         if (logger.isLoggable(Level.FINER)) {
-                            logger.log(Level.FINER, " [ ProxyWorker ] Received new array of ServiceItem[]-s from MLLUSHelper");
+                            logger.log(Level.FINER,
+                                    " [ ProxyWorker ] Received new array of ServiceItem[]-s from MLLUSHelper");
                         }
 
                         newPItemsChanged.incrementAndGet();
@@ -239,7 +272,7 @@ public class ProxyWorker extends Thread {
                             // update mail capabilities
                             if (pi != null) {
                                 final GenericMLEntry gmle = Utils.getEntry(si, GenericMLEntry.class);
-                                if (gmle != null && gmle.hash != null) {
+                                if ((gmle != null) && (gmle.hash != null)) {
                                     boolean bCanSendMail = false;
                                     try {
                                         Boolean BcanSendMail = (Boolean) gmle.hash.get(PMS_KEY);
@@ -249,7 +282,8 @@ public class ProxyWorker extends Thread {
                                     }
 
                                     if (logger.isLoggable(Level.FINEST)) {
-                                        logger.log(Level.FINEST, " [ PTW ] " + pi.tcw.getKey() + " " + PMS_KEY + " = " + bCanSendMail);
+                                        logger.log(Level.FINEST, " [ PTW ] " + pi.tcw.getKey() + " " + PMS_KEY + " = "
+                                                + bCanSendMail);
                                     }
 
                                     pi.canSendMail.set(bCanSendMail);
@@ -257,13 +291,15 @@ public class ProxyWorker extends Thread {
                                     boolean bCanReceiveLogs = false;
                                     try {
                                         Boolean BCanReceiveLogs = (Boolean) gmle.hash.get(MLLOG_KEY);
-                                        bCanReceiveLogs = (BCanReceiveLogs == null) ? false : BCanReceiveLogs.booleanValue();
+                                        bCanReceiveLogs = (BCanReceiveLogs == null) ? false : BCanReceiveLogs
+                                                .booleanValue();
                                     } catch (Throwable t) {
                                         bCanReceiveLogs = false;
                                     }
 
                                     if (logger.isLoggable(Level.FINEST)) {
-                                        logger.log(Level.FINEST, " [ PTW ] " + pi.tcw.getKey() + " " + MLLOG_KEY + " = " + bCanReceiveLogs);
+                                        logger.log(Level.FINEST, " [ PTW ] " + pi.tcw.getKey() + " " + MLLOG_KEY
+                                                + " = " + bCanReceiveLogs);
                                     }
 
                                     pi.canReceiveLogs.set(bCanReceiveLogs);
@@ -273,7 +309,7 @@ public class ProxyWorker extends Thread {
                     } else { // proxyServices != sitems
                         if (logger.isLoggable(Level.FINER)) {
                             logger.log(Level.FINER,
-                                       " [ ProxyWorker ] Same received the same array of ServiceItem[]-s as in the last iteration from MLLUSHelper");
+                                    " [ ProxyWorker ] Same received the same array of ServiceItem[]-s as in the last iteration from MLLUSHelper");
                         }
                     }
                 }// if(sitems != null && sitems.length > 0)
@@ -286,23 +322,37 @@ public class ProxyWorker extends Thread {
 
     }
 
+    @Override
     public void run() {
         logger.log(Level.INFO, "ProxyWorker Started ... waiting to get a serviceID");
 
         ServiceID sid = null;
         synchronized (serviceItemReferenceLock) {
-            while (myServiceItem == null) {
-                try {
-                    serviceItemReferenceLock.wait();
-                } catch (InterruptedException ie) {
-                    logger.log(Level.INFO, " [ ProxyWorker ] The thread was interrupted waiting for serviceID");
-                    Thread.interrupted();
-                } catch (Throwable t) {
-                    logger.log(Level.INFO, " [ ProxyWorker ] The thread got general exception waiting for serviceID", t);
+            if (myServiceItem == null) {
+                final long sTNanos = System.nanoTime();
+                boolean bFirstTime = true;
+                while (myServiceItem == null) {
+                    try {
+                        if (!bFirstTime) {
+                            bFirstTime = false;
+                            logger.log(
+                                    Level.INFO,
+                                    "ProxyWorker waiting for SID... DT="
+                                            + TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - sTNanos) + " seconds");
+                        }
+                        serviceItemReferenceLock.wait(TimeUnit.SECONDS.toMillis(30));
+                    } catch (InterruptedException ie) {
+                        logger.log(Level.INFO, " [ ProxyWorker ] The thread was interrupted waiting for serviceID");
+                        Thread.interrupted();
+                    } catch (Throwable t) {
+                        logger.log(Level.INFO,
+                                " [ ProxyWorker ] The thread got general exception waiting for serviceID", t);
+                    }
                 }
+
+                sid = myServiceItem.serviceID;
             }
 
-            sid = myServiceItem.serviceID;
         }
 
         logger.log(Level.INFO, "ProxyWorker got the serviceID: " + sid);
@@ -311,7 +361,7 @@ public class ProxyWorker extends Thread {
 
         try {
             ServiceItem[] sitems = mlLusHelper.getProxies();
-            while (sitems == null || sitems.length == 0) {
+            while ((sitems == null) || (sitems.length == 0)) {
                 mlLusHelper.forceUpdate();
                 try {
                     Thread.sleep(1000);
@@ -326,7 +376,8 @@ public class ProxyWorker extends Thread {
                 sitems = mlLusHelper.getProxies();
             }
 
-            MonALISAExecutors.getMLNetworkExecutor().scheduleWithFixedDelay(new ProxyWorkerTask(), 0, 40, TimeUnit.SECONDS);
+            MonALISAExecutors.getMLNetworkExecutor().scheduleWithFixedDelay(new ProxyWorkerTask(), 0, 40,
+                    TimeUnit.SECONDS);
         } catch (Throwable t) {
             logger.log(Level.WARNING, " Got Exception main loop for ProxyWorker", t);
         }
@@ -337,8 +388,9 @@ public class ProxyWorker extends Thread {
     }
 
     private static void verifyProxiesConns() {
-        if (proxies.size() == 0)
+        if (proxies.size() == 0) {
             return;
+        }
 
         StringBuilder sbLog = null;
 
@@ -358,19 +410,21 @@ public class ProxyWorker extends Thread {
             tcpClientWorker tcw = entry.getValue().tcw;
 
             if (isFiner) {
-                sbLog.append("\n SID [ ").append(sid).append(" ] ---> TCW [ ").append((tcw == null) ? "null" : tcw.getKey()).append(" ]");
+                sbLog.append("\n SID [ ").append(sid).append(" ] ---> TCW [ ")
+                        .append((tcw == null) ? "null" : tcw.getKey()).append(" ]");
             }
 
             try {
                 if (bSidChanged || !tcw.isConnected()) {
                     it.remove();
-                    logger.log(Level.INFO, " [ PTW ] Removing proxy conn [ " + tcw.getKey() + " ] ID= [ " + sid + " ] from local PTW cache.");
+                    logger.log(Level.INFO, " [ PTW ] Removing proxy conn [ " + tcw.getKey() + " ] ID= [ " + sid
+                            + " ] from local PTW cache.");
                     tcw.close_connection();
                     tcw = null;
                 }
             } catch (Throwable t) {
-                logger.log(Level.INFO, " [ PTW ] [verifyProxiesConns] [ HANDLED ]  Got ex removing [ " + sid + " ] " + " TCW = "
-                        + ((tcw == null) ? "null" : tcw.getKey()), t);
+                logger.log(Level.INFO, " [ PTW ] [verifyProxiesConns] [ HANDLED ]  Got ex removing [ " + sid + " ] "
+                        + " TCW = " + ((tcw == null) ? "null" : tcw.getKey()), t);
             }// catch
         }// for
 
@@ -465,15 +519,17 @@ public class ProxyWorker extends Thread {
                     }
                 }// for
             }
-            if (sent)
+            if (sent) {
                 return;
+            }
             for (final ProxyInfo pi : proxies.values()) {
                 try {
                     pi.tcw.WriteObject(o, tcpClientWorker.ML_AGENT_MESSAGE);
                     sent = true;
                     break;
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ ProxyWorker ] Couldn't send message .. try another proxy connection ... ", t);
+                    logger.log(Level.WARNING,
+                            " [ ProxyWorker ] Couldn't send message .. try another proxy connection ... ", t);
                     sent = false;
                 }
             } // for
@@ -496,7 +552,9 @@ public class ProxyWorker extends Thread {
     void updateConfig(MFarm farm) {
 
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, " [ ProxyWorker ] [ updateConfig ] Trying to send MFarm:\n " + MFarmConfigUtils.getMFarmDump(farm) + " \n");
+            logger.log(Level.FINER,
+                    " [ ProxyWorker ] [ updateConfig ] Trying to send MFarm:\n " + MFarmConfigUtils.getMFarmDump(farm)
+                            + " \n");
         }
         final monMessage msg = new monMessage(monMessage.ML_CONFIG_TAG, null, farm);
         byte[] sMsg = null;
@@ -518,8 +576,8 @@ public class ProxyWorker extends Thread {
         final Object oToWrite = ((sMsg == null) ? msg : (Object) sMsg);
 
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, " [ ProxyWorker ] [ updateConfig ] Config serialization DT = " + TimeUnit.NANOSECONDS.toMillis(confDT)
-                    + " ms. Succed = " + (sMsg != null));
+            logger.log(Level.FINER, " [ ProxyWorker ] [ updateConfig ] Config serialization DT = "
+                    + TimeUnit.NANOSECONDS.toMillis(confDT) + " ms. Succed = " + (sMsg != null));
         }
 
         for (final ProxyInfo pi : proxies.values()) {
@@ -536,8 +594,9 @@ public class ProxyWorker extends Thread {
     }
 
     private static void AddProxy(ServiceItem si) {
-        if (si == null)
+        if (si == null) {
             return;
+        }
 
         Entry[] proxyEntry = si.attributeSets;
         if (proxyEntry != null) {
@@ -546,14 +605,12 @@ public class ProxyWorker extends Thread {
                 GenericMLEntry gmle = Utils.getEntry(si, GenericMLEntry.class);
                 int[] pPorts = null;
 
-                if (gmle != null && gmle.hash != null) {
+                if ((gmle != null) && (gmle.hash != null)) {
                     pPorts = (int[]) gmle.hash.get(PROXY_PORTS_KEY);
                 }
 
-                if (pPorts == null || pPorts.length == 0) {
-                    pPorts = new int[] {
-                        pse.proxyPort.intValue()
-                    };
+                if ((pPorts == null) || (pPorts.length == 0)) {
+                    pPorts = new int[] { pse.proxyPort.intValue() };
                 }
 
                 String ipAddress = pse.ipAddress;
@@ -567,9 +624,7 @@ public class ProxyWorker extends Thread {
 
                 tcpClientWorker tcw = null;
 
-                for (int pIter = 0; pIter < pPorts.length; pIter++) {
-                    int portNumber = pPorts[pIter];
-
+                for (int portNumber : pPorts) {
                     Socket s = null;
                     try {
                         s = new Socket();
@@ -589,8 +644,10 @@ public class ProxyWorker extends Thread {
                     try {
                         tcw = tcpClientWorker.newInstance(cache, server, s, server.getConnKey(s));
                         // send initial conf
-                        tcw.WriteObject(new monMessage(monMessage.ML_SID_TAG, null, myServiceItem), tcpClientWorker.ML_SID_MESSAGE);
-                        tcw.WriteObject(new monMessage(monMessage.ML_CONFIG_TAG, null, Cache.getMFarm()), tcpClientWorker.ML_CONFIG_MESSAGE);
+                        tcw.WriteObject(new monMessage(monMessage.ML_SID_TAG, null, myServiceItem),
+                                tcpClientWorker.ML_SID_MESSAGE);
+                        tcw.WriteObject(new monMessage(monMessage.ML_CONFIG_TAG, null, Cache.getMFarm()),
+                                tcpClientWorker.ML_CONFIG_MESSAGE);
 
                         proxies.put(si.serviceID, new ProxyInfo(tcw, false, false));
                     } catch (Throwable t) {
@@ -606,8 +663,9 @@ public class ProxyWorker extends Thread {
                     }
 
                     // mail cap is always updated from LUS
-                    if (cache.agentsEngine != null)
+                    if (cache.agentsEngine != null) {
                         cache.agentsEngine.newProxyConns();
+                    }
                     break;
                 }
 

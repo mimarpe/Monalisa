@@ -29,15 +29,13 @@ import com.bluecast.xml.Piccolo;
 
 public class Policy implements Observer {
 
-    /** Logger name */
-    private static final transient String COMPONENT = "lia.Monitor.Agents.OpticalPath.comm.authz";
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(Policy.class.getName());
 
     /* read-only policy s list */
     private TreeMap<String, GroupACL> lGroupsRO;
     /* temp list */
-    private TreeMap<String, GroupACL> lGroupsW;
+    private final TreeMap<String, GroupACL> lGroupsW;
     private final ReentrantLock exchangeLock = new ReentrantLock();
     /** The policy file name. */
     private String sFile = null;
@@ -86,8 +84,9 @@ public class Policy implements Observer {
         String sLine;
 
         try {
-            while ((sLine = br.readLine()) != null)
+            while ((sLine = br.readLine()) != null) {
                 sb.append(sLine).append('\n');
+            }
         } catch (IOException ioe) {
         } finally {
             try {
@@ -133,6 +132,7 @@ public class Policy implements Observer {
 
         // MLPermission mlPermission;
 
+        @Override
         public void endDocument() {
             // finnaly, exchange the newly created list
             exchangeLock.lock(); // block until condition holds
@@ -147,30 +147,39 @@ public class Policy implements Observer {
 
         }
 
+        @Override
         public void characters(char[] ch, int start, int length) {
         }
 
+        @Override
         public void endElement(java.lang.String uri, java.lang.String localName, java.lang.String qName) {
         }
 
+        @Override
         public void endPrefixMapping(java.lang.String prefix) {
         }
 
+        @Override
         public void ignorableWhitespace(char[] ch, int start, int length) {
         }
 
+        @Override
         public void processingInstruction(java.lang.String target, java.lang.String data) {
         }
 
+        @Override
         public void setDocumentLocator(Locator locator) {
         }
 
+        @Override
         public void skippedEntity(java.lang.String name) {
         }
 
+        @Override
         public void startDocument() {
         }
 
+        @Override
         public void startElement(String uri, String localName, String qName, Attributes atts) {
 
             sKey = localName;
@@ -197,9 +206,9 @@ public class Policy implements Observer {
 
         }
 
-        public void startPrefixMapping(@SuppressWarnings("unused")
-        java.lang.String prefix, @SuppressWarnings("unused")
-        java.lang.String uri) {
+        @Override
+        public void startPrefixMapping(@SuppressWarnings("unused") java.lang.String prefix,
+                @SuppressWarnings("unused") java.lang.String uri) {
         }
     }
 
@@ -210,8 +219,9 @@ public class Policy implements Observer {
 
     public TreeMap<String, Boolean> getSubjectPermissions(String subject) {
 
-        if (subject == null || subject.length() == 0)
+        if ((subject == null) || (subject.length() == 0)) {
             return null;
+        }
         TreeMap<String, Boolean> overallPermissions = new TreeMap<String, Boolean>();
         Boolean userGroupPermission;
 
@@ -235,9 +245,10 @@ public class Policy implements Observer {
     /**
      * @see java.util.Observer#update(java.util.Observable, java.lang.Object)
      */
+    @Override
     public void update(Observable o, Object arg) {
 
-        if (dfw != null && o != null && o.equals(dfw)) {
+        if ((dfw != null) && (o != null) && o.equals(dfw)) {
             try {
                 System.out.print("Reload policy.......");
                 loadGroupsPolicy();

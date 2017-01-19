@@ -22,7 +22,7 @@ import org.opennms.protocols.snmp.SnmpVarBind;
 public class snmp_IO extends snmpMon implements MonitoringModule {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(snmp_IO.class.getName());
+    private static final Logger logger = Logger.getLogger(snmp_IO.class.getName());
 
     /**
      * 
@@ -31,17 +31,13 @@ public class snmp_IO extends snmpMon implements MonitoringModule {
 
     static public String ModuleName = "snmp_IO";
 
-    String[] types = {
-            "TotalIO_Rate_IN", "TotalIO_Rate_OUT"
-    };
+    String[] types = { "TotalIO_Rate_IN", "TotalIO_Rate_OUT" };
 
     // private static final String[] sOidv1 = {
     // ".1.3.6.1.2.1.2.2.1.10", ".1.3.6.1.2.1.2.2.1.16"
     // };
 
-    private static final String[] sOidv2 = {
-            ".1.3.6.1.2.1.31.1.1.1.6", ".1.3.6.1.2.1.31.1.1.1.10"
-    };
+    private static final String[] sOidv2 = { ".1.3.6.1.2.1.31.1.1.1.6", ".1.3.6.1.2.1.31.1.1.1.10" };
 
     static public String OsName = "*";
 
@@ -63,44 +59,49 @@ public class snmp_IO extends snmpMon implements MonitoringModule {
         info.setName(ModuleName);
     }
 
+    @Override
     public String[] ResTypes() {
         return types;
     }
 
+    @Override
     public String getOsName() {
         return OsName;
     }
 
+    @Override
     public boolean canSuspend() {
         return false;
     }
 
+    @Override
     public Object doProcess() throws Exception {
         synchronized (this) {
             Vector[] res = mresults();
 
-            if(wasError) {
+            if (wasError) {
                 logger.log(Level.WARNING, " [ snmp_IO ] Got error: (" + errorDescription + ") for node: " + getNode());
                 return null;
             }
-            
+
             if ((last_measured > 0) && (res.length != 2)) {
                 return null;
             }
 
-            if (res[0] == null || res[1] == null) {
+            if ((res[0] == null) || (res[1] == null)) {
                 throw new Exception(" got null result in snmp_IO");
             }
 
-            if (res[0].size() == 0 && res[1].size() == 0) {
+            if ((res[0].size() == 0) && (res[1].size() == 0)) {
                 throw new Exception(" got 0 size result in snmp_IO");
             }
 
-            if (contrs == null)
+            if (contrs == null) {
                 contrs = new BigInteger[2][];
+            }
 
             for (int m = 0; m < 2; m++) {
-                for (int i = 0; res[m] != null && i < res[m].size(); i++) {
+                for (int i = 0; (res[m] != null) && (i < res[m].size()); i++) {
                     if (contrs[m] == null) {
                         contrs[m] = new BigInteger[res[m].size()];
                     }
@@ -115,7 +116,7 @@ public class snmp_IO extends snmpMon implements MonitoringModule {
             }
 
             final long nanoNow = Utils.nanoNow();
-            
+
             if (old_contrs == null) {
                 old_contrs = contrs;
                 contrs = null;
@@ -129,7 +130,7 @@ public class snmp_IO extends snmpMon implements MonitoringModule {
 
             final long dt = nanoNow - last_measured;
             last_measured = nanoNow;
-            final double factor = dt / ( 8D * 1000D );
+            final double factor = dt / (8D * 1000D);
 
             for (int m = 0; m < 2; m++) {
                 double tot = 0.0;
@@ -148,12 +149,12 @@ public class snmp_IO extends snmpMon implements MonitoringModule {
                 result.param[m] = tot / factor;
             }
 
-            if(logger.isLoggable(Level.FINEST)) {
-                logger.log(Level.FINEST, " [ snmp_IO ] Node: " + getNode() + 
-                           " DT since last measure :" + TimeUnit.NANOSECONDS.toMillis(dt) +
-                           " ms;  returning " + result +
-                           " current in: " + res[0].toString() +
-                           " current out: " + res[1].toString());
+            if (logger.isLoggable(Level.FINEST)) {
+                logger.log(
+                        Level.FINEST,
+                        " [ snmp_IO ] Node: " + getNode() + " DT since last measure :"
+                                + TimeUnit.NANOSECONDS.toMillis(dt) + " ms;  returning " + result + " current in: "
+                                + res[0].toString() + " current out: " + res[1].toString());
             }
             // setting last measured field for MonModuleInfo
             info.setLastMeasurement(result.time);

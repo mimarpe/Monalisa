@@ -1,5 +1,5 @@
 /*
- * $Id: tcpClientWorker.java 7265 2012-06-25 22:50:55Z ramiro $
+ * $Id: tcpClientWorker.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.DataCache;
 
@@ -53,7 +53,7 @@ import lia.util.threads.MonALISAExecutors;
 public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(tcpClientWorker.class.getName());
+    private static final Logger logger = Logger.getLogger(tcpClientWorker.class.getName());
 
     // define some priorities for messages
     public static final int ML_EMSG = 40; // least
@@ -81,16 +81,16 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
     protected final String myKey;
 
     /* (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
-	    StringBuilder builder = new StringBuilder();
-	    builder.append("tcpClientWorker [myName=").append(myName).append(", myKey=").append(myKey).append("]");
-	    return builder.toString();
+        StringBuilder builder = new StringBuilder();
+        builder.append("tcpClientWorker [myName=").append(myName).append(", myKey=").append(myKey).append("]");
+        return builder.toString();
     }
 
-	protected final tcpConn conn;
+    protected final tcpConn conn;
 
     final Cache cache;
 
@@ -108,7 +108,6 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
     public InetAddress endPointAddress;
 
     private final PrioritySender ps;
-
 
     private static final ScheduledExecutorService ses;
 
@@ -142,7 +141,9 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
             this.cache = cache;
             this.server = server;
 
-            if (client_sock == null) { throw new NullPointerException(myName + ": The socket cannot be null"); }
+            if (client_sock == null) {
+                throw new NullPointerException(myName + ": The socket cannot be null");
+            }
 
             this.endPointAddress = client_sock.getInetAddress();
 
@@ -161,10 +162,10 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
                 @Override
                 public void run() {
                     try {
-                        if(logger.isLoggable(Level.FINEST)) {
+                        if (logger.isLoggable(Level.FINEST)) {
                             logger.log(Level.FINEST, myName + " sendTime()");
                         }
-                        if (conn == null || !conn.isConnected()) {
+                        if ((conn == null) || !conn.isConnected()) {
                             close_connection();
                             return;
                         }
@@ -180,10 +181,10 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
                 @Override
                 public void run() {
                     try {
-                        if(logger.isLoggable(Level.FINEST)) {
+                        if (logger.isLoggable(Level.FINEST)) {
                             logger.log(Level.FINEST, myName + " sendMLVersion()");
                         }
-                        if (conn == null || !conn.isConnected()) {
+                        if ((conn == null) || !conn.isConnected()) {
                             close_connection();
                             return;
                         }
@@ -199,10 +200,11 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
                 @Override
                 public void run() {
                     try {
-                        if(logger.isLoggable(Level.FINEST)) {
-                            logger.log(Level.FINEST, myName + " RemoveOldPredicates(). CurrentStatus: " + getCurrentStats());
+                        if (logger.isLoggable(Level.FINEST)) {
+                            logger.log(Level.FINEST, myName + " RemoveOldPredicates(). CurrentStatus: "
+                                    + getCurrentStats());
                         }
-                        if (conn == null || !conn.isConnected()) {
+                        if ((conn == null) || !conn.isConnected()) {
                             close_connection();
                             return;
                         }
@@ -214,20 +216,21 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
             }, 10 + Math.round(Math.random() * 5), 60 + Math.round(Math.random() * 20), TimeUnit.SECONDS);
 
             ps = new PrioritySender();
-            
+
         } catch (Throwable t) {
             close_connection();
             throw new Exception(t);
         }
     }
 
-    public static final tcpClientWorker newInstance(Cache cache, tcpServer server, Socket client_sock, String key) throws Exception {
+    public static final tcpClientWorker newInstance(Cache cache, tcpServer server, Socket client_sock, String key)
+            throws Exception {
         final tcpClientWorker tcw = new tcpClientWorker(cache, server, client_sock, key);
         tcw.ps.start();
         tcw.conn.startCommunication();
         return tcw;
     }
-    
+
     @Override
     public void notifyMessage(Object o) {
         if (alive.get()) {
@@ -275,7 +278,7 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
             }
 
             try {
-                if (myKey != null && server != null) {
+                if ((myKey != null) && (server != null)) {
                     server.disconnectClient(myKey);
                 }
             } catch (Throwable t) {
@@ -295,19 +298,19 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
     }
 
     public void WriteObject(Object o, int priority) {
-        final boolean logSent = logger.isLoggable(Level.FINEST); 
-        
-        if(logSent) {
+        final boolean logSent = logger.isLoggable(Level.FINEST);
+
+        if (logSent) {
             logger.log(Level.FINEST, " [ tcpClientWorker ] [ WriteObject ] " + myKey + " ADDED TO QUEUE... " + o);
         }
-        
+
         ps.add(new PQJob(o, priority));
     }
 
     private String getCurrentStats() {
         StringBuilder sb = new StringBuilder();
         sb.append("\n########## Current registered predicates for [ ").append(myKey).append(" ] ##########\n");
-        for (final monPredicate p: predicatesMap.values()) {
+        for (final monPredicate p : predicatesMap.values()) {
             sb.append(" ----> ").append(p).append("\n");
         }
         sb.append("\n There are " + ps.theQueue.size() + " msgs to be send ... ");
@@ -317,7 +320,9 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
 
     // The Time & Uptime
     private void sendTime() {
-        WriteObject(new monMessage(monMessage.ML_TIME_TAG, null, cache.getLocalTime() + "&Uptime:" + RegFarmMonitor.getServiceUpTime()), ML_TIME_MESSAGE);
+        WriteObject(
+                new monMessage(monMessage.ML_TIME_TAG, null, cache.getLocalTime() + "&Uptime:"
+                        + RegFarmMonitor.getServiceUpTime()), ML_TIME_MESSAGE);
     }
 
     // ML Version
@@ -327,7 +332,7 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
 
     private void process_input(Object obj) {
         if (!(obj instanceof monMessage)) {
-            logger.log(Level.WARNING, myName + ": Received an unknown object  ignore it !!", new Object[] { obj});
+            logger.log(Level.WARNING, myName + ": Received an unknown object  ignore it !!", new Object[] { obj });
             return;
         }
         monMessage msg = (monMessage) obj;
@@ -355,10 +360,10 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
                     cache.appControlDispatcher.messageReceived(msg, this);
                 } catch (Throwable t) {
                     StringBuilder sb = new StringBuilder();
-                    sb.append(myName).append(" [ process_input ] [ ML_APP_CTRL_TAG ] got exception for msg: ").append(
-                            msg).append(" Cause: ").append(Utils.getStackTrace(t));
-                    final monMessage monMessage = new monMessage(AppControlMessage.APP_CONTROL_MSG_ERR, msg.ident, sb
-                            .toString());
+                    sb.append(myName).append(" [ process_input ] [ ML_APP_CTRL_TAG ] got exception for msg: ")
+                            .append(msg).append(" Cause: ").append(Utils.getStackTrace(t));
+                    final monMessage monMessage = new monMessage(AppControlMessage.APP_CONTROL_MSG_ERR, msg.ident,
+                            sb.toString());
                     WriteObject(monMessage, ML_AGENT_MESSAGE);
                 }
             } else {
@@ -479,9 +484,7 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
                 checkOldPredicatesFutureTask.cancel(true);
             } else {
                 if (logger.isLoggable(Level.FINER)) {
-                    logger
-                            .log(Level.FINER, myName
-                                    + " canceling checkOldPredicatesFutureTask ... but the task is null");
+                    logger.log(Level.FINER, myName + " canceling checkOldPredicatesFutureTask ... but the task is null");
                 }
             }
         } catch (Throwable ign) {
@@ -495,7 +498,8 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
             try {
                 DynamicModule.unregisterPredicate(pred);
             } catch (Throwable t) {
-                logger.log(Level.WARNING, myName + " [ HANDLED ] got exception removing predicate " + pred + " from dynamic module. Cause: ", t);
+                logger.log(Level.WARNING, myName + " [ HANDLED ] got exception removing predicate " + pred
+                        + " from dynamic module. Cause: ", t);
             }
             itPred.remove();
         }
@@ -510,7 +514,7 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
     }
 
     public void addNewResult(Object o) {
-        for (final monPredicate p :predicatesMap.values()) {
+        for (final monPredicate p : predicatesMap.values()) {
             // it cannot be a vector anymore ... but I never know ....
             final Vector<Object> rez = new Vector<Object>();
 
@@ -544,23 +548,25 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
 
     private void addPredicate(final monPredicate p) {
 
-        if (p.Cluster != null && p.Cluster.equals("PMS_ML_STATUS") && p.Node != null && p.Node.equals("PMS_ML_STATUS")) {
+        if ((p.Cluster != null) && p.Cluster.equals("PMS_ML_STATUS") && (p.Node != null)
+                && p.Node.equals("PMS_ML_STATUS")) {
 
-            if (p.tmax > 0 && p.tmin == p.tmax) {
+            if ((p.tmax > 0) && (p.tmin == p.tmax)) {
                 LocalMonitorFilter.setLoadThreshold(p.tmin);
             }
 
             boolean notif = LocalMonitorFilter.forceSendMail.compareAndSet(false, true);
             if (logger.isLoggable(Level.FINEST)) {
-                logger.log(Level.FINEST, "\n PMS_ML_STATUS recv = " + notif + " NewThreshold "  + LocalMonitorFilter.getLoadThreshold());
+                logger.log(Level.FINEST,
+                        "\n PMS_ML_STATUS recv = " + notif + " NewThreshold " + LocalMonitorFilter.getLoadThreshold());
             }
             return;
         }
 
         if (!DataSelect.matchString(p.Farm, SERVICE_NAME)) {
             if (logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, myName + "[ HANDLED ] [ addPredicate ] IGNORING REMOTE predicate: "
-                        + p.toString());
+                logger.log(Level.FINER,
+                        myName + "[ HANDLED ] [ addPredicate ] IGNORING REMOTE predicate: " + p.toString());
             }
             return;
         }
@@ -569,7 +575,7 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
             logger.log(Level.FINER, myName + " REGISTER predicate: " + p.toString());
         }
 
-        if (p.tmax < 0 || (p.tmax > 0 && p.tmin <= 0)) {
+        if ((p.tmax < 0) || ((p.tmax > 0) && (p.tmin <= 0))) {
             //RT predicate
             predicatesMap.put(Integer.valueOf(p.id), p);
             try {
@@ -607,18 +613,16 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
 
                 Vector<Object> rez = tcw.cache.select(pred);
 
-                if (rez == null || rez.size() == 0) {
+                if ((rez == null) || (rez.size() == 0)) {
                     monMessage msg = new monMessage(monMessage.ML_RESULT_TAG, Integer.valueOf(pred.id), (Result) null);
                     tcw.WriteObject(msg, ML_RESULT_MESSAGE);
                     return;
                 }
 
                 Vector<Object> vTemp = new Vector<Object>();
-                if (TCPW_REZ_LIMIT > 0 && rez.size() > TCPW_REZ_LIMIT) {
+                if ((TCPW_REZ_LIMIT > 0) && (rez.size() > TCPW_REZ_LIMIT)) {
                     if (logger.isLoggable(Level.FINER)) {
-                        logger
-                                .log(Level.FINER, iName + " Limiting result to " + TCPW_REZ_LIMIT + " from "
-                                        + rez.size());
+                        logger.log(Level.FINER, iName + " Limiting result to " + TCPW_REZ_LIMIT + " from " + rez.size());
                     }
                     for (int ic = rez.size() - TCPW_REZ_LIMIT; ic < rez.size(); ic++) {
                         vTemp.add(rez.get(ic));
@@ -637,16 +641,16 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
                         r.FarmName = er.FarmName;
                         r.time = er.time;
                         r.NodeName = er.NodeName;
-                        if (er.param != null && er.param.length > 0) {
+                        if ((er.param != null) && (er.param.length > 0)) {
                             r.param = new double[er.param.length];
                             System.arraycopy(er.param, 0, r.param, 0, er.param.length);
                         }
-                        if (er.param_name != null && er.param_name.length > 0) {
+                        if ((er.param_name != null) && (er.param_name.length > 0)) {
                             r.param_name = new String[er.param_name.length];
                             System.arraycopy(er.param_name, 0, r.param_name, 0, er.param_name.length);
                         }
                         rez.add(r);
-                    } else if (o instanceof Result || o instanceof eResult) {
+                    } else if ((o instanceof Result) || (o instanceof eResult)) {
                         rez.add(o);
                     }
                 }
@@ -718,35 +722,42 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
 
         @Override
         public int hashCode() {
-            return (int)(seqNr ^ (seqNr >>> 32));
+            return (int) (seqNr ^ (seqNr >>> 32));
         }
-        
+
         @Override
         public boolean equals(Object o) {
-            if (o == null) return false;
-            
-            if(o instanceof PQJob) {
-                final PQJob otherJob = (PQJob)o;
-                return ( this.seqNr == otherJob.seqNr );
+            if (o == null) {
+                return false;
             }
-            
+
+            if (o instanceof PQJob) {
+                final PQJob otherJob = (PQJob) o;
+                return (this.seqNr == otherJob.seqNr);
+            }
+
             return false;
         }
-        
-        
+
         @Override
         public int compareTo(PQJob other) {
 
-            if(this == other) {
+            if (this == other) {
                 return 0;
             }
-            
+
             int op = other.priority;
-            if (op < this.priority) return -1;
-            if (op > this.priority) return 1;
+            if (op < this.priority) {
+                return -1;
+            }
+            if (op > this.priority) {
+                return 1;
+            }
 
             // in case of tie, order by seqNr
-            if (this.seqNr < other.seqNr) return -1;
+            if (this.seqNr < other.seqNr) {
+                return -1;
+            }
 
             return 1;
         }
@@ -775,19 +786,20 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
                 try {
                     final PQJob j = theQueue.take();
                     final Object m = j.msg;
-                    
-                    final boolean logSent = logger.isLoggable(Level.FINEST); 
-                    
-                    if(logSent) {
-                        logger.log(Level.FINEST, " [ tcpClientWorker ] [ PrioritySender ] " + myKey + " SENDING... " + j.msg);
+
+                    final boolean logSent = logger.isLoggable(Level.FINEST);
+
+                    if (logSent) {
+                        logger.log(Level.FINEST, " [ tcpClientWorker ] [ PrioritySender ] " + myKey + " SENDING... "
+                                + j.msg);
                     }
-                    if(m instanceof byte[]) {
-                        conn.directSend((byte[])m);
+                    if (m instanceof byte[]) {
+                        conn.directSend((byte[]) m);
                     } else {
                         conn.sendMsg(m);
                     }
-                    
-                    if(logSent) {
+
+                    if (logSent) {
                         logger.log(Level.FINEST, " [ tcpClientWorker ] [ PrioritySender ] " + myKey + " SENT! " + j.msg);
                     }
                 } catch (InterruptedException ie) {// maybe we should stop
@@ -834,10 +846,11 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
 
     private void RemoveOldPredicates() { // the ones with tmax < now()
 
-        for (final Iterator<Map.Entry<Integer, monPredicate>> itPred = predicatesMap.entrySet().iterator(); itPred.hasNext();) {
+        for (final Iterator<Map.Entry<Integer, monPredicate>> itPred = predicatesMap.entrySet().iterator(); itPred
+                .hasNext();) {
             final Map.Entry<Integer, monPredicate> entry = itPred.next();
             final monPredicate p = entry.getValue();
-            if (p.tmax > 0 && NTPDate.currentTimeMillis() > p.tmax) {
+            if ((p.tmax > 0) && (NTPDate.currentTimeMillis() > p.tmax)) {
                 itPred.remove();
 
                 try {
@@ -910,5 +923,5 @@ public class tcpClientWorker implements MonitorClient, tcpConnNotifier {
 }
 
 /*
- * $Id: tcpClientWorker.java 7265 2012-06-25 22:50:55Z ramiro $
+ * $Id: tcpClientWorker.java 7419 2013-10-16 12:56:15Z ramiro $
  */

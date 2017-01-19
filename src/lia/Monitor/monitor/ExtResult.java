@@ -4,7 +4,12 @@ package lia.Monitor.monitor;
 import java.util.Date;
 
 
-public class ExtResult implements java.io.Serializable {
+public class ExtResult implements java.io.Serializable, TimestampedResult {
+   /**
+	 * copied from the output of `serialver`
+	 */
+	private static final long serialVersionUID = 1672183981569272576L;
+	
    public String[]  param_name;
    public long   time;
    public double[] param;
@@ -41,8 +46,7 @@ public ExtResult() { }
 public String toString() {
   String ans = " --> \t" + NodeName +"\t "+ClusterName+"\t"+FarmName+"\tTime = " + new Date(time) ;
   for ( int i=0; i < param_name.length ; i++ ) {
-   if ( param instanceof double[] ) 
-     ans += "     * "+ param_name[i] + " = \t" + ( (double[]) param)[i];
+     ans += "     * "+ param_name[i] + " = \t" + param[i];
   }
   return ans;
 }
@@ -80,6 +84,10 @@ public void addSet( String c , double v )
  param = nparam;
  param_name = nparam_name;
 
+}
+
+public long getTime() {
+	return time;
 }
 
 

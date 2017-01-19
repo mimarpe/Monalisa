@@ -1,5 +1,5 @@
 /*
- * $Id: GlimmerFiberCutSim.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: GlimmerFiberCutSim.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.util.oswitch;
 
@@ -69,7 +69,7 @@ import lia.util.telnet.OSTelnetFactory;
 public class GlimmerFiberCutSim {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(GlimmerFiberCutSim.class.getName());
+    private static final Logger logger = Logger.getLogger(GlimmerFiberCutSim.class.getName());
 
     private static final OSTelnet switchConnection;
 
@@ -81,20 +81,23 @@ public class GlimmerFiberCutSim {
             // sw type can be put out as param
             tmpTelnet = OSTelnetFactory.getControlInstance(OSTelnet.GLIMMERGLASS);
         } catch (Throwable t) {
-            logger.log(Level.SEVERE, "Unable to init the connection to the optical switch. The program will stop. Cause: ", t);
+            logger.log(Level.SEVERE,
+                    "Unable to init the connection to the optical switch. The program will stop. Cause: ", t);
             System.exit(2);
         }
 
         if (tmpTelnet == null) {
-            logger.log(Level.SEVERE, "Unable to init the connection to the optical switch. Connection is null. Errors should heve been provided. Will exit");
+            logger.log(Level.SEVERE,
+                    "Unable to init the connection to the optical switch. Connection is null. Errors should heve been provided. Will exit");
             System.exit(3);
         }
 
-        if(!tmpTelnet.isConnected() || !tmpTelnet.isActive()) {
-            logger.log(Level.SEVERE, "Unable to init the connection to the optical switch. Connection is null. Errors should heve been provided. Will exit");
+        if (!tmpTelnet.isConnected() || !tmpTelnet.isActive()) {
+            logger.log(Level.SEVERE,
+                    "Unable to init the connection to the optical switch. Connection is null. Errors should heve been provided. Will exit");
             System.exit(4);
         }
-        
+
         switchConnection = tmpTelnet;
     }
 
@@ -102,7 +105,7 @@ public class GlimmerFiberCutSim {
     private static final boolean DEFAULT_UP = AppConfig.getb("DEFAULT_UP", true);
 
     private static final AtomicLong DT_CNX_TOTAL = new AtomicLong(0);
-    
+
     private static final class WorkerSimThread extends Thread {
 
         private final String myName;
@@ -118,9 +121,9 @@ public class GlimmerFiberCutSim {
 
         long cnxDt = 0;
         long sleepDt = 0;
-        
+
         private boolean makeLast = false;
-        
+
         private WorkerSimThread(final String name, final CountDownLatch startSignal, final CountDownLatch doneSignal) {
 
             if (name == null) {
@@ -146,7 +149,7 @@ public class GlimmerFiberCutSim {
             final String propName = myName + ".simTimes";
 
             final String[] times = AppConfig.getVectorProperty(propName);
-            if (times == null || times.length == 0) {
+            if ((times == null) || (times.length == 0)) {
                 throw new IllegalArgumentException(" the property " + propName + " is not correctly set");
             }
 
@@ -198,7 +201,8 @@ public class GlimmerFiberCutSim {
 
             final long dtNano = Utils.nanoNow() - nanoStart;
             cnxDt += dtNano;
-            logger.log(Level.INFO, " [ " + myName + " ] make fdx cnx finished. took: " + TimeUnit.NANOSECONDS.toMillis(dtNano) + " ms");
+            logger.log(Level.INFO,
+                    " [ " + myName + " ] make fdx cnx finished. took: " + TimeUnit.NANOSECONDS.toMillis(dtNano) + " ms");
         }
 
         private final void delCnx() throws Exception {
@@ -210,15 +214,20 @@ public class GlimmerFiberCutSim {
 
             final long dtNano = Utils.nanoNow() - nanoStart;
             cnxDt += dtNano;
-            logger.log(Level.INFO, " [ " + myName + " ] del fdx cnx finished. took: " + TimeUnit.NANOSECONDS.toMillis(dtNano) + " ms");
+            logger.log(Level.INFO,
+                    " [ " + myName + " ] del fdx cnx finished. took: " + TimeUnit.NANOSECONDS.toMillis(dtNano) + " ms");
         }
 
+        @Override
         public void run() {
 
-            long nanoStart = 0; 
+            long nanoStart = 0;
             try {
 
-                logger.log(Level.INFO, myName + " upTimes: " + Arrays.toString(upTimes) + "\n downTimes: " + Arrays.toString(downTimes));
+                logger.log(
+                        Level.INFO,
+                        myName + " upTimes: " + Arrays.toString(upTimes) + "\n downTimes: "
+                                + Arrays.toString(downTimes));
                 // wait for all the threads to start
                 int i = 0;
 
@@ -226,7 +235,7 @@ public class GlimmerFiberCutSim {
                 startSignal.await();
 
                 nanoStart = Utils.nanoNow();
-                
+
                 for (;;) {
                     if (i >= minLen) {
                         break;
@@ -259,20 +268,21 @@ public class GlimmerFiberCutSim {
             } finally {
                 // wait for all the others to finish
                 try {
-                    if(DEFAULT_UP) {
+                    if (DEFAULT_UP) {
                         makeCnx();
                     } else {
-                        if(makeLast) {
+                        if (makeLast) {
                             delCnx();
                         }
                     }
                 } catch (Throwable t1) {
                     logger.log(Level.WARNING, myName + " Got exception making last cnx ", t1);
                 }
-                
+
                 final long dt = Utils.nanoNow() - nanoStart;
-                logger.log(Level.INFO, " [ " + myName + " ] finished in: " + TimeUnit.NANOSECONDS.toMillis(dt) + " millis. dtCnx: " 
-                           + TimeUnit.NANOSECONDS.toMillis(cnxDt) + " ms. dtSleep: " + (sleepDt) + " ms");
+                logger.log(Level.INFO, " [ " + myName + " ] finished in: " + TimeUnit.NANOSECONDS.toMillis(dt)
+                        + " millis. dtCnx: " + TimeUnit.NANOSECONDS.toMillis(cnxDt) + " ms. dtSleep: " + (sleepDt)
+                        + " ms");
                 DT_CNX_TOTAL.addAndGet(cnxDt);
                 doneSignal.countDown();
             }
@@ -286,12 +296,13 @@ public class GlimmerFiberCutSim {
         // TODO Auto-generated method stub
         final String[] crossNames = AppConfig.getVectorProperty("crossNames");
 
-        if (crossNames == null || crossNames.length == 0) {
+        if ((crossNames == null) || (crossNames.length == 0)) {
             System.err.println("Define crossNames in ml.properties file");
         }
 
         final int crossCount = crossNames.length;
-        logger.log(Level.INFO , "\n\n\n =========== SYM_ONLY: " + SYM_ONLY + " ============= DEFAULT_UP: " + DEFAULT_UP + " \n\n");
+        logger.log(Level.INFO, "\n\n\n =========== SYM_ONLY: " + SYM_ONLY + " ============= DEFAULT_UP: " + DEFAULT_UP
+                + " \n\n");
 
         final CountDownLatch cdlStart = new CountDownLatch(1);
         final CountDownLatch cdlStop = new CountDownLatch(crossCount);
@@ -307,8 +318,9 @@ public class GlimmerFiberCutSim {
 
         cdlStop.await();
 
-        logger.log(Level.INFO, " Simulation finished in: " + TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - nanoStartSym) + " ms. DT_CNX_TOTAL: " + TimeUnit.NANOSECONDS.toMillis(DT_CNX_TOTAL.get()) + " ms");
+        logger.log(Level.INFO,
+                " Simulation finished in: " + TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - nanoStartSym)
+                        + " ms. DT_CNX_TOTAL: " + TimeUnit.NANOSECONDS.toMillis(DT_CNX_TOTAL.get()) + " ms");
     }
 
 }
-

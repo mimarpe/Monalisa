@@ -12,80 +12,82 @@ import lia.Monitor.Agents.OpticalPath.v2.State.OSwFSM;
 import lia.util.DateFileWatchdog;
 
 class LocalConfigurationManager extends Observable implements Observer {
-    
+
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(LocalConfigurationManager.class.getName());
+    private static final Logger logger = Logger.getLogger(LocalConfigurationManager.class.getName());
 
     private class DelayedNotificationTask implements Runnable {
         long delay;
         OSwConfig oldOsi;
-        
+
         public DelayedNotificationTask(OSwConfig oldOsi, long delay) {
             this.oldOsi = oldOsi;
             this.delay = delay;
         }
-        
+
+        @Override
         public void run() {
             long sTime = System.currentTimeMillis();
-            if(logger.isLoggable(Level.FINER)) {
+            if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, "DelayedNotificationTask - enters RUN");
             }
             try {
                 try {
-                    synchronized(this) {
+                    synchronized (this) {
                         this.wait(delay);
                     }
-                }catch(Throwable t){
-                    
+                } catch (Throwable t) {
+
                 }
                 setChanged();
                 notifyObservers(oldOsi);
-            }catch(Throwable t) {
-                
+            } catch (Throwable t) {
+
             }
-            if(logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, "DelayedNotificationTask - exits RUN [ " + (System.currentTimeMillis() - sTime) + " ]");
+            if (logger.isLoggable(Level.FINER)) {
+                logger.log(Level.FINER, "DelayedNotificationTask - exits RUN [ " + (System.currentTimeMillis() - sTime)
+                        + " ]");
             }
         }
     }
-    
-    private File confFile;
-    private DateFileWatchdog dfw;
+
+    private final File confFile;
+    private final DateFileWatchdog dfw;
     OSwConfig oswConfig;
 
     public LocalConfigurationManager(File configFile, Observer obs) throws Exception {
         this.confFile = configFile;
-        dfw = DateFileWatchdog.getInstance(this.confFile, 5*1000);
+        dfw = DateFileWatchdog.getInstance(this.confFile, 5 * 1000);
         dfw.addObserver(this);
         addObserver(obs);
         oswConfig = null;
         reloadConfig();
     }
-    
+
     private void reloadConfig() {
-        logger.log(Level.INFO," OpticalPathAgent_v2 Reloading conf ... ");
+        logger.log(Level.INFO, " OpticalPathAgent_v2 Reloading conf ... ");
         FileReader fr = null;
-        
+
         try {
             fr = new FileReader(confFile);
             OSwConfig newOSwConfig = Util.getOpticalSwitchConfig(fr);
             setNewConfiguration(newOSwConfig, 0L);
             logger.log(Level.INFO, " OpticalPathAgent_v2 FINISHED Reloading conf \n\n" + oswConfig.toString() + "\n\n");
             OSwFSM.getInstance().changeConfig(newOSwConfig);
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             logger.log(Level.WARNING, " Got Exc while reloadConfig()", t);
         } finally {
             if (fr != null) {
                 try {
                     fr.close();
-                }catch(Throwable t1){
+                } catch (Throwable t1) {
                     logger.log(Level.WARNING, " Got Exc closing the file reader", t1);
                 }
             }//if()
         }
-        
+
     }
-    
+
     /**
      * This method will notify all the registered oservers.
      * The caller has the posibility to delay the notification ... ( e.g. MCONN | DCONN cmd-s ) 
@@ -95,10 +97,10 @@ class LocalConfigurationManager extends Observable implements Observer {
      * If delayNotify <= 0 the cahange will be notified immediately.
      */
     public void setNewConfiguration(OSwConfig newOSI, long delayNotify) {
-        if(newOSI != null) {
+        if (newOSI != null) {
             OSwConfig oldOSI = oswConfig;
             oswConfig = newOSI;
-            if(delayNotify > 0) {
+            if (delayNotify > 0) {
                 OpticalPathAgent_v2.executor.execute(new DelayedNotificationTask(oldOSI, delayNotify));
                 return;
             }
@@ -106,8 +108,7 @@ class LocalConfigurationManager extends Observable implements Observer {
             notifyObservers(oldOSI);
         }
     }
-    
-    
+
     /**
      * @return Informations about it's OpticalSwitches peers
      */
@@ -118,8 +119,9 @@ class LocalConfigurationManager extends Observable implements Observer {
     /**
      * @see java.util.Observer#update(java.util.Observable, java.lang.Object)
      */
+    @Override
     public void update(Observable o, Object arg) {
-        if ( dfw != null && o != null && o.equals(dfw) ) {
+        if ((dfw != null) && (o != null) && o.equals(dfw)) {
             reloadConfig();
         }
     }

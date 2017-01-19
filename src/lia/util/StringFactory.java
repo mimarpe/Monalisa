@@ -20,13 +20,12 @@ import lia.Monitor.monitor.Gresult;
 import lia.Monitor.monitor.Result;
 import lia.Monitor.monitor.eResult;
 
-
 /**
  * @author costing
  */
 public final class StringFactory {
 
-    private static final transient Logger logger = Logger.getLogger(StringFactory.class.getName());
+    private static final Logger logger = Logger.getLogger(StringFactory.class.getName());
 
     /**
      * be cool; do not try to "cache" anything
@@ -68,7 +67,7 @@ public final class StringFactory {
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
             @Override
-			public void notifyAppConfigChanged() {
+            public void notifyAppConfigChanged() {
                 reloadConf();
             }
         });
@@ -119,9 +118,10 @@ public final class StringFactory {
      * @return the String value
      */
     public static String get(final String s) {
-    	if (s==null)
-    		return null;
-    	
+        if (s == null) {
+            return null;
+        }
+
         String sRet;
 
         try {
@@ -131,7 +131,7 @@ public final class StringFactory {
                 return s;
             }
             final WeakReference<String> t = hmStrings.get(s);
-            if (t != null && (sRet = t.get()) != null) {
+            if ((t != null) && ((sRet = t.get()) != null)) {
                 lCacheHit.incrementAndGet();
                 return sRet;
             }
@@ -144,7 +144,7 @@ public final class StringFactory {
             //try again some other thread might have added in between
             final WeakReference<String> t = hmStrings.get(s);
 
-            if (t == null || (sRet = t.get()) == null) {
+            if ((t == null) || ((sRet = t.get()) == null)) {
                 hmStrings.put(s, new WeakReference<String>(s));
                 lCacheMiss.incrementAndGet();
                 return s;
@@ -254,7 +254,7 @@ public final class StringFactory {
                     r.param_name[i] = get(r.param_name[i]);
                 }
 
-                if (r.param[i] != null && (r.param[i] instanceof String)) {
+                if ((r.param[i] != null) && (r.param[i] instanceof String)) {
                     r.param[i] = get((String) r.param[i]);
                 }
             }
@@ -278,7 +278,7 @@ public final class StringFactory {
             }
         }
 
-        if (r.extra != null && (r.extra instanceof String)) {
+        if ((r.extra != null) && (r.extra instanceof String)) {
             r.extra = get((String) r.extra);
         }
     }

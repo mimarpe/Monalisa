@@ -54,367 +54,374 @@ import lia.util.ntp.NTPDate;
  * @since 2006-11-17
  */
 public class monLMSensors extends cmdExec implements MonitoringModule {
+    private static final long serialVersionUID = 1;
+
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.modules.monLMSensors");
-	
-	private static final long	serialVersionUID	= 1;
+    private static final Logger logger = Logger.getLogger(monLMSensors.class.getName());
 
-	private MonModuleInfo		mmi					= null;
+    private MonModuleInfo mmi = null;
 
-	private MNode				mn					= null;
+    private MNode mn = null;
 
-	private long				lLastCall			= 0;
+    private final long lLastCall = 0;
 
-	private final String [] resTypes = new String[0];
-	
-	private final static String[] sPossiblePaths = new String[] {"/bin/sensors", "/usr/bin/sensors", "/usr/local/bin/sensors", "/opt/bin/sensors"};
-	
-	private String sCommand = "sensors";
-	
-	/**
-	 * default constructor for the module
-	 */
-	public monLMSensors(){
-		super("monLMSensors");
-    	info.ResTypes = resTypes;
-    	isRepetitive = true;
-	}
-	
-	/**
-	 * Initialize data structures
-	 * @param node ML node
-	 * @param args arguments
-	 * @return module informations
-	 */
-	@Override
-	public MonModuleInfo init(MNode node, String args) {
-		mn = node;
+    private final String[] resTypes = new String[0];
 
-		mmi = new MonModuleInfo();
-		mmi.setName("monLMSensors");
-		mmi.setState(0);
+    private final static String[] sPossiblePaths = new String[] { "/bin/sensors", "/usr/bin/sensors",
+            "/usr/local/bin/sensors", "/opt/bin/sensors" };
 
-		mmi.lastMeasurement = lLastCall;
-		
-		// try to see where the "sensors" executable is	
-		int iFoundCount = 0;
-		
-		for (int i=0; i<sPossiblePaths.length; i++){
-			File f = new File(sPossiblePaths[i]);
-			
-			if (f.exists() && f.isFile()){
-				sCommand = sPossiblePaths[i];
-				iFoundCount ++;
-			}
-		}
-		
-		// not found at all or found several times => let PATH decide where to look
-		if (iFoundCount!=1)
-			sCommand = "sensors";
-		
-		// a module argument will override any auto discovered, if the file exists
-		if (args!=null && args.length()>0){
-			File f = new File(args);
-			
-			if (f.exists() && f.isFile())
-				sCommand = args;
-		}
-		
-		// a configuration parameter will override any previously set path, if the file exists
-		String sConfigPath = AppConfig.getProperty("lia.Monitor.modules.monLMSensors.path");
-		
-		if (sConfigPath!=null && sConfigPath.length()>0){
-			File f = new File(sConfigPath);
-			
-			if (f.exists() && f.isFile())
-				sCommand = sConfigPath;			
-		}
-		
-		return info;
-	}
+    private String sCommand = "sensors";
 
-	/**
-	 * This is a dynamic module so this will return an empty array
-	 * @return empty array
-	 */
-	@Override
-	public String[] ResTypes() {
-		return resTypes;
-	}
+    /**
+     * default constructor for the module
+     */
+    public monLMSensors() {
+        super("monLMSensors");
+        info.ResTypes = resTypes;
+        isRepetitive = true;
+    }
 
-	/**
-	 * Operating system on which this module can run.
-	 * 
-	 * @return Obviously "Linux"
-	 */
-	@Override
-	public String getOsName() {
-		return "Linux";
-	}
-	
-	/**
-	 * Called periodically to get data from the sensors.
-	 * 
-	 * @return a Vector with the results of the processing
-	 * @throws Exception if there was an error processing the output of the sensors command
-	 */
-	@Override
-	public Object doProcess() throws Exception {
-		final long ls = NTPDate.currentTimeMillis();
+    /**
+     * Initialize data structures
+     * @param node ML node
+     * @param args arguments
+     * @return module informations
+     */
+    @Override
+    public MonModuleInfo init(MNode node, String args) {
+        mn = node;
 
-		final Result r = new Result();
-		final eResult er = new eResult();
-		
-		er.FarmName = r.FarmName = getFarmName();
-		er.ClusterName = r.ClusterName = getClusterName();
-		er.NodeName = r.NodeName = mn.getName();
-		er.Module = r.Module = mmi.getName();
-		er.time = r.time = ls;
+        mmi = new MonModuleInfo();
+        mmi.setName("monLMSensors");
+        mmi.setState(0);
 
-		if(logger.isLoggable(Level.FINE))
-    		logger.log(Level.FINE, "Running cmd='"+sCommand+"'");
-		
-		final BufferedReader br = procOutput(sCommand, 5000);
-		
-		if (br == null) {
-			logger.log(Level.WARNING, "Cannot run '" + sCommand + "'.\nFor details increase debug level of lia.Monitor.monitor.cmdExec to FINER");
-		} 
-		else {
-			try {
-				String line = null;
-				jump_while: while ((line = br.readLine()) != null) {
-					StringTokenizer st = new StringTokenizer(line, ":");
+        mmi.lastMeasurement = lLastCall;
 
-					if (st.countTokens() >= 2) {
-						final String sName = st.nextToken();
-						String sValue = st.nextToken();
+        // try to see where the "sensors" executable is	
+        int iFoundCount = 0;
 
-						st = new StringTokenizer(sValue, " \t()");
+        for (String sPossiblePath : sPossiblePaths) {
+            File f = new File(sPossiblePath);
 
-						if (st.countTokens() < 1)
-							continue;
+            if (f.exists() && f.isFile()) {
+                sCommand = sPossiblePath;
+                iFoundCount++;
+            }
+        }
 
-						sValue = st.nextToken();
+        // not found at all or found several times => let PATH decide where to look
+        if (iFoundCount != 1) {
+            sCommand = "sensors";
+        }
 
-						String sUnit = st.hasMoreTokens() ? st.nextToken() : "";
+        // a module argument will override any auto discovered, if the file exists
+        if ((args != null) && (args.length() > 0)) {
+            File f = new File(args);
 
-						if (sValue.startsWith("+"))
-							sValue = sValue.substring(1);
+            if (f.exists() && f.isFile()) {
+                sCommand = args;
+            }
+        }
 
-						final StringBuilder sbRealValue = new StringBuilder();
+        // a configuration parameter will override any previously set path, if the file exists
+        String sConfigPath = AppConfig.getProperty("lia.Monitor.modules.monLMSensors.path");
 
-						for (int i = 0; i < sValue.length(); i++) {
-							char c = sValue.charAt(i);
+        if ((sConfigPath != null) && (sConfigPath.length() > 0)) {
+            File f = new File(sConfigPath);
 
-							if (c == '-' || c == '.' || (c >= '0' && c <= '9')) {
-								sbRealValue.append(c);
-							}
-							else {
-								if (i < sValue.length() - 1)
-									sUnit = sValue.substring(i).trim();
+            if (f.exists() && f.isFile()) {
+                sCommand = sConfigPath;
+            }
+        }
 
-								break;
-							}
-						}
+        return info;
+    }
 
-						final double value;
+    /**
+     * This is a dynamic module so this will return an empty array
+     * @return empty array
+     */
+    @Override
+    public String[] ResTypes() {
+        return resTypes;
+    }
 
-						try {
-							value = Double.parseDouble(sbRealValue.toString());
-						}
-						catch (NumberFormatException nfe) {
-							continue;
-						}
+    /**
+     * Operating system on which this module can run.
+     * 
+     * @return Obviously "Linux"
+     */
+    @Override
+    public String getOsName() {
+        return "Linux";
+    }
 
-						final StringBuilder sbRealName = new StringBuilder();
+    /**
+     * Called periodically to get data from the sensors.
+     * 
+     * @return a Vector with the results of the processing
+     * @throws Exception if there was an error processing the output of the sensors command
+     */
+    @Override
+    public Object doProcess() throws Exception {
+        final long ls = NTPDate.currentTimeMillis();
 
-						for (int i = 0; i < sName.length(); i++) {
-							final char c = sName.charAt(i);
+        final Result r = new Result();
+        final eResult er = new eResult();
 
-							if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '.')
-								sbRealName.append(c);
-						}
+        er.FarmName = r.FarmName = getFarmName();
+        er.ClusterName = r.ClusterName = getClusterName();
+        er.NodeName = r.NodeName = mn.getName();
+        er.Module = r.Module = mmi.getName();
+        er.time = r.time = ls;
 
-						if (sbRealName.length() == 0)
-							continue;
+        if (logger.isLoggable(Level.FINE)) {
+            logger.log(Level.FINE, "Running cmd='" + sCommand + "'");
+        }
 
-						final String sParamName = "lm_" + sbRealName.toString() + "_value";
+        final BufferedReader br = procOutput(sCommand, 5000);
 
-						// do not add the same parameter twice. there are cases when the sensors command give the
-						// same name to several parameters. to be consistent we will take the first one always
-						for (int i = 0; r.param_name != null && i < r.param_name.length; i++) {
-							if (r.param_name[i].equals(sParamName))
-								continue jump_while;
-						}
+        if (br == null) {
+            logger.log(Level.WARNING, "Cannot run '" + sCommand
+                    + "'.\nFor details increase debug level of lia.Monitor.monitor.cmdExec to FINER");
+        } else {
+            try {
+                String line = null;
+                jump_while: while ((line = br.readLine()) != null) {
+                    StringTokenizer st = new StringTokenizer(line, ":");
 
-						r.addSet(sParamName, value);
-						er.addSet("lm_" + sbRealName.toString() + "_unit", sUnit);
+                    if (st.countTokens() >= 2) {
+                        final String sName = st.nextToken();
+                        String sValue = st.nextToken();
 
-						String sStat = "OK";
+                        st = new StringTokenizer(sValue, " \t()");
 
-						if (line.indexOf("disabled") >= 0)
-							sStat = "DISABLED";
-						else
-							if (line.indexOf("ALARM") >= 0)
-								sStat = "ALARM";
+                        if (st.countTokens() < 1) {
+                            continue;
+                        }
 
-						er.addSet("lm_" + sbRealName.toString() + "_status", sStat);
-					}
-				}
+                        sValue = st.nextToken();
 
-				br.close();
-			}
-			finally{
-				cleanup();
-			}
-		}
+                        String sUnit = st.hasMoreTokens() ? st.nextToken() : "";
 
-		// now let's process /proc/acpi		
-		try{
-			final File fProc = new File("/proc/acpi/thermal_zone");
-			
-			final File[] fDirs = fProc.listFiles();
+                        if (sValue.startsWith("+")) {
+                            sValue = sValue.substring(1);
+                        }
 
-			if (fDirs!=null && fDirs.length>0){
-				for (int i=0; i<fDirs.length; i++){
-					final File f = fDirs[i];
-					
-					if (f.isDirectory()){
-						BufferedReader br2 = null;
-						
-						try{
-							final String sName = f.getName();
-						
-							final File fTemp = new File(f, "temperature");
-						
-							if (fTemp.exists() && fTemp.isFile() && fTemp.canRead()){
-								br2 = new BufferedReader(new FileReader(fTemp));
-							
-								final String sLine = br2.readLine();
-								
-								if (sLine!=null){
-									final StringTokenizer st = new StringTokenizer(sLine, ": \t");
-								
-									if (st.countTokens()==3){
-										st.nextToken();
-									
-										final String sValue = st.nextToken().trim();
-										final String sUnit  = st.nextToken().trim();
-									
-										r.addSet("acpi_"+sName+"_value", Double.parseDouble(sValue));
-										er.addSet("acpi_"+sName+"_unit", sUnit);
-									}
-								}
-							}
-						}
-						catch (Throwable t){
-							// ignore
-						}
-						finally{
-							if (br2!=null)
-								try{
-									br2.close();
-								}
-								catch (Exception e){
-									// ignore
-								}
-						}
-					}
-				}
-			}
-		}
-		catch (Throwable t){
-			// ignore
-		}
-		
-		final Vector<Object> vReturn = new Vector<Object>();
-		
-		if (r.param!=null && r.param.length>0)
-			vReturn.add(r);
-		else
-			throw new IOException("No sensors detected. If the machine is correctly configured, try setting configuration parameter 'lia.Monitor.modules.monLMSensors.path' to the full path to the 'sensors' executable.");
+                        final StringBuilder sbRealValue = new StringBuilder();
 
-		if (er.param!=null && er.param.length>0)
-			vReturn.add(er);
+                        for (int i = 0; i < sValue.length(); i++) {
+                            char c = sValue.charAt(i);
 
-		return vReturn;
-	}
+                            if ((c == '-') || (c == '.') || ((c >= '0') && (c <= '9'))) {
+                                sbRealValue.append(c);
+                            } else {
+                                if (i < (sValue.length() - 1)) {
+                                    sUnit = sValue.substring(i).trim();
+                                }
 
-	/**
-	 * Node name
-	 * 
-	 * @return node name
-	 */
-	@Override
-	public MNode getNode() {
-		return mn;
-	}
+                                break;
+                            }
+                        }
 
-	/**
-	 * Cluster name
-	 * 
-	 * @return cluster name
-	 */
-	@Override
-	public String getClusterName() {
-		return mn.getClusterName();
-	}
+                        final double value;
 
-	/**
-	 * Farm name
-	 * 
-	 * @return farm name
-	 */
-	@Override
-	public String getFarmName() {
-		return mn.getFarmName();
-	}
+                        try {
+                            value = Double.parseDouble(sbRealValue.toString());
+                        } catch (NumberFormatException nfe) {
+                            continue;
+                        }
 
-	/**
-	 * Of course this module is repetitive :)
-	 * 
-	 * @return true
-	 */
-	@Override
-	public boolean isRepetitive() {
-		return true;
-	}
+                        final StringBuilder sbRealName = new StringBuilder();
 
-	/**
-	 * Task name
-	 * 
-	 * @return task name
-	 */
-	@Override
-	public String getTaskName() {
-		return mmi.getName();
-	}
+                        for (int i = 0; i < sName.length(); i++) {
+                            final char c = sName.charAt(i);
 
-	/**
-	 * Module info
-	 * 
-	 * @return info
-	 */
-	@Override
-	public MonModuleInfo getInfo() {
-		return mmi;
-	}
+                            if (((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')) || ((c >= '0') && (c <= '9'))
+                                    || (c == '-') || (c == '.')) {
+                                sbRealName.append(c);
+                            }
+                        }
 
-	/**
-	 * Debug method
-	 * 
-	 * @param args command line arguments
-	 * @throws Exception 
-	 */
-	public static void main(String args[]) throws Exception {
-		MFarm f = new MFarm("myFarm");
-		MCluster c = new MCluster("myCluster", f);
-		MNode n = new MNode("sensors", c, f);
-		
-		monLMSensors m = new monLMSensors();
-		m.init(n, args.length>0 ? args[0] : null);
-		
-		Utils.dumpResults(m.doProcess());
-	}
-	
+                        if (sbRealName.length() == 0) {
+                            continue;
+                        }
+
+                        final String sParamName = "lm_" + sbRealName.toString() + "_value";
+
+                        // do not add the same parameter twice. there are cases when the sensors command give the
+                        // same name to several parameters. to be consistent we will take the first one always
+                        for (int i = 0; (r.param_name != null) && (i < r.param_name.length); i++) {
+                            if (r.param_name[i].equals(sParamName)) {
+                                continue jump_while;
+                            }
+                        }
+
+                        r.addSet(sParamName, value);
+                        er.addSet("lm_" + sbRealName.toString() + "_unit", sUnit);
+
+                        String sStat = "OK";
+
+                        if (line.indexOf("disabled") >= 0) {
+                            sStat = "DISABLED";
+                        } else if (line.indexOf("ALARM") >= 0) {
+                            sStat = "ALARM";
+                        }
+
+                        er.addSet("lm_" + sbRealName.toString() + "_status", sStat);
+                    }
+                }
+
+                br.close();
+            } finally {
+                cleanup();
+            }
+        }
+
+        // now let's process /proc/acpi		
+        try {
+            final File fProc = new File("/proc/acpi/thermal_zone");
+
+            final File[] fDirs = fProc.listFiles();
+
+            if ((fDirs != null) && (fDirs.length > 0)) {
+                for (final File f : fDirs) {
+                    if (f.isDirectory()) {
+                        BufferedReader br2 = null;
+
+                        try {
+                            final String sName = f.getName();
+
+                            final File fTemp = new File(f, "temperature");
+
+                            if (fTemp.exists() && fTemp.isFile() && fTemp.canRead()) {
+                                br2 = new BufferedReader(new FileReader(fTemp));
+
+                                final String sLine = br2.readLine();
+
+                                if (sLine != null) {
+                                    final StringTokenizer st = new StringTokenizer(sLine, ": \t");
+
+                                    if (st.countTokens() == 3) {
+                                        st.nextToken();
+
+                                        final String sValue = st.nextToken().trim();
+                                        final String sUnit = st.nextToken().trim();
+
+                                        r.addSet("acpi_" + sName + "_value", Double.parseDouble(sValue));
+                                        er.addSet("acpi_" + sName + "_unit", sUnit);
+                                    }
+                                }
+                            }
+                        } catch (Throwable t) {
+                            // ignore
+                        } finally {
+                            if (br2 != null) {
+                                try {
+                                    br2.close();
+                                } catch (Exception e) {
+                                    // ignore
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            // ignore
+        }
+
+        final Vector<Object> vReturn = new Vector<Object>();
+
+        if ((r.param != null) && (r.param.length > 0)) {
+            vReturn.add(r);
+        } else {
+            throw new IOException(
+                    "No sensors detected. If the machine is correctly configured, try setting configuration parameter 'lia.Monitor.modules.monLMSensors.path' to the full path to the 'sensors' executable.");
+        }
+
+        if ((er.param != null) && (er.param.length > 0)) {
+            vReturn.add(er);
+        }
+
+        return vReturn;
+    }
+
+    /**
+     * Node name
+     * 
+     * @return node name
+     */
+    @Override
+    public MNode getNode() {
+        return mn;
+    }
+
+    /**
+     * Cluster name
+     * 
+     * @return cluster name
+     */
+    @Override
+    public String getClusterName() {
+        return mn.getClusterName();
+    }
+
+    /**
+     * Farm name
+     * 
+     * @return farm name
+     */
+    @Override
+    public String getFarmName() {
+        return mn.getFarmName();
+    }
+
+    /**
+     * Of course this module is repetitive :)
+     * 
+     * @return true
+     */
+    @Override
+    public boolean isRepetitive() {
+        return true;
+    }
+
+    /**
+     * Task name
+     * 
+     * @return task name
+     */
+    @Override
+    public String getTaskName() {
+        return mmi.getName();
+    }
+
+    /**
+     * Module info
+     * 
+     * @return info
+     */
+    @Override
+    public MonModuleInfo getInfo() {
+        return mmi;
+    }
+
+    /**
+     * Debug method
+     * 
+     * @param args command line arguments
+     * @throws Exception 
+     */
+    public static void main(String args[]) throws Exception {
+        MFarm f = new MFarm("myFarm");
+        MCluster c = new MCluster("myCluster", f);
+        MNode n = new MNode("sensors", c, f);
+
+        monLMSensors m = new monLMSensors();
+        m.init(n, args.length > 0 ? args[0] : null);
+
+        Utils.dumpResults(m.doProcess());
+    }
+
 }

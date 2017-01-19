@@ -16,18 +16,17 @@ import lia.util.ntp.NTPDate;
 
 public class monBwctl extends cmdExec implements MonitoringModule {
 
-	/** serial version number */
+    /** serial version number */
     static final long serialVersionUID = 1108200525091981L;
-	/** Logger name */
-    private static final transient String COMPONENT = "lia.Monitor.modules.monBwctl";
+
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(monBwctl.class.getName());
 
     static public String ModuleName = "monBwctl";
 
-    static public String[] ResTypes = { "BwctlTCPBandwidth"};
+    static public String[] ResTypes = { "BwctlTCPBandwidth" };
 
-    static public final String bwCtlCmd = AppConfig.getGlobalEnvProperty("MonaLisa_HOME")+"/Control/bin/bwctl -c ";
+    static public final String bwCtlCmd = AppConfig.getGlobalEnvProperty("MonaLisa_HOME") + "/Control/bin/bwctl -c ";
 
     static public final String OsName = "linux";
 
@@ -40,29 +39,35 @@ public class monBwctl extends cmdExec implements MonitoringModule {
         isRepetitive = true;
     }
 
+    @Override
     public String[] ResTypes() {
         return ResTypes;
     }
 
+    @Override
     public String getOsName() {
         return OsName;
     }
 
+    @Override
     public Object doProcess() throws Exception {
 
         String cmd = bwCtlCmd + " " + Node.getIPaddress();
-        
+
         logger.log(Level.INFO, "monBwctl using cmd = " + cmd);
-        
+
         BufferedReader buff = procOutput(cmd);
 
-        if (buff == null) { throw new Exception(" ping output is null for " + Node.name); }
+        if (buff == null) {
+            throw new Exception(" ping output is null for " + Node.name);
+        }
 
         Result result = ParseOutput(buff);
         cleanup();
         return result;
     }
 
+    @Override
     public MonModuleInfo getInfo() {
         return info;
     }
@@ -73,32 +78,38 @@ public class monBwctl extends cmdExec implements MonitoringModule {
             for (;;) {
                 String lin = buff.readLine();
 
-                if (lin == null) break;
+                if (lin == null) {
+                    break;
+                }
                 if (logger.isLoggable(Level.FINEST)) {
                     logger.log(Level.FINEST, "lin Out = " + lin);
                 }
-                if (lin.indexOf("Unable to connect") != -1 || lin.indexOf("Server denied") != -1 ) {
+                if ((lin.indexOf("Unable to connect") != -1) || (lin.indexOf("Server denied") != -1)) {
                     return null;
                 }
-                
+
                 //[ ID] Interval       Transfer     Bandwidth
-                if (lin.indexOf("Interval") != -1 && lin.indexOf("Transfer") != -1 && lin.indexOf("Bandwidth") != -1){
+                if ((lin.indexOf("Interval") != -1) && (lin.indexOf("Transfer") != -1)
+                        && (lin.indexOf("Bandwidth") != -1)) {
                     lin = buff.readLine();
-                    if (lin == null) break;
+                    if (lin == null) {
+                        break;
+                    }
                     try {
                         String lastToken = null;
                         String cToken = null;
-                        for (StringTokenizer st = new StringTokenizer(lin);st.hasMoreTokens();) {
-                            cToken=st.nextToken();
-                            if ( cToken != null && cToken.indexOf("bits/sec") != -1) {
+                        for (StringTokenizer st = new StringTokenizer(lin); st.hasMoreTokens();) {
+                            cToken = st.nextToken();
+                            if ((cToken != null) && (cToken.indexOf("bits/sec") != -1)) {
                                 try {
-                                    retv = new Result ( Node.getFarmName(),Node.getClusterName(),Node.getName(), ModuleName, ResTypes );
+                                    retv = new Result(Node.getFarmName(), Node.getClusterName(), Node.getName(),
+                                            ModuleName, ResTypes);
                                     retv.time = NTPDate.currentTimeMillis();
                                     int index = retv.getIndex("BwctlTCPBandwidth");
                                     double lbw = Long.valueOf(lastToken).doubleValue();
-                                    retv.param[index] = lbw/1000000D;
+                                    retv.param[index] = lbw / 1000000D;
                                     break;
-                                }catch(Throwable t1) {
+                                } catch (Throwable t1) {
                                     logger.log(Level.WARNING, "monBwctl got Exc", t1);
                                     retv = null;
                                     break;
@@ -106,7 +117,7 @@ public class monBwctl extends cmdExec implements MonitoringModule {
                             }
                             lastToken = cToken;
                         }
-                    } catch(Throwable rr){
+                    } catch (Throwable rr) {
                         logger.log(Level.WARNING, "monBwctl got Exception ", rr);
                         retv = null;
                         break;
@@ -117,7 +128,7 @@ public class monBwctl extends cmdExec implements MonitoringModule {
         } catch (Throwable t) {
             retv = null;
         }
-        
+
         logger.log(Level.INFO, "monBwctl Returning result = " + retv);
         return retv;
     }
@@ -137,7 +148,7 @@ public class monBwctl extends cmdExec implements MonitoringModule {
 
         try {
             Object bb = aa.doProcess();
-            System.out.println((Result) bb);
+            System.out.println(bb);
         } catch (Exception e) {
             ;
         }

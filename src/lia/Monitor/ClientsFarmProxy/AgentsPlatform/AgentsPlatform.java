@@ -1,5 +1,5 @@
 /*
- * $Id: AgentsPlatform.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: AgentsPlatform.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 
 package lia.Monitor.ClientsFarmProxy.AgentsPlatform;
@@ -23,7 +23,7 @@ import net.jini.core.lookup.ServiceID;
  */
 public class AgentsPlatform {
 
-    private static final transient Logger logger = Logger.getLogger(AgentsPlatform.class.getName());
+    private static final Logger logger = Logger.getLogger(AgentsPlatform.class.getName());
 
     public static final int DEFAULT_PRIO = 5; // default
 
@@ -35,16 +35,16 @@ public class AgentsPlatform {
     private final Map<ServiceID, FarmWorker> farmsSIDs; // farms connections ; key -
 
     // farmSID as String
-    private ConcurrentHashMap farmsAgents; // active agents and
+    private final ConcurrentHashMap farmsAgents; // active agents and
 
     // their group
 
     // groups
-    private ConcurrentHashMap bGroups; // broadcast groups with their
+    private final ConcurrentHashMap bGroups; // broadcast groups with their
 
     // agents
 
-    private PQTreeSet priorHash; // priority queue for
+    private final PQTreeSet priorHash; // priority queue for
 
     // messages
 
@@ -115,7 +115,7 @@ public class AgentsPlatform {
                         if (v != null) {
                             v.remove(agentName);
                         } // if
-                        if (v != null && v.size() == 0) {
+                        if ((v != null) && (v.size() == 0)) {
                             bGroups.remove(agentGroup);
                         } // if
                     } // if
@@ -139,8 +139,9 @@ public class AgentsPlatform {
     // if not registered, register it
     private void verifySource(AgentMessage agentMsg) {
 
-        if (agentMsg == null)
+        if (agentMsg == null) {
             return;
+        }
 
         String agentAddrS = agentMsg.agentAddrS;
         String agentGroupS = agentMsg.agentGroupS;
@@ -150,7 +151,7 @@ public class AgentsPlatform {
             if (!farmsAgents.containsKey(agentAddrS)) {
                 // a new message from an unknown agent, a new one
 
-                if (agentGroupS != null && !bGroups.containsKey(agentGroupS)) { // create
+                if ((agentGroupS != null) && !bGroups.containsKey(agentGroupS)) { // create
                     // a
                     // new
                     // group
@@ -173,7 +174,8 @@ public class AgentsPlatform {
 
                 // add to farmsAgents
                 farmsAgents.put(agentAddrS, agentGroupS);
-                logger.log(Level.INFO, "\nAdded " + agentAddrS + " group " + agentGroupS + " to farmsAgents hashtable \n");
+                logger.log(Level.INFO, "\nAdded " + agentAddrS + " group " + agentGroupS
+                        + " to farmsAgents hashtable \n");
 
             } // if
 
@@ -183,8 +185,9 @@ public class AgentsPlatform {
 
     private boolean verifyMsg(AgentMessage agentMsg) {
 
-        if (agentMsg == null)
+        if (agentMsg == null) {
             return false;
+        }
 
         verifySource(agentMsg);
 
@@ -237,8 +240,9 @@ public class AgentsPlatform {
             return;
         } // if
 
-        if (am == null)
+        if (am == null) {
             return;
+        }
 
         verifySource(am);
 
@@ -273,8 +277,9 @@ public class AgentsPlatform {
 
     public void receivedMessage(AgentMessage am) throws Exception { // will be called by an external thread
 
-        if (am == null)
+        if (am == null) {
             return;
+        }
 
         // aici tre' sa verific daca mesajul este complet
         if (verifyMsg(am) == false) {
@@ -285,7 +290,7 @@ public class AgentsPlatform {
         if (am.priority != null) {
             // if the message has been set with a specified priority ...
             int prio = am.priority.intValue();
-            if (0 < prio && prio <= 10) {
+            if ((0 < prio) && (prio <= 10)) {
                 priorHash.insert(am, prio);
                 // insert the message in the priority queue;
             } else { // if a wrong priority has been set
@@ -308,7 +313,8 @@ public class AgentsPlatform {
         try {
             am.agentAddrD = am.agentAddrS;
             am.agentGroupD = am.agentGroupS;
-            FarmWorker fw = farmsSIDs.get(AgentsPlatform.serviceIDFromString(am.agentAddrS.substring(am.agentAddrS.indexOf("@") + 1)));
+            FarmWorker fw = farmsSIDs.get(AgentsPlatform.serviceIDFromString(am.agentAddrS.substring(am.agentAddrS
+                    .indexOf("@") + 1)));
             monMessage mm = new monMessage(monMessage.ML_AGENT_ERR_TAG, null, am);
             fw.sendMsg(mm);
         } catch (Exception e) {
@@ -317,7 +323,6 @@ public class AgentsPlatform {
     } // sendErrorMessage
 
     class MsgVerify extends Thread {
-
 
         public MsgVerify() {
         } // MsgVerify
@@ -340,7 +345,7 @@ public class AgentsPlatform {
                                 final String destAddr = agent.substring(agent.indexOf("@") + 1);
                                 final ServiceID dServiceID = AgentsPlatform.serviceIDFromString(destAddr);
                                 final FarmWorker fw = farmsSIDs.get(dServiceID);
-                                
+
                                 if (fw != null) {
                                     msg.agentAddrD = agent;
                                     monMessage mm = new monMessage("agents", null, msg);
@@ -359,11 +364,12 @@ public class AgentsPlatform {
 
                 StringTokenizer st = new StringTokenizer(agentDestA, "@");
                 String bla = st.nextToken();
-                if (st.hasMoreTokens())
+                if (st.hasMoreTokens()) {
                     agentD = st.nextToken();
-                
+                }
+
                 final FarmWorker fw = farmsSIDs.get(AgentsPlatform.serviceIDFromString(agentD));
-                
+
                 if (fw != null) {
 
                     monMessage mm = new monMessage("agents", null, msg);
@@ -384,6 +390,7 @@ public class AgentsPlatform {
 
         } // processMsg
 
+        @Override
         public void run() {
 
             while (true) {
@@ -399,7 +406,6 @@ public class AgentsPlatform {
 
     } // Thread
 
-    
     public static final ServiceID serviceIDFromString(final String sID) {
         final UUID uuidHelper = UUID.fromString(sID);
         return new ServiceID(uuidHelper.getMostSignificantBits(), uuidHelper.getLeastSignificantBits());

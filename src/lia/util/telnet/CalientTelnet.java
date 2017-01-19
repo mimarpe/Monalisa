@@ -8,7 +8,7 @@ import lia.Monitor.monitor.AppConfig;
 class CalientTelnet extends OSTelnet {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(CalientTelnet.class.getName());
+    private static final Logger logger = Logger.getLogger(CalientTelnet.class.getName());
     private static CalientTelnet _monitorInstance = null;
     private static CalientTelnet _controlInstance = null;
     private static volatile boolean controlInited;
@@ -26,7 +26,7 @@ class CalientTelnet extends OSTelnet {
                         String username = AppConfig.getProperty("lia.util.telnet.CalientControlUsername");
                         String passwd = AppConfig.getProperty("lia.util.telnet.CalientControlPasswd");
                         String hostName = AppConfig.getProperty("lia.util.telnet.CalientControlHostname");
-                        if (username != null && passwd != null && hostName != null) {
+                        if ((username != null) && (passwd != null) && (hostName != null)) {
                             int port = 3083;
                             try {
                                 port = AppConfig.geti("lia.util.telnet.CalientControlPort", 3083);
@@ -36,7 +36,10 @@ class CalientTelnet extends OSTelnet {
                             _controlInstance = new CalientTelnet(username, passwd, hostName, port);
                         }
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, " [ CalientTelnet ] Cannot instantiate ControlCalientTelnet ... will try to use MonitorCalientTelnet", t);
+                        logger.log(
+                                Level.WARNING,
+                                " [ CalientTelnet ] Cannot instantiate ControlCalientTelnet ... will try to use MonitorCalientTelnet",
+                                t);
                         _controlInstance = null;
                     }
                     if (_controlInstance == null) {
@@ -47,7 +50,6 @@ class CalientTelnet extends OSTelnet {
                 }
             }//end sync
         }
-
 
         return _controlInstance;
     }
@@ -77,6 +79,7 @@ class CalientTelnet extends OSTelnet {
     /**
      * @return true if succes, false otherwise 
      */
+    @Override
     public void makeFDXConn(String cnx) throws Exception {
         String[] csplit = decodeConn(cnx);
         makeConn(csplit[0], csplit[1], true);
@@ -85,6 +88,7 @@ class CalientTelnet extends OSTelnet {
     /**
      * @return true if succes, false otherwise 
      */
+    @Override
     public void makeConn(String cnx) throws Exception {
         String[] csplit = decodeConn(cnx);
         makeConn(csplit[0], csplit[1], false);
@@ -98,16 +102,21 @@ class CalientTelnet extends OSTelnet {
         String sPort = iPort;
         String dPort = oPort;
 
-        execCmd("ent-crs::" + sPort + "," + dPort + ":" + MCONN_CTAG + "::," + (fdx ? "2way" : "1way") + ";", MCONN_CTAG);
+        execCmd("ent-crs::" + sPort + "," + dPort + ":" + MCONN_CTAG + "::," + (fdx ? "2way" : "1way") + ";",
+                MCONN_CTAG);
     }
+
     //cnx should be iPort&oPort
+    @Override
     public void deleteFDXConn(String cnx) throws Exception {
         deleteConn(cnx, true);
     }
 
+    @Override
     public void deleteConn(String cnx) throws Exception {
         deleteConn(cnx, false);
     }
+
     //cnx should be iPort&oPort
     public void deleteConn(String cnx, boolean isFDX) throws Exception {
         String[] csplit = decodeConn(cnx);
@@ -130,6 +139,7 @@ class CalientTelnet extends OSTelnet {
         String[] csplit = decodeConn(cnx);
         return isConn(csplit[0], csplit[1]);
     }
+
     //TODO - MUST be redone !! use execCmdAndGet
     public boolean isConn(String iPort, String oPort) throws Exception {
 
@@ -139,6 +149,7 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
+    @Override
     public boolean changeNPPort(String eqptID, String ip, String mask, String gw) throws Exception {
         if (eqptID == null) {
             return false;
@@ -147,13 +158,13 @@ class CalientTelnet extends OSTelnet {
 
         StringBuilder buf = new StringBuilder();
         buf.append("set-ip::").append(eqptID).append(":::");
-        if (ip != null && ip.length() != 0) {
+        if ((ip != null) && (ip.length() != 0)) {
             buf.append(ip);
         }
-        if (mask != null && mask.length() != 0) {
+        if ((mask != null) && (mask.length() != 0)) {
             buf.append(",").append(mask);
         }
-        if (gw != null && gw.length() != 0) {
+        if ((gw != null) && (gw.length() != 0)) {
             buf.append(",").append(gw);
         }
         buf.append(";");
@@ -162,15 +173,16 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
+    @Override
     public boolean changeOSPF(String routerID, String areaID) throws Exception {
         CalientTelnet st = CalientTelnet.getControlInstance();
 
         StringBuilder buf = new StringBuilder();
         buf.append("ed-cfg-ospf:::::");
-        if (routerID != null && routerID.length() != 0) {
+        if ((routerID != null) && (routerID.length() != 0)) {
             buf.append(routerID);
         }
-        if (areaID != null && areaID.length() != 0) {
+        if ((areaID != null) && (areaID.length() != 0)) {
             buf.append(",").append(areaID);
         }
         buf.append(";");
@@ -179,21 +191,23 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
-    public boolean changeRSVP(String msgRetryInvl, String ntfRetryInvl, String grInvl, String grcvInvl) throws Exception {
+    @Override
+    public boolean changeRSVP(String msgRetryInvl, String ntfRetryInvl, String grInvl, String grcvInvl)
+            throws Exception {
         CalientTelnet st = CalientTelnet.getControlInstance();
 
         StringBuilder buf = new StringBuilder();
         buf.append("ed-cfg-rsvp:::::");
-        if (msgRetryInvl != null && msgRetryInvl.length() != 0) {
+        if ((msgRetryInvl != null) && (msgRetryInvl.length() != 0)) {
             buf.append("msgretryinvl=").append(msgRetryInvl);
         }
-        if (ntfRetryInvl != null && ntfRetryInvl.length() != 0) {
+        if ((ntfRetryInvl != null) && (ntfRetryInvl.length() != 0)) {
             buf.append(",ntfretryinvl=").append(ntfRetryInvl);
         }
-        if (grInvl != null && grInvl.length() != 0) {
+        if ((grInvl != null) && (grInvl.length() != 0)) {
             buf.append(",grinvl=").append(grInvl);
         }
-        if (grcvInvl != null && grcvInvl.length() != 0) {
+        if ((grcvInvl != null) && (grcvInvl.length() != 0)) {
             buf.append(",grcvinvl=").append(grcvInvl);
         }
         buf.append(";");
@@ -202,10 +216,13 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
-    public boolean addCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj, String helloInvl, String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin, String deadInvlMax) throws Exception {
+    @Override
+    public boolean addCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj, String helloInvl,
+            String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin, String deadInvlMax)
+            throws Exception {
 
-        if (name == null || name.length() == 0 || remoteIP == null || remoteIP.length() == 0 ||
-                remoteRid == null || remoteRid.length() == 0 || port == null || port.length() == 0) {
+        if ((name == null) || (name.length() == 0) || (remoteIP == null) || (remoteIP.length() == 0)
+                || (remoteRid == null) || (remoteRid.length() == 0) || (port == null) || (port.length() == 0)) {
             return false;
         }
         CalientTelnet st = CalientTelnet.getControlInstance();
@@ -213,25 +230,25 @@ class CalientTelnet extends OSTelnet {
         StringBuilder buf = new StringBuilder();
         buf.append("ent-ctrlch::").append(name).append(":::");
         buf.append(remoteIP).append(",").append(remoteRid).append(",").append(port).append(":");
-        if (adj != null && adj.length() != 0) {
+        if ((adj != null) && (adj.length() != 0)) {
             buf.append(",ADJ=").append(adj);
         }
-        if (helloInvl != null && helloInvl.length() != 0) {
+        if ((helloInvl != null) && (helloInvl.length() != 0)) {
             buf.append(",HELLOINTRVL=").append(helloInvl);
         }
-        if (helloInvlMin != null && helloInvlMin.length() != 0) {
+        if ((helloInvlMin != null) && (helloInvlMin.length() != 0)) {
             buf.append(",HELLOINTRVLMIN=").append(helloInvlMin);
         }
-        if (helloInvlMax != null && helloInvlMax.length() != 0) {
+        if ((helloInvlMax != null) && (helloInvlMax.length() != 0)) {
             buf.append(",HELLOINTRVLMAX=").append(helloInvlMax);
         }
-        if (deadInvl != null && deadInvl.length() != 0) {
+        if ((deadInvl != null) && (deadInvl.length() != 0)) {
             buf.append(",DEADINTRVL=").append(deadInvl);
         }
-        if (deadInvlMin != null && deadInvlMin.length() != 0) {
+        if ((deadInvlMin != null) && (deadInvlMin.length() != 0)) {
             buf.append(",DEADINTRVLMIN=").append(deadInvlMin);
         }
-        if (deadInvlMax != null && deadInvlMax.length() != 0) {
+        if ((deadInvlMax != null) && (deadInvlMax.length() != 0)) {
             buf.append(",DEADINTRVLMAX=").append(deadInvlMax);
         }
         buf.append(";");
@@ -240,8 +257,9 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
+    @Override
     public boolean delCtrlCh(String name) throws Exception {
-        if (name == null || name.length() == 0) {
+        if ((name == null) || (name.length() == 0)) {
             return false;
         }
         CalientTelnet st = CalientTelnet.getControlInstance();
@@ -253,10 +271,13 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
-    public boolean changeCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj, String helloInvl, String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin, String deadInvlMax) throws Exception {
+    @Override
+    public boolean changeCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj,
+            String helloInvl, String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin,
+            String deadInvlMax) throws Exception {
 
-        if (name == null || name.length() == 0 || remoteIP == null || remoteIP.length() == 0 ||
-                remoteRid == null || remoteRid.length() == 0 || port == null || port.length() == 0) {
+        if ((name == null) || (name.length() == 0) || (remoteIP == null) || (remoteIP.length() == 0)
+                || (remoteRid == null) || (remoteRid.length() == 0) || (port == null) || (port.length() == 0)) {
             return false;
         }
         CalientTelnet st = CalientTelnet.getControlInstance();
@@ -268,25 +289,25 @@ class CalientTelnet extends OSTelnet {
         StringBuilder buf = new StringBuilder();
         buf.append("ent-ctrlch::").append(name).append(":::");
         buf.append(remoteIP).append(",").append(remoteRid).append(",").append(port).append(":");
-        if (adj != null && adj.length() != 0) {
+        if ((adj != null) && (adj.length() != 0)) {
             buf.append(",ADJ=").append(adj);
         }
-        if (helloInvl != null && helloInvl.length() != 0) {
+        if ((helloInvl != null) && (helloInvl.length() != 0)) {
             buf.append(",HELLOINTRVL=").append(helloInvl);
         }
-        if (helloInvlMin != null && helloInvlMin.length() != 0) {
+        if ((helloInvlMin != null) && (helloInvlMin.length() != 0)) {
             buf.append(",HELLOINTRVLMIN=").append(helloInvlMin);
         }
-        if (helloInvlMax != null && helloInvlMax.length() != 0) {
+        if ((helloInvlMax != null) && (helloInvlMax.length() != 0)) {
             buf.append(",HELLOINTRVLMAX=").append(helloInvlMax);
         }
-        if (deadInvl != null && deadInvl.length() != 0) {
+        if ((deadInvl != null) && (deadInvl.length() != 0)) {
             buf.append(",DEADINTRVL=").append(deadInvl);
         }
-        if (deadInvlMin != null && deadInvlMin.length() != 0) {
+        if ((deadInvlMin != null) && (deadInvlMin.length() != 0)) {
             buf.append(",DEADINTRVLMIN=").append(deadInvlMin);
         }
-        if (deadInvlMax != null && deadInvlMax.length() != 0) {
+        if ((deadInvlMax != null) && (deadInvlMax.length() != 0)) {
             buf.append(",DEADINTRVLMAX=").append(deadInvlMax);
         }
         buf.append(";");
@@ -295,10 +316,12 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
-    public boolean addAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric, String ospfAdj, String adjType, String rsvpRRFlag,
-            String rsvpGRFlag, String ntfProc) throws Exception {
+    @Override
+    public boolean addAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric, String ospfAdj,
+            String adjType, String rsvpRRFlag, String rsvpGRFlag, String ntfProc) throws Exception {
 
-        if (name == null || name.length() == 0 || ctrlCh == null || ctrlCh.length() == 0 || remoteRid == null || remoteRid.length() == 0) {
+        if ((name == null) || (name.length() == 0) || (ctrlCh == null) || (ctrlCh.length() == 0) || (remoteRid == null)
+                || (remoteRid.length() == 0)) {
             return false;
         }
         CalientTelnet st = CalientTelnet.getControlInstance();
@@ -306,25 +329,25 @@ class CalientTelnet extends OSTelnet {
         StringBuilder buf = new StringBuilder();
         buf.append("ent-adj::").append(name).append(":::");
         buf.append(ctrlCh).append(",").append(remoteRid).append(":");
-        if (ospfArea != null && ospfArea.length() != 0) {
+        if ((ospfArea != null) && (ospfArea.length() != 0)) {
             buf.append("OSPFAREA=").append(ospfArea);
         }
-        if (metric != null && metric.length() != 0) {
+        if ((metric != null) && (metric.length() != 0)) {
             buf.append(",METRIC=").append(metric);
         }
-        if (ospfAdj != null && ospfAdj.length() != 0) {
+        if ((ospfAdj != null) && (ospfAdj.length() != 0)) {
             buf.append(",OSPFADJ=").append(ospfAdj);
         }
-        if (adjType != null && adjType.length() != 0) {
+        if ((adjType != null) && (adjType.length() != 0)) {
             buf.append(",ADJTYPE=").append(adjType);
         }
-        if (rsvpRRFlag != null && rsvpRRFlag.length() != 0) {
+        if ((rsvpRRFlag != null) && (rsvpRRFlag.length() != 0)) {
             buf.append(",RSVPRRFLAG=").append(rsvpRRFlag);
         }
-        if (rsvpGRFlag != null && rsvpGRFlag.length() != 0) {
+        if ((rsvpGRFlag != null) && (rsvpGRFlag.length() != 0)) {
             buf.append(",RSVPGRFLAG=").append(rsvpGRFlag);
         }
-        if (ntfProc != null && ntfProc.length() != 0) {
+        if ((ntfProc != null) && (ntfProc.length() != 0)) {
             buf.append(",NTFPROC=").append(ntfProc);
         }
         buf.append(";");
@@ -333,8 +356,9 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
+    @Override
     public boolean deleteAdj(String name) throws Exception {
-        if (name == null || name.length() == 0) {
+        if ((name == null) || (name.length() == 0)) {
             return false;
         }
         CalientTelnet st = CalientTelnet.getControlInstance();
@@ -345,10 +369,12 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
-    public boolean changeAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric, String ospfAdj, String adjType, String rsvpRRFlag,
-            String rsvpGRFlag, String ntfProc) throws Exception {
+    @Override
+    public boolean changeAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric,
+            String ospfAdj, String adjType, String rsvpRRFlag, String rsvpGRFlag, String ntfProc) throws Exception {
 
-        if (name == null || name.length() == 0 || ctrlCh == null || ctrlCh.length() == 0 || remoteRid == null || remoteRid.length() == 0) {
+        if ((name == null) || (name.length() == 0) || (ctrlCh == null) || (ctrlCh.length() == 0) || (remoteRid == null)
+                || (remoteRid.length() == 0)) {
             return false;
         }
         CalientTelnet st = CalientTelnet.getControlInstance();
@@ -360,25 +386,25 @@ class CalientTelnet extends OSTelnet {
         StringBuilder buf = new StringBuilder();
         buf.append("ent-adj::").append(name).append(":::");
         buf.append(ctrlCh).append(",").append(remoteRid).append(":");
-        if (ospfArea != null && ospfArea.length() != 0) {
+        if ((ospfArea != null) && (ospfArea.length() != 0)) {
             buf.append("OSPFAREA=").append(ospfArea);
         }
-        if (metric != null && metric.length() != 0) {
+        if ((metric != null) && (metric.length() != 0)) {
             buf.append(",METRIC=").append(metric);
         }
-        if (ospfAdj != null && ospfAdj.length() != 0) {
+        if ((ospfAdj != null) && (ospfAdj.length() != 0)) {
             buf.append(",OSPFADJ=").append(ospfAdj);
         }
-        if (adjType != null && adjType.length() != 0) {
+        if ((adjType != null) && (adjType.length() != 0)) {
             buf.append(",ADJTYPE=").append(adjType);
         }
-        if (rsvpRRFlag != null && rsvpRRFlag.length() != 0) {
+        if ((rsvpRRFlag != null) && (rsvpRRFlag.length() != 0)) {
             buf.append(",RSVPRRFLAG=").append(rsvpRRFlag);
         }
-        if (rsvpGRFlag != null && rsvpGRFlag.length() != 0) {
+        if ((rsvpGRFlag != null) && (rsvpGRFlag.length() != 0)) {
             buf.append(",RSVPGRFLAG=").append(rsvpGRFlag);
         }
-        if (ntfProc != null && ntfProc.length() != 0) {
+        if ((ntfProc != null) && (ntfProc.length() != 0)) {
             buf.append(",NTFPROC=").append(ntfProc);
         }
         buf.append(";");
@@ -387,16 +413,18 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
+    @Override
     public boolean addLink(String name, String localIP, String remoteIP, String adj) throws Exception {
 
-        if (name == null || name.length() == 0 || localIP == null || localIP.length() == 0 || remoteIP == null || remoteIP.length() == 0) {
+        if ((name == null) || (name.length() == 0) || (localIP == null) || (localIP.length() == 0)
+                || (remoteIP == null) || (remoteIP.length() == 0)) {
             return false;
         }
         CalientTelnet st = CalientTelnet.getControlInstance();
 
         StringBuilder buf = new StringBuilder();
         buf.append("ent-link::").append(name).append(":::Numbered,");
-        if (adj != null && adj.length() != 0) {
+        if ((adj != null) && (adj.length() != 0)) {
             buf.append(adj);
         }
         buf.append(",:LOCALIP=").append(localIP).append(",REMOTEIP=").append(remoteIP).append(";");
@@ -405,9 +433,10 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
+    @Override
     public boolean delLink(String name) throws Exception {
 
-        if (name == null || name.length() == 0) {
+        if ((name == null) || (name.length() == 0)) {
             return false;
         }
         CalientTelnet st = CalientTelnet.getControlInstance();
@@ -418,21 +447,23 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
+    @Override
     public boolean changeLink(String name, String localIP, String remoteIP, String linkType, String adj, String wdmAdj,
-            String remoteIf, String wdmRemoteIf, String lmpVerify, String fltDetect, String metric, String port) throws Exception {
+            String remoteIf, String wdmRemoteIf, String lmpVerify, String fltDetect, String metric, String port)
+            throws Exception {
 
-        if (name == null || name.length() == 0 || linkType == null || linkType.length() == 0) {
+        if ((name == null) || (name.length() == 0) || (linkType == null) || (linkType.length() == 0)) {
             return false;
         }
         if (!linkType.equals("Numbered") && !linkType.equals("Unnumbered")) {
             linkType = "Numbered";
         } // by default
         if (linkType.equals("Numbered")) {
-            if (localIP == null || localIP.length() == 0 || remoteIP == null || remoteIP.length() == 0) {
+            if ((localIP == null) || (localIP.length() == 0) || (remoteIP == null) || (remoteIP.length() == 0)) {
                 return false;
             }
         } else {
-            if (remoteIf == null || remoteIf.length() == 0) {
+            if ((remoteIf == null) || (remoteIf.length() == 0)) {
                 return false;
             }
         }
@@ -445,46 +476,46 @@ class CalientTelnet extends OSTelnet {
         boolean success = false;
         StringBuilder buf = new StringBuilder();
         buf.append("ent-link::").append(name).append(":::").append(linkType).append(",");
-        if (adj != null && adj.length() != 0) {
+        if ((adj != null) && (adj.length() != 0)) {
             buf.append(adj);
         }
         buf.append(",");
-        if (wdmAdj != null && wdmAdj.length() != 0) {
+        if ((wdmAdj != null) && (wdmAdj.length() != 0)) {
             buf.append(wdmAdj);
         }
         buf.append(":");
-        if (localIP != null && localIP.length() != 0) {
+        if ((localIP != null) && (localIP.length() != 0)) {
             buf.append("LOCALIP=").append(localIP);
         }
         buf.append(",");
-        if (remoteIP != null && remoteIP.length() != 0) {
+        if ((remoteIP != null) && (remoteIP.length() != 0)) {
             buf.append("REMOTEIP=").append(remoteIP);
         }
         buf.append(",");
-        if (wdmRemoteIf != null && wdmRemoteIf.length() != 0) {
+        if ((wdmRemoteIf != null) && (wdmRemoteIf.length() != 0)) {
             buf.append("WDMREMOTETEIF=").append(wdmRemoteIf);
         }
         buf.append(",");
-        if (remoteIf != null && remoteIf.length() != 0) {
+        if ((remoteIf != null) && (remoteIf.length() != 0)) {
             buf.append("REMOTETEIF=").append(remoteIf);
         }
         buf.append(",");
-        if (lmpVerify != null && lmpVerify.length() != 0) {
+        if ((lmpVerify != null) && (lmpVerify.length() != 0)) {
             buf.append("LMPVERIFY=").append(lmpVerify);
         }
         buf.append(",");
-        if (fltDetect != null && fltDetect.length() != 0) {
+        if ((fltDetect != null) && (fltDetect.length() != 0)) {
             buf.append("FLTDETECT=").append(fltDetect);
         }
         buf.append(",");
-        if (metric != null && metric.length() != 0) {
+        if ((metric != null) && (metric.length() != 0)) {
             buf.append("METRIC=").append(metric);
         }
         buf.append(";");
         StringBuilder sb = st.doCmd(buf.toString(), null);
         success = (sb.indexOf(TL1_COMPLD_TAG) != -1);
 
-        if (!success || port == null || port.length() == 0) {
+        if (!success || (port == null) || (port.length() == 0)) {
             return success;
         }
 
@@ -495,6 +526,7 @@ class CalientTelnet extends OSTelnet {
         return (sb.indexOf(TL1_COMPLD_TAG) != -1);
     }
 
+    @Override
     public void connected() {
         logger.log(Level.INFO, " [ CalientTelnet ] connected");
     }
@@ -509,15 +541,15 @@ class CalientTelnet extends OSTelnet {
             System.exit(1);
         }
 
-//        for (int i=1; i<=2; i++) {
-//            try {
-//                Thread.sleep(5000);
-//            }catch(Throwable t){
-//                
-//            }
-//            
-//            st.doCmd("rtrv-port::10.10a." + i + ":ctag;");
-//        }
+        //        for (int i=1; i<=2; i++) {
+        //            try {
+        //                Thread.sleep(5000);
+        //            }catch(Throwable t){
+        //                
+        //            }
+        //            
+        //            st.doCmd("rtrv-port::10.10a." + i + ":ctag;");
+        //        }
         st.makeConn("10.12a.4-10.14a.5");
         System.out.println("\n\nVerifying ping connection ... should be get version info\n\n");
         //verify The Ping here

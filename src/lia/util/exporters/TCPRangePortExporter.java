@@ -18,13 +18,15 @@ import lia.Monitor.monitor.AppConfig;
 public final class TCPRangePortExporter extends RangePortExporter {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(TCPRangePortExporter.class.getName());
+    private static final Logger logger = Logger.getLogger(TCPRangePortExporter.class.getName());
 
     public static final ServerSocket bind(int backlog, InetAddress addr) throws Exception {
         ServerSocket listen_socket = null;
         try {
             for (int bindPort = MIN_BIND_PORT; bindPort <= MAX_BIND_PORT; bindPort++) {
-                if (allocatedPorts.containsValue(Integer.valueOf(bindPort))) continue;
+                if (allocatedPorts.containsValue(Integer.valueOf(bindPort))) {
+                    continue;
+                }
                 try {
                     listen_socket = new ServerSocket(bindPort, backlog, addr);
                     if (logger.isLoggable(Level.FINEST)) {
@@ -54,16 +56,16 @@ public final class TCPRangePortExporter extends RangePortExporter {
             for (int bindPort = MIN_BIND_PORT; bindPort <= MAX_BIND_PORT; bindPort++) {
                 try {
                     final String forceIP = AppConfig.getProperty("lia.Monitor.useIPaddress");
-                    if(forceIP == null) {
+                    if (forceIP == null) {
                         ss.bind(new InetSocketAddress(bindPort));
                     } else {
                         ss.bind(new InetSocketAddress(InetAddress.getByName(forceIP), bindPort));
                     }
-                    
+
                     if (logger.isLoggable(Level.FINE)) {
                         logger.log(Level.FINE, " [ TCPRangePortExporter ] ServerSocket exported [ " + bindPort + " ] ");
                     }
-                    
+
                     allocatedPorts.put(ss, Integer.valueOf(bindPort));
                     return bindPort;
                 } catch (Throwable t) {

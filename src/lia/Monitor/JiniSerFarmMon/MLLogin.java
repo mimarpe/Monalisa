@@ -35,11 +35,9 @@ import org.globus.gsi.bc.BouncyCastleOpenSSLKey;
  * @date Sep 27, 2004 Login class
  */
 public class MLLogin {
-    /** Logger Name */
-    private static final transient String COMPONENT = "lia.Monitor.JiniSerFarmMon.login";
 
     /** The Logger */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(MLLogin.class.getName());
 
     private Subject subject = null;
 
@@ -92,17 +90,18 @@ public class MLLogin {
         Collection c = cf.generateCertificates(certsIS);
         Certificate[] certs = (Certificate[]) c.toArray(new Certificate[c.toArray().length]);
 
-        if (c.size() == 1)
+        if (c.size() == 1) {
             logger.log(Level.FINE, "MLLogin: reading certificates chain: 1 certificate in chain.");
-        else
+        } else {
             logger.log(Level.FINE, "MLLogin: reading certificates chain: " + c.size() + "certificates in chain.");
+        }
 
-        if (certs == null || certs.length == 0 || !(certs[0] instanceof X509Certificate)) {
+        if ((certs == null) || (certs.length == 0) || !(certs[0] instanceof X509Certificate)) {
             throw new LoginException("Unable to get X.509 certificate chain" + certs);
         } else {
             LinkedList certList = new LinkedList();
-            for (int i = 0; i < certs.length; i++) {
-                certList.add(certs[i]);
+            for (Certificate cert : certs) {
+                certList.add(cert);
             }
             CertificateFactory certF = CertificateFactory.getInstance("X.509");
             this.certPath = certF.generateCertPath(certList);
@@ -134,7 +133,7 @@ public class MLLogin {
             System.err.println("Error: Wrong pass phrase");
         }
 
-        this.privateCredential = new X500PrivateCredential(certificate, (PrivateKey) privateKey);
+        this.privateCredential = new X500PrivateCredential(certificate, privateKey);
 
         privateKey = null;
 
@@ -163,8 +162,9 @@ public class MLLogin {
         Process proc = MLProcess.exec(privateKeyExecutable, 5000);
 
         try {
-            if (proc.waitFor() != 0)
+            if (proc.waitFor() != 0) {
                 throw new LoginException("PrivateKey script returned a non-zero value:" + proc.exitValue());
+            }
 
         } catch (InterruptedException e) {
             throw new LoginException("Exception during read private key from file" + e);
@@ -187,8 +187,9 @@ public class MLLogin {
         proc = MLProcess.exec(certsExecutable);
 
         try {
-            if (proc.waitFor() != 0)
+            if (proc.waitFor() != 0) {
                 throw new LoginException("PrivateKey script returned a non-zero value:" + proc.exitValue());
+            }
 
         } catch (InterruptedException e) {
             throw new LoginException("Exception during read private key from file" + e);
@@ -211,7 +212,7 @@ public class MLLogin {
         this.login(inPK, optionalPKPassword, inCerts);
 
     }
-  
+
     /**
      * clean the current user credentials
      */
@@ -228,13 +229,13 @@ public class MLLogin {
      */
     public Subject getSubject() throws LoginException {
 
-        if (subject == null)
+        if (subject == null) {
             throw new LoginException("Subject is not initialized");
+        }
 
         return this.subject;
     }
 
- 
     private static ByteArrayInputStream fullStream(InputStream is) throws IOException {
 
         DataInputStream dis = new DataInputStream(is);
@@ -245,12 +246,14 @@ public class MLLogin {
         return bais;
     }
 
-	//DEBUG
+    //DEBUG
     public static void main(String args[]) {
 
         // Execute a command with an argument that contains a space
-        String[] commands = new String[] { "/bin/bash", "/home/adi/ML_NEW/MSRC/MonaLisa/Service/CMD/getCertsChain.sh.ui" };
-        String[] commands1 = new String[] { "/bin/bash", "/home/adi/ML_NEW/MSRC/MonaLisa/Service/CMD/getPrivateKey.sh.ui" };
+        String[] commands = new String[] { "/bin/bash",
+                "/home/adi/ML_NEW/MSRC/MonaLisa/Service/CMD/getCertsChain.sh.ui" };
+        String[] commands1 = new String[] { "/bin/bash",
+                "/home/adi/ML_NEW/MSRC/MonaLisa/Service/CMD/getPrivateKey.sh.ui" };
 
         MLLogin auth = new MLLogin();
 
@@ -267,10 +270,11 @@ public class MLLogin {
         } catch (InvalidKeyException i) {
             i.printStackTrace();
         } finally {
-            if (subject != null)
+            if (subject != null) {
                 System.out.println("Login succesfull" + subject.toString());
-            else
+            } else {
                 System.out.println("Login failed, subject = null");
+            }
         }
 
     }

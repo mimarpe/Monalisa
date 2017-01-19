@@ -43,7 +43,6 @@
 		    <td>
 			<div id="div_options" style="display: none;"><div>
 				    <!-- INTERVAL SELECTION -->
-			    <script type="text/javascript" src="/js/htmlsuite/calendar.js"> </script> 
 				    
 			    <table border=0 cellspacing=0 cellpadding=0><tr><td>
 				
@@ -63,6 +62,8 @@
 	    <option value="94608000000">last 3 years</option>
 	    <option value="126144000000">last 4 years</option>
 	    <option value="157680000000">last 5 years</option>
+	    <option value="189216000000">last 6 years</option>
+	    <option value="283996800000">last 9 years</option>
 	</select>
 	
 	&nbsp;&nbsp;or&nbsp;&nbsp;
@@ -96,11 +97,9 @@
 	    <!--
 	    var now = new Date('<<:current_date_time js:>>');
 	    setCalendarFineGranularity();
+	    init_form();
 	    -->
 	</script>
-	<script language="JavaScript" src="/js/htmlsuite/calendar_set.js">
-	</script>
-	
 				
 				    </td></tr></table>
 				<!-- /INTERVAL SELECTION -->

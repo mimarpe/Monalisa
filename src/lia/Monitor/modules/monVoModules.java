@@ -9,8 +9,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Properties;
@@ -34,10 +33,15 @@ import lia.util.ntp.NTPDate;
 
 abstract class monVoModules extends cmdExec implements Observer, AppConfigChangeListener {
 
-    /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.modules.monVoModules");
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 5588477830931732741L;
 
-    private MLLogEvent mlle = new MLLogEvent();
+    /** Logger used by this class */
+    private static final Logger logger = Logger.getLogger(monVoModules.class.getName());
+
+    private final MLLogEvent mlle = new MLLogEvent();
 
     private Integer errorCode;
 
@@ -231,10 +235,7 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
         AppConfig.addNotifier(this);
     } // end method
 
-    protected monVoModules(String ModName,
-            String[] inResTypes,
-            String inNotifyProperty,
-            String inStatusNotifyProperty,
+    protected monVoModules(String ModName, String[] inResTypes, String inNotifyProperty, String inStatusNotifyProperty,
             String inResultsEmailedProperty) {
         super(ModName);
         hmNoVoUsers = new HashMap<String, String>();
@@ -254,10 +255,12 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
     } // end method
 
     // ===== PUBLIC METHODS ========================================
+    @Override
     public MNode getNode() {
         return this.Node;
     }
 
+    @Override
     public String[] ResTypes() {
         return ResTypes;
     }
@@ -320,8 +323,8 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
         // -- display the result types --
         String tmpTypes = new String();
         tmpTypes = tmpTypes.concat("Result types: ");
-        for (int i = 0; i < ResTypes.length; i++) {
-            tmpTypes = tmpTypes.concat(ResTypes[i] + ",");
+        for (String resType : ResTypes) {
+            tmpTypes = tmpTypes.concat(resType + ",");
         }
         logit(tmpTypes);
         addToMsg(methodName, tmpTypes);
@@ -353,25 +356,22 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
 
         // -- see if email should be sent ---
         try {
-            useContactEmail = Boolean.valueOf(AppConfig.getProperty("include.MonaLisa.ContactEmail", "false")).booleanValue();
+            useContactEmail = Boolean.valueOf(AppConfig.getProperty("include.MonaLisa.ContactEmail", "false"))
+                    .booleanValue();
         } catch (Exception e) {
             addToMsg(methodName, "No include.MonaLisa.ContactEmail property set");
         }
         addToMsg(methodName, "include.MonaLisa.ContactEmail.." + useContactEmail);
 
         // --- establish who to send email to ----------
-        if (useContactEmail && contactEmail != null && contactEmail.indexOf("@") != -1) {
-            RCPT = new String[] {
-                    ML_SUPPORT_EMAIL, contactEmail
-            };
+        if (useContactEmail && (contactEmail != null) && (contactEmail.indexOf("@") != -1)) {
+            RCPT = new String[] { ML_SUPPORT_EMAIL, contactEmail };
         } else {
-            RCPT = new String[] {
-                ML_SUPPORT_EMAIL
-            };
+            RCPT = new String[] { ML_SUPPORT_EMAIL };
         } // end if/else
         String rcpts = new String();
-        for (int i = 0; i < RCPT.length; i++) {
-            rcpts = rcpts + RCPT[i] + " ";
+        for (String element : RCPT) {
+            rcpts = rcpts + element + " ";
         }
         addToMsg(methodName, "Email recipients..............." + rcpts);
 
@@ -427,10 +427,12 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
                 mlle.logParameters.put(VO_Utils.voErrCodes.get(errorCode), errorCode);
                 throw new Exception("map file (" + mapfile + ") is not readable.");
             } // end if
-            logit("map file stats:\n (" + mapfile + ")\n  last modified " + (new Date(probe.lastModified())).toString() + " - size("
-                    + probe.length() + " Bytes)");
-            addToMsg(methodName, "map file stats:\n (" + mapfile + ")\n  last modified " + (new Date(probe.lastModified())).toString()
+            logit("map file stats:\n (" + mapfile + ")\n  last modified " + (new Date(probe.lastModified())).toString()
                     + " - size(" + probe.length() + " Bytes)");
+            addToMsg(
+                    methodName,
+                    "map file stats:\n (" + mapfile + ")\n  last modified "
+                            + (new Date(probe.lastModified())).toString() + " - size(" + probe.length() + " Bytes)");
 
             if (mapFileWatchdog != null) {// just extra check ...
                 if (!mapFileWatchdog.getFile().equals(probe)) {// has changed or has been deleted ?!?
@@ -545,7 +547,8 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
                         // br.close();
                         ignoredAccounts.add(unix);
                         logerr("Multiple mappings for unix account (" + unix + ") ... this account will be ignored");
-                        addToMsg(methodName, "Multiple mappings for unix account (" + unix + ") ... this account will be ignored");
+                        addToMsg(methodName, "Multiple mappings for unix account (" + unix
+                                + ") ... this account will be ignored");
                         // throw new Exception("Multiple mappings for unix account ("+unix+")");
                     } // end if
                     voAccts.put(unix, vo);
@@ -714,9 +717,9 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
     protected String getVo(String unix) {
         String voLower = null;
         String vo = null;
-        voLower = (String) voAccts.get(unix);
+        voLower = voAccts.get(unix);
         if (voLower != null) {
-            vo = (String) voMixedCase.get(voLower);
+            vo = voMixedCase.get(voLower);
         }
         return vo;
     }
@@ -728,7 +731,7 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
         output.append("Printing unix / vo map table:");
         for (Enumeration e = voAccts.keys(); e.hasMoreElements();) {
             String unix = (String) e.nextElement();
-            String vo = (String) voAccts.get(unix);
+            String vo = voAccts.get(unix);
             String VO = getVo(unix);
             output.append("\n  unix->VO mappings: " + unix + " -> " + vo + " -> " + VO);
         } // end for
@@ -782,8 +785,9 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
         // -- save the latest results ----
         lastResults = new StringBuilder();
         int maxResults = maxResultsEmailed;
-        if (maxResults > results.size())
+        if (maxResults > results.size()) {
             maxResults = results.size();
+        }
         for (int i = 0; i < maxResults; i++) {
             lastResults.append("\n[" + i + "]" + results.elementAt(i));
         } // end forMNode nRemove = (MNode)mc.nodeList.get(i);
@@ -805,7 +809,8 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
 
     protected synchronized void setShouldNotifyConfig(boolean newValue) {
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, " setShouldNotifyConfig New: " + newValue + " Old: " + shouldNotifyConfig, new Exception("debug"));
+            logger.log(Level.FINER, " setShouldNotifyConfig New: " + newValue + " Old: " + shouldNotifyConfig,
+                    new Exception("debug"));
         }
 
         if (shouldNotifyConfig != newValue) {
@@ -877,7 +882,8 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
 
     // ========================================================
     protected void sendExceptionEmail(String inMsg) {
-        sb.append("\n\nException Message at " + (new Date() + " / " + new Date(NTPDate.currentTimeMillis())) + ":\n\n" + inMsg);
+        sb.append("\n\nException Message at " + (new Date() + " / " + new Date(NTPDate.currentTimeMillis())) + ":\n\n"
+                + inMsg);
         logerr(sb.toString());
         sendEmail(" ( Exception )");
     } // end method
@@ -896,7 +902,7 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
     protected void sendEmailNotification(String type) {
         String methodName = "sendEmailNotification";
         debug(methodName + ": Attempting to send email... checking type");
-        if (type == null || type.length() == 0) {
+        if ((type == null) || (type.length() == 0)) {
             type = "( Status )";
         }
         // --- set the repeat rate based on status -----
@@ -915,19 +921,19 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
             // -- Verify node name is a real system ---
             String FarmNameORAddress = Node.getFarmName();
             try {
-                FarmNameORAddress += " [ " + InetAddress.getLocalHost().getHostName() + " / " + InetAddress.getLocalHost().getHostAddress()
-                        + " ] ";
+                FarmNameORAddress += " [ " + InetAddress.getLocalHost().getHostName() + " / "
+                        + InetAddress.getLocalHost().getHostAddress() + " ] ";
             } catch (Throwable t) {
                 logerr(methodName + ": Caught exception in getLocalHost().getHostName");
             }
 
-            debug(methodName + ": Attempting to send email... checking lastTimeEmailSent [ " + new Date(lastTimeEmailSent) + " ] / "
-                    + lastTimeEmailSent + " mustNotifyCfg " + mustNotifyCfg);
+            debug(methodName + ": Attempting to send email... checking lastTimeEmailSent [ "
+                    + new Date(lastTimeEmailSent) + " ] / " + lastTimeEmailSent + " mustNotifyCfg " + mustNotifyCfg);
             // -- send the mail if time -------
-            if (lastTimeEmailSent + emailRepeatRate < System.currentTimeMillis() || mustNotifyCfg) {
+            if (((lastTimeEmailSent + emailRepeatRate) < System.currentTimeMillis()) || mustNotifyCfg) {
                 if (mustNotifyCfg) {
-                    if (lastNCFGEmailSent + EMAIL_CFG_REPEAT_RATE > System.currentTimeMillis()
-                            && lastTimeEmailSent + emailRepeatRate > System.currentTimeMillis()) {// DO NOT SPAM ME :)!
+                    if (((lastNCFGEmailSent + EMAIL_CFG_REPEAT_RATE) > System.currentTimeMillis())
+                            && ((lastTimeEmailSent + emailRepeatRate) > System.currentTimeMillis())) {// DO NOT SPAM ME :)!
                         return;
                     }
                     type = "( NotifyUserMapChanged )";
@@ -953,8 +959,7 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
                     if (hmNoVoUsers.size() > 0) {
                         sb.append("\n\n----------------------------------------------------");
                         sb.append("\nUsers which cannot be mapped to any VOs:\n");
-                        for (Iterator<Map.Entry<String, String>> it = hmNoVoUsers.entrySet().iterator(); it.hasNext();) {
-                            Map.Entry<String, String> entry = it.next();
+                        for (Entry<String, String> entry : hmNoVoUsers.entrySet()) {
                             sb.append("\n").append(entry.getKey()).append(" --> ").append(entry.getValue());
                         }
                     }// if
@@ -968,21 +973,19 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
                 // --- add in any performance measurements -------
                 if (vtime.size() > 0) {
                     sb.append("\n\nPerformance statistics:");
-                    for (int i = 0; i < vtime.size() && i < vperf.size(); i++) {
-                        sb.append("\n     " + ((Date) vtime.elementAt(i)).toString() + " >>>> [ " + ((Long) vperf.elementAt(i)).longValue()
-                                + " ] ms");
+                    for (int i = 0; (i < vtime.size()) && (i < vperf.size()); i++) {
+                        sb.append("\n     " + ((Date) vtime.elementAt(i)).toString() + " >>>> [ "
+                                + ((Long) vperf.elementAt(i)).longValue() + " ] ms");
                     } // end for
                 } // end if vtime.size
                   // --- send it ------
                 if (testmode) {
-                    logit(methodName + ": Operating in TESTMODE. Email notification would normally be sent to " + ML_SUPPORT_EMAIL + "\n"
-                            + sb.toString());
+                    logit(methodName + ": Operating in TESTMODE. Email notification would normally be sent to "
+                            + ML_SUPPORT_EMAIL + "\n" + sb.toString());
                 } else {
                     logit(methodName + ": Email notification sent to " + ML_SUPPORT_EMAIL + "\n" + sb.toString());
-                    MailFactory.getMailSender().sendMessage(ML_SUPPORT_EMAIL,
-                                                            RCPT,
-                                                            clusterModuleName + " " + type + " @ " + FarmNameORAddress,
-                                                            sb.toString());
+                    MailFactory.getMailSender().sendMessage(ML_SUPPORT_EMAIL, RCPT,
+                            clusterModuleName + " " + type + " @ " + FarmNameORAddress, sb.toString());
                 } // if testmode
                 clearTimes();
             } // end if lastTime
@@ -1037,8 +1040,9 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
 
     // ===============================================================
     // The Vo map file has changed
+    @Override
     public void update(Observable o, Object arg) {
-        if (o != null && mapFileWatchdog != null && o.equals(mapFileWatchdog)) {// just extra check
+        if ((o != null) && (mapFileWatchdog != null) && o.equals(mapFileWatchdog)) {// just extra check
             logit("\n\n===> User vo Map has changed !! ... The env will be reloaded\n\n");
             environmentSet = false;
         }
@@ -1091,14 +1095,15 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
         }
 
         if (logger.isLoggable(Level.FINE)) {
-            logger.log(Level.FINE, " sendEmails = " + sendEmails + "; sendStatusEmails = " + sendStatusEmails + "; maxResultsEmailed = "
-                    + maxResultsEmailed + "; MAX_NO_VO_STATUS_MAP = " + MAX_NO_VO_STATUS_MAP + "; EXCEPTION_REPEAT_RATE = "
-                    + (EXCEPTION_REPEAT_RATE / (60 * 1000) + " min") + "; EMAIL_REPEAT_RATE = "
-                    + (EMAIL_REPEAT_RATE / (60 * 1000) + " min") + "; EMAIL_CFG_REPEAT_RATE = "
-                    + (EMAIL_CFG_REPEAT_RATE / (60 * 1000) + " min"));
+            logger.log(Level.FINE, " sendEmails = " + sendEmails + "; sendStatusEmails = " + sendStatusEmails
+                    + "; maxResultsEmailed = " + maxResultsEmailed + "; MAX_NO_VO_STATUS_MAP = " + MAX_NO_VO_STATUS_MAP
+                    + "; EXCEPTION_REPEAT_RATE = " + ((EXCEPTION_REPEAT_RATE / (60 * 1000)) + " min")
+                    + "; EMAIL_REPEAT_RATE = " + ((EMAIL_REPEAT_RATE / (60 * 1000)) + " min")
+                    + "; EMAIL_CFG_REPEAT_RATE = " + ((EMAIL_CFG_REPEAT_RATE / (60 * 1000)) + " min"));
         }
     }
 
+    @Override
     public void notifyAppConfigChanged() {
         reloadConfig();
     }
@@ -1124,10 +1129,11 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
     public void countNewError(int code) {
         crtErrCount[code]++;
         if (!verboseLogging) {
-            if (errCount[code] == 0)
+            if (errCount[code] == 0) {
                 crtLevel[code] = Level.WARNING;
-            else
+            } else {
                 crtLevel[code] = Level.FINEST;
+            }
         }
     }
 
@@ -1138,13 +1144,14 @@ abstract class monVoModules extends cmdExec implements Observer, AppConfigChange
     public void refreshErrorCount() {
         // logger.info("### refreshErrCount...");
         for (int i = 0; i < MAX_ERR_CODES; i++) {
-            if (crtErrCount[i] == 0)
+            if (crtErrCount[i] == 0) {
                 // if there was no err with this code in the current doProcess,
                 // reset the counter
                 errCount[i] = 0;
-            else
+            } else {
                 // increment the counter circularly
                 errCount[i] = (errCount[i] + 1) % SAMPLE_PER_ERRORS;
+            }
         }
     }
 

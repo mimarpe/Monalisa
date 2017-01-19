@@ -1,5 +1,5 @@
 /*
- * $Id: NTPDate.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: NTPDate.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.util.ntp;
 
@@ -28,7 +28,7 @@ public class NTPDate extends Date {
      */
     private static final long serialVersionUID = 8363930011000237062L;
 
-    private static final transient Logger logger = Logger.getLogger("lia.util.ntp.NTPDate");
+    private static final Logger logger = Logger.getLogger(NTPDate.class.getName());
 
     private static final AtomicLong lNTPOffset = new AtomicLong(0L);
 
@@ -80,6 +80,7 @@ public class NTPDate extends Date {
             }
         }
 
+        @Override
         public void run() {
             logger.log(Level.INFO, "[ NTPDate ] thread started. Waiting for initial sync to finish ...");
             synchronized (lock) {
@@ -102,20 +103,25 @@ public class NTPDate extends Date {
 
                         final long diff = Math.abs(lOld - temp);
 
-                        if (bFirstRunComplete && (diff > 10 * SECOND)) {
+                        if (bFirstRunComplete && (diff > (10 * SECOND))) {
                             // if the time difference is too big then go in that direction in small steps
 
                             int factor = 10;
 
-                            if (diff > 24 * HOUR) {
-                                logger.log(Level.WARNING, "Something is wrong with the time on this machine. Current time : " + new Date() + " (" + System.currentTimeMillis() + "), old NTP offset : " + lNTPOffset + ", new NTP offset : " + temp + ", valid responses : " + cl.getValidServersCount());
+                            if (diff > (24 * HOUR)) {
+                                logger.log(Level.WARNING,
+                                        "Something is wrong with the time on this machine. Current time : "
+                                                + new Date() + " (" + System.currentTimeMillis()
+                                                + "), old NTP offset : " + lNTPOffset + ", new NTP offset : " + temp
+                                                + ", valid responses : " + cl.getValidServersCount());
                                 factor = 10000;
-                            } else if (diff > 1 * HOUR)
+                            } else if (diff > (1 * HOUR)) {
                                 factor = 1000;
-                            else if (diff > 5 * MINUTE)
+                            } else if (diff > (5 * MINUTE)) {
                                 factor = 100;
+                            }
 
-                            lNTPOffset.set((long) ((lNTPOffset.get() * (double) (factor - 1) + temp) / factor));
+                            lNTPOffset.set((long) (((lNTPOffset.get() * (double) (factor - 1)) + temp) / factor));
                         } else {
                             lNTPOffset.set(temp);
                         }
@@ -124,50 +130,59 @@ public class NTPDate extends Date {
 
                         long lDiff = Math.abs(lNTPOffset.get() - lOld);
 
-                        if (lDiff < 15)
+                        if (lDiff < 15) {
                             lsleep = 15 * MINUTE;
-                        else if (lDiff < 50)
+                        } else if (lDiff < 50) {
                             lsleep = 10 * MINUTE;
-                        else if (lDiff < 100)
+                        } else if (lDiff < 100) {
                             lsleep = 5 * MINUTE;
-                        else if (lDiff < 250)
+                        } else if (lDiff < 250) {
                             lsleep = 2 * MINUTE;
-                        else if (lDiff < 1000)
+                        } else if (lDiff < 1000) {
                             lsleep = 1 * MINUTE;
-                        else
+                        } else {
                             lsleep = 10 * SECOND;
+                        }
 
                         if (bFirstRunComplete) {
                             final long now = NTPDate.currentTimeMillis();
-                            if (lastTimeLogged + 12 * HOUR < now) {
-                                logger.log(Level.INFO, "recalculated offset is : " + lNTPOffset + " ms, " + cl.getValidServersCount() + " NTP replies, now=" + new Date(now) + ", next NTP sync in " + (lsleep / SECOND) + " sec");
+                            if ((lastTimeLogged + (12 * HOUR)) < now) {
+                                logger.log(Level.INFO,
+                                        "recalculated offset is : " + lNTPOffset + " ms, " + cl.getValidServersCount()
+                                                + " NTP replies, now=" + new Date(now) + ", next NTP sync in "
+                                                + (lsleep / SECOND) + " sec");
                                 lastTimeLogged = now;
                             } else if (logger.isLoggable(Level.FINE)) {
-                                logger.log(Level.FINE, "recalculated offset is : " + lNTPOffset + " ms, " + cl.getValidServersCount() + " NTP replies, now=" + new Date(now) + ", next NTP sync in " + (lsleep / SECOND) + " sec");
+                                logger.log(Level.FINE,
+                                        "recalculated offset is : " + lNTPOffset + " ms, " + cl.getValidServersCount()
+                                                + " NTP replies, now=" + new Date(now) + ", next NTP sync in "
+                                                + (lsleep / SECOND) + " sec");
                             }
                         }
                     } else {
-                        logger.log(Level.WARNING, "Cannot determine the offset, falling back to the previous value (" + lNTPOffset + ").");
+                        logger.log(Level.WARNING, "Cannot determine the offset, falling back to the previous value ("
+                                + lNTPOffset + ").");
                     }
 
                 } catch (Throwable t) {
                     logger.log(Level.WARNING, "NTPThread got exc", t);
                 } finally {
                     if (!bFirstRunComplete) {
-                        logger.log(Level.INFO, "[ NTPDate ] Initial NTP sync finished. Status: " + ((bOK) ? "OK" : "Unable to sync."));
+                        logger.log(Level.INFO, "[ NTPDate ] Initial NTP sync finished. Status: "
+                                + ((bOK) ? "OK" : "Unable to sync."));
                         NTPDate.bFirstRunComplete = true;
                     }
 
                     //sleep whatever happens, you'll get tired soon
                     try {
-                        if(lsleep <= 0 || TimeUnit.MILLISECONDS.toMinutes(lsleep) < 2) {
+                        if ((lsleep <= 0) || (TimeUnit.MILLISECONDS.toMinutes(lsleep) < 2)) {
                             lsleep = TimeUnit.MINUTES.toMillis(2);
                         }
                         sleep(lsleep);
-                    } catch(InterruptedException ie) {
+                    } catch (InterruptedException ie) {
                         //otherwise the socket will be closed unexpectedly
                         Thread.interrupted();
-                    } catch(Throwable tsleep) {
+                    } catch (Throwable tsleep) {
                         logger.log(Level.WARNING, "NTPThread sleep() exception. Cause", tsleep);
                     }
                 }
@@ -188,18 +203,21 @@ public class NTPDate extends Date {
 
         lNTPOffset.set(0L);
         if (bStartNTP) {
-            logger.log(Level.CONFIG, "Using NTP to calculate time. To disable it you can set lia.util.ntp.enabled=false (not recommended).");
+            logger.log(Level.CONFIG,
+                    "Using NTP to calculate time. To disable it you can set lia.util.ntp.enabled=false (not recommended).");
             bFirstRunComplete = false;
             startThread();
         } else {
-            logger.log(Level.CONFIG, "NTP is disabled. We recommend setting lia.util.ntp.enabled=true unless there is a firewall in place.");
+            logger.log(Level.CONFIG,
+                    "NTP is disabled. We recommend setting lia.util.ntp.enabled=true unless there is a firewall in place.");
             bFirstRunComplete = true;
         }
     }
 
     public static void startThread() {
-        if (ntpt != null)
+        if (ntpt != null) {
             stopThread();
+        }
 
         ntpt = new NTPThread();
         ntpt.setDaemon(true);
@@ -235,6 +253,7 @@ public class NTPDate extends Date {
         return ntpOffset() + System.currentTimeMillis();
     }
 
+    @Override
     public String toString() {
         DateFormat formatter = null;
 

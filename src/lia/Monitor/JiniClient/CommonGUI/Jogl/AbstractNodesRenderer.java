@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
 
-import javax.media.opengl.GL;
+import javax.media.opengl.GL2;
 
 import lia.Monitor.JiniClient.CommonGUI.rcNode;
 
@@ -21,37 +21,56 @@ import lia.Monitor.JiniClient.CommonGUI.rcNode;
  */
 public abstract class AbstractNodesRenderer implements NodesRendererInterface {
 
-	public double NodeMinValue;
-	public double NodeMaxValue;
-	public Color NodeMinColor;
-	public Color NodeMaxColor;
-	
-	public Hashtable OptionsPanelValues; //hashtable with values for each option in the panel
-	//organized as key -> hashtable, where key is a property of an option, like "ping", "wan", "node"
-	//and value is a hashtable containing type and object, where type is LimitValue, Color, Value..., and Object is Double, Color...
-	
-	public String subViewCapabilities[];
-    public void changeSubView(int subView) {}
+    public double NodeMinValue;
+    public double NodeMaxValue;
+    public Color NodeMinColor;
+    public Color NodeMaxColor;
 
-    public void drawNodes(GL gl, Object[] graphicalAttrs) {}
+    public Hashtable OptionsPanelValues; //hashtable with values for each option in the panel
+    //organized as key -> hashtable, where key is a property of an option, like "ping", "wan", "node"
+    //and value is a hashtable containing type and object, where type is LimitValue, Color, Value..., and Object is Double, Color...
 
-    public void computeNodes(GL gl, Object[] graphicalAttrs) {}
+    public String subViewCapabilities[];
 
-    public void initNodes(GL gl, Object[] graphicalAttrs) {}
+    public void changeSubView(int subView) {
+    }
 
-    public void drawLinks(GL gl, Object[] graphicalAttrs) {}
+    public void drawNodes(GL2 gl, Object[] graphicalAttrs) {
+    }
 
-    public void computeLinks(GL gl, Object[] graphicalAttrs) {}
-    
-    public Hashtable getLinks( rcNode node) { return null;}
-    
-    public boolean isValidLink( Object link) {return true;}
+    public void computeNodes(GL2 gl, Object[] graphicalAttrs) {
+    }
 
-    public boolean isDeadLink(Object link, HashMap hLinkAttrs, HashMap localNodes) { return false; }
+    public void initNodes(GL2 gl, Object[] graphicalAttrs) {
+    }
 
-    public ArrayList getOtherSelectedObjects(VectorO vEyePosition, VectorO vDirection, float radius, ArrayList alSelectedObjects) { return alSelectedObjects; }
+    public void drawLinks(GL2 gl, Object[] graphicalAttrs) {
+    }
 
-    public void fillSelectedNodeInfo(rcNode n, HashMap objAttrs) {}
+    public void computeLinks(GL2 gl, Object[] graphicalAttrs) {
+    }
 
-    public boolean fillSelectedLinkInfo(Object link, HashMap hLinkAttrs, HashMap objAttrs) { return false; }
+    public Hashtable getLinks(rcNode node) {
+        return null;
+    }
+
+    public boolean isValidLink(Object link) {
+        return true;
+    }
+
+    public boolean isDeadLink(Object link, HashMap hLinkAttrs, HashMap localNodes) {
+        return false;
+    }
+
+    public ArrayList getOtherSelectedObjects(VectorO vEyePosition, VectorO vDirection, float radius,
+            ArrayList alSelectedObjects) {
+        return alSelectedObjects;
+    }
+
+    public void fillSelectedNodeInfo(rcNode n, HashMap objAttrs) {
+    }
+
+    public boolean fillSelectedLinkInfo(Object link, HashMap hLinkAttrs, HashMap objAttrs) {
+        return false;
+    }
 }

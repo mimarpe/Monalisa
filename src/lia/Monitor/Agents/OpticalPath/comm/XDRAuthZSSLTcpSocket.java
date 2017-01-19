@@ -10,10 +10,9 @@ import lia.util.security.AuthZManager;
 
 public class XDRAuthZSSLTcpSocket extends XDRTcpSocket {
 
-    /** Logger used by this class **/ 
-      private static final transient Logger logger =
-      Logger.getLogger("lia.Monitor.Agents.OpticalPath.comm.XDRAuthZSSLTcpSocket");
-     
+    /** Logger used by this class **/
+    private static final Logger logger = Logger.getLogger(XDRAuthZSSLTcpSocket.class.getName());
+
     protected AuthZManager authzManager;
     protected SSLSocket socket;
 
@@ -33,6 +32,7 @@ public class XDRAuthZSSLTcpSocket extends XDRTcpSocket {
         this.socket = s;
     }
 
+    @Override
     public void run() {
         /*
          * -before starting talking to you let me check that if you are a
@@ -41,14 +41,15 @@ public class XDRAuthZSSLTcpSocket extends XDRTcpSocket {
          * authorize client and save the socket for further checks against the
          * authorization policies
          */
-    	final boolean isAuthorized = authzManager.checkClient(socket);
-    	/* not an authorized client, close this connection */
-    	if(!isAuthorized) {
-    		if (logger.isLoggable(Level.INFO))
-				logger.log(Level.INFO, "Client " + socket + "it' not authorized. Closing connection...");
-    		close();
-    	}
-        
+        final boolean isAuthorized = authzManager.checkClient(socket);
+        /* not an authorized client, close this connection */
+        if (!isAuthorized) {
+            if (logger.isLoggable(Level.INFO)) {
+                logger.log(Level.INFO, "Client " + socket + "it' not authorized. Closing connection...");
+            }
+            close();
+        }
+
         // register in authorization manager for periodic checks of permissions
         authzManager.registerClient(socket);
 

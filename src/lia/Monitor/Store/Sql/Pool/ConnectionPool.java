@@ -10,13 +10,13 @@ import java.util.logging.Logger;
 public class ConnectionPool implements Runnable {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.Store.Sql.Pool.ConnectionPool");
+    private static final Logger logger = Logger.getLogger(ConnectionPool.class.getName());
 
-    private String driver, url, username, password;
+    private final String driver, url, username, password;
 
-    private int maxConnections;
+    private final int maxConnections;
 
-    private boolean waitIfBusy;
+    private final boolean waitIfBusy;
 
     private Vector availableConnections, busyConnections;
 
@@ -72,7 +72,9 @@ public class ConnectionPool implements Runnable {
 
         if ((totalConnections() < maxConnections) && !connectionPending) {
             makeBackgroundConnection();
-        } else if (!waitIfBusy) { throw new SQLException("Connection limit reached"); }
+        } else if (!waitIfBusy) {
+            throw new SQLException("Connection limit reached");
+        }
         // Wait for either a new connection to be established
         // (if you called makeBackgroundConnection) or for
         // an existing connection to be freed up.
@@ -113,6 +115,7 @@ public class ConnectionPool implements Runnable {
         }
     }
 
+    @Override
     public void run() {
         try {
             Connection connection = makeNewConnection();
@@ -152,7 +155,9 @@ public class ConnectionPool implements Runnable {
     }
 
     public synchronized void free(Connection connection) {
-        if (connection == null) return;
+        if (connection == null) {
+            return;
+        }
         busyConnections.removeElement(connection);
         availableConnections.addElement(connection);
         // Wake up threads that are waiting for a connection
@@ -180,7 +185,9 @@ public class ConnectionPool implements Runnable {
     }
 
     private void closeConnections(Vector connections) {
-        if (connections == null || connections.size() == 0) return;
+        if ((connections == null) || (connections.size() == 0)) {
+            return;
+        }
         for (int i = 0; i < connections.size(); i++) {
             try {
                 Connection connection = (Connection) connections.elementAt(i);
@@ -193,19 +200,20 @@ public class ConnectionPool implements Runnable {
         }//for
     }
 
+    @Override
     public synchronized String toString() {
-        StringBuilder info = new StringBuilder(); 
-            info.append("ConnectionPool(");
-            info.append(url);
-            info.append(",");
-            info.append(username);
-            info.append(")");
-            info.append(", available=");
-            info.append(availableConnections.size());
-            info.append(", busy=");
-            info.append(busyConnections.size());
-            info.append(", max=");
-            info.append(maxConnections);
+        StringBuilder info = new StringBuilder();
+        info.append("ConnectionPool(");
+        info.append(url);
+        info.append(",");
+        info.append(username);
+        info.append(")");
+        info.append(", available=");
+        info.append(availableConnections.size());
+        info.append(", busy=");
+        info.append(busyConnections.size());
+        info.append(", max=");
+        info.append(maxConnections);
         return info.toString();
     }
 

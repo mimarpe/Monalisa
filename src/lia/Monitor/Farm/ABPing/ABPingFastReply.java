@@ -33,16 +33,16 @@ import com.BajieSoft.HttpSrv.an;
 public class ABPingFastReply {
 
     /** Logger used by this class */
-    private static final Logger logger = Logger.getLogger("lia.Monitor.Farm.ABPing.ABPingFastReply");
+    private static final Logger logger = Logger.getLogger(ABPingFastReply.class.getName());
 
     public static final int PORT;
-    
+
     static {
         int port = 9000;
         try {
             port = Integer.valueOf(AppConfig.getProperty("lia.Monitor.ABPingUDPPort", "9000")).intValue();
-        }catch(Throwable t){
-            if(logger.isLoggable(Level.FINE)) {
+        } catch (Throwable t) {
+            if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, " Define lia.Monitor.ABPingUDPPort in ml.prop as an integer!!");
             }
             port = 9000;
@@ -84,9 +84,9 @@ public class ABPingFastReply {
 
     public boolean active;
 
-    private DatagramSocket sock;	// the datagram socket used to send and receive the UDP Packets
-    
-    private Object syncActive = new Object();
+    private DatagramSocket sock; // the datagram socket used to send and receive the UDP Packets
+
+    private final Object syncActive = new Object();
 
     private static int MAX_UID = 1000;
 
@@ -99,7 +99,7 @@ public class ABPingFastReply {
     private static Hashtable addrCache = new Hashtable();
 
     private static Hashtable addrPortCache = new Hashtable();
-    
+
     boolean standAlone = false;
 
     public static InetAddress getInetAddr(String name) throws UnknownHostException {
@@ -147,15 +147,15 @@ public class ABPingFastReply {
         this.results = new Hashtable();
 
         this.myName = myName;
-        
+
         checkPingers();
     }
 
     public void setConfig(double overallCoef, double rttCoef, double pktLossCoef, double jitterCoef, int rttSamples,
             int pktLossMem, int packetSize, int pingInterval) {
-        if (OVERALL_COEF != overallCoef || RTT_COEF != rttCoef || PKT_LOSS_COEF != pktLossCoef
-                || JITTER_COEF != jitterCoef || RTT_SAMPLES != rttSamples || PKT_LOSS_MEM != pktLossMem
-                || PACKET_SIZE != packetSize || PING_INTERVAL != pingInterval) {
+        if ((OVERALL_COEF != overallCoef) || (RTT_COEF != rttCoef) || (PKT_LOSS_COEF != pktLossCoef)
+                || (JITTER_COEF != jitterCoef) || (RTT_SAMPLES != rttSamples) || (PKT_LOSS_MEM != pktLossMem)
+                || (PACKET_SIZE != packetSize) || (PING_INTERVAL != pingInterval)) {
             synchronized (myPeers) {
                 OVERALL_COEF = overallCoef;
                 RTT_COEF = rttCoef;
@@ -173,38 +173,41 @@ public class ABPingFastReply {
             }
         }
     }
-    
+
     /** 
      * Generate a UID that is not used among the existing PeerInfo-s;
      * For this to work, MAX_UID should be greated than the foreseen number
      * of peers for a node. 
      */
-    private int getFreePeerUID(){
-    	again: while(true){
-    		int uid = (int) (Math.random() * MAX_UID);
-    		for(Enumeration enp = myPeers.elements(); enp.hasMoreElements(); ){
-    			PeerInfo pi = (PeerInfo) enp.nextElement();
-    			if(pi.uid.intValue() == uid)
-    				continue again;
-    		}
-    		return uid;
-    	}
+    private int getFreePeerUID() {
+        again: while (true) {
+            int uid = (int) (Math.random() * MAX_UID);
+            for (Enumeration enp = myPeers.elements(); enp.hasMoreElements();) {
+                PeerInfo pi = (PeerInfo) enp.nextElement();
+                if (pi.uid.intValue() == uid) {
+                    continue again;
+                }
+            }
+            return uid;
+        }
     }
-    
+
     /** get the current PacketLoss computed for the given peer */
-    public double getPeerPacketLoss(String name){
-    	PeerInfo pi = (PeerInfo) myPeers.get(name);
-    	if(pi == null)
-    		return -1;
-    	return pi.crtPacketLoss;
+    public double getPeerPacketLoss(String name) {
+        PeerInfo pi = (PeerInfo) myPeers.get(name);
+        if (pi == null) {
+            return -1;
+        }
+        return pi.crtPacketLoss;
     }
 
     /** get the current RTT computed for the given peer */
-    public double getPeerRTT(String name){
-    	PeerInfo pi = (PeerInfo) myPeers.get(name);
-    	if(pi == null)
-    		return -1;
-    	return pi.crtRTT;
+    public double getPeerRTT(String name) {
+        PeerInfo pi = (PeerInfo) myPeers.get(name);
+        if (pi == null) {
+            return -1;
+        }
+        return pi.crtRTT;
     }
 
     public void setPeers(String[] peers) {
@@ -213,37 +216,35 @@ public class ABPingFastReply {
             // the info gathered before
             ABPingEntry[] abse = standAlone ? null : MLLUSHelper.getInstance().getABPingEntries();
 
-            for (int i = 0; i < peers.length; i++) {
-                if (myPeers.get(peers[i]) == null) {
-                    PeerInfo pi = new PeerInfo(this, peers[i], getFreePeerUID());
+            for (String peer : peers) {
+                if (myPeers.get(peer) == null) {
+                    PeerInfo pi = new PeerInfo(this, peer, getFreePeerUID());
                     pi.port = 9000;
                     try {
-                        setPortForName(pi.port, peers[i]);
+                        setPortForName(pi.port, peer);
                     } catch (Throwable t) {
                     }
-                    myPeers.put(peers[i], pi);
-                    logger.log(Level.INFO, "ABPingFastReply: adding peer: " + peers[i]);
+                    myPeers.put(peer, pi);
+                    logger.log(Level.INFO, "ABPingFastReply: adding peer: " + peer);
                 }//if null
 
-                if (abse != null && abse.length > 0) {
-                    PeerInfo pi = (PeerInfo) myPeers.get(peers[i]);
+                if ((abse != null) && (abse.length > 0)) {
+                    PeerInfo pi = (PeerInfo) myPeers.get(peer);
                     if (pi != null) {
                         if (logger.isLoggable(Level.FINEST)) {
                             logger.log(Level.FINEST, " Peers SIZE " + abse.length);
                         }
-                        for (int j = 0; j < abse.length; j++) {
-                            ABPingEntry abe = abse[j];
+                        for (ABPingEntry abe : abse) {
                             if (logger.isLoggable(Level.FINEST)) {
                                 logger.log(Level.FINEST, " ABE \n" + "\nHostName = " + abe.HostName
                                         + "\nFullHostName = " + abe.FullHostName + "\nIPAddress = " + abe.IPAddress);
                             }
-                            if (abe != null
-                                    && (peers[i].equalsIgnoreCase(abe.FullHostName)
-                                            || peers[i].equalsIgnoreCase(abe.IPAddress) || peers[i]
+                            if ((abe != null)
+                                    && (peer.equalsIgnoreCase(abe.FullHostName) || peer.equalsIgnoreCase(abe.IPAddress) || peer
                                             .equalsIgnoreCase(abe.HostName))) {
                                 pi.port = abe.PORT.intValue();
                                 try {
-                                    setPortForName(pi.port, peers[i]);
+                                    setPortForName(pi.port, peer);
                                 } catch (Throwable t) {
                                 }
                             }
@@ -252,16 +253,17 @@ public class ABPingFastReply {
                 }//if abse != null
 
             }//for
-            // check if the new config contains less peers
+             // check if the new config contains less peers
             if (myPeers.size() != peers.length) {
                 for (Enumeration en = myPeers.keys(); en.hasMoreElements();) {
                     String p = (String) en.nextElement();
                     boolean found = false;
-                    for (int j = 0; j < peers.length; j++)
-                        if (p.equals(peers[j])) {
+                    for (String peer : peers) {
+                        if (p.equals(peer)) {
                             found = true;
                             break;
                         }
+                    }
                     if (!found) {
                         myPeers.remove(p);
                         logger.log(Level.INFO, "ABPingFastReply: removing peer: " + p);
@@ -279,29 +281,31 @@ public class ABPingFastReply {
      * @throws an exception if the module cannot be initialized
      */
     public void fillResults(Result rez) throws Exception {
-    	boolean moduleActive;
-    	synchronized (syncActive) {
-    		// be sure to get the latest value 
-    		moduleActive = active;
-    	}
-    	if(! moduleActive){
-    		checkPingers();
-    	    try{
-    	    	// allow some time for initialization
-    	    	Thread.sleep(2000);
-    	    }catch(InterruptedException ex) { }
-    		synchronized (syncActive) {
-    			if(! active)
-    				throw new Exception("Module cannot be initialized");
-			}
-		}
+        boolean moduleActive;
+        synchronized (syncActive) {
+            // be sure to get the latest value 
+            moduleActive = active;
+        }
+        if (!moduleActive) {
+            checkPingers();
+            try {
+                // allow some time for initialization
+                Thread.sleep(2000);
+            } catch (InterruptedException ex) {
+            }
+            synchronized (syncActive) {
+                if (!active) {
+                    throw new Exception("Module cannot be initialized");
+                }
+            }
+        }
         synchronized (myPeers) {
             PeerInfo pi = (PeerInfo) myPeers.get(rez.NodeName);
-            if(pi != null){
-	            rez.param[0] = pi.crtRTime; // RTime
-	            rez.param[1] = pi.crtRTT;
-	            rez.param[2] = pi.crtJitter;
-	            rez.param[3] = pi.crtPacketLoss;
+            if (pi != null) {
+                rez.param[0] = pi.crtRTime; // RTime
+                rez.param[1] = pi.crtRTT;
+                rez.param[2] = pi.crtJitter;
+                rez.param[3] = pi.crtPacketLoss;
             }
         }
     }
@@ -311,40 +315,40 @@ public class ABPingFastReply {
      * This method provides support for stopping and
      * auto-restarting the module.
      */
-    private void checkPingers(){
-    	synchronized (syncActive) {
-        	if(cli == null){
-    	        active = true;
-				try {
-					sock = new DatagramSocket(PORT);
-				}catch(SocketException ex){
-					logger.log(Level.WARNING, "Cannot create listening ABPing socket. Refusing to start.", ex);
-					active = false;
-					return;
-				}
-    	        cli = new Client();
-    	        Thread cliThread = new Thread(cli, "(ML) ABPingFastReplyClient for " + myName);
-    	        try {
-    	            cliThread.setDaemon(true);
-    	        } catch (Throwable t) {
-    	            logger.log(Level.WARNING, "Cannot setDaemon", t);
-    	        }
-    	        cliThread.start();
-        	}
-        	if(serv == null){
-    	        active = true;
-    	        serv = new Server();
-    	        Thread servThread = new Thread(serv, "(ML) ABPingFastReplyServer for " + myName);
-    	        try {
-    	            servThread.setDaemon(true);
-    	        } catch (Throwable t) {
-    	            logger.log(Level.WARNING, "Cannot setDaemon", t);
-    	        }
-    	        servThread.start();
-        	}
-		}
+    private void checkPingers() {
+        synchronized (syncActive) {
+            if (cli == null) {
+                active = true;
+                try {
+                    sock = new DatagramSocket(PORT);
+                } catch (SocketException ex) {
+                    logger.log(Level.WARNING, "Cannot create listening ABPing socket. Refusing to start.", ex);
+                    active = false;
+                    return;
+                }
+                cli = new Client();
+                Thread cliThread = new Thread(cli, "(ML) ABPingFastReplyClient for " + myName);
+                try {
+                    cliThread.setDaemon(true);
+                } catch (Throwable t) {
+                    logger.log(Level.WARNING, "Cannot setDaemon", t);
+                }
+                cliThread.start();
+            }
+            if (serv == null) {
+                active = true;
+                serv = new Server();
+                Thread servThread = new Thread(serv, "(ML) ABPingFastReplyServer for " + myName);
+                try {
+                    servThread.setDaemon(true);
+                } catch (Throwable t) {
+                    logger.log(Level.WARNING, "Cannot setDaemon", t);
+                }
+                servThread.start();
+            }
+        }
     }
-    
+
     /**
      * ABPing measuring utility.
      * (Client)
@@ -354,10 +358,10 @@ public class ABPingFastReply {
      */
     class Client implements Runnable {
 
-    	/**
-    	 * Default constructor
-    	 *
-    	 */
+        /**
+         * Default constructor
+         *
+         */
         Client() {
         }
 
@@ -365,6 +369,7 @@ public class ABPingFastReply {
          * While ABPing Client is active, run ABPing algorithm 
          * between all the hosts in myPeers 
          */
+        @Override
         public void run() {
             try {
                 while (active) {
@@ -378,16 +383,16 @@ public class ABPingFastReply {
                             for (Enumeration en = myPeers.keys(); en.hasMoreElements();) {
                                 PeerInfo pi = (PeerInfo) myPeers.get(en.nextElement());
                                 try {
-									packet.setAddress(getInetAddr(pi.peerHost));
-									packet.setPort(pi.port);
-									pi.sendPacket(); // update counter for packet loss
-									buf[1] = (byte) (pi.uid.intValue() & 0xff);
-									buf[2] = (byte) ((pi.uid.intValue() >> 8) & 0xff);
-									pi.sendTime = NTPDate.currentTimeMillis();
-									sock.send(packet);
-									if (logger.isLoggable(Level.FINEST)) {
-									    logger.log(Level.FINEST, "Client: sent packet uid=" + pi.uid);
-									}
+                                    packet.setAddress(getInetAddr(pi.peerHost));
+                                    packet.setPort(pi.port);
+                                    pi.sendPacket(); // update counter for packet loss
+                                    buf[1] = (byte) (pi.uid.intValue() & 0xff);
+                                    buf[2] = (byte) ((pi.uid.intValue() >> 8) & 0xff);
+                                    pi.sendTime = NTPDate.currentTimeMillis();
+                                    sock.send(packet);
+                                    if (logger.isLoggable(Level.FINEST)) {
+                                        logger.log(Level.FINEST, "Client: sent packet uid=" + pi.uid);
+                                    }
                                 } catch (Exception e) {
                                     if (logger.isLoggable(Level.FINER)) {
                                         logger.log(Level.FINER, " Got ex", e);
@@ -443,10 +448,10 @@ public class ABPingFastReply {
             } catch (Exception ex) {
                 logger.log(Level.INFO, "Got Exception", ex);
             } finally {
-            	synchronized (syncActive) {
-                	cli = null;
-                	active = false;
-				}
+                synchronized (syncActive) {
+                    cli = null;
+                    active = false;
+                }
             }
         }
     }
@@ -456,6 +461,7 @@ public class ABPingFastReply {
         Server() {
         }
 
+        @Override
         public void run() {
             byte[] buf = new byte[PACKET_SIZE];
             //byte [] rbuf;
@@ -466,14 +472,17 @@ public class ABPingFastReply {
 
                 while (active) {
                     try {
-                        if (buf.length != PACKET_SIZE) buf = new byte[PACKET_SIZE];
+                        if (buf.length != PACKET_SIZE) {
+                            buf = new byte[PACKET_SIZE];
+                        }
                         packet = new DatagramPacket(buf, buf.length);
                         if (logger.isLoggable(Level.FINEST)) {
                             logger.log(Level.FINEST, "Server: waiting packet...");
                         }
                         sock.receive(packet);
                         if (logger.isLoggable(Level.FINEST)) {
-                            logger.log(Level.FINEST, "Server: received packet from "+packet.getAddress().getCanonicalHostName());
+                            logger.log(Level.FINEST, "Server: received packet from "
+                                    + packet.getAddress().getCanonicalHostName());
                         }
                         //rbuf = packet.getData(); // is this necessary?
                         if (buf[0] == ECHO_PACKET) {
@@ -503,12 +512,12 @@ public class ABPingFastReply {
             } catch (Exception e) {
                 logger.log(Level.WARNING, "Got exception", e);
             } finally {
-            	synchronized (syncActive) {
-					sock.close();
-					sock = null;
-                	serv = null;
-                	active = false;
-				}
+                synchronized (syncActive) {
+                    sock.close();
+                    sock = null;
+                    serv = null;
+                    active = false;
+                }
             }
         }
     }
@@ -518,23 +527,26 @@ public class ABPingFastReply {
         ABPingFastReply abp = new ABPingFastReply(args[0]);
         abp.standAlone = true;
         String[] peers = new String[args.length - 1];
-        for (int i = 1; i < args.length; i++)
+        for (int i = 1; i < args.length; i++) {
             peers[i - 1] = args[i];
+        }
         abp.setPeers(peers);
-        while(true){
-        	try{
-	        	System.out.println("Filling results...");
-				for(int i = 0; i < peers.length; i++) {
-					String peerName = peers[i];
-					Result rez = new Result("farm", "cluster", peerName, "ABPingFastReply", ResTypes);
-					abp.fillResults(rez);
-					rez.time = NTPDate.currentTimeMillis();
-					System.out.println(rez);
-				}
-        	}catch(Exception ex){
-        		System.out.println("Error filling results... module would be suspended.\n"+ex);
-        	}
-			try{ Thread.sleep(4000); } catch(InterruptedException iex){ }
+        while (true) {
+            try {
+                System.out.println("Filling results...");
+                for (String peerName : peers) {
+                    Result rez = new Result("farm", "cluster", peerName, "ABPingFastReply", ResTypes);
+                    abp.fillResults(rez);
+                    rez.time = NTPDate.currentTimeMillis();
+                    System.out.println(rez);
+                }
+            } catch (Exception ex) {
+                System.out.println("Error filling results... module would be suspended.\n" + ex);
+            }
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException iex) {
+            }
         }
     }
 

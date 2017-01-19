@@ -211,6 +211,9 @@ public final class ResultUtils {
 				final Result rTemp = DataSelect.matchResult(rLeft, pred);
 				
 				if (rTemp!=null){
+					if (rTemp.param_name.length == r.param_name.length)
+						return r;
+					
 					for (int i=0; i<rTemp.param_name.length; i++){
 						rRet.addSet(rTemp.param_name[i], rTemp.param[i]);
 						
@@ -292,6 +295,9 @@ public final class ResultUtils {
 				final eResult rTemp = DataSelect.matchResult(rLeft, pred);
 				
 				if (rTemp!=null){
+					if (rTemp.param_name.length == r.param_name.length)
+						return r;
+					
 					for (int i=0; i<rTemp.param_name.length; i++){
 						rRet.addSet(rTemp.param_name[i], rTemp.param[i]);
 						
@@ -411,7 +417,7 @@ public final class ResultUtils {
 		final Vector<monPredicate> v2 = new Vector<monPredicate>();
 		
 		v1.add(p1);
-		v1.add(p2);
+		v1.add(p3);
 		v2.add(p2);
 		v2.add(p3);
 		v2.add(pstar);

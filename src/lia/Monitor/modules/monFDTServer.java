@@ -101,7 +101,7 @@ public class monFDTServer extends FDTManagedController {
 					logger.log(Level.FINEST, "[FDTServer] READING CONFIG:" + newConfig);
 				is.close();
 			} catch (IOException e) {
-				logger.log(Level.WARNING, "[FDTServer] Error while reading config from URL.", e);
+				logger.log(Level.WARNING, "[FDTServer] Error while reading config from URL "+conn, e);
 			}
 		}
 		

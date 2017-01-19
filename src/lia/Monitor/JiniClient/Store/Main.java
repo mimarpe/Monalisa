@@ -1,14 +1,17 @@
 package lia.Monitor.JiniClient.Store;
 
 import java.net.InetAddress;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -61,7 +64,7 @@ import net.jini.core.lookup.ServiceItem;
 public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmClient, AppControlClient {
 
     /** Logger used by this class */
-    static final Logger logger = Logger.getLogger("lia.Monitor.JiniClient.Store.Main");
+    static final Logger logger = Logger.getLogger(Main.class.getName());
 
     /**
      * store instance
@@ -72,18 +75,18 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
     final Object nodesSync = new Object();
 
     /**
-	 * 
-	 */
+     * 
+     */
     Hashtable<String, rcStoreNode> nodes;
 
     /**
-	 * 
-	 */
+     * 
+     */
     Hashtable<ServiceID, rcStoreNode> snodes;
 
     /**
-	 * 
-	 */
+     * 
+     */
     Hashtable<ServiceID, ServiceThread> sthreads;
 
     /**
@@ -94,7 +97,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
     /** buffers of lia.Monitor.monitor.Result for storing online data */
     Vector<Object> buff = null;
 
-    private Vector<DataReceiver> vReceivers = new Vector<DataReceiver>();
+    private final Vector<DataReceiver> vReceivers = new Vector<DataReceiver>();
 
     /** interest in...(for Gresult) */
     public HashSet<String> local_filter_global_param;
@@ -144,8 +147,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
      * @return the single instance of this class
      */
     public static synchronized Main getInstance() {
-        if (mainInstance == null && !DataSplitter.bFreeze)
+        if ((mainInstance == null) && !DataSplitter.bFreeze) {
             mainInstance = new Main();
+        }
 
         return mainInstance;
     }
@@ -177,11 +181,11 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
     /**
      * Active services
      */
-    Hashtable<String, String> htFarms;
+    Hashtable<String, Set<String>> htFarms;
 
-    private Vector<String> vFilters;
+    private final Vector<String> vFilters;
 
-    private Vector<Filter> vDynamicFilters = new Vector<Filter>();
+    private final Vector<Filter> vDynamicFilters = new Vector<Filter>();
 
     /**
      * Default constructor
@@ -189,7 +193,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
     public Main() {
         super(null, true, true);
 
-        htFarms = new Hashtable<String, String>();
+        htFarms = new Hashtable<String, Set<String>>();
 
         try {
             lia.web.servlets.web.ABPing.initDBStructure();
@@ -199,8 +203,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
         try {
             // use TMW3 for repositories by default
-            if (AppConfig.geti("lia.Monitor.Store.TransparentStoreFast.mem_writer_version", -1) == -1)
+            if (AppConfig.geti("lia.Monitor.Store.TransparentStoreFast.mem_writer_version", -1) == -1) {
                 System.setProperty("lia.Monitor.Store.TransparentStoreFast.mem_writer_version", "3");
+            }
         } catch (Throwable t) {
             // ignore
         }
@@ -208,7 +213,8 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
         store = TransparentStoreFactory.getStore();
 
         try {
-            ((Writer) ((TransparentStoreFast) store).getTempMemWriter()).setIgnoreDataFlags(Writer.FLAGS_EXTRESULT | Writer.FLAGS_ACCOUNTINGRESULT);
+            ((Writer) ((TransparentStoreFast) store).getTempMemWriter()).setIgnoreDataFlags(Writer.FLAGS_EXTRESULT
+                    | Writer.FLAGS_ACCOUNTINGRESULT);
         } catch (Throwable t) {
             logger.log(Level.WARNING, "Cannot set ignore flags on the memory writer", t);
         }
@@ -217,10 +223,11 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
         bCorrectVONames = AppConfig.getb("lia.Monitor.JStore.correctVONames", false);
 
-        if (bCorrectVONames)
+        if (bCorrectVONames) {
             IDGenerator.correctVONames();
-        else
+        } else {
             IDGenerator.getUpdateCount();
+        }
 
         try {
             int iTomcatPort = AppConfig.geti("lia.Repository.tomcat_port", 0);
@@ -229,8 +236,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                 logger.log(Level.INFO, "JStoreClient: starting exporter on port : " + iTomcatPort);
 
                 synchronized (lia.web.utils.ThreadedPage.oLock) {
-                    if (lia.web.utils.ThreadedPage.getExporter() == null)
+                    if (lia.web.utils.ThreadedPage.getExporter() == null) {
                         lia.web.utils.ThreadedPage.setExporter(new lia.web.utils.ExportStatistics(iTomcatPort));
+                    }
                 }
             } else {
                 logger.log(Level.INFO, "JStoreClient: no port defined for the exporter");
@@ -247,7 +255,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                 long lSeconds = AppConfig.getl("lia.Monitor.JStore.execute_" + i + ".time", 60);
                 boolean bPos = AppConfig.getb("lia.Monitor.JStore.execute_" + i + ".only_positives", false);
 
-                if (sProgram != null && sProgram.trim().length() > 0 && lSeconds > 0) {
+                if ((sProgram != null) && (sProgram.trim().length() > 0) && (lSeconds > 0)) {
                     DirectInsert di = new DirectInsert(sProgram, lSeconds * 1000, bPos);
 
                     vDirectInserters.add(di);
@@ -276,30 +284,31 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
         vFilters = new Vector<String>();
 
-        for (int i = 0; vsFilters != null && i < vsFilters.length; i++)
+        for (int i = 0; (vsFilters != null) && (i < vsFilters.length); i++) {
             vFilters.add(vsFilters[i]);
+        }
         String[] vsGlobalClusters = AppConfig.getVectorProperty("lia.Monitor.JiniClient.Store.global_clusters");
         if (vsGlobalClusters != null) {
-            for (int i = 0; i < vsGlobalClusters.length; i++) {
-                String ns = vsGlobalClusters[i].replaceAll("(%)+", "(\\\\w)*");
+            for (String vsGlobalCluster : vsGlobalClusters) {
+                String ns = vsGlobalCluster.replaceAll("(%)+", "(\\\\w)*");
                 local_filter_clusters.add(ns);
-                logger.log(Level.INFO, "global clusters : " + vsGlobalClusters[i] + " Re = " + ns);
+                logger.log(Level.INFO, "global clusters : " + vsGlobalCluster + " Re = " + ns);
             }
         }
 
         String[] vsGlobalParams = AppConfig.getVectorProperty("lia.Monitor.JiniClient.Store.global_params");
         if (vsGlobalParams != null) {
-            for (int i = 0; i < vsGlobalParams.length; i++) {
-                local_filter_global_param.add(vsGlobalParams[i]);
-                logger.log(Level.INFO, "global params : " + vsGlobalParams[i]);
+            for (String vsGlobalParam : vsGlobalParams) {
+                local_filter_global_param.add(vsGlobalParam);
+                logger.log(Level.INFO, "global params : " + vsGlobalParam);
             }
         }
 
         String[] vsPreds = AppConfig.getVectorProperty("lia.Monitor.JiniClient.Store.predicates");
         if (vsPreds != null) {
-            for (int i = 0; i < vsPreds.length; i++) {
-                if (vsPreds[i] != null && vsPreds[i].trim().length() > 0) {
-                    monPredicate pred = lia.web.utils.Formatare.toPred(vsPreds[i]);
+            for (String vsPred : vsPreds) {
+                if ((vsPred != null) && (vsPred.trim().length() > 0)) {
+                    monPredicate pred = lia.web.utils.Formatare.toPred(vsPred);
 
                     if (pred != null) {
                         local_filter_pred.add(pred);
@@ -311,35 +320,36 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
         }
 
         final String[] vsDynFilters = AppConfig.getVectorProperty("lia.Monitor.JiniClient.Store.dynamic_filters");
-        if (vsDynFilters != null && vsDynFilters.length > 0) {
+        if ((vsDynFilters != null) && (vsDynFilters.length > 0)) {
             System.err.println("Enabling dynamic filters ... (" + vsDynFilters.length + ") : ");
 
-            for (int i = 0; i < vsDynFilters.length; i++) {
-                if (vsDynFilters[i].equals("OSGFilter")) {
+            for (String vsDynFilter : vsDynFilters) {
+                if (vsDynFilter.equals("OSGFilter")) {
                     System.err.println("  OSGFilter");
-                    addFilter(new OSGFilter(), vsDynFilters[i]);
-                    addFilter(new OSGFilterRates(), vsDynFilters[i]);
+                    addFilter(new OSGFilter(), vsDynFilter);
+                    addFilter(new OSGFilterRates(), vsDynFilter);
                     continue;
                 }
 
-                if (vsDynFilters[i].equals("VOStorageFilter")) {
+                if (vsDynFilter.equals("VOStorageFilter")) {
                     System.err.println("  VOStorageFilter");
-                    addFilter(new VOStorageFilter(), vsDynFilters[i]);
+                    addFilter(new VOStorageFilter(), vsDynFilter);
                     continue;
                 }
 
-                if (vsDynFilters[i].equals("AliEnFilter")) {
+                if (vsDynFilter.equals("AliEnFilter")) {
                     System.err.println("  AliEnFilter");
-                    addFilter(new AliEnFilter(), vsDynFilters[i]);
+                    addFilter(new AliEnFilter(), vsDynFilter);
                     continue;
                 }
 
                 try {
-                    final Filter f = (Filter) Class.forName(vsDynFilters[i]).newInstance();
-                    addFilter(f, vsDynFilters[i]);
-                    System.err.println("  (extern)" + vsDynFilters[i]);
+                    final Filter f = (Filter) Class.forName(vsDynFilter).newInstance();
+                    addFilter(f, vsDynFilter);
+                    System.err.println("  (extern)" + vsDynFilter);
                 } catch (Throwable t) {
-                    System.err.println("  Cannot instantiate '" + vsDynFilters[i] + "' because: " + t + " (" + t.getMessage() + ")");
+                    System.err.println("  Cannot instantiate '" + vsDynFilter + "' because: " + t + " ("
+                            + t.getMessage() + ")");
                 }
             }
 
@@ -349,16 +359,17 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
         }
 
         final String[] vsDataProducers = AppConfig.getVectorProperty("lia.Monitor.JiniClient.Store.data_producers");
-        if (vsDataProducers != null && vsDataProducers.length > 0) {
+        if ((vsDataProducers != null) && (vsDataProducers.length > 0)) {
             System.err.println("Enabling data producers filters (" + vsDataProducers.length + ") : ");
 
-            for (int i = 0; i < vsDataProducers.length; i++) {
+            for (String vsDataProducer : vsDataProducers) {
                 try {
-                    final DataProducer dp = (DataProducer) Class.forName(vsDataProducers[i]).newInstance();
+                    final DataProducer dp = (DataProducer) Class.forName(vsDataProducer).newInstance();
                     vDirectInserters.add(dp);
-                    System.err.println("  " + vsDataProducers[i] + " : ok");
+                    System.err.println("  " + vsDataProducer + " : ok");
                 } catch (Throwable t) {
-                    System.err.println("Cannot instantiate '" + vsDataProducers[i] + "' because: " + t + " (" + t.getMessage() + ")");
+                    System.err.println("Cannot instantiate '" + vsDataProducer + "' because: " + t + " ("
+                            + t.getMessage() + ")");
                 }
             }
 
@@ -384,8 +395,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
         if (vsInstantiate != null) {
             System.err.println("Touching static classes (" + vsInstantiate.length + ") : ");
 
-            for (int i = 0; i < vsInstantiate.length; i++) {
-                final String sClass = vsInstantiate[i];
+            for (final String sClass : vsInstantiate) {
                 try {
                     Class.forName(sClass).newInstance();
                     System.err.println("    " + sClass + " : ok");
@@ -402,25 +412,27 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
         final String sFilterName = f.getClass().getName();
 
         final String[] vsAccept = AppConfig.getVectorProperty(sFilterName + ".outputfilter.accept",
-                                                              AppConfig.getProperty(sNiceName + ".outputfilter.accept", ""));
+                AppConfig.getProperty(sNiceName + ".outputfilter.accept", ""));
         final String[] vsReject = AppConfig.getVectorProperty(sFilterName + ".outputfilter.reject",
-                                                              AppConfig.getProperty(sNiceName + ".outputfilter.reject", ""));
+                AppConfig.getProperty(sNiceName + ".outputfilter.reject", ""));
 
         final List<monPredicate> lAcceptPreds = new ArrayList<monPredicate>();
         final List<monPredicate> lRejectPreds = new ArrayList<monPredicate>();
 
-        for (int i = 0; vsAccept != null && i < vsAccept.length; i++) {
+        for (int i = 0; (vsAccept != null) && (i < vsAccept.length); i++) {
             final monPredicate pred = lia.web.utils.Formatare.toPred(vsAccept[i]);
 
-            if (pred != null)
+            if (pred != null) {
                 lAcceptPreds.add(pred);
+            }
         }
 
-        for (int i = 0; vsReject != null && i < vsReject.length; i++) {
+        for (int i = 0; (vsReject != null) && (i < vsReject.length); i++) {
             final monPredicate pred = lia.web.utils.Formatare.toPred(vsReject[i]);
 
-            if (pred != null)
+            if (pred != null) {
                 lRejectPreds.add(pred);
+            }
         }
 
         if (lAcceptPreds.size() > 0) {
@@ -446,8 +458,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
     private static final String[] getGroups(final String group) {
         String[] retV;
-        if (group == null || group.length() == 0)
+        if ((group == null) || (group.length() == 0)) {
             return new String[0];
+        }
 
         final StringTokenizer st = new StringTokenizer(group.trim(), ",");
         int count = st.countTokens();
@@ -456,7 +469,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
             int vi = 0;
             while (st.hasMoreTokens()) {
                 String token = st.nextToken().trim();
-                if (token != null && token.length() > 0) {
+                if ((token != null) && (token.length() > 0)) {
                     retV[vi++] = token;
                 }
             }
@@ -480,12 +493,13 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
      * @param f
      */
     void updateConfig(final lia.Monitor.monitor.MFarm f) {
-        for (int i = 0; i < vReceivers.size(); i++)
+        for (int i = 0; i < vReceivers.size(); i++) {
             try {
                 vReceivers.get(i).updateConfig(f);
             } catch (Exception e) {
                 // ignore
             }
+        }
     }
 
     /**
@@ -504,11 +518,12 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                 try {
                     final Vector<Object> v = dp.getResults();
 
-                    if (v != null && v.size() > 0) {
-                        if (vTemp == null)
+                    if ((v != null) && (v.size() > 0)) {
+                        if (vTemp == null) {
                             vTemp = v;
-                        else
+                        } else {
                             vTemp.addAll(v);
+                        }
                     }
                 } catch (Exception e) {
                     logger.log(Level.WARNING, "Exception running a DataProducer", e);
@@ -555,9 +570,11 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                         }
                     }
 
-                    if ((r.FarmName != null) && !r.FarmName.equals("_TOTALS_") && r.ClusterName != null
-                            && (r.ClusterName.equals("VO_JOBS") || r.ClusterName.equals(community + "VO_JOBS" + gatekeeper_suffix))
-                            && r.NodeName != null && !r.NodeName.equals("_TOTALS_")) {
+                    if ((r.FarmName != null)
+                            && !r.FarmName.equals("_TOTALS_")
+                            && (r.ClusterName != null)
+                            && (r.ClusterName.equals("VO_JOBS") || r.ClusterName.equals(community + "VO_JOBS"
+                                    + gatekeeper_suffix)) && (r.NodeName != null) && !r.NodeName.equals("_TOTALS_")) {
                         for (int j = 0; j < r.param_name.length; j++) {
                             if (r.param_name[j].matches("^(Running|Idle|Held|Failed|Total) ?Jobs$")) {
                                 Result r2 = new Result(r.FarmName, "VO_JOBS", r.NodeName, null, null);
@@ -592,7 +609,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
                                     final String sTempKey = r2.FarmName + "/" + r2.NodeName + "/" + sParameter;
 
-                                    if (rTemp == null || r2.param[0] > 0.1) {
+                                    if ((rTemp == null) || (r2.param[0] > 0.1)) {
                                         hm3.put(r.FarmName, r2);
 
                                         if (hmLastZero.get(sTempKey) != null) {
@@ -602,9 +619,10 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                                     } else {
                                         Result rLastZero = hmLastZero.get(sTempKey);
 
-                                        if (rTemp.param[0] > 0.5
-                                                && (r2.time - rTemp.time < 1000 * 50 || rLastZero == null || r2.time - rLastZero.time < 1000 * 60)) {
-                                            System.err.println("Ignoring '" + sTempKey + "' because value=" + r2.param[0] + ", " + rTemp.param[0]);
+                                        if ((rTemp.param[0] > 0.5)
+                                                && (((r2.time - rTemp.time) < (1000 * 50)) || (rLastZero == null) || ((r2.time - rLastZero.time) < (1000 * 60)))) {
+                                            System.err.println("Ignoring '" + sTempKey + "' because value="
+                                                    + r2.param[0] + ", " + rTemp.param[0]);
                                             hmLastZero.put(sTempKey, r2);
                                         } else {
                                             // System.err.println("Validating '"+sTempKey+"' because value="+r2.param[0]+", "+rTemp.param[0]);
@@ -628,21 +646,24 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                         for (int j = 0; j < r.param_name.length; j++) {
                             String s = r.param_name[j].trim();
 
-                            if (s.toLowerCase().startsWith("pending"))
+                            if (s.toLowerCase().startsWith("pending")) {
                                 s = "TotalPending";
-                            else if (s.toLowerCase().startsWith("running"))
+                            } else if (s.toLowerCase().startsWith("running")) {
                                 s = "TotalRunning";
-                            else
+                            } else {
                                 continue;
+                            }
 
-                            if (hmJOBSseen.get(r.FarmName + "/" + r.NodeName + "/" + r.param_name[j]) != null)
+                            if (hmJOBSseen.get(r.FarmName + "/" + r.NodeName + "/" + r.param_name[j]) != null) {
                                 continue;
+                            }
 
                             hmJOBSseen.put(r.FarmName + "/" + r.NodeName + "/" + r.param_name[j], "");
 
                             Double d = hmt.get(s);
-                            if (d == null)
+                            if (d == null) {
                                 d = Double.valueOf(0D);
+                            }
                             d = Double.valueOf(d.doubleValue() + r.param[j]);
                             hmt.put(s, d);
                         }
@@ -678,7 +699,8 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
             hm = null;
 
             synchronized (hmLastJob) {
-                Iterator<Map.Entry<String, HashMap<String, HashMap<String, Result>>>> itlj = hmLastJob.entrySet().iterator();
+                Iterator<Map.Entry<String, HashMap<String, HashMap<String, Result>>>> itlj = hmLastJob.entrySet()
+                        .iterator();
 
                 while (itlj.hasNext()) {
                     final Map.Entry<String, HashMap<String, HashMap<String, Result>>> me = itlj.next();
@@ -707,11 +729,12 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
                             final Result r = me3.getValue();
 
-                            if (r.time > lNow - (1000L * 60L * 20L)) {
+                            if (r.time > (lNow - (1000L * 60L * 20L))) {
                                 dVal += r.param[0];
 
-                                if (r.time > lNow - (1000L * 60L * 14L))
+                                if (r.time > (lNow - (1000L * 60L * 14L))) {
                                     iCountNew++;
+                                }
                             } else {
                                 it3.remove();
                             }
@@ -737,8 +760,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
                     Result r = me.getValue();
 
-                    if (r.time < lNow - (1000L * 60L * 20L))
+                    if (r.time < (lNow - (1000L * 60L * 20L))) {
                         it.remove();
+                    }
                 }
             }
 
@@ -751,7 +775,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
                 final HashMap<String, Double> hmt = me.getValue();
 
-                if (hmt != null && hmt.size() > 0) {
+                if ((hmt != null) && (hmt.size() > 0)) {
                     final Result r = new Result(sFarm, "JOBS", "Totals", null, null);
                     r.time = lNow;
 
@@ -779,8 +803,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
      * @param bQueue
      */
     void newData(final Object o, final boolean bQueue) {
-        if (o == null)
+        if (o == null) {
             return;
+        }
 
         StringFactory.convert(o);
 
@@ -799,16 +824,18 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
         notifyReceivers(o);
 
-        if (bQueue)
+        if (bQueue) {
             buff.add(o);
+        }
     }
 
     @Override
     public boolean AddMonitorUnit(final ServiceItem si) {
         // serviceInformation( si );
         synchronized (nodesSync) {
-            if (snodes.containsKey(si.serviceID))
+            if (snodes.containsKey(si.serviceID)) {
                 return false;
+            }
         }
 
         if (sthreads.containsKey(si.serviceID)) {
@@ -835,16 +862,17 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
      * @return ?
      */
     boolean checkServiceGroup(final MonaLisaEntry mle) {
-        if (mle == null)
+        if (mle == null) {
             return false;
-        if ((mle.Group == null) || (mle.Group.equals(" ")) || (mle.Group.equals("")))
+        }
+        if ((mle.Group == null) || (mle.Group.equals(" ")) || (mle.Group.equals(""))) {
             return false;
+        }
         String[] xgs = getGroups(mle.Group);
-        if (xgs == null || xgs.length == 0)
+        if ((xgs == null) || (xgs.length == 0)) {
             return false;
-        for (int i = 0; i < xgs.length; i++) {
-            String xg = xgs[i];
-
+        }
+        for (String xg : xgs) {
             if (SGroups.containsKey(xg)) {
                 return true;
             }
@@ -884,18 +912,30 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
             try {
                 DataStore ds = (DataStore) si.service;
                 if (ds == null) {
-                    logger.log(Level.WARNING, "Service could not be deserialized", new Object[] {
-                        si
-                    });
+                    logger.log(Level.WARNING, "Service could not be deserialized", new Object[] { si });
                 } else {
-                    MonaLisaEntry mle = getEntry(si, MonaLisaEntry.class);
-                    SiteInfoEntry sie = getEntry(si, SiteInfoEntry.class);
-                    String ipad = null;
+                    final MonaLisaEntry mle = getEntry(si, MonaLisaEntry.class);
+                    final SiteInfoEntry sie = getEntry(si, SiteInfoEntry.class);
+                    String ipadList = null;
+                    Set<String> ipad = null;
                     String un = null;
                     int mlPort = 9000;
 
                     if (sie != null) {
-                        ipad = sie.IPAddress;
+                    	if (sie.IPAddress!=null){
+                    		ipadList = sie.IPAddress;
+                    		
+                    		final StringTokenizer st = new StringTokenizer(ipadList, ",; \r\n\t");
+                    		ipad = new LinkedHashSet<String>();
+                    		
+                    		while (st.hasMoreTokens()){
+                    			final String s = st.nextToken();
+                    			
+                    			if (s.length()>0)
+                    				ipad.add(s);
+                    		}
+                    	}
+                    	
                         un = sie.UnitName;
                         mlPort = (sie.ML_PORT == null) ? 9000 : sie.ML_PORT.intValue();
                     } else {
@@ -904,96 +944,130 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                         }
                     }
 
-                    if (ipad != null) {
+                    if (ipad != null && ipad.size()>0) {
                         try {
                             synchronized (saveTimer) { // some static object ...
-                                String sOldIP = htFarms.get(un);
+                                final Set<String> sOldIP = htFarms.get(un);
 
                                 boolean bOtherServiceWithSameIP = false;
 
                                 synchronized (htFarms) {
-                                    final Iterator<Map.Entry<String, String>> it = htFarms.entrySet().iterator();
+                                    final Iterator<Map.Entry<String, Set<String>>> it = htFarms.entrySet().iterator();
 
                                     while (it.hasNext()) {
-                                        Map.Entry<String, String> me = it.next();
-
-                                        if (me.getValue().equals(ipad) && !me.getKey().equals(un)) {
-                                            bOtherServiceWithSameIP = true;
-                                            break;
+                                        final Map.Entry<String, Set<String>> me = it.next();
+                                        
+                                        if (!me.getKey().equals(un)){
+	                                        for (final String addr: ipad){
+		                                        if (me.getValue().contains(addr)) {
+		                                            bOtherServiceWithSameIP = true;
+		                                            break;
+		                                        }
+	                                        }
                                         }
                                     }
                                 }
 
                                 // if the ip has changed or another farm name had this farm name
-                                if (sOldIP == null || !sOldIP.equals(ipad) || bOtherServiceWithSameIP) {
-                                    htFarms.put(un, ipad);
+                                if ((sOldIP == null) || !sOldIP.containsAll(ipad) || bOtherServiceWithSameIP) {
+                               		htFarms.put(un, ipad);
+                               		
+                               		if (logger.isLoggable(Level.FINE)){
+                               			logger.log(Level.FINE, "htFarms is updated for '"+un+"' and now it is:\n"+htFarms);
+                               		}
 
                                     if (!TransparentStoreFactory.isMemoryStoreOnly()) {
                                         DB db = new DB();
+                                        
+                                        db.setReadOnly(true);
+                                        
+                                        String sFirstIP = ipad.iterator().next();
 
-                                        if (db.query("SELECT mfarmsource FROM abping WHERE mfarmsource='" + Formatare.mySQLEscape(ipad) + "';")
-                                                && !db.moveNext()) {
+                                        if (db.query("SELECT mfarmsource FROM abping WHERE mfarmsource='" + Formatare.mySQLEscape(sFirstIP) + "';") && !db.moveNext()) {
                                             DB db2 = new DB();
 
                                             db.query("SELECT distinct mfarmsource FROM abping;");
 
                                             if (db.moveNext()) {
                                                 do {
-                                                    db2.syncUpdateQuery("INSERT INTO abping VALUES ('" + Formatare.mySQLEscape(ipad) + "', '"
-                                                            + Formatare.mySQLEscape(db.gets(1)) + "', 0);", true);
-                                                    db2.syncUpdateQuery("INSERT INTO abping VALUES ('" + Formatare.mySQLEscape(db.gets(1)) + "', '"
-                                                            + Formatare.mySQLEscape(ipad) + "', 0);", true);
+                                                    db2.syncUpdateQuery("INSERT INTO abping VALUES ('" + Formatare.mySQLEscape(sFirstIP) + "', '" + Formatare.mySQLEscape(db.gets(1)) + "', 0);",true);
+                                                    db2.syncUpdateQuery("INSERT INTO abping VALUES ('" + Formatare.mySQLEscape(db.gets(1)) + "', '" + Formatare.mySQLEscape(sFirstIP) + "', 0);", true);
                                                 } while (db.moveNext());
 
                                                 db2.syncUpdateQuery("DELETE FROM abping WHERE mfarmsource=mfarmdest;");
                                             } else {
-                                                // there's no farm yet, put this value twice because it will be deleted
-                                                // at a later time
+                                                // there's no farm yet, put this value twice because it will be deleted at a later time
                                                 // System.err.println("no farm, inserting: "+ipad);
-                                                db2.syncUpdateQuery("INSERT INTO abping VALUES ('" + Formatare.mySQLEscape(ipad) + "', '"
-                                                        + Formatare.mySQLEscape(ipad) + "', 0);");
+                                                db2.syncUpdateQuery("INSERT INTO abping VALUES ('"+ Formatare.mySQLEscape(sFirstIP) + "', '" + Formatare.mySQLEscape(sFirstIP) + "', 0);");
                                             }
                                         }
 
                                         if (AppConfig.getb("lia.Monitor.JiniClient.Store.delete_same_ip", true)) {
-                                            db.query("SELECT name FROM abping_aliases WHERE ip='" + Formatare.mySQLEscape(ipad) + "' AND name!='"
-                                                    + Formatare.mySQLEscape(un) + "' ;");
+                                            db.query("SELECT name, ip FROM abping_aliases WHERE name!='" + Formatare.mySQLEscape(un) + "' AND regexp_split_to_array(ip, ',|;|\\\\s') && regexp_split_to_array('"+Formatare.mySQLEscape(ipadList)+"', ',|;|\\\\s');");
 
                                             while (db.moveNext()) {
+                                            	logger.log(Level.WARNING, "Removing service '"+db.gets(1)+"' because it conflicts on IP addresses with '"+un+"': "+db.gets(1)+" && "+ipadList);
                                                 removeServiceCaches(db.gets(1));
                                             }
 
-                                            db.syncUpdateQuery("DELETE FROM abping_aliases WHERE ip='" + Formatare.mySQLEscape(ipad)
-                                                    + "' AND name!='" + Formatare.mySQLEscape(un) + "' ;");
+                                            db.syncUpdateQuery("DELETE FROM abping_aliases WHERE name!='" + Formatare.mySQLEscape(un) + "' AND regexp_split_to_array(ip, ',|;|\\\\s') && regexp_split_to_array('"+Formatare.mySQLEscape(ipadList)+"', ',|;|\\\\s');");
                                         }
-
-                                        db.syncUpdateQuery("UPDATE abping_aliases SET ip='" + Formatare.mySQLEscape(ipad) + "' WHERE name='"
-                                                + Formatare.mySQLEscape(un) + "';");
-
-                                        if (db.getUpdateCount() != 1) {
-											logger.log(Level.WARNING, "Updating the IP for "+un+" to "+ipad+" returned "+db.getUpdateCount()+" updated rows, deleting everything related to "+un);
-                                        	
+                                        
+                                        db.setCursorType(ResultSet.TYPE_SCROLL_INSENSITIVE);
+                                        
+                                        db.query("SELECT ip FROM abping_aliases WHERE name='"+Formatare.mySQLEscape(un)+"'");
+                                        
+                                        boolean update = false;
+                                        
+                                        if (db.count() > 1){
                                             db.syncUpdateQuery("DELETE FROM abping_aliases WHERE name='" + Formatare.mySQLEscape(un) + "';");
-                                            db.syncUpdateQuery("INSERT INTO abping_aliases (ip, name) VALUES ('" + Formatare.mySQLEscape(ipad)
-                                                    + "', '" + Formatare.mySQLEscape(un) + "');");
-
-                                            // force an update of the version field
+                                            
                                             removeServiceCaches(un);
                                         }
+                                        else
+                                        if (db.count() == 1){
+                                        	final StringTokenizer st = new StringTokenizer(db.gets(1), ",; \r\n\t");
+                                        	
+                                        	final Set<String> existingIPs = new LinkedHashSet<String>();
+                                        	
+                                        	while (st.hasMoreTokens())
+                                        		existingIPs.add(st.nextToken());
+                                        	
+                                        	if (existingIPs.containsAll(ipad) && existingIPs.size() > ipad.size())
+                                        		ipad.addAll(existingIPs);
+                                        	
+                                        	update = true;
+                                        }
+                                        
+                                        final StringBuilder sbIPs = new StringBuilder();
+                                        
+                                        for (final String s: ipad){
+                                        	if (sbIPs.length()>0)
+                                        		sbIPs.append(',');
+                                        	
+                                        	sbIPs.append(s);
+                                        }
+                                        
+                                        ipadList = sbIPs.toString();
+
+                                        if (update)
+                                        	db.syncUpdateQuery("UPDATE abping_aliases SET ip='" + Formatare.mySQLEscape(ipadList) + "' WHERE name='" + Formatare.mySQLEscape(un) + "';");
+                                        else
+                                            db.syncUpdateQuery("INSERT INTO abping_aliases (ip, name) VALUES ('" + Formatare.mySQLEscape(ipadList) + "', '" + Formatare.mySQLEscape(un) + "');");
                                     }
                                 }
 
-                                if (mle != null && mle.LAT != null && mle.LONG != null && mle.LAT.length() > 0 && mle.LONG.length() > 0
-                                        && !TransparentStoreFactory.isMemoryStoreOnly()) {
+                                if ((mle != null) && (mle.LAT != null) && (mle.LONG != null) && (mle.LAT.length() > 0) && (mle.LONG.length() > 0) && !TransparentStoreFactory.isMemoryStoreOnly()) {
                                     String latOld = htLat.get(un);
                                     String longOld = htLong.get(un);
 
-                                    if (latOld == null || !latOld.equals(mle.LAT) || longOld == null || !longOld.equals(mle.LONG)) {
+                                    if ((latOld == null) || !latOld.equals(mle.LAT) || (longOld == null) || !longOld.equals(mle.LONG)) {
                                         htLat.put(un, mle.LAT);
                                         htLong.put(un, mle.LONG);
-                                        (new DB()).syncUpdateQuery("UPDATE abping_aliases SET geo_lat='" + Formatare.mySQLEscape(mle.LAT)
-                                                + "', geo_long='" + Formatare.mySQLEscape(mle.LONG) + "' WHERE name='" + Formatare.mySQLEscape(un)
-                                                + "';");
+                                        (new DB()).syncUpdateQuery("UPDATE abping_aliases SET geo_lat='"
+                                                + Formatare.mySQLEscape(mle.LAT) + "', geo_long='"
+                                                + Formatare.mySQLEscape(mle.LONG) + "' WHERE name='"
+                                                + Formatare.mySQLEscape(un) + "';");
                                     }
                                 }
                             }
@@ -1003,10 +1077,10 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                         }
                     }
 
-                    if (un != null && ipad != null) {
+                    if ((un != null) && (ipad != null)) {
                         InetAddress add = null;
                         try {
-                            add = InetAddress.getByName(ipad);
+                            add = InetAddress.getByName(ipad.iterator().next());
                         } catch (Throwable t) {
                             // ignore
                         }
@@ -1014,14 +1088,15 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                         synchronized (nodesSync) {
                             if (!snodes.containsKey(si.serviceID)) {
                                 if (nodes.containsKey(un)) {
-                                    logger.log(Level.FINER, " REMOVE OLD SERVICE with this name" + un + " [ SHOULD NOT APPEAR ]");
+                                    logger.log(Level.FINER, " REMOVE OLD SERVICE with this name" + un
+                                            + " [ SHOULD NOT APPEAR ]");
                                     rcStoreNode ndel = nodes.get(un);
                                     removeNode(ndel.sid);
                                 }
                             }
                         }
 
-                        if (mle != null && mlPort > 0) {
+                        if ((mle != null) && (mlPort > 0)) {
                             tcl = new JtClient(si.serviceID, un, add, connectionToProxyPointer.get());
                             System.out.println("Main ==== > add a new JtClient for " + si.serviceID);
                             tcl.addFarmClient(si.serviceID);
@@ -1029,7 +1104,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                                 logger.log(Level.FINE, " Adding Data store at address = " + ipad + ":" + mlPort);
                             }
 
-                            addNode(si, ds, tcl, un, ipad);
+                            addNode(si, ds, tcl, un, ipadList);
                         } else {
                             if (mle == null) {
                                 if (logger.isLoggable(Level.FINE)) {
@@ -1042,11 +1117,12 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                             } // else
                         } // else
                     } else {
-                        if (logger.isLoggable(Level.FINE))
+                        if (logger.isLoggable(Level.FINE)) {
                             logger.log(Level.FINE, " un or ipad == null un: " + un + " ipad: " + ipad);
+                        }
                     }
 
-                    if (!TransparentStoreFactory.isMemoryStoreOnly() && un != null) {
+                    if (!TransparentStoreFactory.isMemoryStoreOnly() && (un != null)) {
                         final ExtendedSiteInfoEntry esie = getEntry(si, ExtendedSiteInfoEntry.class);
 
                         if (esie != null) {
@@ -1055,8 +1131,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                             // java.vm.version: 1.5.0_05-b05 java.version: 1.5.0_05
                             String sJavaVer = esie.JVM_VERSION;
 
-                            if (sJavaVer.indexOf(":") >= 0)
+                            if (sJavaVer.indexOf(":") >= 0) {
                                 sJavaVer = sJavaVer.substring(sJavaVer.lastIndexOf(":") + 1).trim();
+                            }
 
                             // > libc-2.3.2.so\nSHOULD_UPDATE ="true"
                             String sLibcVer = esie.LIBC_VERSION;
@@ -1064,19 +1141,23 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                             if (sLibcVer.indexOf("\n") > 0) {
                                 sLibcVer = sLibcVer.substring(0, sLibcVer.indexOf("\n"));
 
-                                if (sLibcVer.indexOf(" ") > 0)
+                                if (sLibcVer.indexOf(" ") > 0) {
                                     sLibcVer = sLibcVer.substring(sLibcVer.lastIndexOf(" ") + 1).trim();
+                                }
                             }
 
                             boolean bAutoUpdate = false;
 
-                            if (esie.LIBC_VERSION.indexOf("\"true\"") > 0)
+                            if (esie.LIBC_VERSION.indexOf("\"true\"") > 0) {
                                 bAutoUpdate = true;
+                            }
 
-                            db.syncUpdateQuery("UPDATE abping_aliases SET " + "java_ver='" + Formatare.mySQLEscape(sJavaVer) + "', " + "libc_ver='"
-                                    + Formatare.mySQLEscape(sLibcVer) + "', " + "autoupdate=" + (bAutoUpdate ? 1 : 0) + ", " + "contact_email='"
-                                    + Formatare.mySQLEscape(esie.localContactEMail) + "', " + "contact_name='"
-                                    + Formatare.mySQLEscape(esie.localContactName) + "'" + " WHERE name='" + Formatare.mySQLEscape(un) + "';");
+                            db.syncUpdateQuery("UPDATE abping_aliases SET " + "java_ver='"
+                                    + Formatare.mySQLEscape(sJavaVer) + "', " + "libc_ver='"
+                                    + Formatare.mySQLEscape(sLibcVer) + "', " + "autoupdate=" + (bAutoUpdate ? 1 : 0)
+                                    + ", " + "contact_email='" + Formatare.mySQLEscape(esie.localContactEMail) + "', "
+                                    + "contact_name='" + Formatare.mySQLEscape(esie.localContactName) + "'"
+                                    + " WHERE name='" + Formatare.mySQLEscape(un) + "';");
                         }
                     }
                 }
@@ -1137,7 +1218,8 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
      * @param unitName
      * @param ipad
      */
-    public void addNode(final ServiceItem si, final DataStore dataStore, final JtClient client, final String unitName, final String ipad) {
+    public void addNode(final ServiceItem si, final DataStore dataStore, final JtClient client, final String unitName,
+            final String ipad) {
 
         logger.log(Level.INFO, "-> Discovered service : " + unitName);
         rcStoreNode n = new rcStoreNode();
@@ -1165,27 +1247,31 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                 pre.tmin = lLastTime;
                 pre.tmax = -1;
 
-                if (logger.isLoggable(Level.FINE))
+                if (logger.isLoggable(Level.FINE)) {
                     logger.log(Level.FINE, "  predicate is " + pre + " because last time is " + lLastTime);
+                }
             } else {
-                if (logger.isLoggable(Level.FINE))
+                if (logger.isLoggable(Level.FINE)) {
                     logger.log(Level.FINE, "  predicate is " + pre + ", untouched");
+                }
             }
 
             client.addLocalClient(this, pre);
         }
 
-        for (int i = 0; i < vFilters.size(); i++)
+        for (int i = 0; i < vFilters.size(); i++) {
             client.addLocalClient(this, vFilters.get(i));
+        }
 
-        logger.log(Level.FINE, "-> Added " + local_filter_pred.size() + " predicates and Filters " + vFilters + " for " + n.UnitName);
+        logger.log(Level.FINE, "-> Added " + local_filter_pred.size() + " predicates and Filters " + vFilters + " for "
+                + n.UnitName);
 
         notifyConnectionsMonitors(unitName, true);
 
         client.addAppControlClient(this);
     }
 
-    private Vector<ConnectionMonitor> vConnectionsMonitors = new Vector<ConnectionMonitor>();
+    private final Vector<ConnectionMonitor> vConnectionsMonitors = new Vector<ConnectionMonitor>();
 
     /**
      * @param cm
@@ -1219,29 +1305,36 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
      *         available
      */
     public static final long getFarmLastTime(final String unitName) {
-        if (TransparentStoreFactory.isMemoryStoreOnly())
+        if (TransparentStoreFactory.isMemoryStoreOnly()) {
             return NTPDate.currentTimeMillis();
+        }
 
         final DB db = new DB();
+        
+        db.setReadOnly(true);
 
-        if (db.query("SELECT max(mi_lastseen) FROM monitor_ids WHERE mi_key LIKE '" + unitName + "/%';") && db.moveNext()) {
+        if (db.query("SELECT max(mi_lastseen) FROM monitor_ids WHERE mi_key LIKE '" + unitName + "/%';")
+                && db.moveNext()) {
             long lTime = db.getl(1) * 1000L;
 
-            long lHistoryRequestMaxTime = AppConfig.getl("lia.Monitor.JiniClient.Store.historyRequestMaxTime", 60 * 60 * 1) * 1000;
+            long lHistoryRequestMaxTime = AppConfig.getl("lia.Monitor.JiniClient.Store.historyRequestMaxTime",
+                    60 * 60 * 1) * 1000;
 
-            if (NTPDate.currentTimeMillis() - lTime > lHistoryRequestMaxTime)
+            if ((NTPDate.currentTimeMillis() - lTime) > lHistoryRequestMaxTime) {
                 lTime = NTPDate.currentTimeMillis() - lHistoryRequestMaxTime;
+            }
 
             return lTime;
         }
 
         // this service was unknown until now, probably it just started and it doesn't have history data anyway
-        return NTPDate.currentTimeMillis() - 1000 * 60 * 15;
+        return NTPDate.currentTimeMillis() - (1000 * 60 * 15);
     }
 
     private void notifyReceivers(final Object ro) {
-        if (vReceivers.size() <= 0 || ro == null)
+        if ((vReceivers.size() <= 0) || (ro == null)) {
             return;
+        }
 
         if (ro instanceof Collection) {
             final Iterator<?> it = ((Collection<?>) ro).iterator();
@@ -1261,8 +1354,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                     dr.addResult((eResult) ro);
                 } else if (ro instanceof AccountingResult) {
                     dr.addResult((AccountingResult) ro);
-                } else if (ro instanceof ExtResult)
+                } else if (ro instanceof ExtResult) {
                     dr.addResult((ExtResult) ro);
+                }
             } catch (Throwable t) {
                 logger.log(Level.WARNING, " Failed to notify receiver " + j, t);
             }
@@ -1271,11 +1365,13 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
     @Override
     public void newFarmResult(MLSerClient mlSerClient, final Object ro) {
-        if (logger.isLoggable(Level.FINER))
+        if (logger.isLoggable(Level.FINER)) {
             logger.log(Level.FINER, "Received result: " + ro);
+        }
 
-        if (ro == null)
+        if (ro == null) {
             return;
+        }
 
         if (ro instanceof Gresult) {
             setGlobalVal((Gresult) ro);
@@ -1292,8 +1388,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
             return;
         }
 
-        if (!(ro instanceof Result || ro instanceof eResult))
+        if (!((ro instanceof Result) || (ro instanceof eResult))) {
             return;
+        }
 
         for (int i = 0; i < vDynamicFilters.size(); i++) {
             Object o = null;
@@ -1306,8 +1403,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                 logger.log(Level.WARNING, "Exception filtering data with filter " + i, t);
             }
 
-            if (o != null)
+            if (o != null) {
                 o = filterFilterOutput(f.getClass().getName(), o);
+            }
 
             if (o != null) {
                 // filter output is not interesting for periodic flushes
@@ -1334,8 +1432,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
      * @return filtered output
      */
     private static Object filterFilterOutput(final String name, final Object o) {
-        if (o == null)
+        if (o == null) {
             return o;
+        }
 
         final List<monPredicate> lAccept = hmFilterOutputAccept.get(name);
         final List<monPredicate> lReject = hmFilterOutputReject.get(name);
@@ -1363,12 +1462,15 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
         // now from Lemon
         else if (gr.Module.equals("LoadAvg")) {
-            for (int i = 0; i < gr.hist.length; i++)
+            for (int i = 0; i < gr.hist.length; i++) {
                 rez.addSet("LoadAvg_" + i, gr.hist[i]);
-        } else if (gr.Module.equals("NumberOfUsers") || gr.Module.startsWith("swap_space_") || gr.Module.startsWith("mem_space_")
-                || gr.Module.startsWith("DisksSize") || gr.Module.startsWith("eth0_NumKB")) {
+            }
+        } else if (gr.Module.equals("NumberOfUsers") || gr.Module.startsWith("swap_space_")
+                || gr.Module.startsWith("mem_space_") || gr.Module.startsWith("DisksSize")
+                || gr.Module.startsWith("eth0_NumKB")) {
             rez.addSet(gr.Module, gr.sum);
-        } else if (gr.Module.startsWith("CPUUtilPerc") || gr.Module.equals("DisksReadRate") || gr.Module.equals("DisksWriteRate")) {
+        } else if (gr.Module.startsWith("CPUUtilPerc") || gr.Module.equals("DisksReadRate")
+                || gr.Module.equals("DisksWriteRate")) {
             rez.addSet(gr.Module, gr.mean);
         }
 
@@ -1387,15 +1489,15 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
      * @param now
      */
     public void setGlobalVal(final Gresult gr, final long now) {
-        if (gr == null)
+        if (gr == null) {
             return;
+        }
 
         // filtering based on Cluster name
-        if (local_filter_clusters != null && local_filter_clusters.size() > 0) {
+        if ((local_filter_clusters != null) && (local_filter_clusters.size() > 0)) {
             if (gr.ClusterName != null) {
                 boolean matched = false;
-                for (Iterator<String> it = local_filter_clusters.iterator(); it.hasNext();) {
-                    String reClus = it.next();
+                for (String reClus : local_filter_clusters) {
                     if (gr.ClusterName.matches(reClus)) {
                         matched = true;
                         break;
@@ -1405,7 +1507,8 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
                 if (!matched) {
                     if (logger.isLoggable(Level.FINEST)) {
-                        logger.log(Level.FINEST, "Ignoring Gresult " + gr + " because Cluster Name [ " + gr.ClusterName + " ] not in the list ");
+                        logger.log(Level.FINEST, "Ignoring Gresult " + gr + " because Cluster Name [ " + gr.ClusterName
+                                + " ] not in the list ");
                         return;
                     }
                 }
@@ -1423,18 +1526,22 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
     public void processResult(final Result r) {
         final long now = NTPDate.currentTimeMillis();
 
-        if (bUpdateResultTime || (bCorrectTimestamps && (r.time > now + 1000 * 60 || r.time < now - 1000 * 24 * 60 * 60)))
+        if (bUpdateResultTime
+                || (bCorrectTimestamps && ((r.time > (now + (1000 * 60))) || (r.time < (now - (1000 * 24 * 60 * 60)))))) {
             r.time = now;
+        }
 
         if (bCorrectVONames) {
-            if (r.ClusterName != null
-                    && r.NodeName != null
-                    && (r.ClusterName.startsWith("VO_") || r.ClusterName.equals(community + "VoStorage") || (r.ClusterName.startsWith(community
-                            + "VO_") && !r.ClusterName.endsWith("_Totals"))) && !r.NodeName.startsWith("Total")) {
+            if ((r.ClusterName != null)
+                    && (r.NodeName != null)
+                    && (r.ClusterName.startsWith("VO_") || r.ClusterName.equals(community + "VoStorage") || (r.ClusterName
+                            .startsWith(community + "VO_") && !r.ClusterName.endsWith("_Totals")))
+                    && !r.NodeName.startsWith("Total")) {
                 final String s = r.NodeName.toUpperCase();
 
-                if (!r.NodeName.equals(s))
+                if (!r.NodeName.equals(s)) {
                     r.NodeName = s;
+                }
             }
         }
 
@@ -1451,7 +1558,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                 }
             }
 
-            if (outParams + inParams > 0) {
+            if ((outParams + inParams) > 0) {
                 final Result newr = new Result();
 
                 newr.FarmName = r.FarmName;
@@ -1460,7 +1567,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                 newr.time = r.time;
 
                 for (int i = 0; i < r.param_name.length; i++) {
-                    if (r.param_name[i].indexOf("_IN") == -1 || r.param_name[i].indexOf("_OUT") == -1) {
+                    if ((r.param_name[i].indexOf("_IN") == -1) || (r.param_name[i].indexOf("_OUT") == -1)) {
                         newr.addSet(r.param_name[i], r.param[i]);
                     }
                 }
@@ -1482,15 +1589,16 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
     public void processResult(final eResult er) {
         final long now = NTPDate.currentTimeMillis();
 
-        if (bUpdateResultTime || er.time > now + 1000 * 60)
+        if (bUpdateResultTime || (er.time > (now + (1000 * 60)))) {
             er.time = now;
+        }
 
         newData(er, true);
     }
 
     /**
-	 * 
-	 */
+     * 
+     */
     public void verifyNodes() {
         // does nothing in Store client
     }
@@ -1500,11 +1608,12 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
         final tmProxyStore connectionToProxy = connectionToProxyPointer.get();
 
-        if (connectionToProxy != null && connectionToProxy.isActive())
+        if ((connectionToProxy != null) && connectionToProxy.isActive()) {
             connectionToProxy.removeFarmClient(id);
+        }
 
         synchronized (nodesSync) {
-            if (id != null && snodes.containsKey(id)) {
+            if ((id != null) && snodes.containsKey(id)) {
                 rcStoreNode n = snodes.remove(id);
                 if (n != null) {
                     if (n.client != null) {
@@ -1522,7 +1631,8 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                         // an full DB info update for this service
                         htFarms.remove(n.UnitName);
                     } else {
-                        logger.log(Level.WARNING, ">>>> removeNode: Node " + n + " has UnitName NULL! [ SHOULD NOT GET HERE]");
+                        logger.log(Level.WARNING, ">>>> removeNode: Node " + n
+                                + " has UnitName NULL! [ SHOULD NOT GET HERE]");
                     }
 
                     htControlStatus.remove(n.UnitName);
@@ -1550,7 +1660,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
     public boolean verifyProxyConnection() {
         final tmProxyStore connectionToProxy = connectionToProxyPointer.get();
 
-        if (connectionToProxy == null || connectionToProxy.verifyProxyConnection() == false) {
+        if ((connectionToProxy == null) || (connectionToProxy.verifyProxyConnection() == false)) {
             return false;
         }
 
@@ -1559,8 +1669,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
     @Override
     public void AddProxyService(final ServiceItem si) throws Exception {
-        if (si == null)
+        if (si == null) {
             return;
+        }
 
         Entry[] proxyEntry = si.attributeSets;
         if (proxyEntry != null) {
@@ -1573,14 +1684,15 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
                 tmProxyStore cToProxy = null;
                 try {
-                    cToProxy = new tmProxyStore(inetAddress, portNumber, new Hashtable<ServiceID, MonMessageClientsProxy>(), this);
+                    cToProxy = new tmProxyStore(inetAddress, portNumber,
+                            new Hashtable<ServiceID, MonMessageClientsProxy>(), this);
                     cToProxy.startCommunication();
                     this.connectionToProxyPointer.set(cToProxy);
                 } catch (Exception ex) {
-                    if(cToProxy != null) {
+                    if (cToProxy != null) {
                         try {
                             cToProxy.closeProxyConnection();
-                        }catch(Throwable t) {
+                        } catch (Throwable t) {
                             //ignore it
                         }
                     }
@@ -1639,8 +1751,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
             for (int i = 0; i < local_filter_pred.size(); i++) {
                 final monPredicate p = local_filter_pred.get(i);
 
-                if (JtClient.predicatesComparator.compare(p, pred) == 0)
+                if (JtClient.predicatesComparator.compare(p, pred) == 0) {
                     return false;
+                }
             }
 
             local_filter_pred.add(pred);
@@ -1688,8 +1801,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
                 }
             }
 
-            if (!bFound)
+            if (!bFound) {
                 return false;
+            }
         }
 
         synchronized (nodesSync) {
@@ -1722,8 +1836,8 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
         final String[] vsPreds = AppConfig.getVectorProperty("lia.Monitor.JiniClient.Store.predicates");
         final ArrayList<monPredicate> alPreds = new ArrayList<monPredicate>();
 
-        for (int i = 0; vsPreds != null && i < vsPreds.length; i++) {
-            if (vsPreds[i] != null && vsPreds[i].trim().length() > 0) {
+        for (int i = 0; (vsPreds != null) && (i < vsPreds.length); i++) {
+            if ((vsPreds[i] != null) && (vsPreds[i].trim().length() > 0)) {
                 monPredicate pred = lia.web.utils.Formatare.toPred(vsPreds[i]);
 
                 alPreds.add(pred);
@@ -1802,13 +1916,15 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
      *         2 = no control info available (yet?)
      */
     public int getControlStatus(final String service) {
-        if (service == null || service.length() == 0)
+        if ((service == null) || (service.length() == 0)) {
             return 2;
+        }
 
         final Boolean b = htControlStatus.get(service);
 
-        if (b != null)
+        if (b != null) {
             return b.booleanValue() ? 0 : 1;
+        }
 
         return 2;
     }
@@ -1851,7 +1967,7 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
      * @return a List of {@link CommandResult} entries
      */
     public final List<CommandResult> executeCommands(final String service, final String[] commands) {
-        if (service == null || commands == null || commands.length == 0) {
+        if ((service == null) || (commands == null) || (commands.length == 0)) {
             // invalid parameters, exit quickly
             return null;
         }
@@ -1883,14 +1999,15 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
             htReturnCount.put(lCmdSeqenceID, new AtomicInteger(0));
 
-            for (int i = 0; i < commands.length; i++) {
-                final Long lID = client.sendAppControlCmd(this, commands[i], null);
+            for (String command : commands) {
+                final Long lID = client.sendAppControlCmd(this, command, null);
 
-                if (logger.isLoggable(Level.FINER))
-                    logger.log(Level.FINER, "ID: " + lID + " for command: " + commands[i]);
+                if (logger.isLoggable(Level.FINER)) {
+                    logger.log(Level.FINER, "ID: " + lID + " for command: " + command);
+                }
 
                 if (lID != null) {
-                    tmCommands.put(lID, new CommandResult(commands[i]));
+                    tmCommands.put(lID, new CommandResult(command));
                     htNotificationMap.put(lID, lCmdSeqenceID);
                     iCommandsCount++;
                 }
@@ -1898,8 +2015,8 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
         }
 
         synchronized (lCmdSeqenceID) {
-            while (System.currentTimeMillis() - lStart < 1000L * 60 * 3 * iCommandsCount && htReturnCount.get(lCmdSeqenceID).get() < iCommandsCount
-                    && getControlStatus(service) == 0) {
+            while (((System.currentTimeMillis() - lStart) < (1000L * 60 * 3 * iCommandsCount))
+                    && (htReturnCount.get(lCmdSeqenceID).get() < iCommandsCount) && (getControlStatus(service) == 0)) {
                 try {
                     lCmdSeqenceID.wait(1000);
                 } catch (InterruptedException ie) {
@@ -1916,8 +2033,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
 
             final Iterator<Long> it = tmCommands.keySet().iterator();
 
-            while (it.hasNext())
+            while (it.hasNext()) {
                 htNotificationMap.remove(it.next());
+            }
 
             htReturnedValues.remove(lCmdSeqenceID);
             htReturnCount.remove(lCmdSeqenceID);
@@ -1941,8 +2059,9 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
         synchronized (htReturnedValues) {
             final Long lCmdSequenceID = htNotificationMap.get(cmdID);
 
-            if (lCmdSequenceID == null)
+            if (lCmdSequenceID == null) {
                 return;
+            }
 
             final TreeMap<Long, CommandResult> tmCommands = htReturnedValues.get(lCmdSequenceID);
 
@@ -1958,4 +2077,53 @@ public class Main extends JiniClient implements ShutdownReceiver, LocalDataFarmC
             }
         }
     }
+    
+    public Map<String, Set<String>> getFarmIPAddresses(){
+    	return htFarms;
+    }
+    
+	public boolean addIPAddress(final String serviceName, final String ipAddress) {
+		final Set<String> oldIPs;
+
+		synchronized (htFarms) {
+			oldIPs = htFarms.get(serviceName);
+
+			if (oldIPs == null || oldIPs.contains(ipAddress)) {
+				return false;
+			}
+
+			for (final Map.Entry<String, Set<String>> entry : htFarms.entrySet()) {
+				if (!entry.getKey().equals(serviceName) && entry.getValue().contains(ipAddress)) {
+					logger.log(Level.WARNING, "Asked to add '" + ipAddress + "' to '" + serviceName + "' but this IP is in the list for '" + entry.getKey() + "'");
+					return false;
+				}
+			}
+
+			oldIPs.add(ipAddress);
+		}
+
+		final StringBuilder sbIPs = new StringBuilder();
+
+		for (final String s : oldIPs) {
+			if (sbIPs.length() > 0)
+				sbIPs.append(',');
+
+			sbIPs.append(s);
+		}
+
+		final String ipadList = sbIPs.toString();
+
+		final DB db = new DB();
+
+		db.syncUpdateQuery("UPDATE abping_aliases SET ip='" + Formatare.mySQLEscape(ipadList) + "' WHERE name='" + Formatare.mySQLEscape(serviceName) + "';");
+
+		final int cnt = db.getUpdateCount();
+
+		if (cnt == 0) {
+			logger.log(Level.WARNING, "Update query to add '" + ipAddress + "' (yielding to '" + ipadList + "') to '" + serviceName + "' failed to update anything in the database.");
+			return false;
+		}
+
+		return true;
+	}
 }

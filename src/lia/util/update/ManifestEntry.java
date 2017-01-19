@@ -35,7 +35,7 @@ public class ManifestEntry {
      * </pre>
      * 
      * @param updateLine
-     * @return
+     * @return the manifest entry
      * @throws IOException
      */
     public static final ManifestEntry newInstance(final String updateLine) throws IOException {
@@ -47,7 +47,7 @@ public class ManifestEntry {
             props.put(keyVal[0], keyVal[1]);
         }
 
-        return new ManifestEntry(props.get("name").trim(), Long.valueOf(props.get("size").trim()), Long.valueOf(props.get("lastModified").trim()), props.get("digest").trim());
+        return new ManifestEntry(props.get("name").trim(), Long.parseLong(props.get("size").trim()), Long.parseLong(props.get("lastModified").trim()), props.get("digest").trim());
     }
 
     /*

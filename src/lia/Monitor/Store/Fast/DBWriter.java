@@ -1,5 +1,5 @@
 /*
- * $Id: DBWriter.java 7128 2011-03-14 09:45:52Z costing $
+ * $Id: DBWriter.java 7541 2014-11-18 15:24:12Z costing $
  */
 package lia.Monitor.Store.Fast;
 
@@ -21,7 +21,7 @@ import lia.util.ntp.NTPDate;
 public final class DBWriter extends Writer implements AppConfigChangeListener {
 
     /** The Logger */
-    private static final Logger logger = Logger.getLogger("lia.Monitor.Store.Fast.DBWriter");
+    private static final Logger logger = Logger.getLogger(DBWriter.class.getName());
 
     private final String driverString;
 
@@ -69,7 +69,7 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
         lGraphTotalTime = _lGraphTotalTime;
         lGraphSamples = _lGraphSamples;
         sTableName = _sTableName;
-        
+
         String tmpDriverString = "org.postgresql.Driver";
         try {
             tmpDriverString = AppConfig.getProperty("lia.Monitor.jdbcDriverString", "org.postgresql.Driver");
@@ -77,7 +77,7 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
             tmpDriverString = "org.postgresql.Driver";
         }
         driverString = tmpDriverString;
-        
+
         iWriteMode = _iWriteMode;
 
         if (lGraphSamples > 1) {
@@ -93,16 +93,17 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
 
         readPreviousValues();
 
-        
         long tmplSaveInterval = lInterval / 5;
-        if (tmplSaveInterval < 1000 * 30)
+        if (tmplSaveInterval < (1000 * 30)) {
             tmplSaveInterval = 1000 * 30;
+        }
         lSaveInterval = tmplSaveInterval;
-        
+
         long tmpCleanup = lGraphTotalTime / 100;
-        if (tmpCleanup < 1000 * 60 * 2)
+        if (tmpCleanup < (1000 * 60 * 2)) {
             tmpCleanup = 1000 * 60 * 2;
-        
+        }
+
         cleanupInterval = tmpCleanup;
     }
 
@@ -118,11 +119,13 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
     public boolean setOnline(final long now) {
 
         db.syncUpdateQuery("DELETE FROM monitor_tables_onlinetime WHERE mt_tablename='" + sTableName + "'");
-        db.syncUpdateQuery("INSERT INTO monitor_tables_onlinetime (mt_tablename, online_since) VALUES ('" + sTableName + "'," + now + ")");
+        db.syncUpdateQuery("INSERT INTO monitor_tables_onlinetime (mt_tablename, online_since) VALUES ('" + sTableName
+                + "'," + now + ")");
         analyzeTable();
 
         if (logger.isLoggable(Level.FINE)) {
-            logger.log(Level.FINE, " [ DBW ] " + sTableName + " BECOME ONLINE :) ! [ " + (NTPDate.currentTimeMillis() - now) + " ] ");
+            logger.log(Level.FINE, " [ DBW ] " + sTableName + " BECOME ONLINE :) ! [ "
+                    + (NTPDate.currentTimeMillis() - now) + " ] ");
         }
 
         return super.setOnline(now);
@@ -137,7 +140,10 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
         logger.log(Level.INFO, " ShouldCompact Tables: " + shouldCompactTables);
         if (driverString.indexOf("mckoi") == -1) {
             if (driverString.indexOf("postgres") >= 0) {
-                bShouldImport = db.syncUpdateQuery("CREATE TABLE " + sTableName + " (" + "rectime bigint," + "mfarm text," + "mcluster text," + "mnode text," + "mfunction text," + "mval double precision," + "mmin double precision," + "mmax double precision" + ") WITHOUT OIDS;", true);
+                bShouldImport = db.syncUpdateQuery("CREATE TABLE " + sTableName + " (" + "rectime bigint,"
+                        + "mfarm text," + "mcluster text," + "mnode text," + "mfunction text,"
+                        + "mval double precision," + "mmin double precision," + "mmax double precision"
+                        + ") WITHOUT OIDS;", true);
 
                 db.query("ALTER TABLE " + sTableName + " ALTER mfunction SET statistics 100;");
                 db.query("ALTER TABLE " + sTableName + " ALTER mnode SET statistics 100;");
@@ -148,43 +154,58 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
                 db.query("ALTER TABLE " + sTableName + " ALTER mmax SET statistics 0;");
                 db.query("ALTER TABLE " + sTableName + " ALTER mmin SET statistics 0;");
             } else {
-                bShouldImport = db.syncUpdateQuery("CREATE TABLE " + sTableName + " (" + "rectime BIGINT," + "mfarm VARCHAR(100)," + "mcluster VARCHAR(100)," + "mnode VARCHAR (100)," + "mfunction VARCHAR(100)," + "mval DOUBLE," + "mmin DOUBLE," + "mmax DOUBLE" + ") TYPE=InnoDB;", true);
+                bShouldImport = db.syncUpdateQuery("CREATE TABLE " + sTableName + " (" + "rectime BIGINT,"
+                        + "mfarm VARCHAR(100)," + "mcluster VARCHAR(100)," + "mnode VARCHAR (100),"
+                        + "mfunction VARCHAR(100)," + "mval DOUBLE," + "mmin DOUBLE," + "mmax DOUBLE"
+                        + ") TYPE=InnoDB;", true);
             }
 
             if (bShouldImport) {
-                db.syncUpdateQuery("CREATE INDEX " + sTableName + "_rectime_cnf_idx ON " + sTableName + " (rectime, mcluster, mnode, mfunction);", true);
+                db.syncUpdateQuery("CREATE INDEX " + sTableName + "_rectime_cnf_idx ON " + sTableName
+                        + " (rectime, mcluster, mnode, mfunction);", true);
             }
         } else {
-            db.syncUpdateQuery("CREATE TABLE " + sTableName + " (" + "rectime BIGINT," + "mfarm VARCHAR(100) INDEX_NONE," + "mcluster VARCHAR(100) INDEX_NONE," + "mnode VARCHAR (100) INDEX_NONE," + "mfunction VARCHAR(100) INDEX_NONE," + "mval DOUBLE INDEX_NONE," + "mmin DOUBLE INDEX_NONE," + "mmax DOUBLE INDEX_NONE"
-                    + ");", true);
+            db.syncUpdateQuery("CREATE TABLE " + sTableName + " (" + "rectime BIGINT,"
+                    + "mfarm VARCHAR(100) INDEX_NONE," + "mcluster VARCHAR(100) INDEX_NONE,"
+                    + "mnode VARCHAR (100) INDEX_NONE," + "mfunction VARCHAR(100) INDEX_NONE,"
+                    + "mval DOUBLE INDEX_NONE," + "mmin DOUBLE INDEX_NONE," + "mmax DOUBLE INDEX_NONE" + ");", true);
 
             if (shouldCompactTables) {
                 long start = NTPDate.currentTimeMillis();
                 logger.log(Level.WARNING, " Start Comapact [ " + sTableName + " ]");
                 db.query("COMPACT TABLE " + sTableName + ";");
-                logger.log(Level.WARNING, "COMPACT TABLE " + sTableName + " [ " + (NTPDate.currentTimeMillis() - start) + " ] ");
+                logger.log(Level.WARNING, "COMPACT TABLE " + sTableName + " [ " + (NTPDate.currentTimeMillis() - start)
+                        + " ] ");
             }
         }
         db.syncUpdateQuery("INSERT INTO saved_bprevdata (sp_name, sp_value) VALUES ('" + sTableName + "', NULL);", true);
 
+        db.setReadOnly(true);
+        
         db.query("SELECT online_since FROM monitor_tables_onlinetime WHERE mt_tablename='" + sTableName + "'", false);
-        if(logger.isLoggable(Level.FINE)) {
-            logger.log(Level.FINE, " Executed : SELECT online_since FROM monitor_tables_onlinetime WHERE mt_tablename='" + sTableName + "' rowCount: " + db.count());
+        if (logger.isLoggable(Level.FINE)) {
+            logger.log(Level.FINE, " Executed : SELECT online_since FROM monitor_tables_onlinetime WHERE mt_tablename='" + sTableName + "'");
         }
+        
         while (db.moveNext()) {
             onlineSince.set(db.getl("online_since"));
         }
-        logger.log(Level.INFO, " [ DBW ] " + sTableName + " online_since = " + onlineSince + " [ " + new Date(onlineSince.get()) + " ] ");
+        
+        db.setReadOnly(false);
+        
+        logger.log(Level.INFO, " [ DBW ] " + sTableName + " online_since = " + onlineSince + " [ "
+                + new Date(onlineSince.get()) + " ] ");
     }
 
-    private AtomicLong lLastSaved = new AtomicLong(0L);
+    private final AtomicLong lLastSaved = new AtomicLong(0L);
 
     @Override
     public int save() {
-        if (iWriteMode != 0 || lInterval < 1000 * 60 * 10)
+        if ((iWriteMode != 0) || (lInterval < (1000 * 60 * 10))) {
             return 0;
+        }
 
-        if (NTPDate.currentTimeMillis() - lLastSaved.get() < lSaveInterval) {
+        if ((NTPDate.currentTimeMillis() - lLastSaved.get()) < lSaveInterval) {
             // System.out.println("skip : "+sTableName+" : "+lGraphTotalTime+" :
             // "+(NTPDate.currentTimeMillis() - lLastSaved));
             return 0;
@@ -211,7 +232,7 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
         synchronized (mLock) {
             m = null;
 
-            if (iWriteMode == 1 || lInterval < 1000 * 60 * 10) {
+            if ((iWriteMode == 1) || (lInterval < (1000 * 60 * 10))) {
                 m = new HashMap<Object, CacheElement>();
                 return;
             }
@@ -219,13 +240,19 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
             m = readPrevData(sTableName);
 
             if (m == null) {
-                logger.log(Level.INFO, "DBWriter (" + sTableName + ") : falling back to reading last values from the table");
+                logger.log(Level.INFO, "DBWriter (" + sTableName
+                        + ") : falling back to reading last values from the table");
                 m = new HashMap<Object, CacheElement>();
+                
+                db.setReadOnly(true);
 
                 db.query("SELECT * FROM " + sTableName + " ORDER BY rectime DESC LIMIT 10000;");
+                
+                db.setReadOnly(false);
 
                 while (db.moveNext()) {
-                    final String sKey = IDGenerator.generateKey(db.getns("mfarm"), db.getns("mcluster"), db.getns("mnode"), db.getns("mfunction"));
+                    final String sKey = IDGenerator.generateKey(db.getns("mfarm"), db.getns("mcluster"),
+                            db.getns("mnode"), db.getns("mfunction"));
 
                     if (m.get(sKey) == null) {
                         String v[] = new String[1];
@@ -262,10 +289,12 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
 
     @Override
     public void storeData(final Object o) {
-        if (!isOnline())
+        if (!isOnline()) {
             return;
-        if (o instanceof Result)
+        }
+        if (o instanceof Result) {
             storeData((Result) o);
+        }
     }
 
     /*
@@ -274,21 +303,24 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
      * CacheElement does not exist, then a new one is created and added to the map
      */
     private final void storeData(final Result r) {
-        if (!isOnline())
+        if (!isOnline()) {
             return;
+        }
         int i;
 
         // long lTimeNow = NTPDate.currentTimeMillis();
 
-        if (r == null || r.param_name == null || r.param_name.length <= 0)
+        if ((r == null) || (r.param_name == null) || (r.param_name.length <= 0)) {
             return;
+        }
 
         for (i = 0; i < r.param_name.length; i++) {
             if (iWriteMode == 0) {
                 final String sKey = IDGenerator.generateKey(r, i);
 
-                if (sKey == null)
+                if (sKey == null) {
                     continue;
+                }
 
                 CacheElement ce;
 
@@ -318,7 +350,7 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
     }
 
     private final AtomicLong lLastAnalyze = new AtomicLong(0L); // will ANALYZE at the first
-                                   // run
+    // run
 
     private final static long lAnalyzeInterval = 1000 * 60 * 30; // 30 mins
 
@@ -326,11 +358,12 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
     public final boolean cleanup(final boolean bCleanHash) {
         final long now = NTPDate.currentTimeMillis();
 
-        if (lInterval > 0)
+        if (lInterval > 0) {
             cleanHash(lInterval);
+        }
 
-        if (lastCleanupTime.get() + cleanupInterval < now) {
-            if (now - lLastAnalyze.get() > lAnalyzeInterval) {
+        if ((lastCleanupTime.get() + cleanupInterval) < now) {
+            if ((now - lLastAnalyze.get()) > lAnalyzeInterval) {
                 analyzeTable();
             }
 
@@ -343,8 +376,9 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
     private final void analyzeTable() {
         if (shouldAnalyzeTables) {
             if (driverString.indexOf("postgres") >= 0) {
-                if (!DB.isAutovacuumEnabled())
+                if (!DB.isAutovacuumEnabled()) {
                     execMaintenance("ANALYZE " + sTableName + ";", false, null);
+                }
             } else if (driverString.indexOf("mysql") >= 0) {
                 execMaintenance("ANALYZE TABLE " + sTableName + ";", false, null);
             }
@@ -355,13 +389,15 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
     private final void reloadConfig() {
         try {
             try {
-                shouldCompactTables = Boolean.valueOf(AppConfig.getProperty("lia.Monitor.shouldCompactTables", "true")).booleanValue();
+                shouldCompactTables = Boolean.valueOf(AppConfig.getProperty("lia.Monitor.shouldCompactTables", "true"))
+                        .booleanValue();
             } catch (Throwable t) {
                 shouldCompactTables = true;
             }
 
             try {
-                shouldAnalyzeTables = Boolean.valueOf(AppConfig.getProperty("lia.Monitor.shouldAnalyzeTables", "false")).booleanValue();
+                shouldAnalyzeTables = Boolean
+                        .valueOf(AppConfig.getProperty("lia.Monitor.shouldAnalyzeTables", "false")).booleanValue();
             } catch (Throwable t) {
                 shouldAnalyzeTables = false;
             }
@@ -372,7 +408,7 @@ public final class DBWriter extends Writer implements AppConfigChangeListener {
     }
 
     @Override
-	public void notifyAppConfigChanged() {
+    public void notifyAppConfigChanged() {
         reloadConfig();
     }
 

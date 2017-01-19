@@ -55,6 +55,7 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
 
     private final static class MeetingComp implements Comparator<String[]> {
 
+        @Override
         public int compare(String[] s1, String[] s2) {
             return s1[1].trim().compareToIgnoreCase(s2[1].trim());
         }
@@ -65,7 +66,7 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
     private final static MeetingComp comparator = new MeetingComp();
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(MeetingsLayer.class.getName());
+    private static final Logger logger = Logger.getLogger(MeetingsLayer.class.getName());
 
     /** A very dark red color. */
     public static final Color VERY_DARK_RED = new Color(0x80, 0x00, 0x00);
@@ -139,16 +140,18 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
     /** A very light magenta color. */
     public static final Color VERY_LIGHT_MAGENTA = new Color(0xFF, 0x80, 0xFF);
 
-    private Color[] pColors = new Color[] {
-            LIGHT_BLUE, LIGHT_GREEN, LIGHT_YELLOW, LIGHT_MAGENTA, LIGHT_CYAN, LIGHT_RED, Color.lightGray, Color.blue, Color.green, Color.yellow, Color.orange, Color.magenta, Color.cyan, Color.pink, Color.red, Color.gray, DARK_BLUE, DARK_GREEN, DARK_YELLOW, DARK_MAGENTA, DARK_CYAN, DARK_RED, Color.darkGray,
-            VERY_DARK_BLUE, VERY_DARK_GREEN, VERY_DARK_YELLOW, VERY_DARK_MAGENTA, VERY_DARK_CYAN, VERY_DARK_RED, VERY_LIGHT_BLUE, VERY_LIGHT_GREEN, VERY_LIGHT_YELLOW, VERY_LIGHT_MAGENTA, VERY_LIGHT_CYAN, VERY_LIGHT_RED
-    };
+    private final Color[] pColors = new Color[] { LIGHT_BLUE, LIGHT_GREEN, LIGHT_YELLOW, LIGHT_MAGENTA, LIGHT_CYAN,
+            LIGHT_RED, Color.lightGray, Color.blue, Color.green, Color.yellow, Color.orange, Color.magenta, Color.cyan,
+            Color.pink, Color.red, Color.gray, DARK_BLUE, DARK_GREEN, DARK_YELLOW, DARK_MAGENTA, DARK_CYAN, DARK_RED,
+            Color.darkGray, VERY_DARK_BLUE, VERY_DARK_GREEN, VERY_DARK_YELLOW, VERY_DARK_MAGENTA, VERY_DARK_CYAN,
+            VERY_DARK_RED, VERY_LIGHT_BLUE, VERY_LIGHT_GREEN, VERY_LIGHT_YELLOW, VERY_LIGHT_MAGENTA, VERY_LIGHT_CYAN,
+            VERY_LIGHT_RED };
 
     public ArrayList<Color> lAvailableColors = new ArrayList<Color>();
 
-    private ConcurrentMap<String, Set<String>> communitiesMeetingsMap = new ConcurrentHashMap<String, Set<String>>();
+    private final ConcurrentMap<String, Set<String>> communitiesMeetingsMap = new ConcurrentHashMap<String, Set<String>>();
 
-    private ConcurrentMap<String, Boolean> communityState = new ConcurrentHashMap<String, Boolean>();
+    private final ConcurrentMap<String, Boolean> communityState = new ConcurrentHashMap<String, Boolean>();
 
     private volatile boolean communityUpdated = true;
 
@@ -161,21 +164,22 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
 
     public MeetingsLayer(ActionListener parent) {
         this.parent = parent;
-        for (int i = 0; i < pColors.length; i++)
-            lAvailableColors.add(pColors[i]);
+        for (Color pColor : pColors) {
+            lAvailableColors.add(pColor);
+        }
         communitiesMeetingsMap.put("other", new HashSet<String>());
         communityState.put("other", Boolean.TRUE);
     }
 
     private final Object syncMeetingObject = new Object();
 
-    private HashMap<String, List<Object>> miNodes = new HashMap<String, List<Object>>();
+    private final HashMap<String, List<Object>> miNodes = new HashMap<String, List<Object>>();
 
     public static final char MNode_PoundSign = '#';
 
     private final String meetingIDFromName(final String fullMeetingName) {
         final int idx = fullMeetingName.indexOf(MNode_PoundSign);
-        if (idx <= 0 || idx >= fullMeetingName.length()) {
+        if ((idx <= 0) || (idx >= fullMeetingName.length())) {
             return null;
         }
         return fullMeetingName.substring(idx + 1);
@@ -183,7 +187,7 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
 
     private final String meetingNameFromName(final String fullMeetingName) {
         final int idx = fullMeetingName.indexOf(MNode_PoundSign);
-        if (idx <= 0 || idx >= fullMeetingName.length()) {
+        if ((idx <= 0) || (idx >= fullMeetingName.length())) {
             return fullMeetingName;
         }
         return fullMeetingName.substring(0, idx);
@@ -206,7 +210,7 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
             rcNode node;
             for (Iterator<rcNode> it = nodes.values().iterator(); it.hasNext();) {
                 node = it.next();
-                if (node.client != null && node.client.farm != null) {
+                if ((node.client != null) && (node.client.farm != null)) {
                     // for each node, check its meetings cluster
                     MCluster clusterMeetings = node.client.farm.getCluster("Meetings");
                     if (clusterMeetings != null) {
@@ -223,20 +227,21 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                                 if (meetingID.length() > 0) {
                                     int j;
                                     // check first to see if meeting already registered
-                                    for (j = 0; j < lMeetings.size(); j++)
-                                        if (lMeetings.get(j)[0].equals(meetingID))
+                                    for (j = 0; j < lMeetings.size(); j++) {
+                                        if (lMeetings.get(j)[0].equals(meetingID)) {
                                             break;
-                                    if (j >= lMeetings.size())// meeting not found, so add it
-                                        lMeetings.add(new String[] {
-                                                meetingID, clMList.get(i).toString()
-                                        });
+                                        }
+                                    }
+                                    if (j >= lMeetings.size()) {
+                                        lMeetings.add(new String[] { meetingID, clMList.get(i).toString() });
+                                    }
 
                                     String key = meetingFullName;
                                     me.add(key);
                                     if (!miNodes.containsKey(key)) {
-                                        monPredicate pred = new monPredicate(node.UnitName, "Meetings", meetingFullName, TimeUnit.MINUTES.toMillis(45), -1, new String[] {
-                                            "MeetingInfo"
-                                        }, null);
+                                        monPredicate pred = new monPredicate(node.UnitName, "Meetings",
+                                                meetingFullName, TimeUnit.MINUTES.toMillis(45), -1,
+                                                new String[] { "MeetingInfo" }, null);
 
                                         // System.out.println("sending pred "+pred.toString());
 
@@ -255,8 +260,7 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
             }
 
             ArrayList<String> toRemove = new ArrayList<String>();
-            for (Iterator<String> k = miNodes.keySet().iterator(); k.hasNext();) {
-                String key = k.next();
+            for (String key : miNodes.keySet()) {
                 if (!me.contains(key)) {
                     node = (rcNode) miNodes.get(key).get(0);
                     monPredicate pred = (monPredicate) miNodes.get(key).get(1);
@@ -273,7 +277,8 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
             }
 
         } catch (Throwable ex) {
-            logger.log(Level.WARNING, "Error on updating new list of meetings. Go back to last available: " + ex.getCause());
+            logger.log(Level.WARNING,
+                    "Error on updating new list of meetings. Go back to last available: " + ex.getCause());
         }
         return lMeetings;
     }
@@ -285,7 +290,7 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
      * Color<br>
      * Status<br>
      */
-    private List<MeetingDetails> lMeetingDetails = new CopyOnWriteArrayList<MeetingDetails>();
+    private final List<MeetingDetails> lMeetingDetails = new CopyOnWriteArrayList<MeetingDetails>();
 
     private final ConcurrentMap<String, String> meetingCommunityEarlyMap = new ConcurrentHashMap<String, String>();
 
@@ -295,28 +300,31 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
      * maps the last used colors with the id of an meeting, so that, if that meeting comes back
      * to get the same color, so, the key is the color
      */
-    private HashMap<Color, String> hLastUsedColors = new HashMap<Color, String>();
+    private final HashMap<Color, String> hLastUsedColors = new HashMap<Color, String>();
 
-    private boolean bUseRecentColorsList = true;
+    private final boolean bUseRecentColorsList = true;
 
     private volatile boolean bRegenerateMenu = false;// boolean variable that is set if an exception occured in awt menu
 
     private void addDefaultItems(JScrollMenu meetingsMenuList) {
         // if there are items in the menu, that means that select/unselect all option are already added
-        if (meetingsMenuList.getComponentList().size() > 0)
+        if (meetingsMenuList.getComponentList().size() > 0) {
             return;
+        }
         JMenuItem miSelect;
         miSelect = new JMenuItem("Select All", doRectangleIcon(Color.black, true));
         miSelect.setActionCommand("MeetingsMenuSelectAll");
         miSelect.addActionListener(this);
-        if (parent != null)// if parent wants to receive notifications
+        if (parent != null) {
             miSelect.addActionListener(parent);// the parent panel should be notified
+        }
         JMenuItem miUnSelect;
         miUnSelect = new JMenuItem("UnSelect All", doRectangleIcon(Color.black, false));
         miUnSelect.setActionCommand("MeetingsMenuUnSelectAll");
         miUnSelect.addActionListener(this);
-        if (parent != null)// if parent wants to receive notifications
+        if (parent != null) {
             miUnSelect.addActionListener(parent);// the parent panel should be notified
+        }
         synchronized (syncMeetingObject) {
             // add select all and unselect all menu options
             meetingsMenuList.add(miSelect);
@@ -330,7 +338,7 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
             // meetingsMenuList.add(t);
             // }
         }
-        ;
+
     }
 
     private void regenerateMenu(JScrollMenu meetingsMenuList) {
@@ -349,17 +357,20 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                     // final String comm = getCommunityByID(meetingDetail.idColor.ID);
                     final String comm = meetingDetail.getCommunity();
                     if (communityState.containsKey(comm)) {
-                        if (!communityState.get(comm).booleanValue())
+                        if (!communityState.get(comm).booleanValue()) {
                             continue;
+                        }
                     } else {
-                        if (!communityState.get("other").booleanValue())
+                        if (!communityState.get("other").booleanValue()) {
                             continue;
+                        }
                     }
                     JCheckBoxMenuItem cbmi = meetingDetail.menuItem;
                     cbmi.setActionCommand("MeetingsMenuItemChanged");
                     cbmi.addActionListener(this);
-                    if (parent != null)// if parent wants to receive notifications
+                    if (parent != null) {
                         cbmi.addActionListener(parent);// the parent panel should be notified
+                    }
                     synchronized (syncMeetingObject) {
                         meetingsMenuList.add(cbmi);
                     }
@@ -370,7 +381,8 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                 if (logger.isLoggable(Level.FINE)) {
                     logger.log(Level.FINE, " [ MeetingsLayer ] Unknown state for meetings menu. Cause: ", t.getCause());
                 } else {
-                    logger.log(Level.INFO, " [ MeetingsLayer ] Unknown state for meetings menu. Cause: " + t.getCause() + " will regenerate menu.");
+                    logger.log(Level.INFO, " [ MeetingsLayer ] Unknown state for meetings menu. Cause: " + t.getCause()
+                            + " will regenerate menu.");
                 }
                 bRegenerateMenu = true;
             }
@@ -394,10 +406,11 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
         g = biColor.getGraphics();
         // add first menu item
         g.setColor(c);
-        if (bFill)
+        if (bFill) {
             g.fillRoundRect(0, 0, iconSize - 1, iconSize - 1, iconSize / 3, iconSize / 3);
-        else
+        } else {
             g.drawRoundRect(0, 0, iconSize - 1, iconSize - 1, iconSize / 3, iconSize / 3);
+        }
         return new ImageIcon(biColor);
     }
 
@@ -409,21 +422,23 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                 synchronized (syncMeetingObject) {
                     communityMenuList.removeAll();
                 }
-                ;
+
                 // add default: select all, unselect all, separator
 
                 JMenuItem miSelect;
                 miSelect = new JMenuItem("Select All", doRectangleIcon(Color.black, true));
                 miSelect.setActionCommand("CommunityMenuSelectAll");
                 miSelect.addActionListener(this);
-                if (parent != null)// if parent wants to receive notifications
+                if (parent != null) {
                     miSelect.addActionListener(parent);// the parent panel should be notified
+                }
                 JMenuItem miUnSelect;
                 miUnSelect = new JMenuItem("UnSelect All", doRectangleIcon(Color.black, false));
                 miUnSelect.setActionCommand("CommunityMenuUnSelectAll");
                 miUnSelect.addActionListener(this);
-                if (parent != null)// if parent wants to receive notifications
+                if (parent != null) {
                     miUnSelect.addActionListener(parent);// the parent panel should be notified
+                }
 
                 synchronized (syncMeetingObject) {
                     // add select all and unselect all menu options
@@ -439,14 +454,16 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                 }
                 Collections.sort(l);
                 for (final String comm : l) {
-                    if (comm.equals("other"))
+                    if (comm.equals("other")) {
                         continue;
+                    }
                     JCheckBoxMenuItem cbmi;
                     cbmi = new JCheckBoxMenuItem(comm, true);
                     cbmi.setActionCommand("CommunityMenuItemChanged");
                     cbmi.addActionListener(this);
-                    if (parent != null)// if parent wants to receive notifications
+                    if (parent != null) {
                         cbmi.addActionListener(parent);// the parent panel should be notified
+                    }
                     synchronized (syncMeetingObject) {
                         communityMenuList.add(cbmi);
                     }
@@ -458,12 +475,13 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                     cbmi = new JCheckBoxMenuItem("other", true);
                     cbmi.setActionCommand("CommunityMenuItemChanged");
                     cbmi.addActionListener(this);
-                    if (parent != null)// if parent wants to receive notifications
+                    if (parent != null) {
                         cbmi.addActionListener(parent);// the parent panel should be notified
+                    }
                     synchronized (syncMeetingObject) {
                         communityMenuList.add(cbmi);
                     }
-                    ;
+
                     cbmi.setState(communityState.get("other").booleanValue());
                 }
 
@@ -471,7 +489,8 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
 
                 logger.log(Level.INFO, "Meetings menu regenerated.");
             } catch (Throwable ex) {
-                logger.log(Level.WARNING, "Exception while regenerating meetings menu. Unknown state for meetings menu.");
+                logger.log(Level.WARNING,
+                        "Exception while regenerating meetings menu. Unknown state for meetings menu.");
                 bRegenerateMenu = true;
                 ex.printStackTrace();
             }
@@ -482,7 +501,8 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
 
     volatile JScrollMenu meetingsMenuList = null;
 
-    public void updateMeetingsMenu(Map<ServiceID, rcNode> nodes, JScrollMenu communityMenuList, JScrollMenu meetingsMenuList) {
+    public void updateMeetingsMenu(Map<ServiceID, rcNode> nodes, JScrollMenu communityMenuList,
+            JScrollMenu meetingsMenuList) {
 
         // check communitiesMeetingsMap menu....
         regenerateCommunityMenu(communityMenuList);
@@ -503,11 +523,14 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
             for (i = 0; i < lMeetings.size(); i++) {
                 String[] metDet = lMeetings.get(i);
                 // search its id in list of meetings in menu's associated list
-                for (j = 0; j < lMeetingDetails.size(); j++)
-                    if (lMeetingDetails.get(j).idColor.ID.equals(metDet[0]))
+                for (j = 0; j < lMeetingDetails.size(); j++) {
+                    if (lMeetingDetails.get(j).idColor.ID.equals(metDet[0])) {
                         break;
-                if (j < lMeetingDetails.size()) // meeting found in current list so nothing to be done
+                    }
+                }
+                if (j < lMeetingDetails.size()) {
                     continue;
+                }
                 // else meeting will be added
                 // add default: select all, unselect all, separator if they aren't already there
                 addDefaultItems(meetingsMenuList);
@@ -517,15 +540,16 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                 if (bUseRecentColorsList) {
                     if (hLastUsedColors.containsValue(metDet[0])) {
                         // find color
-                        for (Iterator<Color> it = hLastUsedColors.keySet().iterator(); it.hasNext();) {
-                            c = it.next();
+                        for (Color c1 : hLastUsedColors.keySet()) {
                             String mid = hLastUsedColors.get(c);
-                            if (mid.equals(metDet[0]))
+                            if (mid.equals(metDet[0])) {
+                                c = c1;
                                 break;
+                            }
                         }
                     }
                 }
-                ;
+
                 // color is null or not null
                 // anyway, check for color availability
                 int colorPos = 0;
@@ -534,16 +558,18 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                         // Color c2 = (Color)lAvailableColors.get(colorPos);
                         // System.out.println("color available: "+c2);
                         // if ( c2.getRGB()==c.getRGB() )
-                        if (lAvailableColors.get(colorPos).equals(c))
+                        if (lAvailableColors.get(colorPos).equals(c)) {
                             break;
+                        }
                     }
-                    if (colorPos >= lAvailableColors.size())
+                    if (colorPos >= lAvailableColors.size()) {
                         colorPos = 0;// color not available, so choose a new one
+                    }
                 }
-                ;
-                if (lAvailableColors.size() > 0)
+
+                if (lAvailableColors.size() > 0) {
                     c = lAvailableColors.get(colorPos);
-                else {// no available color left, so choose a new one
+                } else {// no available color left, so choose a new one
                     int red = (int) (Math.random() * 254) + 1;
                     int green = (int) (Math.random() * 254) + 1;
                     int blue = (int) (Math.random() * 254) + 1;
@@ -552,13 +578,16 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                 }
                 // colorPos is set to next color to be used for this new meeting
                 // add the new meeting to list and menu
-                final JCheckBoxMenuItem cbmi = new JCheckBoxMenuItem(meetingNameFromName(metDet[1]), doRectangleIcon(c, true));
+                final JCheckBoxMenuItem cbmi = new JCheckBoxMenuItem(meetingNameFromName(metDet[1]), doRectangleIcon(c,
+                        true));
                 cbmi.setActionCommand("MeetingsMenuItemChanged");
                 cbmi.addActionListener(this);
-                if (parent != null)// if parent wants to receive notifications
+                if (parent != null) {
                     cbmi.addActionListener(parent);// the parent panel should be notified
+                }
 
-                final MeetingDetails newElem = new MeetingDetails(metDet[0], meetingNameFromName(metDet[1]), c, selectAllMeetings, cbmi);
+                final MeetingDetails newElem = new MeetingDetails(metDet[0], meetingNameFromName(metDet[1]), c,
+                        selectAllMeetings, cbmi);
                 lMeetingDetails.add(newElem);
                 final String comm = meetingCommunityEarlyMap.get(metDet[0]);
                 if (comm != null) {
@@ -570,8 +599,9 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                     for (Iterator<String> it = hLastUsedColors.values().iterator(); it.hasNext();) {
                         // c = (Color)it.next();
                         String mid = it.next();// hLastUsedColors.get(c);
-                        if (mid.equals(metDet[0]))
+                        if (mid.equals(metDet[0])) {
                             it.remove();
+                        }
                     }
                 }
                 synchronized (syncMeetingObject) {
@@ -579,26 +609,32 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
 
                     // add default to the "other" communitiesMeetingsMap...
                     Set<String> l = communitiesMeetingsMap.get("other");
-                    if (l != null)
+                    if (l != null) {
                         l.add(meetingIDFromName(metDet[1]));
+                    }
 
                     // remove color from available queue after meeting safely added
-                    if (colorPos >= 0 && lAvailableColors.size() > colorPos)
+                    if ((colorPos >= 0) && (lAvailableColors.size() > colorPos)) {
                         lAvailableColors.remove(colorPos);
+                    }
                     // set as last used color
-                    if (bUseRecentColorsList)
+                    if (bUseRecentColorsList) {
                         hLastUsedColors.put(c, metDet[0]);
+                    }
                 }
             }
             // after addition of new meetings, remove old ones
             for (i = 0; i < lMeetingDetails.size(); i++) {
                 final MeetingDetails oldElem = lMeetingDetails.get(i);
                 // search its id in list of meetings
-                for (j = 0; j < lMeetings.size(); j++)
-                    if (lMeetings.get(j)[0].equals(oldElem.idColor.ID))
+                for (j = 0; j < lMeetings.size(); j++) {
+                    if (lMeetings.get(j)[0].equals(oldElem.idColor.ID)) {
                         break;
-                if (j < lMeetings.size()) // meeting found in current list so nothing to be done
+                    }
+                }
+                if (j < lMeetings.size()) {
                     continue;
+                }
                 // old meeting not found, so it has to be removed
                 synchronized (syncMeetingObject) {
                     // meetingsMenuList.remove(i+3);//the first 3 elements are select all, unselect all and separator,
@@ -617,12 +653,14 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
         }
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         try {
             // if selection changed, update menu list
             // and refresh panel
 
-            if (e.getActionCommand().equals("CommunityMenuItemChanged") || e.getActionCommand().equals("OtherCommunity")) {
+            if (e.getActionCommand().equals("CommunityMenuItemChanged")
+                    || e.getActionCommand().equals("OtherCommunity")) {
                 JCheckBoxMenuItem ck = (JCheckBoxMenuItem) e.getSource();
                 // System.out.println("found checkbox "+ck.getText());
                 if (ck != null) {
@@ -663,7 +701,8 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                         }
                     }
                 }
-            } else if (e.getActionCommand().equals("MeetingsMenuSelectAll") || e.getActionCommand().equals("CommunityMenuSelectAll")) {
+            } else if (e.getActionCommand().equals("MeetingsMenuSelectAll")
+                    || e.getActionCommand().equals("CommunityMenuSelectAll")) {
                 // select all items
                 if (e.getActionCommand().equals("MeetingsMenuSelectAll")) {
                     selectAllMeetings = true;
@@ -675,7 +714,8 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                     selectAllCommunities = true;
                     doActionOnAllCommunity(e, true);
                 }
-            } else if (e.getActionCommand().equals("MeetingsMenuUnSelectAll") || e.getActionCommand().equals("CommunityMenuUnSelectAll")) {
+            } else if (e.getActionCommand().equals("MeetingsMenuUnSelectAll")
+                    || e.getActionCommand().equals("CommunityMenuUnSelectAll")) {
                 // unselect all items
                 if (e.getActionCommand().equals("MeetingsMenuUnSelectAll")) {
                     selectAllMeetings = false;
@@ -689,7 +729,8 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                 }
             }
         } catch (Exception ex) {
-            logger.log(Level.WARNING, "Exception while updating meetings menu checkbox status. Unknown state for meetings menu.");
+            logger.log(Level.WARNING,
+                    "Exception while updating meetings menu checkbox status. Unknown state for meetings menu.");
             bRegenerateMenu = true;
             ex.printStackTrace();
         }
@@ -707,6 +748,7 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
         // start a timer so that it does not freeze the interface
         new Timer().schedule(new TimerTask() {
 
+            @Override
             public void run() {
                 // select/unselect all items
                 if (e.getSource() instanceof JMenuItem) {
@@ -717,7 +759,8 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                         List<Component> l = pm.getComponentList();
                         for (int i = 0; i < l.size(); i++) {
                             obj = l.get(i);
-                            if (obj instanceof JCheckBoxMenuItem && bSelect == !((JCheckBoxMenuItem) obj).isSelected()) {
+                            if ((obj instanceof JCheckBoxMenuItem)
+                                    && (bSelect == !((JCheckBoxMenuItem) obj).isSelected())) {
                                 JCheckBoxMenuItem ck = (JCheckBoxMenuItem) obj;
                                 ck.setSelected(bSelect);
                                 // System.out.println("found checkbox "+ck.getText());
@@ -727,8 +770,9 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                                 bRegenerateMenu = true;
                             }
                         }
-                        if (bRegenerateMenu && meetingsMenuList != null)
+                        if (bRegenerateMenu && (meetingsMenuList != null)) {
                             regenerateMenu(meetingsMenuList);
+                        }
                     }
                 }
             }
@@ -747,6 +791,7 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
         // start a timer so that it does not freeze the interface
         new Timer().schedule(new TimerTask() {
 
+            @Override
             public void run() {
                 // select/unselect all items
                 if (e.getSource() instanceof JMenuItem) {
@@ -757,14 +802,16 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
                         List<Component> l = pm.getComponentList();
                         for (int i = 0; i < l.size(); i++) {
                             obj = l.get(i);
-                            if (obj instanceof JCheckBoxMenuItem && bSelect == !((JCheckBoxMenuItem) obj).isSelected()) {
+                            if ((obj instanceof JCheckBoxMenuItem)
+                                    && (bSelect == !((JCheckBoxMenuItem) obj).isSelected())) {
                                 JCheckBoxMenuItem ck = (JCheckBoxMenuItem) obj;
                                 ck.setSelected(bSelect);
                                 // System.out.println("found checkbox "+ck.getText());
                                 // identify element based on color :D
                                 ImageIcon ic = (ImageIcon) ck.getIcon();
-                                if (ic == null)
+                                if (ic == null) {
                                     continue;
+                                }
                                 BufferedImage bi = ((BufferedImage) (ic).getImage());
                                 Color c = new Color(bi.getRGB(iconSize / 2, iconSize / 2));
                                 // System.out.println("found color "+c);
@@ -801,11 +848,12 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
 
                     // final String comm = getCommunityByName(elem.idColor.ID);
                     final String comm = elem.getCommunity();
-                    if (communityState.containsKey(comm) && communityState.get(comm).booleanValue())
+                    if (communityState.containsKey(comm) && communityState.get(comm).booleanValue()) {
                         lM.add(new MeetingDetails.IDColor(elem.idColor.ID, elem.idColor.color));
+                    }
                 }
             }
-            ;
+
         } catch (Exception ex) {
             logger.log(Level.WARNING, "exception while creating snapshot of meetings.");
             ex.printStackTrace();
@@ -815,8 +863,9 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
 
     public MeetingDetails getMeetingDetails(String meetingID) {
         for (final MeetingDetails elem : lMeetingDetails) {
-            if (elem.idColor.ID.equals(meetingID))
+            if (elem.idColor.ID.equals(meetingID)) {
                 return elem;
+            }
         }
         return null;
     }
@@ -824,10 +873,11 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
     public String getMeetingName(String meetingID) {
         try {
             for (final MeetingDetails elem : lMeetingDetails) {
-                if (elem.idColor.ID.equals(meetingID))
+                if (elem.idColor.ID.equals(meetingID)) {
                     return elem.name;
+                }
             }
-            ;
+
         } catch (Exception ex) {
             logger.log(Level.WARNING, "exception while getting name of meeting " + meetingID + ".");
             ex.printStackTrace();
@@ -838,8 +888,9 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
     public boolean isOneSelected() {
         try {
             for (final MeetingDetails elem : lMeetingDetails) {
-                if (elem.status)
+                if (elem.status) {
                     return true;
+                }
             }
         } catch (Exception ex) {
             logger.log(Level.WARNING, "exception while checking for at least one meeting selected.");
@@ -849,10 +900,12 @@ public class MeetingsLayer implements ActionListener, LocalDataFarmClient {
     }
 
     // @Override
+    @Override
     public void newFarmResult(MLSerClient client, Object ro) {
 
-        if (ro == null)
+        if (ro == null) {
             return;
+        }
         // System.out.println("vrvs result: "+ro.getClass());
         if (ro instanceof Result) {
             // logger.log(Level.INFO, "VOJobs Result from "+client.farm.name+" = "+r);

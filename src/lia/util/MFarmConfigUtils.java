@@ -1,7 +1,7 @@
 /*
  * Created on Aug 30, 2007
  * 
- * $Id: MFarmConfigUtils.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: MFarmConfigUtils.java 7419 2013-10-16 12:56:15Z ramiro $
  * 
  */
 package lia.util;
@@ -29,22 +29,24 @@ import lia.Monitor.monitor.MNode;
 public class MFarmConfigUtils {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(MFarmConfigUtils.class.getName());
+    private static final Logger logger = Logger.getLogger(MFarmConfigUtils.class.getName());
 
     public static final MClusterNameComparator CLUSTER_NAME_COMPARATOR = new MClusterNameComparator();
     public static final MNodeNameComparator NODE_NAME_COMPARATOR = new MNodeNameComparator();
-    
+
     public static final class MClusterNameComparator implements Comparator {
 
+        @Override
         public int compare(final Object c1, final Object c2) {
-            return ((MCluster)c1).name.compareTo(((MCluster)c2).name);
+            return ((MCluster) c1).name.compareTo(((MCluster) c2).name);
         }
     }
 
     public static final class MNodeNameComparator implements Comparator {
 
+        @Override
         public int compare(Object n1, Object n2) {
-            return ((MNode)n1).name.compareTo(((MNode)n2).name);
+            return ((MNode) n1).name.compareTo(((MNode) n2).name);
         }
     }
 
@@ -56,27 +58,29 @@ public class MFarmConfigUtils {
 
         final Vector oldParamList = oldNode.getParameterList();
 
-        if(debugInfo != null) {
+        if (debugInfo != null) {
             debugInfo.append("\n[ compareParams ] for newNode: ").append(newNode).append(" oldNode: ").append(oldNode);
         }
-        
-        synchronized(oldParamList) {
-            
+
+        synchronized (oldParamList) {
+
             int iOldParam = 0;
             int iNewParam = 0;
             final int newPLen = newParamList.size();
 
-            for (; iNewParam < newPLen && iOldParam < oldParamList.size();) {
-                final String oldParam = (String)oldParamList.get(iOldParam);
-                final String newParam = (String)newParamList.get(iNewParam);
+            for (; (iNewParam < newPLen) && (iOldParam < oldParamList.size());) {
+                final String oldParam = (String) oldParamList.get(iOldParam);
+                final String newParam = (String) newParamList.get(iNewParam);
 
                 final int c = newParam.compareTo(oldParam);
 
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareParams ] iNewParam=").append(iNewParam).append(", newParam=").append(newParam).append(" | iOldParam=").append(iOldParam).append(" oldParam=").append(oldParam).append(" compare = ").append(c);
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareParams ] iNewParam=").append(iNewParam).append(", newParam=")
+                            .append(newParam).append(" | iOldParam=").append(iOldParam).append(" oldParam=")
+                            .append(oldParam).append(" compare = ").append(c);
                 }
 
-                if(c == 0) {
+                if (c == 0) {
                     iNewParam++;
                     iOldParam++;
 
@@ -91,12 +95,14 @@ public class MFarmConfigUtils {
                     diff[0].getParameterList().add(newParam);
 
                     iNewParam++;
-                    
+
                     oldParamList.add(newParam);
                     iOldParam++;
-                    
-                    if(debugInfo != null) {
-                        debugInfo.append("\n[ compareParams ] NEW PARAM ADDED: iNewParam=").append(iNewParam).append(", newParam=").append(newParam).append(" | iOldParam=").append(iOldParam).append(" oldParam=").append(oldParam).append(" compare = ").append(c);
+
+                    if (debugInfo != null) {
+                        debugInfo.append("\n[ compareParams ] NEW PARAM ADDED: iNewParam=").append(iNewParam)
+                                .append(", newParam=").append(newParam).append(" | iOldParam=").append(iOldParam)
+                                .append(" oldParam=").append(oldParam).append(" compare = ").append(c);
                     }
 
                     continue;
@@ -110,34 +116,38 @@ public class MFarmConfigUtils {
                 diff[1].getParameterList().add(oldParam);
 
                 oldParamList.remove(iOldParam);
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareParams ] OLD PARAM REMOVED: iNewParam=").append(iNewParam).append(", newParam=").append(newParam).append(" | iOldParam=").append(iOldParam).append(" oldParam=").append(oldParam).append(" compare = ").append(c);
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareParams ] OLD PARAM REMOVED: iNewParam=").append(iNewParam)
+                            .append(", newParam=").append(newParam).append(" | iOldParam=").append(iOldParam)
+                            .append(" oldParam=").append(oldParam).append(" compare = ").append(c);
                 }
-                
+
             }// for - both idexes
 
             //check for new params at the end of newParamList
             for (; iNewParam < newPLen; iNewParam++) {
-                final String param = (String)newParamList.get(iNewParam);
+                final String param = (String) newParamList.get(iNewParam);
 
                 // new cluster
                 if (diff[0] == null) {
                     diff[0] = new MNode(newNode.name, newNode.ipAddress, null, null);
                 }
-                
+
                 diff[0].getParameterList().add(param);
 
                 oldParamList.add(param);
                 iOldParam++;
-                
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareParams ] NEW PARAM ADDED at the end: iNewParam=").append(iNewParam).append(", newParam=").append(param).append(" | iOldParam=").append(iOldParam).append(" oldParam=").append(oldParamList.get(iOldParam-1));
+
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareParams ] NEW PARAM ADDED at the end: iNewParam=").append(iNewParam)
+                            .append(", newParam=").append(param).append(" | iOldParam=").append(iOldParam)
+                            .append(" oldParam=").append(oldParamList.get(iOldParam - 1));
                 }
 
             }
 
-            for (; iOldParam < oldParamList.size(); ) {
-                final String param = (String)oldParamList.get(iOldParam);
+            for (; iOldParam < oldParamList.size();) {
+                final String param = (String) oldParamList.get(iOldParam);
 
                 // remove cluster
                 if (diff[1] == null) {
@@ -145,45 +155,50 @@ public class MFarmConfigUtils {
                 }
                 diff[1].getParameterList().add(param);
                 oldParamList.remove(iOldParam);
-                
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareParams ] OLD PARAM REMOVED at the end iOldParam=").append(iOldParam - 1).append(" oldParam=");
+
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareParams ] OLD PARAM REMOVED at the end iOldParam=")
+                            .append(iOldParam - 1).append(" oldParam=");
                 }
             }
 
             return diff;
-            
+
         }//end sync
     } // compareParams
 
-    private static MCluster[] compareNodes(final MCluster newCluster, final MCluster oldCluster, final StringBuilder debugInfo) {
+    private static MCluster[] compareNodes(final MCluster newCluster, final MCluster oldCluster,
+            final StringBuilder debugInfo) {
         MCluster[] diff = new MCluster[2];
 
         final Vector newNodeList = newCluster.getNodes();
 
         final Vector oldNodeList = oldCluster.getNodes();
-        
-        if(debugInfo != null) {
-            debugInfo.append("\n[ compareParams ] for newCluster: ").append(newCluster).append(" oldCluster: ").append(oldCluster);
+
+        if (debugInfo != null) {
+            debugInfo.append("\n[ compareParams ] for newCluster: ").append(newCluster).append(" oldCluster: ")
+                    .append(oldCluster);
         }
 
-        synchronized(oldNodeList) {
-            
+        synchronized (oldNodeList) {
+
             int iOldNode = 0;
             int iNewNode = 0;
             final int newNLen = newNodeList.size();
 
-            for (; iNewNode < newNLen && iOldNode < oldNodeList.size();) {
-                final MNode oldNode = (MNode)oldNodeList.get(iOldNode);
-                final MNode newNode = (MNode)newNodeList.get(iNewNode);
+            for (; (iNewNode < newNLen) && (iOldNode < oldNodeList.size());) {
+                final MNode oldNode = (MNode) oldNodeList.get(iOldNode);
+                final MNode newNode = (MNode) newNodeList.get(iNewNode);
 
                 final int c = NODE_NAME_COMPARATOR.compare(newNode, oldNode);
 
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareNodes ] iNewNode=").append(iNewNode).append(", newNode=").append(newNode).append(" | iOldNode=").append(iOldNode).append(" oldNode=").append(oldNode).append(" compare = ").append(c);
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareNodes ] iNewNode=").append(iNewNode).append(", newNode=")
+                            .append(newNode).append(" | iOldNode=").append(iOldNode).append(" oldNode=")
+                            .append(oldNode).append(" compare = ").append(c);
                 }
 
-                if(c == 0) {
+                if (c == 0) {
                     // check for params changes
                     final MNode[] diffParams = compareParams(newNode, oldNode, debugInfo);
 
@@ -217,12 +232,14 @@ public class MFarmConfigUtils {
                     diff[0].getNodes().add(newNodeToAdd);
 
                     iNewNode++;
-                    
+
                     oldNodeList.add(newNodeToAdd);
                     iOldNode++;
 
-                    if(debugInfo != null) {
-                        debugInfo.append("\n[ compareNodes ] NEW NODE ADDED iNewNode=").append(iNewNode).append(", newNode=").append(newNode).append(" | iOldNode=").append(iOldNode).append(" oldNode=").append(oldNode).append(" compare = ").append(c);
+                    if (debugInfo != null) {
+                        debugInfo.append("\n[ compareNodes ] NEW NODE ADDED iNewNode=").append(iNewNode)
+                                .append(", newNode=").append(newNode).append(" | iOldNode=").append(iOldNode)
+                                .append(" oldNode=").append(oldNode).append(" compare = ").append(c);
                     }
 
                     continue;
@@ -233,9 +250,11 @@ public class MFarmConfigUtils {
                     diff[1] = new MCluster(oldCluster.name, null);
                 }
                 diff[1].getNodes().add(new MNode(oldNode.name, oldCluster, oldCluster.getFarm()));
-                
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareNodes ] OLD NODE REMOVED iNewNode=").append(iNewNode).append(", newNode=").append(newNode).append(" | iOldNode=").append(iOldNode).append(" oldNode=").append(oldNode).append(" compare = ").append(c);
+
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareNodes ] OLD NODE REMOVED iNewNode=").append(iNewNode)
+                            .append(", newNode=").append(newNode).append(" | iOldNode=").append(iOldNode)
+                            .append(" oldNode=").append(oldNode).append(" compare = ").append(c);
                 }
 
                 oldNodeList.remove(iOldNode);
@@ -243,7 +262,7 @@ public class MFarmConfigUtils {
             }// for
 
             for (; iNewNode < newNLen; iNewNode++) {
-                final MNode newNode = (MNode)newNodeList.get(iNewNode);
+                final MNode newNode = (MNode) newNodeList.get(iNewNode);
 
                 // new node added
                 if (diff[0] == null) {
@@ -254,16 +273,18 @@ public class MFarmConfigUtils {
                 diff[0].getNodes().add(newNodeToAdd);
 
                 oldNodeList.add(newNodeToAdd);
-                
+
                 iOldNode++;
-                
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareNodes ] NEW NODE ADDED at the end iNewNode=").append(iNewNode).append(", newNode=").append(newNode).append(" | iOldNode=").append(iOldNode).append(" oldNode=").append(oldNodeList.get(iOldNode-1));
+
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareNodes ] NEW NODE ADDED at the end iNewNode=").append(iNewNode)
+                            .append(", newNode=").append(newNode).append(" | iOldNode=").append(iOldNode)
+                            .append(" oldNode=").append(oldNodeList.get(iOldNode - 1));
                 }
             }
 
-            for (; iOldNode < oldNodeList.size(); ) {
-                final MNode oldNode = (MNode)oldNodeList.get(iOldNode);
+            for (; iOldNode < oldNodeList.size();) {
+                final MNode oldNode = (MNode) oldNodeList.get(iOldNode);
 
                 // removed node
                 if (diff[1] == null) {
@@ -271,16 +292,17 @@ public class MFarmConfigUtils {
                 }
                 diff[1].getNodes().add(new MNode(oldNode.name, oldCluster, oldCluster.getFarm()));
                 oldNodeList.remove(iOldNode);
-                
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareNodes ] OLD NODE REMOVED at the end iOldNode=").append(iOldNode).append(" oldNode=").append(oldNode);
+
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareNodes ] OLD NODE REMOVED at the end iOldNode=").append(iOldNode)
+                            .append(" oldNode=").append(oldNode);
                 }
             }
 
             return diff;
-            
+
         }//end sync
-        
+
     } // compareNodes
 
     /**
@@ -290,13 +312,14 @@ public class MFarmConfigUtils {
      * @param debugInfo
      * @return
      */
-    public static MFarm[] compareAndUpdateClusters(final MFarm newConf, final MFarm oldConf, final StringBuilder debugInfo) {
+    public static MFarm[] compareAndUpdateClusters(final MFarm newConf, final MFarm oldConf,
+            final StringBuilder debugInfo) {
         MFarm[] diff = new MFarm[2];
 
         final Vector newClusterList = newConf.getClusters();
         final Vector oldClusterList = oldConf.getClusters();
 
-        synchronized(oldClusterList) {
+        synchronized (oldClusterList) {
 
             String fName = newConf.name;
             if (fName == null) {
@@ -317,19 +340,21 @@ public class MFarmConfigUtils {
 
             int nodesCount = 0;
 
-            for (; iNewCluster < newCLen && iOldCluster < oldClusterList.size();) {
+            for (; (iNewCluster < newCLen) && (iOldCluster < oldClusterList.size());) {
 
-                final MCluster oldCluster = (MCluster)oldClusterList.get(iOldCluster);
-                final MCluster newCluster = (MCluster)newClusterList.get(iNewCluster);
+                final MCluster oldCluster = (MCluster) oldClusterList.get(iOldCluster);
+                final MCluster newCluster = (MCluster) newClusterList.get(iNewCluster);
                 nodesCount += newCluster.getNodes().size();
 
                 final int c = CLUSTER_NAME_COMPARATOR.compare(newCluster, oldCluster);
 
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareClusters ] iNewCluster=").append(iNewCluster).append(", newCluster=").append(newCluster).append(" | iOldCluster=").append(iOldCluster).append(" oldCluster=").append(oldCluster).append(" compare = ").append(c);
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareClusters ] iNewCluster=").append(iNewCluster).append(", newCluster=")
+                            .append(newCluster).append(" | iOldCluster=").append(iOldCluster).append(" oldCluster=")
+                            .append(oldCluster).append(" compare = ").append(c);
                 }
 
-                if(c == 0) {
+                if (c == 0) {
                     // check for nodes/params changes
                     final MCluster[] diffNodes = compareNodes(newCluster, oldCluster, debugInfo);
 
@@ -360,21 +385,24 @@ public class MFarmConfigUtils {
                     if (diff[0] == null) {
                         diff[0] = new MFarm(newConf.name);
                     }
-                    
+
                     final MCluster newClusterToAdd = MCluster.fromMCluster(newCluster, oldConf);
-                    
+
                     diff[0].getClusters().add(newClusterToAdd);
-                    
+
                     iNewCluster++;
-                    
+
                     //add the new cluster
                     oldClusterList.add(newClusterToAdd);
                     iOldCluster++;
 
-                    if(debugInfo != null) {
-                        debugInfo.append("\n[ compareClusters ] NEW CLUSTER ADDED iNewCluster=").append(iNewCluster).append(", newCluster=").append(newCluster).append(" | iOldCluster=").append(iOldCluster).append(" oldCluster=").append(oldCluster).append(" compare = ").append(c);
+                    if (debugInfo != null) {
+                        debugInfo.append("\n[ compareClusters ] NEW CLUSTER ADDED iNewCluster=").append(iNewCluster)
+                                .append(", newCluster=").append(newCluster).append(" | iOldCluster=")
+                                .append(iOldCluster).append(" oldCluster=").append(oldCluster).append(" compare = ")
+                                .append(c);
                     }
-                    
+
                     continue;
                 }
 
@@ -387,14 +415,16 @@ public class MFarmConfigUtils {
                 //remove the oldCluster; do not increment the old contor
                 oldClusterList.remove(iOldCluster);
 
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareClusters ] OLD CLUSTER REMOVED iNewCluster=").append(iNewCluster).append(", newCluster=").append(newCluster).append(" | iOldCluster=").append(iOldCluster).append(" oldCluster=").append(oldCluster).append(" compare = ").append(c);
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareClusters ] OLD CLUSTER REMOVED iNewCluster=").append(iNewCluster)
+                            .append(", newCluster=").append(newCluster).append(" | iOldCluster=").append(iOldCluster)
+                            .append(" oldCluster=").append(oldCluster).append(" compare = ").append(c);
                 }
 
             }// for - oldClusteList
 
             for (; iNewCluster < newCLen; iNewCluster++) {
-                final MCluster newCluster = (MCluster)newClusterList.get(iNewCluster);
+                final MCluster newCluster = (MCluster) newClusterList.get(iNewCluster);
 
                 // new cluster
                 if (diff[0] == null) {
@@ -407,25 +437,28 @@ public class MFarmConfigUtils {
                 oldClusterList.add(newClusterToAdd);
                 iOldCluster++;
 
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareClusters ] NEW CLUSTER ADDED at the end iNewCluster=").append(iNewCluster).append(", newCluster=").append(newCluster).append(" | iOldCluster=").append(iOldCluster).append(" oldCluster=").append(oldClusterList.get(iOldCluster - 1));
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareClusters ] NEW CLUSTER ADDED at the end iNewCluster=")
+                            .append(iNewCluster).append(", newCluster=").append(newCluster).append(" | iOldCluster=")
+                            .append(iOldCluster).append(" oldCluster=").append(oldClusterList.get(iOldCluster - 1));
                 }
 
             }
 
-            for (; iOldCluster < oldClusterList.size(); ) {
-                final MCluster oldCluster = (MCluster)oldClusterList.get(iOldCluster);
+            for (; iOldCluster < oldClusterList.size();) {
+                final MCluster oldCluster = (MCluster) oldClusterList.get(iOldCluster);
 
                 // remove cluster
                 if (diff[1] == null) {
                     diff[1] = new MFarm(newConf.name);
                 }
                 diff[1].getClusters().add(oldCluster);
-                
+
                 oldClusterList.remove(iOldCluster);
 
-                if(debugInfo != null) {
-                    debugInfo.append("\n[ compareClusters ] OLD CLUSTER REMOVED at the end iOldCluster=").append(iOldCluster).append(" oldCluster=").append(oldCluster);
+                if (debugInfo != null) {
+                    debugInfo.append("\n[ compareClusters ] OLD CLUSTER REMOVED at the end iOldCluster=")
+                            .append(iOldCluster).append(" oldCluster=").append(oldCluster);
                 }
             }
 
@@ -442,60 +475,62 @@ public class MFarmConfigUtils {
      * @return
      */
     public static final String getMFarmDump(final MFarm mfarm) {
-        if(mfarm == null) return "null";
-        
+        if (mfarm == null) {
+            return "null";
+        }
+
         StringBuilder sb = new StringBuilder(1024);
         sb.append("\nMFarm: ").append(mfarm.name);
         final Vector clusterList = mfarm.getClusters();
-        synchronized(clusterList) {
+        synchronized (clusterList) {
             final int clSize = clusterList.size();
-            for(int iClus = 0; iClus<clSize; iClus++) {
-                final MCluster cluster = (MCluster)clusterList.get(iClus);
-                
+            for (int iClus = 0; iClus < clSize; iClus++) {
+                final MCluster cluster = (MCluster) clusterList.get(iClus);
+
                 sb.append("\n|--");
-                if(cluster == null) {
+                if (cluster == null) {
                     sb.append(" ( ******************* null cluster ********************** )");
                     continue;
                 }
-                
-                if(cluster.name == null) {
+
+                if (cluster.name == null) {
                     sb.append(" ( ********************** null cluster name ************* )");
                     continue;
                 }
-                
+
                 sb.append(cluster.name);
-                
-                if(cluster.getNodes() == null) {
+
+                if (cluster.getNodes() == null) {
                     sb.append("( null node list )");
                     continue;
                 }
-                
+
                 final Vector nodeList = cluster.getNodes();
-                synchronized(nodeList) {
+                synchronized (nodeList) {
                     final int nlSize = nodeList.size();
-                    for(int iNode = 0; iNode < nlSize; iNode++) {
-                        final MNode node = (MNode)nodeList.get(iNode);
+                    for (int iNode = 0; iNode < nlSize; iNode++) {
+                        final MNode node = (MNode) nodeList.get(iNode);
                         sb.append("\n|\t|--");
-                        if(node == null) {
+                        if (node == null) {
                             sb.append(" ( ************************ null node **********************)");
                             continue;
                         }
-                        
-                        if(node.name == null) {
+
+                        if (node.name == null) {
                             sb.append(" ( ********************** null node name ************* )");
                             continue;
                         }
-                        
+
                         sb.append(node.name);
-                       
-                        if(node.getParameterList() == null) {
+
+                        if (node.getParameterList() == null) {
                             sb.append("( null parameter list )");
                             continue;
                         }
                         final Vector paramList = node.getParameterList();
-                        synchronized(paramList) {
+                        synchronized (paramList) {
                             final int plSize = paramList.size();
-                            for(int iParam = 0; iParam < plSize; iParam++) {
+                            for (int iParam = 0; iParam < plSize; iParam++) {
                                 sb.append("\n|\t|\t|--").append(paramList.get(iParam));
                             }
                         }
@@ -503,7 +538,7 @@ public class MFarmConfigUtils {
                 }//end sync nodeList
             }//end for - cluster
         }//end sync - clusterList
-        
+
         return sb.toString();
     }
 

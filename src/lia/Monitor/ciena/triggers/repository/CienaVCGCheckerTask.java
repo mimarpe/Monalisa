@@ -12,25 +12,26 @@ import java.util.logging.Logger;
  * 
  */
 class CienaVCGCheckerTask implements Runnable {
-    
-    private static final transient Logger logger = Logger.getLogger(CienaVCGCheckerTask.class.getName());
-    
+
+    private static final Logger logger = Logger.getLogger(CienaVCGCheckerTask.class.getName());
+
     final CienaVCGAlarm vcgAlarm;
-    
+
     CienaVCGCheckerTask(CienaVCGAlarm vcgAlarm) {
-        if(vcgAlarm == null) {
+        if (vcgAlarm == null) {
             throw new NullPointerException("Null CienaVCGConfigEntry");
         }
-        
+
         this.vcgAlarm = vcgAlarm;
     }
-    
+
+    @Override
     public void run() {
         final boolean isFine = logger.isLoggable(Level.FINE);
         final boolean isFiner = (isFine || logger.isLoggable(Level.FINER));
         final boolean isFinest = (isFiner || logger.isLoggable(Level.FINEST));
-        
-        if(isFinest) {
+
+        if (isFinest) {
             logger.log(Level.FINEST, "Starting CienaVCGCheckerTask for: " + vcgAlarm);
         }
     }

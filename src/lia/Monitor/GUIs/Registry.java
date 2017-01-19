@@ -55,7 +55,7 @@ public final class Registry {
             hmExactParameters.put(sParam, map);
         }
         Unit uTemp = (Unit) map.get(sModule);
-        if (uTemp == null || !uTemp.equals(unit)) {
+        if ((uTemp == null) || !uTemp.equals(unit)) {
             map.put(sModule, unit);
         }
     }
@@ -78,12 +78,13 @@ public final class Registry {
 
             final RegexpUnitEntry rue = (RegexpUnitEntry) map.get(sModule);
 
-            if (rue == null || !rue.u.equals(unit)) {
+            if ((rue == null) || !rue.u.equals(unit)) {
                 final Pattern p = Pattern.compile(sParam);
                 map.put(sModule, new RegexpUnitEntry(p, unit));
             }
         } catch (PatternSyntaxException pse) {
-            System.err.println("Registry: pattern compilation exception for '" + sParam + "' : " + pse + " (" + pse.getMessage() + ")");
+            System.err.println("Registry: pattern compilation exception for '" + sParam + "' : " + pse + " ("
+                    + pse.getMessage() + ")");
             pse.printStackTrace();
             registerExactParameter(sModule, sParam, unit);
         }
@@ -118,23 +119,23 @@ public final class Registry {
      * @return the measurement unit, or <code>null</code> if no match could be found.
      */
     public synchronized Unit getUnit(final String sParam, final String[] sModules) {
-        if (sParam == null || sModules == null || sModules.length == 0) {
+        if ((sParam == null) || (sModules == null) || (sModules.length == 0)) {
             return null;
         }
         HashMap map = (HashMap) hmExactParameters.get(sParam);
         if (map != null) {
-            for (int i = 0; i < sModules.length; i++) {
-                if (map.containsKey(sModules[i])) {
-                    return (Unit) map.get(sModules[i]);
+            for (String sModule : sModules) {
+                if (map.containsKey(sModule)) {
+                    return (Unit) map.get(sModule);
                 }
             }
         }
 
         for (Iterator it = hmRegexpParameters.keySet().iterator(); it.hasNext();) {
             map = (HashMap) hmRegexpParameters.get(it.next());
-            for (int i = 0; i < sModules.length; i++) {
-                if (map.containsKey(sModules[i])) {
-                    RegexpUnitEntry rue = (RegexpUnitEntry) map.get(sModules[i]);
+            for (String sModule : sModules) {
+                if (map.containsKey(sModule)) {
+                    RegexpUnitEntry rue = (RegexpUnitEntry) map.get(sModule);
                     if (rue.p.matcher(sParam).matches()) {
                         return rue.u;
                     }
@@ -175,19 +176,22 @@ public final class Registry {
         registerRegexpParameter("monIGangliaTCP", "CPU_.+", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
         registerRegexpParameter("monIGangliaTCP", "DISK_.+", new Unit(Unit.TYPE_BYTE, 0l, Unit.GIGA_BYTE));
         registerRegexpParameter("monIGangliaTCP", "MEM_.+", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
-        registerRegexpParameter("monIGangliaTCP", "TotalIO_Rate_.+", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
+        registerRegexpParameter("monIGangliaTCP", "TotalIO_Rate_.+", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND,
+                Unit.MEGA_BIT));
 
         //monMcastGanglia
         registerRegexpParameter("monMcastGanglia", "CPU_.+", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
         registerRegexpParameter("monMcastGanglia", "DISK_.+", new Unit(Unit.TYPE_BYTE, 0l, Unit.GIGA_BYTE));
         registerRegexpParameter("monMcastGanglia", "MEM_.+", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
-        registerRegexpParameter("monMcastGanglia", "TotalIO_Rate_.+", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
+        registerRegexpParameter("monMcastGanglia", "TotalIO_Rate_.+", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND,
+                Unit.MEGA_BIT));
 
         //monIGangliaFilteredTCP
         registerRegexpParameter("monIGangliaFilteredTCP", "CPU_.+", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
         registerRegexpParameter("monIGangliaFilteredTCP", "DISK_.+", new Unit(Unit.TYPE_BYTE, 0l, Unit.GIGA_BYTE));
         registerRegexpParameter("monIGangliaFilteredTCP", "MEM_.+", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
-        registerRegexpParameter("monIGangliaFilteredTCP", "TotalIO_Rate_.+", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
+        registerRegexpParameter("monIGangliaFilteredTCP", "TotalIO_Rate_.+", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND,
+                Unit.MEGA_BIT));
 
         //////////////////////
         // END Ganglia Modules
@@ -206,15 +210,15 @@ public final class Registry {
         registerRegexpParameter("monOsgVoJobs", "ExecTime_.+", new Unit(Unit.TYPE_TIME, 0l, Unit.PER_MILLI));
         registerRegexpParameter("monOsgVoJobs", "TotalProcessingTime", new Unit(Unit.TYPE_TIME, 0l, Unit.PER_MILLI));
 
-
-        registerRegexpParameter("monOsgVO_IO", "(ftpRateIn|ftpRateOut).*", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND, Unit.KILO_BYTE));
+        registerRegexpParameter("monOsgVO_IO", "(ftpRateIn|ftpRateOut).*", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND,
+                Unit.KILO_BYTE));
         registerRegexpParameter("monOsgVO_IO", "(ftpInput|ftpOutput).*", new Unit(Unit.TYPE_BYTE, 0l, Unit.KILO_BYTE));
         ///// End OSG_VO Modules /////
 
-//		registerExactParameter("monPathload", "AwBandwidth_Low", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
-//		registerExactParameter("monPathload", "AwBandwidth_High", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
-//		registerExactParameter("monPathload", "MegaBytesReceived", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
-//		registerExactParameter("monPathload", "MeasurementDuration", new Unit(Unit.TYPE_TIME, 0l, Unit.PER_SECOND));
+        //		registerExactParameter("monPathload", "AwBandwidth_Low", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
+        //		registerExactParameter("monPathload", "AwBandwidth_High", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
+        //		registerExactParameter("monPathload", "MegaBytesReceived", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
+        //		registerExactParameter("monPathload", "MeasurementDuration", new Unit(Unit.TYPE_TIME, 0l, Unit.PER_SECOND));
 
         ///// PN Modules /////
         registerExactParameter("monPN_PBS", "VIRT_MEM_free", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
@@ -231,44 +235,55 @@ public final class Registry {
         registerExactParameter("monPN_LSF", "SWAP_total", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
         ///// End PN Modules /////
 
-
         registerRegexpParameter("monProcIO", ".+_(IN|OUT)", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
         registerRegexpParameter("monProcLoad", "(Load5|Load10|Load15)", new Unit(Unit.TYPE_UNKNOWN, 0l, 0l));
         registerRegexpParameter("monProcStat", "CPU_.+", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
-        registerRegexpParameter("monProcStat", "(Page_.+|Swap_.+)", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND, Unit.MEGA_BYTE));
-        registerRegexpParameter("monDiskIOStat", "(ReadMBps|WriteMBps)", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND, Unit.MEGA_BYTE));
+        registerRegexpParameter("monProcStat", "(Page_.+|Swap_.+)", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND,
+                Unit.MEGA_BYTE));
+        registerRegexpParameter("monDiskIOStat", "(ReadMBps|WriteMBps)", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND,
+                Unit.MEGA_BYTE));
         registerRegexpParameter("monDiskIOStat", "(IOUtil)", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
         registerExactParameter("monMLStat", "embedded_store_size", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
         registerRegexpParameter("snmp_Disk_v2", ".+_(FreeDsk|UsedDsk)", new Unit(Unit.TYPE_BYTE, 0l, Unit.GIGA_BYTE));
         registerRegexpParameter("snmp_Disk", "(FreeDsk|UsedDsk)", new Unit(Unit.TYPE_BYTE, 0l, Unit.GIGA_BYTE));
         registerRegexpParameter("monRRD", ".+_(IN|OUT)", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
         registerRegexpParameter("monVO_IO", "(ftpInput|ftpOutput).*", new Unit(Unit.TYPE_BYTE, 0l, Unit.KILO_BYTE));
-        registerRegexpParameter("monVO_IO", "(ftpRateIn|ftpRateOut).*", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND, Unit.KILO_BYTE));
+        registerRegexpParameter("monVO_IO", "(ftpRateIn|ftpRateOut).*", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND,
+                Unit.KILO_BYTE));
         registerRegexpParameter("monVOgsiftpIO", "(ftpInput|ftpOutput).*", new Unit(Unit.TYPE_BYTE, 0l, Unit.KILO_BYTE));
-        registerRegexpParameter("monVOgsiftpIO", "(ftpRateIn|ftpRateOut).*", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND, Unit.KILO_BYTE));
+        registerRegexpParameter("monVOgsiftpIO", "(ftpRateIn|ftpRateOut).*", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND,
+                Unit.KILO_BYTE));
         registerExactParameter("snmp_CatSwitch", "uptime", new Unit(Unit.TYPE_TIME, 0l, Unit.PER_SECOND));
-        registerRegexpParameter("snmp_CatSwitch", ".+_(IN|OUT|SPEED)", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
+        registerRegexpParameter("snmp_CatSwitch", ".+_(IN|OUT|SPEED)", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND,
+                Unit.MEGA_BIT));
         registerRegexpParameter("snmp_CatSwitch", ".+Temperature", new Unit(Unit.TYPE_TEMPERATURE, 0l, 0l));
         registerRegexpParameter("snmp_CPU_v2", "CPU_.+", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
         registerRegexpParameter("snmp_CPU", "CPU_.+", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
         registerRegexpParameter("snmp_IOpp", ".+_(IN|OUT)", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
-        registerRegexpParameter("snmp_IOpp_v2", ".+_(IN|OUT|SPEED)", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
+        registerRegexpParameter("snmp_IOpp_v2", ".+_(IN|OUT|SPEED)", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND,
+                Unit.MEGA_BIT));
         registerRegexpParameter("snmp_Load", "(Load5|Load10|Load15)", new Unit(Unit.TYPE_UNKNOWN, 0l, 0l));
 
         // ApMon background monitoring
         registerRegexpParameter("monXDRUDP", "cpu_time|run_time", new Unit(Unit.TYPE_TIME, 0l, Unit.PER_SECOND));
-        registerRegexpParameter("monXDRUDP", ".+_usage|cpu_usr|cpu_sys|cpu_nice|cpu_idle", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
+        registerRegexpParameter("monXDRUDP", ".+_usage|cpu_usr|cpu_sys|cpu_nice|cpu_idle", new Unit(Unit.TYPE_PERCENT,
+                0l, 0l));
         registerRegexpParameter("monXDRUDP", "virtualmem|rss", new Unit(Unit.TYPE_BYTE, 0l, Unit.KILO_BYTE));
-        registerRegexpParameter("monXDRUDP", "workdir_size|disk_total|disk_used|disk_free", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
+        registerRegexpParameter("monXDRUDP", "workdir_size|disk_total|disk_used|disk_free", new Unit(Unit.TYPE_BYTE,
+                0l, Unit.MEGA_BYTE));
         registerRegexpParameter("monXDRUDP", "load5|load10|load15", new Unit(Unit.TYPE_UNKNOWN, 0l, 0l));
-        registerRegexpParameter("monXDRUDP", "total_mem|mem_used|mem_free|total_swap|swap_used|swap_free", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
-        registerRegexpParameter("monXDRUDP", "eth._in|eth._out", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND, Unit.KILO_BYTE));
+        registerRegexpParameter("monXDRUDP", "total_mem|mem_used|mem_free|total_swap|swap_used|swap_free", new Unit(
+                Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
+        registerRegexpParameter("monXDRUDP", "eth._in|eth._out", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND,
+                Unit.KILO_BYTE));
         registerRegexpParameter("monXDRUDP", "uptime", new Unit(Unit.TYPE_TIME, 0l, Unit.PER_DAY));
-        
+
         //from MLSensor
-        registerRegexpParameter("monXDRUDP", ".+_(ReadMBps|WriteMBps)", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND, Unit.MEGA_BYTE));
+        registerRegexpParameter("monXDRUDP", ".+_(ReadMBps|WriteMBps)", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND,
+                Unit.MEGA_BYTE));
         registerRegexpParameter("monXDRUDP", ".+_(IOUtil)", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
-        registerRegexpParameter("monXDRUDP", "(Page_.+|Swap_.+)", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND, Unit.MEGA_BYTE));
+        registerRegexpParameter("monXDRUDP", "(Page_.+|Swap_.+)", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND,
+                Unit.MEGA_BYTE));
         registerRegexpParameter("monXDRUDP", "CPU_.+", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
         registerRegexpParameter("monXDRUDP", ".+_(IN|OUT)", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
         registerRegexpParameter("monXDRUDP", ".+_(COLLS|ERRS)", new Unit(Unit.TYPE_SCALAR, 0L, 0L));
@@ -277,11 +292,12 @@ public final class Registry {
         registerRegexpParameter("monCienaEthIO", ".+_MLRate", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
         registerRegexpParameter("monCienaEthIO", ".+_(RATE)", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
         registerRegexpParameter("monCienaEflow", "Rate", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
-        registerRegexpParameter("monCienaEflow", ".+_IN|.+_OUT", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
-
+        registerRegexpParameter("monCienaEflow", ".+_IN|.+_OUT",
+                new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
 
         // LISAv2
-        registerRegexpParameter("*", "Cpu(Usage|Usr|Sys|Nice|Idle|IoWait|Int|SoftInt|Steal)", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
+        registerRegexpParameter("*", "Cpu(Usage|Usr|Sys|Nice|Idle|IoWait|Int|SoftInt|Steal)", new Unit(
+                Unit.TYPE_PERCENT, 0l, 0l));
         registerExactParameter("*", "MemUsage", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
         registerExactParameter("*", "DiskUsage", new Unit(Unit.TYPE_PERCENT, 0l, 0l));
         registerRegexpParameter("*", "Mem(Used|Free)", new Unit(Unit.TYPE_BYTE, 0l, Unit.MEGA_BYTE));
@@ -290,8 +306,14 @@ public final class Registry {
         registerRegexpParameter("*", "(In|Out)_.*", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
 
         // FDT via LISA
-        registerRegexpParameter("monXDRUDP", "DISK_READ|DISK_WRITE", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND, Unit.MEGA_BYTE));
+        registerRegexpParameter("monXDRUDP", "DISK_READ|DISK_WRITE", new Unit(Unit.TYPE_BYTE, Unit.PER_SECOND,
+                Unit.MEGA_BYTE));
         registerRegexpParameter("monXDRUDP", "NET_IN|NET_OUT", new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
+
+        //OLIMPS/Floodlight monitor
+        registerRegexpParameter("OlimpsFLFilter", ".+_(in|out)",
+                new Unit(Unit.TYPE_BIT, Unit.PER_SECOND, Unit.MEGA_BIT));
+
     }
 } // end of class Registry
 

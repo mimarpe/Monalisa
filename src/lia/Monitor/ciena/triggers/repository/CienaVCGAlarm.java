@@ -8,6 +8,7 @@ import java.util.Vector;
 import lia.Monitor.Store.DataSplitter;
 import lia.Monitor.Store.TransparentStoreFactory;
 import lia.Monitor.Store.TransparentStoreFast;
+import lia.Monitor.monitor.TimestampedResult;
 import lia.Monitor.monitor.monPredicate;
 import lia.util.fsm.alarms.GenericAlarm;
 
@@ -54,7 +55,7 @@ class CienaVCGAlarm extends GenericAlarm<State, CienaVCGMonitoringValue> {
         final double mlPingThreshold = config.mlPingThreshold();
 
         final DataSplitter ds = store.getDataSplitter(new monPredicate[] {pred}, -1);
-        final Vector<Object> r = ds.get(pred);
+        final Vector<TimestampedResult> r = ds.get(pred);
 
         return true;
     }

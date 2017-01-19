@@ -22,9 +22,11 @@ public class FarmBan {
 
 		if (!TransparentStoreFactory.isMemoryStoreOnly()) {
 			final DB db = new DB();
-			db.query("CREATE TABLE ban_farm (name varchar(255) primary key);", true);
-			db.query("CREATE TABLE ban_ip (ip varchar(255) primary key);", true);
+			db.syncUpdateQuery("CREATE TABLE ban_farm (name varchar(255) primary key);", true);
+			db.syncUpdateQuery("CREATE TABLE ban_ip (ip varchar(255) primary key);", true);
 
+			db.setReadOnly(true);
+			
 			db.query("SELECT name FROM ban_farm;");
 			while (db.moveNext())
 				htBannedFarms.put(db.gets(1), "");
@@ -51,7 +53,7 @@ public class FarmBan {
 			return;
 
 		DB db = new DB();
-		db.query("INSERT INTO ban_farm (name) VALUES ('" + Formatare.mySQLEscape(sFarmName) + "');", true);
+		db.syncUpdateQuery("INSERT INTO ban_farm (name) VALUES ('" + Formatare.mySQLEscape(sFarmName) + "');", true);
 	}
 
     /**
@@ -70,7 +72,7 @@ public class FarmBan {
 			return;
 
 		DB db = new DB();
-		db.query("INSERT INTO ban_ip (ip) VALUES ('" + Formatare.mySQLEscape(sIP) + "');", true);
+		db.syncUpdateQuery("INSERT INTO ban_ip (ip) VALUES ('" + Formatare.mySQLEscape(sIP) + "');", true);
 	}
 
     /**

@@ -47,200 +47,211 @@ import java.util.logging.Logger;
  */
 public class LinkProtocol extends TransferProtocol {
 
-	/** Logger used by this class */
-	public final transient Logger logger = Logger.getLogger(getClass().getName());
-	
-	/**
-	 * Initialize the Reservation Transfer Protocol
-	 * @param appTransfer the AppTransfer that created this protocol.
-	 */
-	public LinkProtocol() {
-		super("link");
-	}
+    /** Logger used by this class */
+    private static final Logger logger = Logger.getLogger(LinkProtocol.class.getName());
 
-	public String startInstance(Properties props) {
-		StringBuilder sbRes = new StringBuilder("-ERR Failed to start link request. ");
-		String requestID = props.getProperty("requestID");
-		String linkName = props.getProperty("link");
-		String srcNode = props.getProperty("srcNode");
-		String dstNode = props.getProperty("dstNode");
+    /**
+     * Initialize the Reservation Transfer Protocol
+     * @param appTransfer the AppTransfer that created this protocol.
+     */
+    public LinkProtocol() {
+        super("link");
+    }
 
-		if(requestID == null)
-			sbRes.append("requestID missing");
-		else if(linkName == null)
-			sbRes.append("link missing");
-		else if(srcNode == null)
-			sbRes.append("srcNode missing");
-		else if(dstNode == null)
-			sbRes.append("dstNode missing");
-		else{
-			LinkInstance li = (LinkInstance) htInstances.get(linkName);
-			if(li == null){
-				sbRes.append("link '").append(linkName).append("' not existing in config.");
-			}else{
-				int direction = li.getDirection(srcNode, dstNode);
-				if(direction == 0){
-					sbRes.append("Given srcNode and dstNode don't match link's endNodes.");
-				}else{
-					StringBuilder log = new StringBuilder();
-					if(li.startRequest(requestID, direction, props, log)){
-						sbRes.setLength(0);
-					}else{
-						sbRes.append("\n");
-					}
-					sbRes.append(log);
-				}
-			}
-		}
-		return sbRes.toString();
-	}
+    @Override
+    public String startInstance(Properties props) {
+        StringBuilder sbRes = new StringBuilder("-ERR Failed to start link request. ");
+        String requestID = props.getProperty("requestID");
+        String linkName = props.getProperty("link");
+        String srcNode = props.getProperty("srcNode");
+        String dstNode = props.getProperty("dstNode");
 
-	public String stopInstance(Properties props) {
-		StringBuilder sbRes = new StringBuilder("-ERR Failed to stop link request. ");
-		String requestID = props.getProperty("requestID");
-		String linkName = props.getProperty("link");
-		if(requestID == null)
-			sbRes.append("requestID missing");
-		else if(linkName == null)
-			sbRes.append("link missing");
-		else {
-			LinkInstance li = (LinkInstance) htInstances.get(linkName);
-			if(li == null){
-				sbRes.append("link '").append(linkName).append("' not existing in config.");
-			}else{
-				StringBuilder log = new StringBuilder();
-				if(li.stopRequest(requestID, log)){
-					sbRes.setLength(0); // reset the failed message
-				}else{
-					sbRes.append("\n");
-				}
-				sbRes.append(log);
-			}
-		}
-		return sbRes.toString();
-	}
+        if (requestID == null) {
+            sbRes.append("requestID missing");
+        } else if (linkName == null) {
+            sbRes.append("link missing");
+        } else if (srcNode == null) {
+            sbRes.append("srcNode missing");
+        } else if (dstNode == null) {
+            sbRes.append("dstNode missing");
+        } else {
+            LinkInstance li = (LinkInstance) htInstances.get(linkName);
+            if (li == null) {
+                sbRes.append("link '").append(linkName).append("' not existing in config.");
+            } else {
+                int direction = li.getDirection(srcNode, dstNode);
+                if (direction == 0) {
+                    sbRes.append("Given srcNode and dstNode don't match link's endNodes.");
+                } else {
+                    StringBuilder log = new StringBuilder();
+                    if (li.startRequest(requestID, direction, props, log)) {
+                        sbRes.setLength(0);
+                    } else {
+                        sbRes.append("\n");
+                    }
+                    sbRes.append(log);
+                }
+            }
+        }
+        return sbRes.toString();
+    }
 
-	public void updateConfig() {
-		HashMap hmLinkParams = new HashMap();
-		HashMap hmLinkIDs = new HashMap();
-		// get the properties for each of the defined links and the linkIDs for each link base name 
-		for(Iterator meit = config.entrySet().iterator(); meit.hasNext(); ){
-			Map.Entry me = (Map.Entry) meit.next();
-			String key = (String) me.getKey();
-			String propValue = (String) me.getValue(); 
-			int idx = key.indexOf('.');
-			if(idx <= 0){
-				logger.warning("Invalid link definition. Ignoring property: "+key+"="+propValue);
-				continue;
-			}
-			String linkBaseName = key.substring(0, idx);
-			String linkProp = key.substring(idx+1);
-			Properties props = (Properties) hmLinkParams.get(linkBaseName);
-			if (props == null) {
-				props = new Properties();
-				hmLinkParams.put(linkBaseName, props);
-			}
-			if(linkProp.equals("id"))
-				hmLinkIDs.put(linkBaseName, TransferUtils.parseSequence(propValue));
-			else
-				props.setProperty(linkProp, propValue);
-		}
-		// create the non-existing links and update existing ones
-		for(Iterator meit = hmLinkParams.entrySet().iterator(); meit.hasNext(); ){
-			Map.Entry me = (Map.Entry) meit.next();
-			String linkBaseName = (String) me.getKey();
-			Properties linkParams = (Properties) me.getValue();
-			String srcNode = linkParams.getProperty("srcNode");
-			String dstNode = linkParams.getProperty("dstNode");
-			if(srcNode == null || dstNode == null){
-				logger.warning("Cannot create base link "+linkBaseName+" srcNode="+srcNode+" and dstNode="+dstNode);
-				continue;
-			}
-			List linkIDs = (List) hmLinkIDs.get(linkBaseName);
-			if(linkIDs == null){
-				linkIDs = new ArrayList();
-				linkIDs.add("");	// link doesn't have an id property. Create a dummy element to identify the link
-			}
-			for(Iterator idit = linkIDs.iterator(); idit.hasNext(); ){
-				Object id = idit.next();
-				String linkName = linkBaseName;
-				if(id instanceof Integer){
-					linkName += "-"+id;
-				}else{
-					id = null;
-				}
-				LinkInstance li = (LinkInstance) htInstances.get(linkName);
-				if(li == null){
-					if(logger.isLoggable(Level.FINE))
-						logger.fine("Creating link "+linkName+" from "+srcNode+" to "+dstNode);
-					li = new LinkInstance(linkBaseName, srcNode, dstNode, (Integer) id);
-					htInstances.put(linkName, li);
-				}
-				li.setParams(linkParams);
-			}
-		}
-		// remove links that no longer exist
-		for(Iterator lit = htInstances.values().iterator(); lit.hasNext(); ){
-			LinkInstance li = (LinkInstance) lit.next();
-			String linkBaseName = li.getLinkBaseName();
-			List linkIDs = (List) hmLinkIDs.get(linkBaseName);
-			if(hmLinkParams.get(linkBaseName) == null // link removed completely,
-					|| (linkIDs == null && li.getCircuitID() != null)	// all its IDs were removed, and it was a ID-based link
-					|| (linkIDs != null && (! linkIDs.contains(li.getCircuitID())))){ // OR this ID was removed
-				// link has to be disabled and removed
-				if(logger.isLoggable(Level.FINE))
-					logger.fine("Disabling link "+li.getLinkName()+" from "+li.getSrcNode()+" to "+li.getDstNode());
-				li.disableLink();
-				li.checkStatus(bvMonitorResults);
-				lit.remove();
-			}
-		}
-	}
+    @Override
+    public String stopInstance(Properties props) {
+        StringBuilder sbRes = new StringBuilder("-ERR Failed to stop link request. ");
+        String requestID = props.getProperty("requestID");
+        String linkName = props.getProperty("link");
+        if (requestID == null) {
+            sbRes.append("requestID missing");
+        } else if (linkName == null) {
+            sbRes.append("link missing");
+        } else {
+            LinkInstance li = (LinkInstance) htInstances.get(linkName);
+            if (li == null) {
+                sbRes.append("link '").append(linkName).append("' not existing in config.");
+            } else {
+                StringBuilder log = new StringBuilder();
+                if (li.stopRequest(requestID, log)) {
+                    sbRes.setLength(0); // reset the failed message
+                } else {
+                    sbRes.append("\n");
+                }
+                sbRes.append(log);
+            }
+        }
+        return sbRes.toString();
+    }
 
-	/** Add support for the keepAlive command in this protocol */
-	public String execCommand(String sCmd, Properties props){
-		if(sCmd.equals("keepAlive")){
-			StringBuilder sbRes = new StringBuilder("-ERR Failed to keepAlive link request. ");
-			String requestID = props.getProperty("requestID");
-			String linkName = props.getProperty("link");
+    @Override
+    public void updateConfig() {
+        HashMap hmLinkParams = new HashMap();
+        HashMap hmLinkIDs = new HashMap();
+        // get the properties for each of the defined links and the linkIDs for each link base name 
+        for (Object element : config.entrySet()) {
+            Map.Entry me = (Map.Entry) element;
+            String key = (String) me.getKey();
+            String propValue = (String) me.getValue();
+            int idx = key.indexOf('.');
+            if (idx <= 0) {
+                logger.warning("Invalid link definition. Ignoring property: " + key + "=" + propValue);
+                continue;
+            }
+            String linkBaseName = key.substring(0, idx);
+            String linkProp = key.substring(idx + 1);
+            Properties props = (Properties) hmLinkParams.get(linkBaseName);
+            if (props == null) {
+                props = new Properties();
+                hmLinkParams.put(linkBaseName, props);
+            }
+            if (linkProp.equals("id")) {
+                hmLinkIDs.put(linkBaseName, TransferUtils.parseSequence(propValue));
+            } else {
+                props.setProperty(linkProp, propValue);
+            }
+        }
+        // create the non-existing links and update existing ones
+        for (Iterator meit = hmLinkParams.entrySet().iterator(); meit.hasNext();) {
+            Map.Entry me = (Map.Entry) meit.next();
+            String linkBaseName = (String) me.getKey();
+            Properties linkParams = (Properties) me.getValue();
+            String srcNode = linkParams.getProperty("srcNode");
+            String dstNode = linkParams.getProperty("dstNode");
+            if ((srcNode == null) || (dstNode == null)) {
+                logger.warning("Cannot create base link " + linkBaseName + " srcNode=" + srcNode + " and dstNode="
+                        + dstNode);
+                continue;
+            }
+            List linkIDs = (List) hmLinkIDs.get(linkBaseName);
+            if (linkIDs == null) {
+                linkIDs = new ArrayList();
+                linkIDs.add(""); // link doesn't have an id property. Create a dummy element to identify the link
+            }
+            for (Iterator idit = linkIDs.iterator(); idit.hasNext();) {
+                Object id = idit.next();
+                String linkName = linkBaseName;
+                if (id instanceof Integer) {
+                    linkName += "-" + id;
+                } else {
+                    id = null;
+                }
+                LinkInstance li = (LinkInstance) htInstances.get(linkName);
+                if (li == null) {
+                    if (logger.isLoggable(Level.FINE)) {
+                        logger.fine("Creating link " + linkName + " from " + srcNode + " to " + dstNode);
+                    }
+                    li = new LinkInstance(linkBaseName, srcNode, dstNode, (Integer) id);
+                    htInstances.put(linkName, li);
+                }
+                li.setParams(linkParams);
+            }
+        }
+        // remove links that no longer exist
+        for (Iterator lit = htInstances.values().iterator(); lit.hasNext();) {
+            LinkInstance li = (LinkInstance) lit.next();
+            String linkBaseName = li.getLinkBaseName();
+            List linkIDs = (List) hmLinkIDs.get(linkBaseName);
+            if ((hmLinkParams.get(linkBaseName) == null // link removed completely,
+                    )
+                    || ((linkIDs == null) && (li.getCircuitID() != null)) // all its IDs were removed, and it was a ID-based link
+                    || ((linkIDs != null) && (!linkIDs.contains(li.getCircuitID())))) { // OR this ID was removed
+                // link has to be disabled and removed
+                if (logger.isLoggable(Level.FINE)) {
+                    logger.fine("Disabling link " + li.getLinkName() + " from " + li.getSrcNode() + " to "
+                            + li.getDstNode());
+                }
+                li.disableLink();
+                li.checkStatus(bvMonitorResults);
+                lit.remove();
+            }
+        }
+    }
 
-			if(requestID == null)
-				sbRes.append("requestID missing");
-			else if(linkName == null)
-				sbRes.append("link missing");
-			else{
-				LinkInstance li = (LinkInstance) htInstances.get(linkName);
-				if(li == null){
-					sbRes.append("link '").append(linkName).append("' not existing in config.");
-				}else{
-					StringBuilder log = new StringBuilder();
-					if(li.keepAliveRequest(requestID, log)){
-						sbRes.setLength(0);
-					}else{
-						sbRes.append("\n");
-					}
-					sbRes.append(log);
-				}
-			}
-			return sbRes.toString();
-		}
-		return super.execCommand(sCmd, props);
-	}
-	
-	public String getProtocolUsage(){
-		StringBuilder sb = new StringBuilder("LinkProtocol:\n");
-		sb.append("link start&requestID=string&link=linkName&srcNode=nodeName&dstNode=nodeName[&param=value&...]\n");
-		sb.append("\tregister the new request, on the given link, in the given direction (src->dst), and pass the following parameters\n");
-		sb.append("link stop&requestID=string&link=linkName[&param=value&...]\n");
-		sb.append("\tunregister the request, from the given link, and pass the following parameters\n");
-		sb.append("link keepAlive&requestID=string&link=linkName\n");
-		sb.append("\tkeep alive the request on the given link\n");
-		sb.append("link help\n");
-		sb.append("\treturn this help");
-		sb.append("Parameters:\n");
-		sb.append("\trequestID\t-a string representing the request ID\n");
-		sb.append("\tinkName\t-a string, the name of the link, must be one from the config\n");
-		sb.append("\tparam\t-other parameters, passed as they are, to the command to setup/destroy the link");
-		return sb.toString();
-	}
+    /** Add support for the keepAlive command in this protocol */
+    @Override
+    public String execCommand(String sCmd, Properties props) {
+        if (sCmd.equals("keepAlive")) {
+            StringBuilder sbRes = new StringBuilder("-ERR Failed to keepAlive link request. ");
+            String requestID = props.getProperty("requestID");
+            String linkName = props.getProperty("link");
+
+            if (requestID == null) {
+                sbRes.append("requestID missing");
+            } else if (linkName == null) {
+                sbRes.append("link missing");
+            } else {
+                LinkInstance li = (LinkInstance) htInstances.get(linkName);
+                if (li == null) {
+                    sbRes.append("link '").append(linkName).append("' not existing in config.");
+                } else {
+                    StringBuilder log = new StringBuilder();
+                    if (li.keepAliveRequest(requestID, log)) {
+                        sbRes.setLength(0);
+                    } else {
+                        sbRes.append("\n");
+                    }
+                    sbRes.append(log);
+                }
+            }
+            return sbRes.toString();
+        }
+        return super.execCommand(sCmd, props);
+    }
+
+    @Override
+    public String getProtocolUsage() {
+        StringBuilder sb = new StringBuilder("LinkProtocol:\n");
+        sb.append("link start&requestID=string&link=linkName&srcNode=nodeName&dstNode=nodeName[&param=value&...]\n");
+        sb.append("\tregister the new request, on the given link, in the given direction (src->dst), and pass the following parameters\n");
+        sb.append("link stop&requestID=string&link=linkName[&param=value&...]\n");
+        sb.append("\tunregister the request, from the given link, and pass the following parameters\n");
+        sb.append("link keepAlive&requestID=string&link=linkName\n");
+        sb.append("\tkeep alive the request on the given link\n");
+        sb.append("link help\n");
+        sb.append("\treturn this help");
+        sb.append("Parameters:\n");
+        sb.append("\trequestID\t-a string representing the request ID\n");
+        sb.append("\tinkName\t-a string, the name of the link, must be one from the config\n");
+        sb.append("\tparam\t-other parameters, passed as they are, to the command to setup/destroy the link");
+        return sb.toString();
+    }
 }

@@ -15,6 +15,7 @@ import lia.Monitor.Store.Fast.IDGenerator;
 import lia.Monitor.monitor.AppConfig;
 import lia.Monitor.monitor.ExtendedResult;
 import lia.Monitor.monitor.Result;
+import lia.Monitor.monitor.TimestampedResult;
 import lia.Monitor.monitor.eResult;
 import lia.Monitor.monitor.monPredicate;
 import lia.util.ntp.NTPDate;
@@ -29,7 +30,7 @@ public class DataSplitter {
 	/**
 	 * series names - series values mapping
 	 */
-	protected final LinkedHashMap<String, Vector<Object>>	hmSeries;
+	protected final LinkedHashMap<String, Vector<TimestampedResult>>	hmSeries;
 
 	private final Object			lCacheLock		= new Object();
 
@@ -80,7 +81,11 @@ public class DataSplitter {
 						WriterConfig wc = it.next();
 
 						if (wc.iWriteMode >= 0 && wc.iWriteMode <= 2) {
-							DB db = new DB("SELECT max(rectime) AS endtime FROM " + wc.sTableName + ";");
+							DB db = new DB();
+							
+							db.setReadOnly(true);
+							
+							db.query("SELECT max(rectime) AS endtime FROM " + wc.sTableName + ";");
 
 							if (db.moveNext()) {
 								if (db.getl("starttime") > 0) {
@@ -97,6 +102,8 @@ public class DataSplitter {
 
 					if (lMaxTime <= 0) {
 						DB db = new DB();
+						
+						db.setReadOnly(true);
 
 						if (db.query("select max(mi_lastseen) from monitor_ids;", true) && db.moveNext()) {
 							lMaxTime = db.getl(1) * 1000;
@@ -146,7 +153,7 @@ public class DataSplitter {
 	 * @param accessOrder store the value in access order or insert order
 	 */
 	public DataSplitter(final int size, final float fillFactor, final boolean accessOrder){
-		hmSeries = new LinkedHashMap<String, Vector<Object>>(size, fillFactor, accessOrder);
+		hmSeries = new LinkedHashMap<String, Vector<TimestampedResult>>(size, fillFactor, accessOrder);
 	}
 
 	/**
@@ -156,7 +163,7 @@ public class DataSplitter {
 	 * @param lPointsInterval
 	 * @param lMax
 	 */
-	public DataSplitter(final Vector<?> v, final long lPointsInterval, final long lMax) {
+	public DataSplitter(final Vector<TimestampedResult> v, final long lPointsInterval, final long lMax) {
 		this(v, lPointsInterval, lMax, false);
 	}
 
@@ -168,7 +175,7 @@ public class DataSplitter {
 	 * @param _lMax
 	 * @param bAbsTime true if the min and max time are given as absolute times, not relative ones
 	 */
-	public DataSplitter(final Vector<?> v, final long lPointsInterval, final long _lMax, final boolean bAbsTime) {
+	public DataSplitter(final Vector<TimestampedResult> v, final long lPointsInterval, final long _lMax, final boolean bAbsTime) {
 		this();
 		
 		lNow = bFreeze ? lFreezeTime : NTPDate.currentTimeMillis();
@@ -187,9 +194,9 @@ public class DataSplitter {
 			return;
 
 		for (int i = 0; i < v.size(); i++) {
-			final Object o = v.get(i);
+			final TimestampedResult o = v.get(i);
 
-			final long lTime = Cache.getResultTime(o);
+			final long lTime = o.getTime();
 			
 			if ((lTime < lMin || lTime > lMax) && lPointsInterval > 0) {
 				continue;
@@ -227,10 +234,8 @@ public class DataSplitter {
 		if (ds == null)
 			return;
 
-		final Iterator<Vector<Object>> it = ds.hmSeries.values().iterator();
-
-		while (it.hasNext()) {
-			addSingleSeries(it.next(), lCompactInterval);
+		for (final Map.Entry<String, Vector<TimestampedResult>> entry: ds.hmSeries.entrySet()){
+			addSingleSeries(entry.getKey(), entry.getValue(), lCompactInterval);
 		}
 	}
 
@@ -240,23 +245,34 @@ public class DataSplitter {
 	 * @param v data series to add
 	 * @param lCompactInterval compact interval of the overall data set
 	 */
-	public void addSingleSeries(final Vector<?> v, final long lCompactInterval) {
+	public void addSingleSeries(final Vector<TimestampedResult> v, final long lCompactInterval) {
 		if (v == null || v.size() == 0)
 			return;
 
 		final String sKey = IDGenerator.generateKey(v.get(0), 0);
 
-		Vector<Object> vOld = hmSeries.get(sKey);
+		addSingleSeries(sKey, v, lCompactInterval);
+	}
+	
+	/**
+	 * Add a single data series to the given key, assumed sorted and compacted.
+	 * This method is package protected, being used by Cache to bypass key generation
+	 * 
+	 * @param v data series to add
+	 * @param lCompactInterval compact interval of the overall data set
+	 */
+	void addSingleSeries(final String sKey, final List<TimestampedResult> v, final long lCompactInterval) {	
+		Vector<TimestampedResult> vOld = hmSeries.get(sKey);
 
 		if (vOld == null) {
-			vOld = new Vector<Object>(v.size());
+			vOld = new Vector<TimestampedResult>(v.size());
 			hmSeries.put(sKey, vOld);
 		}
 
 		if (vOld.size() > 0) {
 			//System.err.println("DS: merging "+vOld.size()+" and "+v.size());
 
-			final boolean bSort = ResultComparator.getInstance().compare(vOld.lastElement(), v.firstElement()) > 0;
+			final boolean bSort = ResultComparator.getInstance().compare(vOld.lastElement(), v.iterator().next()) > 0;
 
 			vOld.addAll(v);
 
@@ -299,7 +315,7 @@ public class DataSplitter {
 			if (r.param.length == 1) {
 				sKey = IDGenerator.generateKey(r, 0);
 
-				add(o, sKey);
+				add(r, sKey);
 			} else {
 				for (int i = 0; i < r.param.length; i++) {
 					Result rNew = new Result(r.FarmName, r.ClusterName, r.NodeName, r.Module, new String[] { r.param_name[i] });
@@ -320,7 +336,7 @@ public class DataSplitter {
 			if (r.param.length == 1) {
 				sKey = IDGenerator.generateKey(r, 0);
 
-				add(o, sKey);
+				add(r, sKey);
 			} else {
 				for (int i = 0; i < r.param.length; i++) {
 					final ExtendedResult rNew = new ExtendedResult();
@@ -345,7 +361,7 @@ public class DataSplitter {
 			if (r.param.length == 1) {
 				sKey = IDGenerator.generateKey(r, 0);
 
-				add(o, sKey);
+				add(r, sKey);
 			} else {
 				for (int i = 0; i < r.param.length; i++) {
 					final eResult rNew = new eResult();
@@ -378,14 +394,14 @@ public class DataSplitter {
 	 * @param o
 	 * @param sKey
 	 */
-	private void add(final Object o, final String sKey) {
+	private void add(final TimestampedResult o, final String sKey) {
 		if (sKey == null)
 			return;
 
-		Vector<Object> v = hmSeries.get(sKey);
+		Vector<TimestampedResult> v = hmSeries.get(sKey);
 
 		if (v == null) {
-			v = new Vector<Object>();
+			v = new Vector<TimestampedResult>();
 			hmSeries.put(sKey, v);
 		}
 
@@ -402,7 +418,7 @@ public class DataSplitter {
 	 * 
 	 * @return mapping of series keys to series values arrays
 	 */
-	public Map<String, Vector<Object>> getMap(){
+	public Map<String, Vector<TimestampedResult>> getMap(){
 		return hmSeries;
 	}
 	
@@ -412,7 +428,7 @@ public class DataSplitter {
 	 * @param pred
 	 * @return subset of data that matches the names in the predicate
 	 */
-	public Vector<Object> get(final monPredicate pred) {
+	public Vector<TimestampedResult> get(final monPredicate pred) {
 		// return all the values
 		return Cache.getObjectsFromHash(hmSeries, pred, lCacheLock, false);
 	}
@@ -423,7 +439,7 @@ public class DataSplitter {
 	 * @param pred
 	 * @return subset of data that matches the given predicate, by names and time constraints
 	 */
-	public Vector<Object> getAndFilter(final monPredicate pred) {
+	public Vector<TimestampedResult> getAndFilter(final monPredicate pred) {
 		// filter the values by predicate time
 		return Cache.getObjectsFromHash(hmSeries, pred, lCacheLock, true);
 	}
@@ -433,19 +449,19 @@ public class DataSplitter {
 	 * 
 	 * @return values, as array
 	 */
-	public Vector<Object> toVector() {
-		final Vector<Object> v = new Vector<Object>();
+	public Vector<TimestampedResult> toVector() {
+		final Vector<TimestampedResult> v = new Vector<TimestampedResult>();
 
 		synchronized (lCacheLock) {
-			Collection<Vector<Object>> c = hmSeries.values(); 
+			Collection<Vector<TimestampedResult>> c = hmSeries.values(); 
 
 			if (c.size()==0)
 				return v;
 			
-			final Iterator<Vector<Object>> it = c.iterator();
+			final Iterator<Vector<TimestampedResult>> it = c.iterator();
 			
 			if (c.size()==1){
-				return new Vector<Object>( it.next() ); 
+				return new Vector<TimestampedResult>( it.next() ); 
 			}
 			
 			synchronized (v) {
@@ -491,11 +507,11 @@ public class DataSplitter {
 		if (!bCompacted && lPointsInterval > 1) {
 			bCompacted = true;
 
-			final Iterator<Map.Entry<String, Vector<Object>>> it = hmSeries.entrySet().iterator();
+			final Iterator<Map.Entry<String, Vector<TimestampedResult>>> it = hmSeries.entrySet().iterator();
 
-			Map.Entry<String, Vector<Object>> entry;
-			Vector<Object> v;
-			Vector<Object> vTemp;
+			Map.Entry<String, Vector<TimestampedResult>> entry;
+			Vector<TimestampedResult> v;
+			Vector<TimestampedResult> vTemp;
 
 			while (it.hasNext()) {
 				entry = it.next();
@@ -510,9 +526,9 @@ public class DataSplitter {
 				v.addAll(vTemp);
 			}
 		} else if (bSort) {
-			final Iterator<Vector<Object>> it = hmSeries.values().iterator();
+			final Iterator<Vector<TimestampedResult>> it = hmSeries.values().iterator();
 
-			Vector<Object> v;
+			Vector<TimestampedResult> v;
 
 			while (it.hasNext()) {
 				v = it.next();
@@ -524,11 +540,11 @@ public class DataSplitter {
 
 	@Override
 	public String toString() {
-		final Iterator<Vector<Object>> it = hmSeries.values().iterator();
+		final Iterator<Vector<TimestampedResult>> it = hmSeries.values().iterator();
 
 		long cnt = 0;
 
-		Vector<Object> v;
+		Vector<TimestampedResult> v;
 
 		while (it.hasNext()) {
 			v = it.next();
@@ -547,9 +563,9 @@ public class DataSplitter {
 		synchronized (lCacheLock) {
 			final ArrayList<Object> al = new ArrayList<Object>(hmSeries.size());
 
-			final Iterator<Vector<Object>> it = hmSeries.values().iterator();
+			final Iterator<Vector<TimestampedResult>> it = hmSeries.values().iterator();
 
-			Vector<Object> v;
+			Vector<TimestampedResult> v;
 
 			while (it.hasNext()) {
 				v = it.next();
@@ -571,16 +587,16 @@ public class DataSplitter {
 		long lMin = -1;
 
 		synchronized (lCacheLock) {
-			final Iterator<Vector<Object>> it = hmSeries.values().iterator();
+			final Iterator<Vector<TimestampedResult>> it = hmSeries.values().iterator();
 
 			while (it.hasNext()) {
-				final Vector<Object> v = it.next();
+				final Vector<TimestampedResult> v = it.next();
 
 				if (v != null && v.size() > 0) {
-					final Object o = v.firstElement();
+					final TimestampedResult o = v.firstElement();
 
 					if (o != null) {
-						final long lTime = Cache.getResultTime(o);
+						final long lTime = o.getTime();
 
 						if (lTime > 0 && (lTime < lMin || lMin < 0))
 							lMin = lTime;
@@ -601,16 +617,16 @@ public class DataSplitter {
 		long lMax = -1;
 
 		synchronized (lCacheLock) {
-			final Iterator<Vector<Object>> it = hmSeries.values().iterator();
+			final Iterator<Vector<TimestampedResult>> it = hmSeries.values().iterator();
 
 			while (it.hasNext()) {
-				final Vector<Object> v = it.next();
+				final Vector<TimestampedResult> v = it.next();
 
 				if (v != null && v.size() > 0) {
-					final Object o = v.lastElement();
+					final TimestampedResult o = v.lastElement();
 
 					if (o != null) {
-						final long lTime = Cache.getResultTime(o);
+						final long lTime = o.getTime();
 
 						if (lMax < lTime)
 							lMax = lTime;

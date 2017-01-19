@@ -28,9 +28,7 @@ import lia.util.ntp.NTPDate;
  */
 public class IDSAgent extends AbstractAgent {
 
-    /** Logger */
-    private static final transient String COMPONENT = "lia.Monitor.Agents.IDSAgent";
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(IDSAgent.class.getName());
 
     private static final long serialVersionUID = 1699028120361910788L;
 
@@ -38,38 +36,38 @@ public class IDSAgent extends AbstractAgent {
     private int msgCounter = 0;
 
     //our peers
-    private Vector peers;
+    private final Vector peers;
 
     //our clients
-    private Vector clients;
+    private final Vector clients;
     private Cache cache;
 
     //banned IPs
-    private Hashtable bannedIPs;
-    private Hashtable toUnban;
+    private final Hashtable bannedIPs;
+    private final Hashtable toUnban;
 
     //banning script
-    private String banIPCmd;// = "~/guard.sh";
+    private final String banIPCmd;// = "~/guard.sh";
     private static final char DENY = 'B';
     private static final char REMOVE = 'P';
     private static final long BAN_UNIT = 60 * 60 * 1000; //1h
     //the white list
-    private Vector whiteList;
+    private final Vector whiteList;
 
-    private Object synch = new Object();
+    private final Object synch = new Object();
     private boolean attrPublished;
     private boolean isRegistered;
 
     private static final String[] RCPT = getAddresses(AppConfig.getProperty("lia.Monitor.Agents.IDSAgent.MAIL", null));
     //Time interval to send an email with blockedIPs(in minutes)
-    private static final long dtReportMail = Long.valueOf(AppConfig.getProperty("lia.Monitor.Agents.IDSAgent.MAIL_INTERVAL", "360").trim())
-            .longValue() * 1000 * 60;
+    private static final long dtReportMail = Long.valueOf(
+            AppConfig.getProperty("lia.Monitor.Agents.IDSAgent.MAIL_INTERVAL", "360").trim()).longValue() * 1000 * 60;
     private long lastMailTime;
-    private Vector mailReport = new Vector();
+    private final Vector mailReport = new Vector();
 
     //interval to send results to ML (seconds)
-    private static final long reportingInterval = Long.valueOf(AppConfig.getProperty("lia.Monitor.Agents.IDSAgent.RESULTS_INTERVAL", "20").trim())
-            .longValue() * 1000;
+    private static final long reportingInterval = Long.valueOf(
+            AppConfig.getProperty("lia.Monitor.Agents.IDSAgent.RESULTS_INTERVAL", "20").trim()).longValue() * 1000;
     private long lastReportingTime;
     private int localAlertsCnt = 0;
     private int peersAlertsCnt = 0;
@@ -106,8 +104,9 @@ public class IDSAgent extends AbstractAgent {
             while (tz.hasMoreTokens()) {
                 whiteList.add(tz.nextToken());
             }
-            if (logger.isLoggable(Level.FINE))
+            if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, "White list:" + whiteList.toString());
+            }
         }
         this.lastReportingTime = this.lastMailTime = NTPDate.currentTimeMillis();
     }
@@ -124,8 +123,10 @@ public class IDSAgent extends AbstractAgent {
             return null;
         }
 
-        gs.append(farmHome).append("/Service/CMD/").append(AppConfig.getProperty("lia.Monitor.Agents.IDSAgent.GuardScript", "guard.sh"));
-        boolean useSudo = Boolean.valueOf(AppConfig.getProperty("lia.Monitor.Agents.IDSAgent.SudoGuardScript", "true")).booleanValue();
+        gs.append(farmHome).append("/Service/CMD/")
+                .append(AppConfig.getProperty("lia.Monitor.Agents.IDSAgent.GuardScript", "guard.sh"));
+        boolean useSudo = Boolean.valueOf(AppConfig.getProperty("lia.Monitor.Agents.IDSAgent.SudoGuardScript", "true"))
+                .booleanValue();
         if (useSudo) {
             gs.insert(0, "sudo ");
         }
@@ -139,6 +140,7 @@ public class IDSAgent extends AbstractAgent {
     /**
      * @see lia.Monitor.monitor.AgentI#doWork()
      */
+    @Override
     public void doWork() {
         while (hasToRun) {
 
@@ -163,8 +165,8 @@ public class IDSAgent extends AbstractAgent {
                 } else {
                     //It's time to refresh the registration in proxy?                   
                     if ((periodsTillRegistration--) <= 0) {
-                        AgentMessage amB = createMsg((msgCounter++) % Integer.MAX_VALUE, 1, 1, 5, agentInfo.agentAddr, agentInfo.agentGroup,
-                                "RegisterMePls");
+                        AgentMessage amB = createMsg((msgCounter++) % Integer.MAX_VALUE, 1, 1, 5, agentInfo.agentAddr,
+                                agentInfo.agentGroup, "RegisterMePls");
                         agentComm.sendMsg(amB);
                         periodsTillRegistration = 60; //10minutes
                     }
@@ -214,9 +216,11 @@ public class IDSAgent extends AbstractAgent {
      * @see lia.Monitor.monitor.AgentI#processMsg(java.lang.Object)     
      * handles the messages received from proxy or another agent
      */
+    @Override
     public void processMsg(Object msg) {
-        if (msg == null)
+        if (msg == null) {
             return;
+        }
 
         if (msg instanceof AgentMessage) {
             AgentMessage am = (AgentMessage) msg;
@@ -239,15 +243,17 @@ public class IDSAgent extends AbstractAgent {
             } else {//from other agent
                 // System.out.println("GOT A AGENT MESSAGE:"+am);
                 //check for martian messages
-                if (am.message == null || !(am.message instanceof IDSAlert)) {
-                    logger.log(Level.WARNING, "Recceive an unknown message(not an IDS alert) :" + am.message.toString() + "\nReturning...");
+                if ((am.message == null) || !(am.message instanceof IDSAlert)) {
+                    logger.log(Level.WARNING, "Recceive an unknown message(not an IDS alert) :" + am.message.toString()
+                            + "\nReturning...");
                     return;
                 }
 
                 //check for loopback messages
                 if (am.agentAddrS.equalsIgnoreCase(super.agentInfo.agentAddr)) {
-                    if (logger.isLoggable(Level.FINE))
+                    if (logger.isLoggable(Level.FINE)) {
                         logger.log(Level.FINE, "Got a loopback message :" + am.message.toString() + "\nReturning...");
+                    }
                     return;
                 }
 
@@ -268,8 +274,9 @@ public class IDSAgent extends AbstractAgent {
         AgentMessage amB = createMsg(msgCounter++, 1, 1, 5, null, null, "MLIDSGroup");
         agentComm.sendCtrlMsg(amB, "list");
 
-        if (peers == null || peers.size() == 0)
+        if ((peers == null) || (peers.size() == 0)) {
             return "N/A";
+        }
 
         String retV = "";
         for (int i = 0; i < peers.size(); i++) {
@@ -284,6 +291,7 @@ public class IDSAgent extends AbstractAgent {
      *         lia.Monitor.monitor.MFarm)
      * we don't make any query for the moment
      */
+    @Override
     public void initdb(dbStore datastore, MFarm farm) {
         //TODO
     }
@@ -291,6 +299,7 @@ public class IDSAgent extends AbstractAgent {
     /**
      * @see lia.Monitor.monitor.MonitorFilter#initCache(lia.Monitor.DataCache.Cache)
      */
+    @Override
     public void initCache(Cache cache) {
         this.cache = cache;
 
@@ -299,6 +308,7 @@ public class IDSAgent extends AbstractAgent {
     /**
      * @see lia.Monitor.monitor.MonitorFilter#addClient(lia.Monitor.monitor.MonitorClient)
      */
+    @Override
     public void addClient(MonitorClient client) {
         this.clients.add(client);
         if (logger.isLoggable(Level.FINEST)) {
@@ -309,6 +319,7 @@ public class IDSAgent extends AbstractAgent {
     /**
      * @see lia.Monitor.monitor.MonitorFilter#removeClient(lia.Monitor.monitor.MonitorClient)
      */
+    @Override
     public void removeClient(MonitorClient client) {
         this.clients.remove(client);
 
@@ -317,16 +328,19 @@ public class IDSAgent extends AbstractAgent {
     /**
      * received a new result from monIDS module
      */
+    @Override
     public void addNewResult(Object o) {
         if (o != null) {
             if (o instanceof Vector) {
                 Vector v = (Vector) o;
-                for (int i = 0; i < v.size(); i++)
+                for (int i = 0; i < v.size(); i++) {
                     addNewResult(v.get(i));
+                }
             } else if (o instanceof Result) {
                 Result r = (Result) o;
                 //filter - an monIDS1 message for all clusters of type *LevelAttacks
-                if (r.Module != null && r.Module.equals("monIDS1") && r.ClusterName != null && r.ClusterName.endsWith("LevelAttacks")) {
+                if ((r.Module != null) && r.Module.equals("monIDS1") && (r.ClusterName != null)
+                        && r.ClusterName.endsWith("LevelAttacks")) {
                     logger.log(Level.INFO, "Filter: received an alert result from monIDS1 module!" + r);
                     IDSAlert alert = new IDSAlert(r.NodeName, toIntPriority(r.ClusterName));
                     //broadcast intrusion attempt (srcIP)
@@ -348,12 +362,13 @@ public class IDSAgent extends AbstractAgent {
             return 1;
         } else if (MEDIUM_ATTACKS.equals(strPriority)) {
             return 2;
-        } else
+        } else {
             /*(LOW_ATTACKS.equals(strPriority)) {*/
             return 3;
-        /*        } else {
-         return Integer.MAX_VALUE;
-         }*/
+            /*        } else {
+             return Integer.MAX_VALUE;
+             }*/
+        }
     }
 
     private void handleAlert(IDSAlert alert) {
@@ -364,8 +379,9 @@ public class IDSAgent extends AbstractAgent {
             //Checks:
             //1- if ip is not in the whiteList
             //2- the alert priority
-            if (whiteList.contains(ip) || alert.getPriority() > alertablePriority())
+            if (whiteList.contains(ip) || (alert.getPriority() > alertablePriority())) {
                 return;
+            }
             //XXX
             BannedIP b = null;
             synchronized (synch) {
@@ -381,7 +397,7 @@ public class IDSAgent extends AbstractAgent {
                         bannedIPs.put(ip, b);
                     }
                 }
-                if (b != null && getSendReportingMail()) {
+                if ((b != null) && getSendReportingMail()) {
                     //save it in order to report it through mail
                     mailReport.add(new BannedIP(ip, b.getTime(), b.getInterval()));
                 }
@@ -399,7 +415,7 @@ public class IDSAgent extends AbstractAgent {
      */
     private boolean getSendReportingMail() {
 
-        return (RCPT != null && RCPT.length > 0);
+        return ((RCPT != null) && (RCPT.length > 0));
     }
 
     /**
@@ -415,7 +431,8 @@ public class IDSAgent extends AbstractAgent {
         try {
             proc = MLProcess.exec(new String[] { "/bin/sh", "-c", banIPCmd + " " + op + " " + bannedIP.getIp() });
             if (proc.waitFor() != 0) {
-                logger.log(Level.WARNING, "cannot ban IP:[" + bannedIP.getIp() + "]." + banIPCmd + "ExitValue:" + proc.exitValue());
+                logger.log(Level.WARNING,
+                        "cannot ban IP:[" + bannedIP.getIp() + "]." + banIPCmd + "ExitValue:" + proc.exitValue());
                 return false;
             }
         } catch (Throwable t) {
@@ -435,11 +452,13 @@ public class IDSAgent extends AbstractAgent {
 
     private void broadcastAlert(IDSAlert alert) {
 
-        if (alert == null)
+        if (alert == null) {
             return;
+        }
         String ip = alert.getIp();
-        if (whiteList.contains(ip) || alert.getPriority() > alertablePriority())
+        if (whiteList.contains(ip) || (alert.getPriority() > alertablePriority())) {
             return;
+        }
 
         if (agentComm == null) {
             if (logger.isLoggable(Level.WARNING)) {
@@ -449,7 +468,8 @@ public class IDSAgent extends AbstractAgent {
             if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, "Broadcast alert: " + alert.toString());
             }
-            AgentMessage amB = createMsg(msgCounter++, 1, 1, 5, "bcast:" + agentInfo.agentGroup, agentInfo.agentGroup, alert);
+            AgentMessage amB = createMsg(msgCounter++, 1, 1, 5, "bcast:" + agentInfo.agentGroup, agentInfo.agentGroup,
+                    alert);
             agentComm.sendMsg(amB);
         }
     }
@@ -457,6 +477,7 @@ public class IDSAgent extends AbstractAgent {
     /**
      * @see lia.Monitor.monitor.MonitorFilter#isAlive()
      */
+    @Override
     public boolean isAlive() {
         return hasToRun;
     }
@@ -464,6 +485,7 @@ public class IDSAgent extends AbstractAgent {
     /**
      * @see lia.Monitor.monitor.MonitorFilter#finishIt()
      */
+    @Override
     public void finishIt() {
         hasToRun = false;
     }
@@ -476,8 +498,9 @@ public class IDSAgent extends AbstractAgent {
     private void deliverResults2ML() {
 
         long now = NTPDate.currentTimeMillis();
-        if (now - lastReportingTime <= reportingInterval)
+        if ((now - lastReportingTime) <= reportingInterval) {
             return;
+        }
         Vector storeResults = new Vector();
         String clusterName = "BlockedIPs";
         double dt = (double) (now - lastReportingTime) / 1000;
@@ -486,7 +509,7 @@ public class IDSAgent extends AbstractAgent {
         rp.time = now;
         rp.NodeName = "Peers";
         rp.Module = "monIDSAgent";
-        rp.addSet("Rate", (double) peersAlertsCnt / dt);
+        rp.addSet("Rate", peersAlertsCnt / dt);
         storeResults.add(rp);
 
         Result rl = new Result();
@@ -494,7 +517,7 @@ public class IDSAgent extends AbstractAgent {
         rl.time = now;
         rl.NodeName = "Local";
         rl.Module = "monIDSAgent";
-        rl.addSet("Rate", (double) localAlertsCnt / dt);
+        rl.addSet("Rate", localAlertsCnt / dt);
         storeResults.add(rl);
 
         //inform cache
@@ -508,8 +531,9 @@ public class IDSAgent extends AbstractAgent {
     private void sendMailReport() {
         long now = NTPDate.currentTimeMillis();
 
-        if (!getSendReportingMail() || (now - lastMailTime < dtReportMail))
+        if (!getSendReportingMail() || ((now - lastMailTime) < dtReportMail)) {
             return;
+        }
 
         Vector tmp = new Vector();
         synchronized (mailReport) {
@@ -521,8 +545,8 @@ public class IDSAgent extends AbstractAgent {
 
             StringBuilder msg = new StringBuilder();
 
-            msg.append("[ ").append(new Date(lastMailTime)).append(" / ").append(new Date(now)).append(" ] ").append(this.cache.getUnitName())
-                    .append(" IDS Report: \n\n");
+            msg.append("[ ").append(new Date(lastMailTime)).append(" / ").append(new Date(now)).append(" ] ")
+                    .append(this.cache.getUnitName()).append(" IDS Report: \n\n");
 
             Enumeration enum1 = tmp.elements();
             msg.append(tmp.size()).append(" IPs were blocked:\n\n");
@@ -532,7 +556,8 @@ public class IDSAgent extends AbstractAgent {
             }
             /*System.out.println("Sending mail"+"mlstatus@monalisa.cern.ch\n"+ RCPT+
              "\nMLIDS @ " + this.cache.getUnitName()+"\n" +msg.toString());*/
-            MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch", RCPT, "MLIDS @ " + this.cache.getUnitName(), msg.toString());
+            MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch", RCPT,
+                    "MLIDS @ " + this.cache.getUnitName(), msg.toString());
         } catch (Throwable t1) {
             if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, "Got an exception while sending mail..\n" + t1.toString());
@@ -545,8 +570,9 @@ public class IDSAgent extends AbstractAgent {
 
     private static String[] getAddresses(String csAddresses) {
 
-        if (csAddresses == null || csAddresses.length() == 0)
+        if ((csAddresses == null) || (csAddresses.length() == 0)) {
             return null;
+        }
         StringTokenizer st = new StringTokenizer(csAddresses, ",");
 
         String[] ret = new String[st.countTokens()];

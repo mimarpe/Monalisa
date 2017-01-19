@@ -1,5 +1,5 @@
 /*
- * $Id: monXDRUDP.java 7241 2012-04-18 08:19:23Z costing $
+ * $Id: monXDRUDP.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.modules;
 
@@ -39,7 +39,7 @@ public class monXDRUDP extends monGenericUDP {
     private static final long serialVersionUID = 9208925666090673350L;
 
     /** Logger used by this class */
-    static final transient Logger logger = Logger.getLogger("lia.Monitor.modules.monXDRUDP");
+    private static final Logger logger = Logger.getLogger(monXDRUDP.class.getName());
 
     private static String XDR_MODULE_NAME = "monXDRUDP";
 
@@ -50,7 +50,7 @@ public class monXDRUDP extends monGenericUDP {
     int nDatagrams = 0;
 
     /** ApMon senders - used to identify packet loss */
-    private Map<Long, ApMonSender> apMonSenders;
+    private final Map<Long, ApMonSender> apMonSenders;
 
     /**
      * If this is enabled, ApMon senders will be monitored.
@@ -112,8 +112,8 @@ public class monXDRUDP extends monGenericUDP {
             // with one lenght of the buffer smaller thant what we expect
             // to receive from now on
             int idx = crtSeqNr % seqNr.length;
-            for (int i = idx; i < seqNr.length + idx; i++) {
-                seqNr[i % seqNr.length] = crtSeqNr - seqNr.length + (i - idx);
+            for (int i = idx; i < (seqNr.length + idx); i++) {
+                seqNr[i % seqNr.length] = (crtSeqNr - seqNr.length) + (i - idx);
             }
 
             this.ipAddress = ipAddress;
@@ -132,11 +132,13 @@ public class monXDRUDP extends monGenericUDP {
             int oldSeqNr = seqNr[idx];
             if (oldSeqNr < crtSeqNr) {
                 // number of lost packets
-                lostPkts += (crtSeqNr - oldSeqNr) / seqNr.length - 1;
+                lostPkts += ((crtSeqNr - oldSeqNr) / seqNr.length) - 1;
                 seqNr[idx] = crtSeqNr;
             } else {
                 // else we got even older packets. Too bad...
-                logger.log(Level.WARNING, "Received packet with SeqNr older than length of the SEQ HISTORY" + " buffer from " + ipAddress + " instance: " + instanceID + " got: " + crtSeqNr + ", expecting SeqNr after: " + oldSeqNr);
+                logger.log(Level.WARNING, "Received packet with SeqNr older than length of the SEQ HISTORY"
+                        + " buffer from " + ipAddress + " instance: " + instanceID + " got: " + crtSeqNr
+                        + ", expecting SeqNr after: " + oldSeqNr);
             }
         }
 
@@ -145,7 +147,7 @@ public class monXDRUDP extends monGenericUDP {
          * @return <code>true</code> if expired
          */
         boolean isExpired(final long now) {
-            if (now - lastHeard > senderExpireTime) {
+            if ((now - lastHeard) > senderExpireTime) {
                 return true;
             }
 
@@ -158,14 +160,15 @@ public class monXDRUDP extends monGenericUDP {
         int summarizeLostPkts() {
             int lost = lostPkts;
             if (lostPkts > 0) {
-                logger.log(Level.WARNING, "Lost " + lostPkts + " packets from IP: " + ipAddress + ", instance: " + instanceID);
+                logger.log(Level.WARNING, "Lost " + lostPkts + " packets from IP: " + ipAddress + ", instance: "
+                        + instanceID);
             }
             lostPkts = 0;
             return lost;
         }
 
         @Override
-		public String toString() {
+        public String toString() {
             StringBuilder sb = new StringBuilder("ApMonSender ");
             sb.append(ipAddress).append(", instance: ").append(instanceID);
             sb.append(" lastHeard: ").append(new Date(lastHeard));
@@ -189,7 +192,7 @@ public class monXDRUDP extends monGenericUDP {
     }
 
     @Override
-	public void notifyData(int len, byte[] data, InetAddress source) {
+    public void notifyData(int len, byte[] data, InetAddress source) {
 
         XDRInputStream xdrIS = null;
 
@@ -219,28 +222,30 @@ public class monXDRUDP extends monGenericUDP {
             int vi = header.indexOf("v:");
             int pi = header.indexOf("p:");
 
-            if (vi != -1 && pi != -1) {
+            if ((vi != -1) && (pi != -1)) {
                 version = header.substring(2, pi);// first is v:
 
                 // the version should be something like major[[.minor][.release]]|[-][_]lang
                 String[] splittedVersion = version.split("(_|-)");
-                if (splittedVersion != null && splittedVersion.length > 0 && splittedVersion[0] != null && splittedVersion[0].length() > 0) {
+                if ((splittedVersion != null) && (splittedVersion.length > 0) && (splittedVersion[0] != null)
+                        && (splittedVersion[0].length() > 0)) {
                     String realVersions[] = splittedVersion[0].split("\\.");
                     try {
                         majorVersion = Integer.valueOf(realVersions[0]).byteValue();
                         minorVersion = Integer.valueOf(realVersions[1]).byteValue();
                         maintenanceVersion = Integer.valueOf(realVersions[2]).byteValue();
                     } catch (Throwable t) {
-                    	// ignore
+                        // ignore
                     }
                 }
                 if (logger.isLoggable(Level.FINEST)) {
-                    logger.log(Level.FINEST, "Full Version = " + version + " => [" + majorVersion + "." + minorVersion + "." + maintenanceVersion + "]");
+                    logger.log(Level.FINEST, "Full Version = " + version + " => [" + majorVersion + "." + minorVersion
+                            + "." + maintenanceVersion + "]");
                 }
 
                 // for now we ignore the version ... but in future versions maybe we'll need it
                 String password = header.substring(pi + "p:".length()).trim();
-                if (accessConf != null && password != null) {
+                if ((accessConf != null) && (password != null)) {
                     canProcess = accessConf.checkPassword(password);
                 }
                 if (!canProcess) {
@@ -289,14 +294,16 @@ public class monXDRUDP extends monGenericUDP {
 
                 gur.clusterName = StringFactory.get(c);
 
-                if (accessConf != null && !accessConf.checkClusterName(gur.clusterName)) {
-                    logger.log(Level.INFO, " [ monXDRUDP ] ignoring UDP from  " + source + " . clusterName = " + gur.clusterName);
+                if ((accessConf != null) && !accessConf.checkClusterName(gur.clusterName)) {
+                    logger.log(Level.INFO, " [ monXDRUDP ] ignoring UDP from  " + source + " . clusterName = "
+                            + gur.clusterName);
                     return;
                 }
 
                 gur.nodeName = n;
-                if (accessConf != null && !accessConf.checkNodeName(n)) {
-                    logger.log(Level.INFO, " [ monXDRUDP ] ignoring UDP from  " + source + " . nodeName = " + gur.nodeName);
+                if ((accessConf != null) && !accessConf.checkNodeName(n)) {
+                    logger.log(Level.INFO, " [ monXDRUDP ] ignoring UDP from  " + source + " . nodeName = "
+                            + gur.nodeName);
                     return;
                 }
 
@@ -309,11 +316,11 @@ public class monXDRUDP extends monGenericUDP {
                 xdrIS.pad();
 
                 boolean error = false;
-                for (int i = 0; !error && i < nParams; i++) {
+                for (int i = 0; !error && (i < nParams); i++) {
                     String paramName = StringFactory.get(xdrIS.readString());
                     xdrIS.pad();
 
-                    if (paramName == null || paramName.length() == 0) {
+                    if ((paramName == null) || (paramName.length() == 0)) {
                         break;
                     }
 
@@ -321,44 +328,45 @@ public class monXDRUDP extends monGenericUDP {
                     xdrIS.pad();
 
                     switch (paramType) {
-                        case XDRMLMappings.XDR_STRING: {
-                            String value = StringFactory.get(xdrIS.readString());
-                            xdrIS.pad();
-                            gur.addParam(paramName, value);
-                            break;
-                        }
-                        case XDRMLMappings.XDR_INT32: {
-                            int value = xdrIS.readInt();
-                            xdrIS.pad();
-                            gur.addParam(paramName, Double.valueOf(value));
-                            break;
-                        }
-                        case XDRMLMappings.XDR_INT64: {
-                            long value = xdrIS.readLong();
-                            xdrIS.pad();
-                            gur.addParam(paramName, Double.valueOf(value));
-                            break;
-                        }
-                        case XDRMLMappings.XDR_REAL32: {
-                            double value = xdrIS.readFloat();
-                            xdrIS.pad();
-                            gur.addParam(paramName, Double.valueOf(value));
-                            break;
-                        }
-                        case XDRMLMappings.XDR_REAL64: {
-                            double value = xdrIS.readDouble();
-                            xdrIS.pad();
-                            gur.addParam(paramName, Double.valueOf(value));
-                            break;
-                        }
-                        default: {
-                            error = true;
-                        }
+                    case XDRMLMappings.XDR_STRING: {
+                        String value = StringFactory.get(xdrIS.readString());
+                        xdrIS.pad();
+                        gur.addParam(paramName, value);
+                        break;
+                    }
+                    case XDRMLMappings.XDR_INT32: {
+                        int value = xdrIS.readInt();
+                        xdrIS.pad();
+                        gur.addParam(paramName, Double.valueOf(value));
+                        break;
+                    }
+                    case XDRMLMappings.XDR_INT64: {
+                        long value = xdrIS.readLong();
+                        xdrIS.pad();
+                        gur.addParam(paramName, Double.valueOf(value));
+                        break;
+                    }
+                    case XDRMLMappings.XDR_REAL32: {
+                        double value = xdrIS.readFloat();
+                        xdrIS.pad();
+                        gur.addParam(paramName, Double.valueOf(value));
+                        break;
+                    }
+                    case XDRMLMappings.XDR_REAL64: {
+                        double value = xdrIS.readDouble();
+                        xdrIS.pad();
+                        gur.addParam(paramName, Double.valueOf(value));
+                        break;
+                    }
+                    default: {
+                        error = true;
+                    }
                     }// switch
 
                 }// for
 
-                if (!error && len > xdrIS.getBytesRead() && (majorVersion >= 2 || (majorVersion == 1 && minorVersion >= 6))) {
+                if (!error && (len > xdrIS.getBytesRead())
+                        && ((majorVersion >= 2) || ((majorVersion == 1) && (minorVersion >= 6)))) {
                     // Setting result time is supported since version 1.2.27
                     try {
                         long time = xdrIS.readInt();
@@ -366,7 +374,8 @@ public class monXDRUDP extends monGenericUDP {
                         xdrIS.pad();
                         if (time > 0) {
                             if (logger.isLoggable(Level.FINE)) {
-                                logger.log(Level.FINE, " [ Generic UDP ] received timed result: " + time + " / " + new Date(time));
+                                logger.log(Level.FINE, " [ Generic UDP ] received timed result: " + time + " / "
+                                        + new Date(time));
                             }
                             gur.rtime = time;
                         } else {
@@ -386,7 +395,11 @@ public class monXDRUDP extends monGenericUDP {
             }
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, " [ Generic UDP ] Exception while decoding UDP datagram at byte " + (xdrIS != null ? xdrIS.getBytesRead() : -1) + " of " + len + ":\n" + Utils.hexDump(data, len), t);
+                logger.log(
+                        Level.FINE,
+                        " [ Generic UDP ] Exception while decoding UDP datagram at byte "
+                                + (xdrIS != null ? xdrIS.getBytesRead() : -1) + " of " + len + ":\n"
+                                + Utils.hexDump(data, len), t);
 
             }
             gur = null;
@@ -395,7 +408,7 @@ public class monXDRUDP extends monGenericUDP {
                 try {
                     xdrIS.close();
                 } catch (Throwable t) {
-                	// ignore
+                    // ignore
                 }
                 xdrIS = null;
             }
@@ -405,7 +418,7 @@ public class monXDRUDP extends monGenericUDP {
     }
 
     @Override
-	public Object doProcess() throws Exception {
+    public Object doProcess() throws Exception {
         final Vector<Result> apMonStats = checkApMonSenders();
 
         List<GenericUDPResult> l = getResults();
@@ -438,7 +451,8 @@ public class monXDRUDP extends monGenericUDP {
 
                     AccountingResult ar = new AccountingResult(sGroup, sUser, sJobID, lStartTime, lEndTime);
 
-                    if (ar.sGroup != null && ar.sUser != null && ar.sJobID != null && ar.lStartTime > 0 && ar.lEndTime > 0) {
+                    if ((ar.sGroup != null) && (ar.sUser != null) && (ar.sJobID != null) && (ar.lStartTime > 0)
+                            && (ar.lEndTime > 0)) {
                         ar.addParam("cpu_MHz", (Number) gur.paramValues.get(gur.paramNames.indexOf("cpu_MHz")));
                         ar.addParam("utime", (Number) gur.paramValues.get(gur.paramNames.indexOf("utime")));
                         ar.addParam("stime", (Number) gur.paramValues.get(gur.paramNames.indexOf("stime")));
@@ -493,11 +507,11 @@ public class monXDRUDP extends monGenericUDP {
                     }
                 }
 
-                if (r.param != null && r.param.length > 0) {
+                if ((r.param != null) && (r.param.length > 0)) {
                     retV.add(r);
                 }
 
-                if (er.param != null && er.param.length > 0) {
+                if ((er.param != null) && (er.param.length > 0)) {
                     retV.add(er);
                 }
             }
@@ -512,7 +526,8 @@ public class monXDRUDP extends monGenericUDP {
      */
     private static Long buildApMonSenderUID(final InetAddress ipAddress, final int instanceID) {
         final byte[] ipBytes = ipAddress.getAddress();
-        final long uid = ((ipBytes[0] & 0xffL) << 0) | ((ipBytes[1] & 0xffL) << 8) | ((ipBytes[2] & 0xffL) << 16) | ((ipBytes[3] & 0xffL) << 24) | ((instanceID & 0xffffffffL) << 32);
+        final long uid = ((ipBytes[0] & 0xffL) << 0) | ((ipBytes[1] & 0xffL) << 8) | ((ipBytes[2] & 0xffL) << 16)
+                | ((ipBytes[3] & 0xffL) << 24) | ((instanceID & 0xffffffffL) << 32);
         return Long.valueOf(uid);
     }
 
@@ -544,7 +559,7 @@ public class monXDRUDP extends monGenericUDP {
             if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, "Monitoring " + activeSenders + " active ApMon senders on port " + gPort);
             }
-            if (now - lastStatsReportTime >= 2 * 60 * 1000) {
+            if ((now - lastStatsReportTime) >= (2 * 60 * 1000)) {
                 double timeInterval = (now - lastStatsReportTime) / 1000.0;
                 stats = new Vector<Result>();
 
@@ -557,7 +572,7 @@ public class monXDRUDP extends monGenericUDP {
 
                 nTotalDatagrams += nDatagrams;
                 nTotalLostDatagrams += nLostDatagrams;
-                if (nTotalDatagrams < 0 || nTotalLostDatagrams < 0) {
+                if ((nTotalDatagrams < 0) || (nTotalLostDatagrams < 0)) {
                     // reset counters on overflow
                     nTotalDatagrams = 0;
                     nTotalLostDatagrams = 0;
@@ -607,10 +622,10 @@ public class monXDRUDP extends monGenericUDP {
                 try {
                     Thread.sleep(1 * 1000);
                 } catch (Exception e1) {
-                	// ignore
+                    // ignore
                 }
 
-                if (bb != null && bb instanceof Vector) {
+                if ((bb != null) && (bb instanceof Vector)) {
                     Vector<?> res = (Vector<?>) bb;
                     if (res.size() > 0) {
                         System.out.println("Got a Vector with " + res.size() + " results");

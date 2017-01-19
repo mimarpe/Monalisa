@@ -43,32 +43,32 @@ public abstract class CacheServlet extends ThreadedPage {
 	/**
 	 * 
 	 */
-	static Map<String, CachingStructure>		cache;
+	static Map<String, CachingStructure> cache;
 
 	/**
 	 * 
 	 */
-	static Map<String, Long>		underConstruction;
+	static Map<String, Long> underConstruction;
 
 	/**
 	 * 
 	 */
-	static Object	cacheLock;
+	static Object cacheLock;
 
 	/**
 	 * 
 	 */
-	static Thread	tSupervisor;
+	static Thread tSupervisor;
 
 	/**
 	 * 
 	 */
-	static int		iServerPort		= 0;
+	static int iServerPort = 0;
 
 	/**
 	 * 
 	 */
-	static LRUCache	lruCache		= new LRUCache(20); // keep rebuilding the last 20 requests
+	static LRUCache lruCache = new LRUCache(20); // keep rebuilding the last 20 requests
 
 	static {
 		cache = new HashMap<String, CachingStructure>();
@@ -78,7 +78,7 @@ public abstract class CacheServlet extends ThreadedPage {
 		tSupervisor.start();
 	}
 
-	private boolean	bShouldClose	= false;
+	private boolean bShouldClose = false;
 
 	@Override
 	protected boolean shouldClose() {
@@ -93,22 +93,22 @@ public abstract class CacheServlet extends ThreadedPage {
 		/**
 		 * hits
 		 */
-		public final long	lCacheHits;
+		public final long lCacheHits;
 
 		/**
 		 * total count
 		 */
-		public final long	lCacheCount;
+		public final long lCacheCount;
 
 		/**
 		 * total key length
 		 */
-		public final long	lTotalKeyLength;
+		public final long lTotalKeyLength;
 
 		/**
 		 * total cache size
 		 */
-		public final long	lTotalCacheSize;
+		public final long lTotalCacheSize;
 
 		/**
 		 * 
@@ -156,11 +156,11 @@ public abstract class CacheServlet extends ThreadedPage {
 		/**
 		 * Eclipse suggestion
 		 */
-		private static final long	serialVersionUID	= -9221730219685670189L;
+		private static final long serialVersionUID = -9221730219685670189L;
 
-		private static final float	FACTOR				= 0.75f;
+		private static final float FACTOR = 0.75f;
 
-		private final int			iCacheSize;
+		private final int iCacheSize;
 
 		public LRUCache(final int cacheSize) {
 			super((int) Math.ceil(cacheSize / FACTOR) + 1, FACTOR, true);
@@ -177,7 +177,7 @@ public abstract class CacheServlet extends ThreadedPage {
 	/**
 	 * cache hits
 	 */
-	static volatile long	lCacheHitCount	= 0;
+	static volatile long lCacheHitCount = 0;
 
 	/**
 	 * @return statistics
@@ -191,11 +191,11 @@ public abstract class CacheServlet extends ThreadedPage {
 	 */
 	static final Comparator<CachingStructure> accessesComparator = new Comparator<CachingStructure>() {
 		@Override
-		public int compare(final CachingStructure cs1, final CachingStructure cs2){
+		public int compare(final CachingStructure cs1, final CachingStructure cs2) {
 			return (cs2.accesses - cs1.accesses);
-		}		
+		}
 	};
-	
+
 	private static class CacheSupervisor extends Thread {
 		public CacheSupervisor() {
 			super("(ML) Web Page Cache Supervisor");
@@ -264,11 +264,11 @@ public abstract class CacheServlet extends ThreadedPage {
 							}
 						}
 					}
-					
+
 					if (AppConfig.getb("lia.web.cache_refresh_disabled", true))
 						lRefresh.clear();
 
-					if (lRefresh.size() > 3) { //no more than 3 refreshes at one step
+					if (lRefresh.size() > 3) { // no more than 3 refreshes at one step
 						Collections.sort(lRefresh, accessesComparator);
 
 						// refresh only the 3 most accessed ones
@@ -310,7 +310,7 @@ public abstract class CacheServlet extends ThreadedPage {
 	}
 
 	/**
-	 * @return extra string to add to the caching key (if the response doesn't depend only on the URL parameters) 
+	 * @return extra string to add to the caching key (if the response doesn't depend only on the URL parameters)
 	 */
 	protected String getCacheKeyModifier() {
 		return "";
@@ -325,7 +325,8 @@ public abstract class CacheServlet extends ThreadedPage {
 					// if a request came for a not-yet-removed key then this content will be regenerated anyway
 					// don't force a content regeneration, it's redundant
 					cache.remove(sKey);
-				} else {
+				}
+				else {
 					return cs;
 				}
 			}
@@ -362,7 +363,7 @@ public abstract class CacheServlet extends ThreadedPage {
 
 		final long lTimeout = getCacheTimeout();
 
-		if (AppConfig.getb("lia.web.cache_disabled", false)==false && (bGet || allowPOSTCaching()) && (lTimeout > 0) && gets("dont_cache").length() == 0) {
+		if (AppConfig.getb("lia.web.cache_disabled", false) == false && (bGet || allowPOSTCaching()) && (lTimeout > 0) && gets("dont_cache").length() == 0) {
 			String sKey = request.getRequestURI();
 
 			if (request.getQueryString() != null) {
@@ -390,7 +391,7 @@ public abstract class CacheServlet extends ThreadedPage {
 
 				final List<String> l = new LinkedList<String>();
 				while (e != null && e.hasMoreElements()) {
-					l.add((String)e.nextElement());
+					l.add((String) e.nextElement());
 				}
 
 				Collections.sort(l);
@@ -428,7 +429,7 @@ public abstract class CacheServlet extends ThreadedPage {
 
 			sKey += "\tCACHE" + getCacheKeyModifier();
 
-			//System.err.println("Timeout = "+lTimeout+" for "+sKey);
+			// System.err.println("Timeout = "+lTimeout+" for "+sKey);
 
 			CachingStructure cs = get(sKey);
 
@@ -465,44 +466,44 @@ public abstract class CacheServlet extends ThreadedPage {
 
 			if (cs != null) { // it's ok, i can write the cache content to the output
 				response.setContentType("text/html; charset=UTF-8"); // hmmm ... this should be rewriten ...........
-				
-				RequestWrapper.setCacheTimeout(response, (int) ((cs.expires - NTPDate.currentTimeMillis())/1000));
-				
+
+				RequestWrapper.setCacheTimeout(response, (int) ((cs.expires - NTPDate.currentTimeMillis()) / 1000));
+
 				response.setHeader("Content-Language", "en");
 
 				int iLength = 0;
-				
+
 				try {
 					final byte[] b = cs.bZip ? decompress(cs.content) : cs.content;
-				
+
 					response.setContentLength(b.length);
-					
+
 					osOut.write(b);
-					
+
 					iLength = b.length;
 				} catch (Exception e) {
 					System.err.println("CacheServlet: exception writing the cached content: " + e + " (" + e.getMessage() + ")");
 					e.printStackTrace();
 				}
-				
+
 				try {
 					osOut.flush();
 				} catch (Exception e) {
 					// ignore
 				}
-				
+
 				try {
 					pwOut.flush();
 				} catch (Exception e) {
 					// ignore
 				}
-				
+
 				try {
 					pwOut.close();
 				} catch (Exception e) {
 					// ignore
 				}
-				
+
 				try {
 					osOut.close();
 				} catch (Exception e) {
@@ -517,18 +518,21 @@ public abstract class CacheServlet extends ThreadedPage {
 				lCacheHitCount++;
 
 				logTiming("response from cache for ip: " + getHostName());
-				
-				Utils.logRequest("cache", iLength, request, false);
-			} else { // we must generate the page
+
+				Utils.logRequest("cache", iLength, request, false, 0);
+			}
+			else { // we must generate the page
 				logTiming("Generating the page");
-				
+
 				osOut = new StringBuilderOutputStream(sKey);
 				pwOut = new PrintWriter(osOut);
 
 				bShouldClose = true;
 			}
-		} else { // this request cannot be cached
-			logTiming("Not caching request to " + request.getServletPath() + " because:\n" + "  lia.web.cache_disabled: " + (AppConfig.getProperty("lia.web.cache_disabled", null) == null) + "\n" + "  bGet: " + bGet + "\n" + "  allowPOSTCaching(): " + allowPOSTCaching() + "\n" + "  lTimeout: " + lTimeout);
+		}
+		else { // this request cannot be cached
+			logTiming("Not caching request to " + request.getServletPath() + " because:\n" + "  lia.web.cache_disabled: " + (AppConfig.getProperty("lia.web.cache_disabled", null) == null) + "\n"
+					+ "  bGet: " + bGet + "\n" + "  allowPOSTCaching(): " + allowPOSTCaching() + "\n" + "  lTimeout: " + lTimeout);
 		}
 
 		super.masterInit();
@@ -536,6 +540,7 @@ public abstract class CacheServlet extends ThreadedPage {
 
 	/**
 	 * override this method to set the caching time (in seconds)
+	 * 
 	 * @return disabled
 	 */
 	protected long getCacheTimeout() {
@@ -550,32 +555,32 @@ public abstract class CacheServlet extends ThreadedPage {
 		/**
 		 * 
 		 */
-		public long		expires		= 0;
+		public long expires = 0;
 
 		/**
 		 * 
 		 */
-		public long		lifetime	= 0;
+		public long lifetime = 0;
 
 		/**
 		 * 
 		 */
-		public String	sKey		= null;
+		public String sKey = null;
 
 		/**
 		 * 
 		 */
-		public int		accesses	= 0;
+		public int accesses = 0;
 
 		/**
 		 * 
 		 */
-		public byte[]	content		= null;
+		public byte[] content = null;
 
 		/**
 		 * 
 		 */
-		public boolean	bZip		= false;
+		public boolean bZip = false;
 
 		@Override
 		public int compareTo(CachingStructure cs) {
@@ -620,11 +625,13 @@ public abstract class CacheServlet extends ThreadedPage {
 						sbReq.append("MLSetCookies: " + EXTRA + "\r\n");
 					sbReq.append("\r\n");
 					sbReq.append(POST);
-				} else {
+				}
+				else {
 					if (sAddr.indexOf("?") < 0)
 						sAddr += "?";
-					else if (!sAddr.endsWith("?") && !sAddr.endsWith("&"))
-						sAddr += "&";
+					else
+						if (!sAddr.endsWith("?") && !sAddr.endsWith("&"))
+							sAddr += "&";
 
 					sAddr += "cache_refresh_request=true";
 
@@ -657,7 +664,8 @@ public abstract class CacheServlet extends ThreadedPage {
 	public static final String getCacheContent() {
 		final StringBuilder sb = new StringBuilder();
 
-		sb.append("<table border=1 cellspacing=0 cellpadding=0><tr>" + "<th>No</th>" + "<th>Key</th>" + "<th>Length</th>" + "<th>Expires (sec)</th>" + "<th>Lifetime</th>" + "<th>Accesses</th>" + "<th>Zip</th></tr>");
+		sb.append("<table border=1 cellspacing=0 cellpadding=0><tr>" + "<th>No</th>" + "<th>Key</th>" + "<th>Length</th>" + "<th>Expires (sec)</th>" + "<th>Lifetime</th>" + "<th>Accesses</th>"
+				+ "<th>Zip</th></tr>");
 
 		final long lNow = NTPDate.currentTimeMillis();
 
@@ -674,14 +682,17 @@ public abstract class CacheServlet extends ThreadedPage {
 
 				CachingStructure cs = cache.get(sKey);
 
-				sb.append("<tr><td align=right>").append(++i).append("</td><td align=left nowrap>").append(sKey).append("</td><td align=right>").append(cs.content.length).append("</td><td align=right>").append((cs.expires - lNow) / 1000d).append("</td><td align=right>").append(cs.lifetime / 1000d).append("</td><td align=right>").append(cs.accesses).append("</td><td align=center>").append(cs.bZip).append("</td></tr>");
+				sb.append("<tr><td align=right>").append(++i).append("</td><td align=left nowrap>").append(sKey).append("</td><td align=right>").append(cs.content.length)
+						.append("</td><td align=right>").append((cs.expires - lNow) / 1000d).append("</td><td align=right>").append(cs.lifetime / 1000d).append("</td><td align=right>")
+						.append(cs.accesses).append("</td><td align=center>").append(cs.bZip).append("</td></tr>");
 
 				lTotalKeyLength += sKey.length();
 				lTotalCacheSize += cs.content.length;
 			}
 		}
 
-		sb.append("<tr><td align=left><b>TOTAL</b></td><td align=right><b>").append(lTotalKeyLength).append("</b></td><td align=right><b>").append(lTotalCacheSize).append("</b></td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>");
+		sb.append("<tr><td align=left><b>TOTAL</b></td><td align=right><b>").append(lTotalKeyLength).append("</b></td><td align=right><b>").append(lTotalCacheSize)
+				.append("</b></td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>");
 
 		sb.append("</table>");
 
@@ -725,15 +736,15 @@ public abstract class CacheServlet extends ThreadedPage {
 	/**
 	 * 
 	 */
-	static transient int	iMaxSize	= 16 * 1024;
+	static transient int iMaxSize = 16 * 1024;
 
 	private final class StringBuilderOutputStream extends OutputStream {
 
-		private final OutputStream			origos;
+		private final OutputStream origos;
 
-		private final String				sKey;
+		private final String sKey;
 
-		private final ByteArrayOutputStream	baos;
+		private final ByteArrayOutputStream baos;
 
 		public StringBuilderOutputStream(final String _sKey) {
 			origos = osOut;
@@ -791,10 +802,10 @@ public abstract class CacheServlet extends ThreadedPage {
 					}
 				}
 
-				RequestWrapper.setCacheTimeout(response, (int) (lCacheTimeout/1000));
-				
+				RequestWrapper.setCacheTimeout(response, (int) (lCacheTimeout / 1000));
+
 				response.setContentLength(vbContent.length);
-				
+
 				put(sKey, cs);
 
 				logTiming("Cache contents after put: \n" + getCacheKeysList());
@@ -876,5 +887,5 @@ public abstract class CacheServlet extends ThreadedPage {
 
 		return baos.toByteArray();
 	}
-	
+
 }

@@ -1,8 +1,3 @@
-/*
- * Created on Aug 10, 2007
- * 
- * $Id: MFarmConfDebugger.java 6865 2010-10-10 10:03:16Z ramiro $
- */
 package lia.Monitor.ClientsFarmProxy;
 
 import java.io.BufferedWriter;
@@ -31,15 +26,15 @@ import lia.util.MFarmConfigUtils;
  */
 class MFarmConfDebugger extends Thread {
 
-    private static final transient Logger logger = Logger.getLogger(MFarmConfDebugger.class.getName());
+    private static final Logger logger = Logger.getLogger(MFarmConfDebugger.class.getName());
 
-    private final BlockingQueue<MFarmDebugEntry> logQueue = new LinkedBlockingQueue<MFarmDebugEntry>(100); 
+    private final BlockingQueue<MFarmDebugEntry> logQueue = new LinkedBlockingQueue<MFarmDebugEntry>(100);
 
     private final static class MFarmDebugEntry {
         private final MFarm oldConf;
         private final MFarm newConf;
         private final MFarm[] diffConf;
-        
+
         private MFarmDebugEntry(final MFarm oldConf, final MFarm newConf, final MFarm[] diffConf) {
             this.oldConf = oldConf;
             this.newConf = newConf;
@@ -53,7 +48,7 @@ class MFarmConfDebugger extends Thread {
             writer.write(MFarmConfigUtils.getMFarmDump(oldConf));
             writer.write("\n--------newConf:\n");
             writer.write(MFarmConfigUtils.getMFarmDump(newConf));
-            if(diffConf == null) {
+            if (diffConf == null) {
                 writer.write("\n--------diffConf == null ---- \n");
             } else {
                 writer.write("\n--------diff[0]:\n");
@@ -72,7 +67,8 @@ class MFarmConfDebugger extends Thread {
     private final AtomicLong eventsDropped = new AtomicLong(0);
     private long writeErrors = 0;
     private long eventsLogged = 0;
-    
+
+    @Override
     public void run() {
         setName("(ML) MFarm Cofiguration Debugger Thread");
         String logDir = null;
@@ -80,82 +76,84 @@ class MFarmConfDebugger extends Thread {
             final String proxyHome = AppConfig.getProperty("lia.Monitor.monitor.proxy_home", ".");
             logDir = proxyHome + File.separator + "confs_debug";
             new File(logDir).mkdirs();
-        } catch(Throwable t) {
-            logger.log(Level.WARNING, " [ MFarmConfDebugger ] unable to initialize");  
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, " [ MFarmConfDebugger ] unable to initialize");
         }
-        
-        while(hasToRun.get()) {
+
+        while (hasToRun.get()) {
             try {
                 MFarmDebugEntry debugEntry = null;
 
                 try {
                     debugEntry = logQueue.poll(20, TimeUnit.SECONDS);
-                }catch(InterruptedException ie) {
+                } catch (InterruptedException ie) {
                     logger.log(Level.WARNING, " [ MFarmConfDebugger ] got interrupted exception waiting for queue", ie);
                     Thread.interrupted();
-                } catch(Throwable t) {
+                } catch (Throwable t) {
                     logger.log(Level.WARNING, " [ MFarmConfDebugger ] got general exception waiting for queue", t);
                 }
 
-                if(debugEntry == null) continue;
+                if (debugEntry == null) {
+                    continue;
+                }
 
                 FileWriter fw = null;
                 BufferedWriter bw = null;
                 String fName = null;
-                if(debugEntry.oldConf != null) {
+                if (debugEntry.oldConf != null) {
                     fName = debugEntry.oldConf.name;
-                } else  {
-                    if(debugEntry.newConf != null) {
+                } else {
+                    if (debugEntry.newConf != null) {
                         fName = debugEntry.newConf.name;
                     }
                 }
-                
-                if(fName == null) {
+
+                if (fName == null) {
                     fName = "SERVICE_NAME_NOT_AVAILABLE";
                 }
-                
+
                 String fileName = logDir + File.separator + fName;
                 try {
                     fw = new FileWriter(fileName, true);
                     bw = new BufferedWriter(fw, 16384);
                     debugEntry.write(bw);
                     eventsLogged++;
-                }catch(Throwable t) {
+                } catch (Throwable t) {
                     writeErrors++;
                     logger.log(Level.WARNING, " [ MFarmConfDebugger ] got exception trying to write to: " + fileName, t);
                 } finally {
-                    if(bw != null) {
+                    if (bw != null) {
                         try {
                             bw.close();
-                        }catch(Throwable ignore) {}
+                        } catch (Throwable ignore) {
+                        }
                     }
-                    if(fw != null) {
+                    if (fw != null) {
                         try {
                             fw.close();
-                        }catch(Throwable ignore) {}
+                        } catch (Throwable ignore) {
+                        }
                     }
                 }
-            } catch(Throwable t) {
+            } catch (Throwable t) {
                 logger.log(Level.WARNING, " [ MFarmConfDebugger ] got exception main loop", t);
             }
         }
 
         logQueue.clear();
-        logger.log(Level.INFO, " [ MFarmConfDebugger ] finished ... Events Stats: " +
-        		"eventsReceived=" + eventsReceived.get() +
-                ",eventsDropped=" + eventsDropped.get() + 
-                ",eventsLogged=" + eventsLogged + 
-                "eventsWriteError" + writeErrors);
+        logger.log(Level.INFO, " [ MFarmConfDebugger ] finished ... Events Stats: " + "eventsReceived="
+                + eventsReceived.get() + ",eventsDropped=" + eventsDropped.get() + ",eventsLogged=" + eventsLogged
+                + "eventsWriteError" + writeErrors);
     }
 
     void addDebugEntry(final MFarm oldConf, final MFarm newConf, final MFarm[] diffConf) {
         eventsReceived.incrementAndGet();
-        if(logQueue.offer(new MFarmDebugEntry(oldConf, newConf, diffConf))) {
+        if (logQueue.offer(new MFarmDebugEntry(oldConf, newConf, diffConf))) {
             eventsDropped.incrementAndGet();
         }
     }
 
     void stopIT() {
-        hasToRun .set(false);
+        hasToRun.set(false);
     }
 }

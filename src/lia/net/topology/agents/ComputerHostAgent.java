@@ -42,7 +42,7 @@ public class ComputerHostAgent extends TopoAgent<MLComputerHostConfig, HostRawPo
     private static final long serialVersionUID = -9066933336159877461L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(ComputerHostAgent.class.getName());
+    private static final Logger logger = Logger.getLogger(ComputerHostAgent.class.getName());
 
     ComputerHost host;
 
@@ -50,6 +50,7 @@ public class ComputerHostAgent extends TopoAgent<MLComputerHostConfig, HostRawPo
 
     private final class ComputerHostStateFetcher implements Runnable {
 
+        @Override
         public void run() {
             try {
                 publishAttrs();
@@ -74,6 +75,7 @@ public class ComputerHostAgent extends TopoAgent<MLComputerHostConfig, HostRawPo
 
     private static final class ResultMonitorTask implements Runnable {
 
+        @Override
         public void run() {
             // not implemented yet
         }
@@ -81,6 +83,7 @@ public class ComputerHostAgent extends TopoAgent<MLComputerHostConfig, HostRawPo
 
     private final class ConfigPublisherTask implements Runnable {
 
+        @Override
         public void run() {
             try {
                 if (shouldReloadConfig.compareAndSet(true, false)) {
@@ -193,6 +196,7 @@ public class ComputerHostAgent extends TopoAgent<MLComputerHostConfig, HostRawPo
     /**
      * @param r  
      */
+    @Override
     public void addNewResult(Object r) {
         // TODO Auto-generated method stub
 
@@ -200,8 +204,9 @@ public class ComputerHostAgent extends TopoAgent<MLComputerHostConfig, HostRawPo
 
     private void deliverResults2ML(Object o) {
 
-        if (STANDALONE)
+        if (STANDALONE) {
             return;
+        }
 
         if (o != null) {
             if (logger.isLoggable(Level.FINER)) {
@@ -229,8 +234,8 @@ public class ComputerHostAgent extends TopoAgent<MLComputerHostConfig, HostRawPo
             } else if (o instanceof Result[]) {// notify an Array of
                 // ResultS...but not a Vector
                 Result[] rez = (Result[]) o;
-                for (int i = 0; i < rez.length; i++) {
-                    notifResults.add(rez[i]);
+                for (Result element : rez) {
+                    notifResults.add(element);
                 }
             } else {// notify anything else
                 notifResults.add(o);
@@ -277,9 +282,11 @@ public class ComputerHostAgent extends TopoAgent<MLComputerHostConfig, HostRawPo
 
     }
 
+    @Override
     public void notifyConfig(RawConfigInterface<HostRawPort> oldConfig, RawConfigInterface<HostRawPort> newConfig) {
         StringBuilder sb = new StringBuilder();
-        sb.append("\n\n old config \n\n ").append(oldConfig).append("\n\n new config \n\n").append(newConfig).append("\n\n");
+        sb.append("\n\n old config \n\n ").append(oldConfig).append("\n\n new config \n\n").append(newConfig)
+                .append("\n\n");
         shouldReloadConfig.compareAndSet(false, true);
         logger.log(Level.INFO, sb.toString());
     }

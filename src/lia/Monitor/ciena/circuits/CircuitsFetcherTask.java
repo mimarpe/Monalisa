@@ -1,5 +1,5 @@
 /*
- * $Id: CircuitsFetcherTask.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: CircuitsFetcherTask.java 7419 2013-10-16 12:56:15Z ramiro $
  * 
  * Created on Dec 10, 2007
  */
@@ -26,17 +26,18 @@ import lia.util.threads.MonALISAExecutors;
  */
 public class CircuitsFetcherTask implements Runnable {
 
-    private static final transient Logger logger = Logger.getLogger(CircuitsFetcherTask.class.getName());
+    private static final Logger logger = Logger.getLogger(CircuitsFetcherTask.class.getName());
     private static CircuitsFetcherTask _thisInstance;
     private static final AtomicLong delay = new AtomicLong(45);
     private static final ScheduledExecutorService execService = MonALISAExecutors.getMLHelperExecutor();
 
     private static final AtomicReference<String> myNameReference = new AtomicReference<String>();
-    
+
     static {
         reloadConf();
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
                 reloadConf();
             }
@@ -49,6 +50,7 @@ public class CircuitsFetcherTask implements Runnable {
         }
     }
 
+    @Override
     public void run() {
 
         final long sTime = System.currentTimeMillis();
@@ -57,17 +59,19 @@ public class CircuitsFetcherTask implements Runnable {
         try {
 
             final String myName = myNameReference.get();
-            
-            if(myName == null || myName.length() == 0) {
-                logger.log(Level.INFO, "The CircuitsFetcherTask cannot determine local name. You have to set lia.Monitor.ciena.circuits.CircuitsFecherTask.myName in ml.properties");
+
+            if ((myName == null) || (myName.length() == 0)) {
+                logger.log(
+                        Level.INFO,
+                        "The CircuitsFetcherTask cannot determine local name. You have to set lia.Monitor.ciena.circuits.CircuitsFecherTask.myName in ml.properties");
                 return;
             }
-            
+
             final TL1Response[] stspcs = TL1Util.getAllSTSPCs();
             final TL1Response[] sncs = TL1Util.getAllSNCSTSPCs();
             final TL1Response[] sncsRoutes = TL1Util.getAllSNCRoutes();
-//            final TL1Response[] vcgs = TL1Util.getAllVCGs();
-            final TL1Response[] vcgs = new TL1Response[]{};
+            //            final TL1Response[] vcgs = TL1Util.getAllVCGs();
+            final TL1Response[] vcgs = new TL1Response[] {};
             final TL1Response[] crss = TL1Util.getAllCRSs();
             final TL1Response[] gtps = TL1Util.getAllGTPs();
 
@@ -92,15 +96,17 @@ public class CircuitsFetcherTask implements Runnable {
                 logger.log(Level.FINEST, sb.toString());
             }
 
-            final TL1CDCICircuitsHolder tl1CircuitsTopo = new TL1CDCICircuitsHolder(myName, stspcs, sncs, sncsRoutes, gtps, vcgs, crss);
-            CircuitsHolder.getInstance().notifyTL1Responses(new TL1CDCICircuitsHolder[]{tl1CircuitsTopo});
-            
+            final TL1CDCICircuitsHolder tl1CircuitsTopo = new TL1CDCICircuitsHolder(myName, stspcs, sncs, sncsRoutes,
+                    gtps, vcgs, crss);
+            CircuitsHolder.getInstance().notifyTL1Responses(new TL1CDCICircuitsHolder[] { tl1CircuitsTopo });
+
         } catch (Throwable t) {
             logger.log(Level.WARNING, "[ CIENA ] [ CircuitsFetcherTask ] got exception in main loop", t);
         } finally {
-            final long reSched = delay.get() * 1000 + Math.round((500 * Math.random()));
+            final long reSched = (delay.get() * 1000) + Math.round((500 * Math.random()));
             if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, "[ CIENA ] [ CircuitsFetcherTask ] DT: " + (System.currentTimeMillis() - sTime) + " ms. DTCiena = " + dtCiena + " ms ... Rescheduling ... DT = " + reSched + " ms");
+                logger.log(Level.FINE, "[ CIENA ] [ CircuitsFetcherTask ] DT: " + (System.currentTimeMillis() - sTime)
+                        + " ms. DTCiena = " + dtCiena + " ms ... Rescheduling ... DT = " + reSched + " ms");
             }
             execService.schedule(_thisInstance, reSched, TimeUnit.MILLISECONDS);
         }
@@ -110,7 +116,8 @@ public class CircuitsFetcherTask implements Runnable {
     public static synchronized final CircuitsFetcherTask getInstance() {
         if (_thisInstance == null) {
             _thisInstance = new CircuitsFetcherTask();
-            execService.schedule(_thisInstance, delay.get() * 1000 + Math.round((2 * Math.random())), TimeUnit.MILLISECONDS);
+            execService.schedule(_thisInstance, (delay.get() * 1000) + Math.round((2 * Math.random())),
+                    TimeUnit.MILLISECONDS);
         }
 
         return _thisInstance;
@@ -123,7 +130,7 @@ public class CircuitsFetcherTask implements Runnable {
         } else {
             delay.set(cDelay);
         }
-        
+
         myNameReference.set(AppConfig.getProperty("lia.Monitor.ciena.circuits.CircuitsFecherTask.myName"));
     }
 

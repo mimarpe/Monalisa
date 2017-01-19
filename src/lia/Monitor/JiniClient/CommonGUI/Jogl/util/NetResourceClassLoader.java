@@ -48,11 +48,8 @@ import lia.util.ntp.NTPDate;
  */
 public class NetResourceClassLoader/* extends ClassLoader */{
 
-    /** Logger name */
-    private static final transient String COMPONENT = "lia.Monitor.JiniClient.CommonGUI.Jogl";
-
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(NetResourceClassLoader.class.getName());
 
     public static Level logLevel = Level.FINEST;// for debug user Level.INFO
 
@@ -78,7 +75,7 @@ public class NetResourceClassLoader/* extends ClassLoader */{
     // private String sJarsLMTimeFile = "jars_last_modification.txt";//name of file that contains last modification
     // times for jars
 
-    private String sMapsListFile = "list_jars_content.txt";// name of file that lists on server the available maps
+    private final String sMapsListFile = "list_jars_content.txt";// name of file that lists on server the available maps
 
     public boolean bDownloadNewFiles = true;// if this is false, then no new files will be downloaded, and no old files
                                             // will be deleted
@@ -89,18 +86,19 @@ public class NetResourceClassLoader/* extends ClassLoader */{
      */
     // private Hashtable hMapsLastAccessTime = null;
 
-    private final boolean bStoreInJar = (AppConfig.getProperty("jogl.netresourceclassloader.store_in_jar", "true").equals("false") ? false : true);
+    private final boolean bStoreInJar = (AppConfig.getProperty("jogl.netresourceclassloader.store_in_jar", "true")
+            .equals("false") ? false : true);
 
     private static boolean bDebug = AppConfig.getb("lia.Monitor.debug", false);
 
     private boolean bProgressOccupied = false;
 
-    private Object objSyncProgressAccess = new Object();
+    private final Object objSyncProgressAccess = new Object();
 
     /** if a rep list is available, the download list will be used instead */
     private Vector[] dwlLists = new Vector[0];
 
-    private Object dwlListsSyncObj = new Object();
+    private final Object dwlListsSyncObj = new Object();
 
     /**
      * sets debug level for this class
@@ -110,10 +108,11 @@ public class NetResourceClassLoader/* extends ClassLoader */{
      */
     public static void setDebugLevel(boolean bIsDebug) {
         bDebug = bIsDebug;
-        if (bDebug)
+        if (bDebug) {
             logLevel = Level.INFO;
-        else
+        } else {
             logLevel = Level.FINEST;
+        }
     }
 
     /**
@@ -126,27 +125,28 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         int lSize = 0;
         char car;
         int i = 0;
-        if (sSize != null && sSize.length() > 0) {
+        if ((sSize != null) && (sSize.length() > 0)) {
             do {
                 car = sSize.charAt(i);
-                if (car >= '0' && car <= '9')
-                    lSize = lSize * 10 + car - '0';
-                else
+                if ((car >= '0') && (car <= '9')) {
+                    lSize = ((lSize * 10) + car) - '0';
+                } else {
                     break;
+                }
                 i++;
-            } while (car >= '0' && car <= '9' && i < sSize.length());
+            } while ((car >= '0') && (car <= '9') && (i < sSize.length()));
             if (i < sSize.length()) {
                 // caracter read that is not digit, so is measure unit
                 switch (car) {
-                    case 'g':
-                    case 'G':
-                        lSize *= 1024;
-                    case 'm':
-                    case 'M':
-                        lSize *= 1024;
-                    case 'k':
-                    case 'K':
-                        lSize *= 1024;
+                case 'g':
+                case 'G':
+                    lSize *= 1024;
+                case 'm':
+                case 'M':
+                    lSize *= 1024;
+                case 'k':
+                case 'K':
+                    lSize *= 1024;
                 }
             }
             ;
@@ -160,8 +160,9 @@ public class NetResourceClassLoader/* extends ClassLoader */{
     static {
         String sMaxJarSize = AppConfig.getProperty("jogl.netresourceclassloader.MaxJarSize", "5m");
         MAX_JAR_SIZE = getSize(sMaxJarSize);
-        if (MAX_JAR_SIZE <= 300 * 1024)
+        if (MAX_JAR_SIZE <= (300 * 1024)) {
             MAX_JAR_SIZE = 300 * 1024;
+        }
     }
 
     /*
@@ -178,8 +179,9 @@ public class NetResourceClassLoader/* extends ClassLoader */{
     static {
         String sBufferSize = AppConfig.getProperty("jogl.netresourceclassloader.BufferSize", "32k");
         nBufferSize = getSize(sBufferSize);
-        if (nBufferSize <= 1024)
+        if (nBufferSize <= 1024) {
             nBufferSize = 1024;
+        }
     }
 
     private static int nStartCheckThread = 5 * 60 * 1000;// at 5 minutes after the client is started
@@ -192,16 +194,18 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         } catch (NumberFormatException nfex) {
             nStartCheckThread = 5 * 60 * 1000;
         }
-        if (nStartCheckThread <= 0)
+        if (nStartCheckThread <= 0) {
             nStartCheckThread = 5 * 60 * 1000;
+        }
         sTime = AppConfig.getProperty("jogl.netresourceclassloader.RepeatCheckMilis", "3600000");
         try {
             nRepeatCheckThread = Integer.parseInt(sTime);
         } catch (NumberFormatException nfex) {
             nRepeatCheckThread = 60 * 60 * 1000;
         }
-        if (nRepeatCheckThread <= 0)
+        if (nRepeatCheckThread <= 0) {
             nRepeatCheckThread = 60 * 60 * 1000;
+        }
     }
 
     /**
@@ -213,7 +217,8 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         // super(NetResourceClassLoader.class.getClassLoader());
         if (mainClientClass != null) {
             Preferences prefs = Preferences.userNodeForPackage(mainClientClass);
-            setCacheDir(prefs.get("Texture.CacheDirectory", AppConfig.getProperty(/* "user.home" */"java.io.tmpdir", ".")));
+            setCacheDir(prefs.get("Texture.CacheDirectory",
+                    AppConfig.getProperty(/* "user.home" */"java.io.tmpdir", ".")));
             String cur_ver = prefs.get("Texture.WebPathsVersion", "0");
             String next_ver = AppConfig.getProperty("jogl.maps_webpaths_version", "0");
             int nc, nn;
@@ -225,10 +230,12 @@ public class NetResourceClassLoader/* extends ClassLoader */{
                 nn = 0;
             }
             if (nc < nn) {
-                prefs.put("Texture.WebPaths", AppConfig.getProperty("jogl.netresourceclassloader.extra_images_location", null));
+                prefs.put("Texture.WebPaths",
+                        AppConfig.getProperty("jogl.netresourceclassloader.extra_images_location", null));
                 prefs.put("Texture.WebPathsVersion", next_ver);
             }
-            setExtraImagesLocations(prefs.get("Texture.WebPaths", AppConfig.getProperty("jogl.netresourceclassloader.extra_images_location", null)));
+            setExtraImagesLocations(prefs.get("Texture.WebPaths",
+                    AppConfig.getProperty("jogl.netresourceclassloader.extra_images_location", null)));
         } else {
             setCacheDir(AppConfig.getProperty(/* "user.home" */"java.io.tmpdir", "."));
             setExtraImagesLocations(AppConfig.getProperty("jogl.netresourceclassloader.extra_images_location", null));
@@ -245,8 +252,10 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         // and it will run once at each hour
         BackgroundWorker.schedule(new TimerTask() {
 
+            @Override
             public void run() {
-                Thread.currentThread().setName("JoGL - NetResourceClassLoader - check new jars and delete old cached ones");
+                Thread.currentThread().setName(
+                        "JoGL - NetResourceClassLoader - check new jars and delete old cached ones");
                 checkNewJarsAndClearCache();
             }
         }, nStartCheckThread, nRepeatCheckThread);
@@ -264,8 +273,9 @@ public class NetResourceClassLoader/* extends ClassLoader */{
      */
     public BufferedReader readCachedFile(String sWebPath, String sFileName) {
         BufferedReader br = null;
-        if (!sWebPath.endsWith("/"))
+        if (!sWebPath.endsWith("/")) {
             sWebPath += "/";
+        }
         // site directory name from where from jar is downloaded
         String sSiteName = getSiteName(sWebPath);
         try {
@@ -282,8 +292,10 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             // Obs: if local file does not yet exists, it's lm time will be 0,
             // as returned by File.lastModified()
             long webLastModified = connection.getLastModified();
-            if (bDebug)
-                System.out.println("file last modification times: local is " + localLastModified + " web: " + webLastModified);
+            if (bDebug) {
+                System.out.println("file last modification times: local is " + localLastModified + " web: "
+                        + webLastModified);
+            }
             if (localLastModified < webLastModified) {
                 // update list only if web list is newer than local one
                 // set web jar's last modification time to know when to update it
@@ -308,8 +320,9 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             br = new BufferedReader(new InputStreamReader(new FileInputStream(fLMTime)));
         } catch (Exception ex) {
             // don't report?
-            if (bDebug)
+            if (bDebug) {
                 logger.log(logLevel, "Could not access " + sWebPath + sFileName);
+            }
         }
         return br;
     }
@@ -322,7 +335,7 @@ public class NetResourceClassLoader/* extends ClassLoader */{
          * node value: directory, if intermediary node,
          * or map file, if terminal node
          */
-        private String sValue;
+        private final String sValue;
 
         public static final int S_NONE = 0;
 
@@ -339,6 +352,7 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             state = S_NONE;
         }
 
+        @Override
         public String toString() {
             return sValue;
         }
@@ -355,8 +369,9 @@ public class NetResourceClassLoader/* extends ClassLoader */{
          * @param sPath
          */
         public void addMap(String sPath) {
-            if (sPath == null)
+            if (sPath == null) {
                 return;
+            }
             String sDir;
             String sRest = "";
             int index = sPath.indexOf('/');
@@ -373,18 +388,20 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             // add call addMap for the child
             for (int i = 0; i < size(); i++) {
                 child = ((MapTreeNode) get(i));
-                if (child.getValue().equals(sDir))
+                if (child.getValue().equals(sDir)) {
                     break;
+                }
             }
             if (child == null) {
                 child = new MapTreeNode(sDir);
                 add(child);
             }
-            if (sRest.length() > 0)
+            if (sRest.length() > 0) {
                 child.addMap(sRest);
-            else
+            } else {
                 // terminal node, so set available for download flag
                 child.setState(S_AVAILABLE);
+            }
         }
 
         /**
@@ -418,13 +435,16 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             // add call addMap for the child
             for (int i = 0; i < size(); i++) {
                 child = ((MapTreeNode) get(i));
-                if (child.getValue().equals(sDir))
+                if (child.getValue().equals(sDir)) {
                     break;
+                }
             }
-            if (child == null)
+            if (child == null) {
                 return null;
-            if (sRest.length() == 0)
+            }
+            if (sRest.length() == 0) {
                 return child;
+            }
             return child.getMap(sRest);
         }
 
@@ -437,8 +457,9 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         }
 
         public boolean checkState(int stateParam) {
-            if (stateParam == 0 && state == 0)
+            if ((stateParam == 0) && (state == 0)) {
                 return true;
+            }
             return (stateParam & state) > 0;
         }
 
@@ -447,8 +468,9 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         }
 
         public void clearState(int stateParam) {
-            if ((state & stateParam) > 0)
+            if ((state & stateParam) > 0) {
                 state ^= stateParam;
+            }
         }
     }
 
@@ -467,10 +489,12 @@ public class NetResourceClassLoader/* extends ClassLoader */{
 
         public RepositoryList(String sLocation) {
             this.sLocation = sLocation;
-            if (!this.sLocation.endsWith("/"))
+            if (!this.sLocation.endsWith("/")) {
                 this.sLocation = this.sLocation + '/';
+            }
         }
 
+        @Override
         public String toString() {
             return sLocation;
         }
@@ -497,16 +521,19 @@ public class NetResourceClassLoader/* extends ClassLoader */{
          */
         public synchronized int startDownload(String rootPath) {
             MapTreeNode localRoot = root.getMap(rootPath);
-            if (localRoot == null)
+            if (localRoot == null) {
                 return -1;
+            }
             for (int i = 0; i < localRoot.size(); i++) {
-                if (((MapTreeNode) localRoot.get(i)).checkState(MapTreeNode.S_ISDOWNLOADING))
+                if (((MapTreeNode) localRoot.get(i)).checkState(MapTreeNode.S_ISDOWNLOADING)) {
                     return 0;
+                }
             }
             // everything ok, none of the files are to be downloaded, so set the
             // is_downloading flag for them
-            for (int i = 0; i < localRoot.size(); i++)
+            for (int i = 0; i < localRoot.size(); i++) {
                 ((MapTreeNode) localRoot.get(i)).setState(MapTreeNode.S_ISDOWNLOADING);
+            }
             return 1;
         }
 
@@ -519,10 +546,12 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         public synchronized void endDownload(String rootPath) {
             MapTreeNode localRoot = root.getMap(rootPath);
             // nothing to be unset
-            if (localRoot == null)
+            if (localRoot == null) {
                 return;
-            for (int i = 0; i < localRoot.size(); i++)
+            }
+            for (int i = 0; i < localRoot.size(); i++) {
                 ((MapTreeNode) localRoot.get(i)).clearState(MapTreeNode.S_ISDOWNLOADING);
+            }
         }
 
         /**
@@ -540,7 +569,7 @@ public class NetResourceClassLoader/* extends ClassLoader */{
          * root of tree of available maps, organized as a directory tree, with
          * files as leaves
          */
-        private MapTreeNode root = new MapTreeNode("");
+        private final MapTreeNode root = new MapTreeNode("");
 
         /**
          * checks if map is available at location and if it is at maximum level
@@ -562,8 +591,9 @@ public class NetResourceClassLoader/* extends ClassLoader */{
          */
         private boolean getAvailableList() {
             try {
-                if (bDebug)
+                if (bDebug) {
                     System.out.println("check list of maps for location " + sLocation);
+                }
                 // read the cached file
                 BufferedReader br = null;
                 br = readCachedFile(sLocation, sMapsListFile);
@@ -571,14 +601,17 @@ public class NetResourceClassLoader/* extends ClassLoader */{
                     String sLine;
                     while ((sLine = br.readLine()) != null) {
                         sLine = sLine.trim();
-                        if (sLine.endsWith(Texture.sMapExt))
+                        if (sLine.endsWith(Texture.sMapExt)) {
                             sLine = sLine.substring(0, sLine.length() - Texture.sMapExt.length());
-                        if (sLine.length() > 0)
+                        }
+                        if (sLine.length() > 0) {
                             root.addMap(sLine);
+                        }
                     }
                     br.close();
-                    if (root.size() > 0)
+                    if (root.size() > 0) {
                         return true;
+                    }
                 }
             } catch (Exception ex) {
                 // some exception occured
@@ -608,19 +641,19 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         // this is done by removing file name and adding jar extension to "name"
         int nAfterPos;// , nBeforePos;
         nAfterPos = file_name.lastIndexOf(pathSeparator);
-        if (nAfterPos == -1 || nAfterPos == 0) // not found or first character
+        if ((nAfterPos == -1) || (nAfterPos == 0)) {
             return null;
+        }
         // nBeforePos = file_name.lastIndexOf('/', nAfterPos-1);
         // compute the name removing / and file name
         // return file_name.substring(nBeforePos+1, nAfterPos)+".jar";
         String sRootPath = file_name.substring(0, nAfterPos);
         String sLocalPath = file_name.substring(0, nAfterPos + 1) + "octs.jar";
         String sWebPath = sLocalPath.substring(0);// file_name.substring( 0, nAfterPos+1)+"octs.jar";
-        if (!pathSeparator.equals("/"))
+        if (!pathSeparator.equals("/")) {
             sWebPath = sWebPath.replace(pathSeparator.charAt(0), '/');
-        return new String[] {
-                sLocalPath, sWebPath, sRootPath
-        };
+        }
+        return new String[] { sLocalPath, sWebPath, sRootPath };
     }
 
     public static final Integer FIND_RESOURCE_MALFORMED_NAME = Integer.valueOf(-1);
@@ -656,36 +689,38 @@ public class NetResourceClassLoader/* extends ClassLoader */{
      */
     private synchronized Object[] findResourceAsStream(String name, int nLocationIndex) {
         // check if cache directory exists
-        if (!bIsCacheDir)
-            return new Object[] {
-                    null, FIND_RESOURCE_NO_CACHE_DIRECTORY, new String("no available cache directory, giving up")
-            };// no way!!! this can't be, this function has been called with a wrong parameter
+        if (!bIsCacheDir) {
+            return new Object[] { null, FIND_RESOURCE_NO_CACHE_DIRECTORY,
+                    new String("no available cache directory, giving up") };// no way!!! this can't be, this function has been called with a wrong parameter
+        }
         boolean bMaxLevel = false;
         // check to see if file is available in repository list
         if (repLists[nLocationIndex] != null) {
             MapTreeNode nRet = repLists[nLocationIndex].getMap(name);
-            if (bDebug)
+            if (bDebug) {
                 System.out.println("get map " + name + " nRet=" + nRet);
-            if (nRet == null || !nRet.checkState(MapTreeNode.S_AVAILABLE)) {
+            }
+            if ((nRet == null) || !nRet.checkState(MapTreeNode.S_AVAILABLE)) {
                 // file not available in list, so don't search it locally or on the web
-                if (bDebug)
+                if (bDebug) {
                     System.out.println("FIND_RESOURCE_FILE_UNAVAILABLE for map " + name);
-                return new Object[] {
-                        null, FIND_RESOURCE_FILE_UNAVAILABLE, new String("file is unavailable in repository, giving up")
-                };
+                }
+                return new Object[] { null, FIND_RESOURCE_FILE_UNAVAILABLE,
+                        new String("file is unavailable in repository, giving up") };
             }
             ;
             // check to see if this node isn't already downloading
             if (repLists[nLocationIndex].checkIsDonwloading(nRet)) {
-                if (bDebug)
+                if (bDebug) {
                     System.out.println("FIND_RESOURCE_FILE_ISDOWNLOADING for map " + name);
-                return new Object[] {
-                        null, FIND_RESOURCE_FILE_ISDOWNLOADING, new String("file is being downloaded, please have patience")
-                };
+                }
+                return new Object[] { null, FIND_RESOURCE_FILE_ISDOWNLOADING,
+                        new String("file is being downloaded, please have patience") };
             }
             // if this node has no children, then it means that is maximal level
-            if (nRet.size() == 0)
+            if (nRet.size() == 0) {
                 bMaxLevel = true;
+            }
         }
         // identify jar that contains the file
         // this is done by removing file name and adding jar extension to "name"
@@ -701,23 +736,23 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             synchronized (dwlListsSyncObj) {
                 Vector dwlL = dwlLists[nLocationIndex];
                 for (int i = 0; i < dwlL.size(); i++) {
-                    if (((String) dwlL.get(i)).equals(sJarFile[2]))
-                        return new Object[] {
-                                null, FIND_RESOURCE_FILE_ISDOWNLOADING, new String("file is being downloaded, please have patience")
-                        };
+                    if (((String) dwlL.get(i)).equals(sJarFile[2])) {
+                        return new Object[] { null, FIND_RESOURCE_FILE_ISDOWNLOADING,
+                                new String("file is being downloaded, please have patience") };
+                    }
                 }
             }
         }
         String sBaseName = name;
         int nPos = sBaseName.lastIndexOf(pathSeparator);
-        if (nPos != -1)
+        if (nPos != -1) {
             sBaseName = sBaseName.substring(nPos + 1);
+        }
         // add extension to map file name
         sBaseName += Texture.sMapExt;
-        if (sJarFile == null)
-            return new Object[] {
-                    null, FIND_RESOURCE_MALFORMED_NAME, new String("wrong file name format, giving up")
-            };// no way!!! this can't be, this function has been called with a wrong parameter
+        if (sJarFile == null) {
+            return new Object[] { null, FIND_RESOURCE_MALFORMED_NAME, new String("wrong file name format, giving up") };// no way!!! this can't be, this function has been called with a wrong parameter
+        }
         boolean bJarFileFound = false;
         boolean bZeroFileError = false;
         InputStream is = null;
@@ -726,8 +761,9 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             // open a file to check 0 length jars
             File f = new File(sCacheDir + sSiteName + pathSeparator + sJarFile[0]);
             // 0 length jar
-            if (f.exists() && f.length() == 0L)
+            if (f.exists() && (f.length() == 0L)) {
                 bZeroFileError = true;
+            }
             // obtain stream from jar
             JarFile jf = new JarFile(f, false);
             bJarFileFound = true;
@@ -736,58 +772,60 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             if (bStoreInJar) {
                 if (jf.getEntry(sBaseName) != null) {
                     is = jf.getInputStream(jf.getEntry(sBaseName));
-                    if (!bMaxLevel && jf.getEntry(sBaseName + ".maxlevel") != null)
+                    if (!bMaxLevel && (jf.getEntry(sBaseName + ".maxlevel") != null)) {
                         bMaxLevel = true;
+                    }
                 }
             } else {
                 // obtain stream from file
                 // System.out.println("trying to read: "+sCacheDir+sSiteName+pathSeparator+name);
                 File fOct = new File(sCacheDir + sSiteName + pathSeparator + name + Texture.sMapExt);
-                if (fOct.exists() && fOct.length() > 0L) {
+                if (fOct.exists() && (fOct.length() > 0L)) {
                     is = new FileInputStream(fOct);
-                    File fMaxLevel = new File(sCacheDir + sSiteName + pathSeparator + name + Texture.sMapExt + ".maxlevel");
-                    if (!bMaxLevel && fMaxLevel.exists())
+                    File fMaxLevel = new File(sCacheDir + sSiteName + pathSeparator + name + Texture.sMapExt
+                            + ".maxlevel");
+                    if (!bMaxLevel && fMaxLevel.exists()) {
                         bMaxLevel = true;
+                    }
                 }
             }
         } catch (Exception ex) {
             // no file found
-            if (bDebug)
-                if (!bJarFileFound)
+            if (bDebug) {
+                if (!bJarFileFound) {
                     System.out.println("jar file not found in cache.");
-                else
+                } else {
                     System.out.println("searched entry not found in cached jar.");
-            // ex.printStackTrace();
+                    // ex.printStackTrace();
+                }
+            }
         }
         if (is != null) {
             if (bMaxLevel) {
-                if (bDebug)
+                if (bDebug) {
                     System.out.println("got entry for " + sBaseName + " at max level");
-                return new Object[] {
-                        is, FIND_RESOURCE_MAX_LEVEL, new String("jar is valid, resource found, and at maximal level")
-                };
-            } else
-                return new Object[] {
-                        is, FIND_RESOURCE_OK, "jar is valid, resource found"
-                };
+                }
+                return new Object[] { is, FIND_RESOURCE_MAX_LEVEL,
+                        new String("jar is valid, resource found, and at maximal level") };
+            } else {
+                return new Object[] { is, FIND_RESOURCE_OK, "jar is valid, resource found" };
+            }
         }
         ;
-        if (bZeroFileError)
-            return new Object[] {
-                    null, FIND_RESOURCE_JAR_UNAVAILABLE, new String("jar is empty, error on downloading, retry download")
-            };
+        if (bZeroFileError) {
+            return new Object[] { null, FIND_RESOURCE_JAR_UNAVAILABLE,
+                    new String("jar is empty, error on downloading, retry download") };
+        }
         // System.out.println(" not found");
         // treat error cases
         if (!bJarFileFound) {
             // no jar file found
-            return new Object[] {
-                    null, FIND_RESOURCE_JAR_UNAVAILABLE, new String("jar file not found in cache, download suggested")
-            };
-        } else
+            return new Object[] { null, FIND_RESOURCE_JAR_UNAVAILABLE,
+                    new String("jar file not found in cache, download suggested") };
+        } else {
             // no file in jar??
-            return new Object[] {
-                    null, FIND_RESOURCE_FILE_UNAVAILABLE, new String("file not found in jar, giving up")
-            };
+            return new Object[] { null, FIND_RESOURCE_FILE_UNAVAILABLE, new String("file not found in jar, giving up") };
+        }
     }
 
     /**
@@ -797,20 +835,22 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         String sRet = sExtraImagesLocation;
         int nIndex;
         // remove prefix: http:// or file:// or whatever
-        if ((nIndex = sRet.indexOf("://")) != -1)
+        if ((nIndex = sRet.indexOf("://")) != -1) {
             sRet = sRet.substring(nIndex + 3);
+        }
         // for the rest of the path, transform path separator ( "/" or "\" ) in "_"
         sRet = sRet.replaceAll("/|\\\\", "_");
         sRet = sRet.replaceAll(":", "");
-        if (sRet.endsWith("_"))
+        if (sRet.endsWith("_")) {
             sRet = sRet.substring(0, sRet.length() - 1);
+        }
         return sRet;
     }
 
     private void endDownload(int nIndex, String rootPath) {
-        if (repLists[nIndex] != null)
+        if (repLists[nIndex] != null) {
             repLists[nIndex].endDownload(rootPath);
-        else {
+        } else {
             // check the stored file going to be downloaded from list if repository
             // list is not available
             // remove the entry from list
@@ -846,18 +886,22 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         // get jar name
         String[] sJarFile;
         sJarFile = getJarFromFileName(name);
-        if (sJarFile == null)
+        if (sJarFile == null) {
             return false;
+        }
         // check to see if another thread didn't already started the download
         // System.out.println("index is "+nIndex+" repository is "+repLists[nIndex]);
         if (repLists[nIndex] != null) {
             int retVal = repLists[nIndex].startDownload(sJarFile[2]);
-            if (bDebug)
-                System.out.println("start downloading file " + sJarFile[0] + " result: " + retVal + " from repository " + repLists[nIndex]);
+            if (bDebug) {
+                System.out.println("start downloading file " + sJarFile[0] + " result: " + retVal + " from repository "
+                        + repLists[nIndex]);
+            }
             // if root path is unavailable, then the find test will also fail
             // so it should never return -1
-            if (retVal == -1)
+            if (retVal == -1) {
                 return false;
+            }
             // if already someone is downloading the requested file, that means
             // that a child node of this root path has is_downloading state set,
             // then it should wait for a while before returning, and then attempting
@@ -878,21 +922,25 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             synchronized (dwlListsSyncObj) {
                 Vector dwlL = dwlLists[nIndex];
                 for (int i = 0; i < dwlL.size(); i++) {
-                    if (((String) dwlL.get(i)).equals(sJarFile[2]))
+                    if (((String) dwlL.get(i)).equals(sJarFile[2])) {
                         return true;
+                    }
                 }
                 // jar not downloading so set it for download
                 dwlL.add(sJarFile[2]);
             }
         }
-        if (bDebug)
-            System.out.println("jar name is local: " + sJarFile[0] + " and web: " + sExtraImagesLocations[nIndex] + sJarFile[1]);
+        if (bDebug) {
+            System.out.println("jar name is local: " + sJarFile[0] + " and web: " + sExtraImagesLocations[nIndex]
+                    + sJarFile[1]);
+        }
         String sRelWebPath;
         // here I suppose thtat the name has an extension fo exactly 4 characters, mainly ".jar"
-        if (sJarFile[1].length() > 4)
+        if (sJarFile[1].length() > 4) {
             sRelWebPath = sJarFile[1].substring(0, sJarFile[1].length() - 4);
-        else
+        } else {
             sRelWebPath = sJarFile[1];
+        }
         boolean bUseProgressBar = false;
         boolean bHiddenBefore = false;
         // start downloading the jar
@@ -960,21 +1008,24 @@ public class NetResourceClassLoader/* extends ClassLoader */{
              * return false;
              * };
              */
-            if (lTotalSize <= 0 || lTotalSize > MAX_JAR_SIZE) {// invalid file size for jar
+            if ((lTotalSize <= 0) || (lTotalSize > MAX_JAR_SIZE)) {// invalid file size for jar
                 endDownload(nIndex, sJarFile[2]);
                 return false;
             }
             isDown = connection.getInputStream();
             // isDown = urlDown.openStream();
-            if (bDebug)
+            if (bDebug) {
                 System.out.println("jar file stream is opened");
+            }
 
             // site directory name from where from jar is downloaded
             String sSiteName = getSiteName(sExtraImagesLocations[nIndex]);
             // if an connection for download is available, try to create the output directory and file
             if (!doJarDirectories(sCacheDir, sSiteName + pathSeparator + sJarFile[0])) {
-                if (bDebug)
-                    System.out.println("could not create directories to jar file: " + sSiteName + pathSeparator + sJarFile[0]);
+                if (bDebug) {
+                    System.out.println("could not create directories to jar file: " + sSiteName + pathSeparator
+                            + sJarFile[0]);
+                }
                 endDownload(nIndex, sJarFile[2]);
                 return false;
             }
@@ -984,8 +1035,10 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             File fJar = new File(sTempJarFullPath);
             // set the smallest date, that is 00:00:00 GMT, January 1, 1970 plus one milisecond
             fJar.setLastModified(1);
-            if (bDebug)
-                System.out.println("output file created in cache: " + sCacheDir + sSiteName + pathSeparator + sJarFile[0]);
+            if (bDebug) {
+                System.out.println("output file created in cache: " + sCacheDir + sSiteName + pathSeparator
+                        + sJarFile[0]);
+            }
 
             long lReadSoFar = 0;
             byte buff[] = new byte[nBufferSize];
@@ -996,8 +1049,10 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             // curRate = 0;
             FileOutputStream fOS = new FileOutputStream(fJar);
             if (fOS == null) {
-                if (bDebug)
-                    System.out.println("could not open output stream to: " + sCacheDir + sSiteName + pathSeparator + sJarFile[0]);
+                if (bDebug) {
+                    System.out.println("could not open output stream to: " + sCacheDir + sSiteName + pathSeparator
+                            + sJarFile[0]);
+                }
                 endDownload(nIndex, sJarFile[2]);
                 return false;
             }
@@ -1010,13 +1065,13 @@ public class NetResourceClassLoader/* extends ClassLoader */{
                 ;
             }
             // rehide panel, if hidden from start
-            if (bUseProgressBar && jpDownloadPanel != null) {
+            if (bUseProgressBar && (jpDownloadPanel != null)) {
                 if (jpDownloadPanel.isVisible() == false) {
                     bHiddenBefore = true;
                     jpDownloadPanel.setVisible(true);
                 }
             }
-            if (bUseProgressBar && jpbDownloadBar != null) {
+            if (bUseProgressBar && (jpbDownloadBar != null)) {
                 jpbDownloadBar.setStringPainted(true);
                 jpbDownloadBar.setString("Downloading " + sRelWebPath);
                 jpbDownloadBar.setMinimum(0);
@@ -1035,8 +1090,9 @@ public class NetResourceClassLoader/* extends ClassLoader */{
                     lReadSoFar += nRead;
                     // if ( bDebug )
                     // System.out.println("read so far: "+lReadSoFar);
-                    if (bUseProgressBar && jpbDownloadBar != null)
-                        jpbDownloadBar.setValue((int) (100 * lReadSoFar / lTotalSize));
+                    if (bUseProgressBar && (jpbDownloadBar != null)) {
+                        jpbDownloadBar.setValue((int) ((100 * lReadSoFar) / lTotalSize));
+                    }
                     fOS.write(buff, 0, nRead);
                     // update current rate
                     // curRate += nRead;
@@ -1059,13 +1115,15 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             isDown.close();
             // set web jar's last modification time to know when to update it
             fJar.setLastModified(connection.getLastModified());
-            if (bDebug)
+            if (bDebug) {
                 System.out.println("jar file stream is closed, total read " + lReadSoFar);
-            if (bUseProgressBar && jpDownloadPanel != null) {
-                if (bHiddenBefore)
-                    jpDownloadPanel.setVisible(false);
             }
-            if (bUseProgressBar && jpbDownloadBar != null) {
+            if (bUseProgressBar && (jpDownloadPanel != null)) {
+                if (bHiddenBefore) {
+                    jpDownloadPanel.setVisible(false);
+                }
+            }
+            if (bUseProgressBar && (jpbDownloadBar != null)) {
                 jpbDownloadBar.setStringPainted(false);
                 jpbDownloadBar.setString("");
                 jpbDownloadBar.setValue(0);
@@ -1083,16 +1141,20 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             }
             // download ended, so check the file integrity by checking size
             if (lReadSoFar != lTotalSize) {
-                logger.log(Level.WARNING, "Invalid reported size (" + lTotalSize + "b) with downloaded size (" + lReadSoFar + "b) for jar "
-                        + sJarFile[1]);
+                logger.log(Level.WARNING, "Invalid reported size (" + lTotalSize + "b) with downloaded size ("
+                        + lReadSoFar + "b) for jar " + sJarFile[1]);
                 // if jar no good, delete it
                 // File fJar = new File(sCacheDir+sJarFile);
                 try {
-                    if (fJar.isFile())
-                        if (!fJar.delete())
-                            logger.log(Level.WARNING, "Invalid downloaded jar file " + sJarFile[0] + " could not be deleted.");
+                    if (fJar.isFile()) {
+                        if (!fJar.delete()) {
+                            logger.log(Level.WARNING, "Invalid downloaded jar file " + sJarFile[0]
+                                    + " could not be deleted.");
+                        }
+                    }
                 } catch (SecurityException sex) {
-                    logger.log(Level.WARNING, "Could not delete temporary downloaded jar file " + sJarFile[0] + ", no delete right.");
+                    logger.log(Level.WARNING, "Could not delete temporary downloaded jar file " + sJarFile[0]
+                            + ", no delete right.");
                 }
                 endDownload(nIndex, sJarFile[2]);
                 return false;
@@ -1102,23 +1164,30 @@ public class NetResourceClassLoader/* extends ClassLoader */{
                 try {
                     File fRealJar = new File(sJarFullPath);
                     if (fJar.isFile()) {
-                        if (!fJar.renameTo(fRealJar))
-                            logger.log(Level.WARNING, "Could not rename temporary downloaded jar file " + sJarFile[0] + ".");
-                        else
+                        if (!fJar.renameTo(fRealJar)) {
+                            logger.log(Level.WARNING, "Could not rename temporary downloaded jar file " + sJarFile[0]
+                                    + ".");
+                        } else {
                             bFileOk = true;
-                    } else
+                        }
+                    } else {
                         logger.log(Level.WARNING, "No temporary downloaded jar file " + sJarFile[0] + " is available.");
+                    }
                 } catch (SecurityException sex) {
-                    logger.log(Level.WARNING, "Could not rename temporary downloaded jar file " + sJarFile[0] + ", no write right.");
+                    logger.log(Level.WARNING, "Could not rename temporary downloaded jar file " + sJarFile[0]
+                            + ", no write right.");
                 }
                 if (!bFileOk) {
                     endDownload(nIndex, sJarFile[2]);
                     return false;// could not rename temporary downloaded file, so return false
                 }
             }
-            logger.log(logLevel, "jar file " + sJarFile[1] + " with size " + lTotalSize + "b downloaded in " + (fullEndTime - fullStartTime) + "ms");
-            if (bDebug)
-                System.out.println("jar file " + sJarFile[1] + " with size " + lTotalSize + "b downloaded in " + (fullEndTime - fullStartTime) + "ms");
+            logger.log(logLevel, "jar file " + sJarFile[1] + " with size " + lTotalSize + "b downloaded in "
+                    + (fullEndTime - fullStartTime) + "ms");
+            if (bDebug) {
+                System.out.println("jar file " + sJarFile[1] + " with size " + lTotalSize + "b downloaded in "
+                        + (fullEndTime - fullStartTime) + "ms");
+            }
             // time to extract files if so requested
             try {
                 if (!bStoreInJar) {
@@ -1127,7 +1196,8 @@ public class NetResourceClassLoader/* extends ClassLoader */{
                     InputStream isOctFile;
                     FileOutputStream osOctFile;
                     // remove trailling "octs.jar"
-                    String pathToJar = sCacheDir + sSiteName + pathSeparator + sJarFile[0].substring(0, sJarFile[0].length() - 8);
+                    String pathToJar = sCacheDir + sSiteName + pathSeparator
+                            + sJarFile[0].substring(0, sJarFile[0].length() - 8);
                     for (Enumeration en = jf.entries(); en.hasMoreElements();) {
                         JarEntry jarEntry = (JarEntry) en.nextElement();
                         if (!jarEntry.isDirectory() && !jarEntry.getName().startsWith("META-INF")) {
@@ -1141,9 +1211,10 @@ public class NetResourceClassLoader/* extends ClassLoader */{
                             } while (nRead > 0);
                             osOctFile.close();
                             isOctFile.close();
-                            if (bDebug)
-                                System.out.println("File " + jarEntry.getName() + " successfully extracted from jar " + sJarFile[0] + " to "
-                                        + pathToJar);
+                            if (bDebug) {
+                                System.out.println("File " + jarEntry.getName() + " successfully extracted from jar "
+                                        + sJarFile[0] + " to " + pathToJar);
+                            }
                         }
                         ;
                     }
@@ -1159,11 +1230,12 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             return true;
         } catch (Exception ex) {
             // file could not be opened
-            if (bUseProgressBar && jpDownloadPanel != null) {
-                if (bHiddenBefore)
+            if (bUseProgressBar && (jpDownloadPanel != null)) {
+                if (bHiddenBefore) {
                     jpDownloadPanel.setVisible(false);
+                }
             }
-            if (bUseProgressBar && jpbDownloadBar != null) {
+            if (bUseProgressBar && (jpbDownloadBar != null)) {
                 jpbDownloadBar.setStringPainted(false);
                 jpbDownloadBar.setString("");
                 jpbDownloadBar.setValue(0);
@@ -1207,10 +1279,12 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         try {
             while (nEndPos != -1) {
                 File f = new File(cacheDir + jarFile.substring(0, nEndPos));
-                if (bDebug)
+                if (bDebug) {
                     System.out.println("creating directory: " + cacheDir + jarFile.substring(0, nEndPos));
-                if (!f.isDirectory())
+                }
+                if (!f.isDirectory()) {
                     f.mkdir();
+                }
                 nStartPos = nEndPos + 1;
                 nEndPos = jarFile.indexOf(pathSeparator, nStartPos);
             }
@@ -1239,33 +1313,38 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         Integer errorCode = null;
         String errorMsg = null;
         try {
-            if (bDebug)
+            if (bDebug) {
                 System.out.println("get resource: " + name + Texture.sMapExt);
+            }
             // very specialized class loader, only for octs
             // is = super.getResourceAsStream(name);
-            if (name.length() > 0 && name.startsWith("*")) {// resource should be loaded using normal classloader
-                is = Thread.currentThread().getContextClassLoader().getResourceAsStream(name.substring(1) + Texture.sMapExt);
+            if ((name.length() > 0) && name.startsWith("*")) {// resource should be loaded using normal classloader
+                is = Thread.currentThread().getContextClassLoader()
+                        .getResourceAsStream(name.substring(1) + Texture.sMapExt);
             } else {
                 // search in cache, or download it
-                if (bDebug)
+                if (bDebug) {
                     System.out.println("find resource: " + name + Texture.sMapExt);
+                }
                 // search in local list of jars
                 Object[] obJarInfos;
                 for (int i = 0; i < sExtraImagesLocations.length; i++) {
                     obJarInfos = findResourceAsStream(name, i);
-                    if (obJarInfos != null && obJarInfos.length == 3) {
+                    if ((obJarInfos != null) && (obJarInfos.length == 3)) {
                         is = (InputStream) obJarInfos[0];
                         errorCode = (Integer) obJarInfos[1];
                         errorMsg = (String) obJarInfos[2];
-                        if (bDebug)
+                        if (bDebug) {
                             System.out.println("find resource at " + sExtraImagesLocations[i] + " : " + errorMsg);
-                        if (is != null)
+                        }
+                        if (is != null) {
                             break;
+                        }
                         // return new Object[] { is, errorCode };
-                        if (errorCode == FIND_RESOURCE_JAR_UNAVAILABLE && bDownloadNewFiles) {// download this file only
-                                                                                              // if new files are
-                                                                                              // allowed to be
-                                                                                              // downloaded
+                        if ((errorCode == FIND_RESOURCE_JAR_UNAVAILABLE) && bDownloadNewFiles) {// download this file only
+                                                                                                // if new files are
+                                                                                                // allowed to be
+                                                                                                // downloaded
                             // jar not found in cache dir, so download it
                             // first, check the directory limit size to see if is ok
                             // and eventually make some space
@@ -1276,18 +1355,23 @@ public class NetResourceClassLoader/* extends ClassLoader */{
                             // cache and load the resource if available
                             // download from all sources, but use the first one
                             if (tryDownloadJarForResource(name, i)) {
-                                if (bDebug)
-                                    System.out.println("jar for resource " + name + " downloaded from " + sExtraImagesLocations[i]);
+                                if (bDebug) {
+                                    System.out.println("jar for resource " + name + " downloaded from "
+                                            + sExtraImagesLocations[i]);
+                                }
                                 obJarInfos = findResourceAsStream(name, i);
-                                if (obJarInfos != null && obJarInfos.length == 3) {
+                                if ((obJarInfos != null) && (obJarInfos.length == 3)) {
                                     is = (InputStream) obJarInfos[0];
                                     errorCode = (Integer) obJarInfos[1];
                                     errorMsg = (String) obJarInfos[2];
-                                    if (bDebug && errorMsg != null)
+                                    if (bDebug && (errorMsg != null)) {
                                         System.out.println("message: " + errorMsg);
+                                    }
                                     break;
-                                } else
-                                    System.out.println("error in info from findResource for " + name + " from " + sExtraImagesLocations[i]);
+                                } else {
+                                    System.out.println("error in info from findResource for " + name + " from "
+                                            + sExtraImagesLocations[i]);
+                                }
                             }
                             ;
                         }
@@ -1307,13 +1391,12 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             ;
         } catch (Exception ex) {
             // some exception occured, ignore it
-            if (bDebug)
+            if (bDebug) {
                 ex.printStackTrace();
+            }
         }
         // }
-        return new Object[] {
-                is, errorCode
-        };
+        return new Object[] { is, errorCode };
     }
 
     // public /*InputStream*/Object[] getResourceAsStream_old(String name)
@@ -1401,10 +1484,12 @@ public class NetResourceClassLoader/* extends ClassLoader */{
      */
     private void checkNewJarsAndClearCache() {
         // check first if cache directory exists
-        if (!bIsCacheDir)
+        if (!bIsCacheDir) {
             return;
-        if (!bDownloadNewFiles)
+        }
+        if (!bDownloadNewFiles) {
             return;
+        }
 
         /*
          * try {
@@ -1519,6 +1604,7 @@ public class NetResourceClassLoader/* extends ClassLoader */{
 
     class FileAccessTimeComparator implements Comparator {
 
+        @Override
         public int compare(Object o1, Object o2) {
             if (!(o1 instanceof File) || !(o2 instanceof File)) {
                 throw new IllegalArgumentException();
@@ -1561,16 +1647,17 @@ public class NetResourceClassLoader/* extends ClassLoader */{
 
     public void setCacheDir(String cacheDir) {
         sCacheDir = cacheDir;
-        if (!sCacheDir.endsWith(pathSeparator))
+        if (!sCacheDir.endsWith(pathSeparator)) {
             sCacheDir += pathSeparator;
+        }
         sCacheDir += "cached_maps" + pathSeparator;
         // print a path
         // System.out.println("System.getProperty(\"deployment.user.cachedir\")="+System.getProperty("deployment.user.cachedir"));
         // add an extra slash to directory if missing
         File fCacheDir = new File(sCacheDir);
-        if (fCacheDir.exists() && !fCacheDir.isDirectory())
+        if (fCacheDir.exists() && !fCacheDir.isDirectory()) {
             sCacheDir = ".";
-        else if (!fCacheDir.exists()) {
+        } else if (!fCacheDir.exists()) {
             try {
                 fCacheDir.mkdir();
             } catch (Exception ex) {
@@ -1582,19 +1669,22 @@ public class NetResourceClassLoader/* extends ClassLoader */{
         if (!fCacheDir.isDirectory()) {
             logger.log(Level.WARNING, "No cache directory available at: " + sCacheDir);
             bIsCacheDir = false;
-        } else
+        } else {
             bIsCacheDir = true;
+        }
         logger.log(Level.INFO, "jars cache directory is " + sCacheDir);
     }
 
     public String getExtraImagesLocations() {
-        if (sExtraImagesLocations == null)
+        if (sExtraImagesLocations == null) {
             return "";
+        }
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < sExtraImagesLocations.length; i++) {
-            if (sb.length() > 0)
+        for (String sExtraImagesLocation : sExtraImagesLocations) {
+            if (sb.length() > 0) {
                 sb.append(",");
-            sb.append(sExtraImagesLocations[i]);
+            }
+            sb.append(sExtraImagesLocation);
         }
         return sb.toString();
     }
@@ -1607,12 +1697,14 @@ public class NetResourceClassLoader/* extends ClassLoader */{
      *            - comma separated list of web paths
      */
     public void setExtraImagesLocations(String extraImagesLocations) {
-        if (extraImagesLocations == null || extraImagesLocations.length() == 0)
+        if ((extraImagesLocations == null) || (extraImagesLocations.length() == 0)) {
             return;
+        }
         sExtraImagesLocations = extraImagesLocations.split(",");
         for (int i = 0; i < sExtraImagesLocations.length; i++) {
-            if (!sExtraImagesLocations[i].endsWith("/"))
+            if (!sExtraImagesLocations[i].endsWith("/")) {
                 sExtraImagesLocations[i] += "/";
+            }
         }
         ;
         // create repositories array
@@ -1627,12 +1719,14 @@ public class NetResourceClassLoader/* extends ClassLoader */{
             ;
             // update list of available jars
             for (int i = 0; i < sExtraImagesLocations.length; i++) {
-                if (bDebug)
+                if (bDebug) {
                     System.out.println("check list of jars");
+                }
 
                 RepositoryList repList = new RepositoryList(sExtraImagesLocations[i]);
-                if (repList.getAvailableList())
+                if (repList.getAvailableList()) {
                     auxRL[i] = repList;
+                }
             }
             ;
             // TODO: should take all download jobs from old repository lists

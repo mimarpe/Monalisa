@@ -1,5 +1,5 @@
 /*
- * $Id: InfoToFile.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: InfoToFile.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 
 package lia.Monitor.ClientsFarmProxy.Monitor;
@@ -21,7 +21,7 @@ import lia.Monitor.monitor.AppConfigChangeListener;
  */
 public class InfoToFile {
 
-    private static final transient Logger logger = Logger.getLogger(InfoToFile.class.getName());
+    private static final Logger logger = Logger.getLogger(InfoToFile.class.getName());
 
     private static final String POISON_PILL = "STOP_TOKEN_NOW";
 
@@ -34,6 +34,7 @@ public class InfoToFile {
     static {
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
                 reloadConfig();
             }
@@ -55,7 +56,8 @@ public class InfoToFile {
                     try {
                         worker = new WriterThread();
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, " [ InfoToFile ] checkStatusAndStart( " + shouldStart + " ) failed to start. Cause: ", t);
+                        logger.log(Level.WARNING, " [ InfoToFile ] checkStatusAndStart( " + shouldStart
+                                + " ) failed to start. Cause: ", t);
                     }
                     if (worker != null) {
                         worker.start();
@@ -64,7 +66,8 @@ public class InfoToFile {
                         enabled.set(false);
                     }
                 } else {
-                    logger.log(Level.INFO, " [ InfoToFile ] checkStatusAndStart( " + shouldStart + " ) WriterTask already started. enabled(): " + enabled.get());
+                    logger.log(Level.INFO, " [ InfoToFile ] checkStatusAndStart( " + shouldStart
+                            + " ) WriterTask already started. enabled(): " + enabled.get());
                     returnValue = true;
                 }
             } else {
@@ -72,12 +75,14 @@ public class InfoToFile {
                     try {
                         _thisInstance.theQueue.put(POISON_PILL);
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, "\n\n\n [ InfoToFile ] Unable to notify STOP_TOKEN to the Queue! \n\n");
+                        logger.log(Level.WARNING,
+                                "\n\n\n [ InfoToFile ] Unable to notify STOP_TOKEN to the Queue! \n\n");
                     }
                 }
             }
         } finally {
-            logger.log(Level.INFO, " [ InfoToFile ] checkStatusAndStart( " + shouldStart + " ) returnVal: " + returnValue + ", enabled=" + enabled.get());
+            logger.log(Level.INFO, " [ InfoToFile ] checkStatusAndStart( " + shouldStart + " ) returnVal: "
+                    + returnValue + ", enabled=" + enabled.get());
         }
 
         return returnValue;
@@ -105,7 +110,8 @@ public class InfoToFile {
         }
 
         private final void drainQueue() throws IOException {
-            logger.log(Level.INFO, " [ InfoToFile ] [ WriterThread ]  drainQueue started for " + theQueue.size() + " elements");
+            logger.log(Level.INFO, " [ InfoToFile ] [ WriterThread ]  drainQueue started for " + theQueue.size()
+                    + " elements");
 
             for (;;) {
                 final String s = theQueue.poll();
@@ -122,6 +128,7 @@ public class InfoToFile {
             }
         }
 
+        @Override
         public void run() {
 
             try {
@@ -135,21 +142,26 @@ public class InfoToFile {
 
                         // it's ok to go for identity
                         if (s == POISON_PILL) {
-                            logger.log(Level.INFO, " [ InfoToFile ] [ WriterThread ] STOP_TOKEN received. enabled(): " + enabled.get());
+                            logger.log(Level.INFO, " [ InfoToFile ] [ WriterThread ] STOP_TOKEN received. enabled(): "
+                                    + enabled.get());
                             break;
                         }
 
-                        if(s == null) {
-                            logger.log(Level.WARNING, " [ InfoToFile ] [ WriterThread ] got null String from Queue !!!?!???!!!! Ignoring it ");
+                        if (s == null) {
+                            logger.log(Level.WARNING,
+                                    " [ InfoToFile ] [ WriterThread ] got null String from Queue !!!?!???!!!! Ignoring it ");
                             continue;
                         }
-                        
+
                         writer.write(s);
                         writer.newLine();
                         writer.flush();
 
                     } catch (InterruptedException ie) {
-                        logger.log(Level.WARNING, " [ InfoToFile ] Trying to start another WriterThread beacause this one got Interrupted Exception. ", ie);
+                        logger.log(
+                                Level.WARNING,
+                                " [ InfoToFile ] Trying to start another WriterThread beacause this one got Interrupted Exception. ",
+                                ie);
                         enabled.set(false);
                         checkStatusAndStart(true);
                         break;
@@ -158,13 +170,16 @@ public class InfoToFile {
                     }
                 }
             } finally {
-                logger.log(Level.INFO, " [ InfoToFile ] [ WriterThread ] will drainQueue() because finished main loop. enabled(): " + enabled.get());
+                logger.log(Level.INFO,
+                        " [ InfoToFile ] [ WriterThread ] will drainQueue() because finished main loop. enabled(): "
+                                + enabled.get());
 
                 if (!isInterrupted()) {
                     try {
                         drainQueue();
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, " [ InfoToFile ] [ WriterThread ] got exception on finally drainQueue. Cause: ", t);
+                        logger.log(Level.WARNING,
+                                " [ InfoToFile ] [ WriterThread ] got exception on finally drainQueue. Cause: ", t);
                     }
                 }
 
@@ -190,7 +205,7 @@ public class InfoToFile {
     }
 
     public boolean writeToFile(final String s) {
-        if (!enabled.get() || s == null) {
+        if (!enabled.get() || (s == null)) {
             return false;
         }
 

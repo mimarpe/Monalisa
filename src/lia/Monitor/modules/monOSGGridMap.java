@@ -26,262 +26,297 @@ import lia.util.ntp.NTPDate;
 
 public class monOSGGridMap extends cmdExec implements MonitoringModule {
 
-	/** The Logger */
-	private static final Logger logger = Logger.getLogger(monOSGGridMap.class.getName());
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -8461740223624886295L;
 
-	/** The name of the module */
-	static public String moduleName = "monOSGGridMap";
+    /** The Logger */
+    private static final Logger logger = Logger.getLogger(monOSGGridMap.class.getName());
 
-	static public String[] ResTypes = new String[] { "Info", "Status" };
+    /** The name of the module */
+    static public String moduleName = "monOSGGridMap";
 
-	static public String OsName = "linux";
+    static public String[] ResTypes = new String[] { "Info", "Status" };
 
-	//last time this module was called
-	private long lastCall;
-	
-	//do not suspend this module
-	protected boolean canSuspend = false;
+    static public String OsName = "linux";
 
-	protected static final String clusterName = "OSG_GridMap";
+    //last time this module was called
+    private long lastCall;
 
-	protected String host = "http://vors.grid.iu.edu/OSG_map_info.txt";
-	
-	protected String hostInfo = "http://vors.grid.iu.edu/cgi-bin/tindex.cgi?res=";
-	
-	protected final Hashtable sites = new Hashtable();
-	
-	final LinkedList lastNodes = new LinkedList(); 
+    //do not suspend this module
+    protected boolean canSuspend = false;
 
-	public monOSGGridMap() {
-		super(moduleName);
-		isRepetitive = true;
-		info.name = moduleName;
-		info.ResTypes = ResTypes;
-	}
+    protected static final String clusterName = "OSG_GridMap";
 
-	public MonModuleInfo init(MNode Node, String arg) {
-		this.Node = Node;
-		logger.log(Level.FINEST, "monOSGGridMap: farmName=" + Node.getFarmName() + " clusterName= "
-				+ Node.getClusterName() + " nodeName=" + Node.getName());
+    protected String host = "http://vors.grid.iu.edu/OSG_map_info.txt";
 
-		String[] args = arg.split("(\\s)*;(\\s)*");
-		if (args != null) {
-			for (int i = 0; i < args.length; i++) {
-				String argTemp = args[i].trim();
-				if (argTemp.startsWith("OSGHostInfo")){
-					hostInfo = argTemp.split("(\\s)*=(\\s)*")[1].trim();
-					logger.log(Level.INFO, "monOSGGridMap: hostInfo = " + hostInfo);
-				}
-				else if (argTemp.startsWith("OSGHost")){
-					host = argTemp.split("(\\s)*=(\\s)*")[1].trim();
-					logger.log(Level.INFO, "monOSGGridMap: host = " + host);
-				}
-			}
-		}
-		lastCall = NTPDate.currentTimeMillis();
-		return info;
-	}
+    protected String hostInfo = "http://vors.grid.iu.edu/cgi-bin/tindex.cgi?res=";
 
-	public String[] ResTypes() {
-		return info.ResTypes;
-	}
+    protected final Hashtable sites = new Hashtable();
 
-	public String getOsName() {
-		return OsName;
-	}
+    final LinkedList lastNodes = new LinkedList();
 
-	public MonModuleInfo getInfo() {
-		return info;
-	}
+    public monOSGGridMap() {
+        super(moduleName);
+        isRepetitive = true;
+        info.name = moduleName;
+        info.ResTypes = ResTypes;
+    }
 
-	public Object doProcess() throws Exception {
-		
-		if (logger.isLoggable(Level.FINEST))
-			logger.log(Level.FINEST, "OSGGridMap: doProcess called");
-		// can't run this module, init failed
-		if (info.getState() != 0) {
-			throw new Exception("There was some exception during init ...");
-		}
+    @Override
+    public MonModuleInfo init(MNode Node, String arg) {
+        this.Node = Node;
+        logger.log(Level.FINEST,
+                "monOSGGridMap: farmName=" + Node.getFarmName() + " clusterName= " + Node.getClusterName()
+                        + " nodeName=" + Node.getName());
 
-		long ls = NTPDate.currentTimeMillis();
-		if (ls <= lastCall)
-			return null;
+        String[] args = arg.split("(\\s)*;(\\s)*");
+        if (args != null) {
+            for (String arg2 : args) {
+                String argTemp = arg2.trim();
+                if (argTemp.startsWith("OSGHostInfo")) {
+                    hostInfo = argTemp.split("(\\s)*=(\\s)*")[1].trim();
+                    logger.log(Level.INFO, "monOSGGridMap: hostInfo = " + hostInfo);
+                } else if (argTemp.startsWith("OSGHost")) {
+                    host = argTemp.split("(\\s)*=(\\s)*")[1].trim();
+                    logger.log(Level.INFO, "monOSGGridMap: host = " + host);
+                }
+            }
+        }
+        lastCall = NTPDate.currentTimeMillis();
+        return info;
+    }
 
-		lastCall = ls;
-		sites.clear();
+    @Override
+    public String[] ResTypes() {
+        return info.ResTypes;
+    }
 
-		try {
-			checkSite();
-		} catch (Throwable t) {
-			logger.log(Level.WARNING, "Got exception "+t, t);
-		}       
-		
-		for (Enumeration en=sites.elements(); en.hasMoreElements(); )
-			System.out.println("site: "+en.nextElement());
-		
+    @Override
+    public String getOsName() {
+        return OsName;
+    }
 
-		if (sites.size() == 0) { 
-			// got no results...
-			logger.warning("Got no results when accessing "+host);
-			return null;
-		}
+    @Override
+    public MonModuleInfo getInfo() {
+        return info;
+    }
 
-		// the returned vector of eResults...
-		final Vector v = new Vector();
-		for (Enumeration en = sites.keys(); en.hasMoreElements(); ) {
-			String siteID = (String)en.nextElement();
-			GridSiteInfo info = (GridSiteInfo)sites.get(siteID);
-			if (info == null) continue;
+    @Override
+    public Object doProcess() throws Exception {
 
-			if (!lastNodes.contains(siteID))
-				lastNodes.addLast(siteID);
-			
-			eResult er = new eResult();
-			er.time = ls;
-			er.ClusterName = getClusterName();
-			er.NodeName = siteID;
-			er.FarmName = getFarmName();
-			er.Module = moduleName;
-			try {
-				byte[] buff = Utils.writeObject(info);
-				er.addSet("Info", buff);
-			} catch (Throwable t) {
-				logger.log(Level.WARNING, "Cannot serialize lcg_ldap", t);
-			}
-			v.add(er);
-			
-			Result r = new Result();
-			r.time = ls;
-			r.ClusterName = getClusterName();
-			r.NodeName = siteID;
-			r.FarmName = getFarmName();
-			r.Module = moduleName;
-			if (info.name == null || info.name.length() == 0 || info.name.equals("N/A"))
-				r.addSet("Status", 0D);
-			else if (info.webURL == null || info.webURL.length() == 0 || info.webURL.equals("N/A"))
-				r.addSet("Status", 0D);
-			else
-				r.addSet("Status", 1D);
-			v.add(r);
-		}
-		
-		// also check for nodes to be removed...
-		for (Iterator it = lastNodes.iterator(); it.hasNext(); ) {
-			String m = (String)it.next();
-			if (!sites.containsKey(m)) {
-				eResult er = new eResult();
-				er.time = ls;
-				er.ClusterName = getClusterName();
-				er.NodeName = m;
-				er.FarmName = getFarmName();
-				er.Module = moduleName;
-				er.param = null;
-				er.param_name = null;
-				v.add(er);
-			}
-		}
-		lastNodes.clear();
-		for (Enumeration en = sites.keys(); en.hasMoreElements(); ) {
-			lastNodes.addLast(en.nextElement());
-		}
-		sites.clear();
-		if(logger.isLoggable(Level.FINER)) {
-			logger.log(Level.FINER, " Returning [ " + ((v == null)?0:v.size()) + " ] results");
-		}
-		return v;
-	}
-	
-	private void checkSite() {
-		
-		final HashMap order = new HashMap();
-		
-		try {
-			final URL url = new URL(host); 
-			final URLConnection conn = url.openConnection();
-			final BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-			
-			String line = in.readLine();
-			if (line == null)
-				return;
-			if (line.startsWith("#")) line = line.substring(1);
-			String split[] = line.split(",");
-			if (split != null)
-				for (int i=0; i<split.length;i++) {
-					order.put(Integer.valueOf(i), split[i].trim());
-				}
-			
-			while ((line = in.readLine()) != null) {
-				if (line.length() == 0) continue;
-				split = line.split(",");
-				if (split != null) {
-					String name = null;
-					for (int i=0; i<split.length; i++) {
-						final String key = (String)order.get(Integer.valueOf(i));
-						if (key == null) continue;
-						if (key.equals("name")) {
-							name = split[i].trim();
-						}
-					}
-					if (name == null) continue; // advance to the next line..
-					
-					GridSiteInfo info = null; 
-					if (sites.containsKey(name)) {
-						info = (GridSiteInfo)sites.get(name);
-					} else {
-						info = new GridSiteInfo();
-						sites.put(name, info);
-					}
-					info.name = name;
-					info.niceName = name;
-					for (int i=0; i<split.length; i++) {
-						final String key = (String)order.get(Integer.valueOf(i));
-						if (key == null) continue;
-						if (key.equals("host")) {
-							String ss = split[i].trim();
-							if (ss.indexOf('.') >= 0) ss = ss.substring(ss.indexOf('.') + 1);
-							ss = "www."+ss;
-							info.webURL = ss;
-							continue;
-						}
-						if (key.equals("longitude")) {
-							String ss = split[i].trim();
-							try { info.longitude = Double.parseDouble(ss); } catch (Exception e) { }
-							continue;
-						}
-						if (key.equals("latitude")) {
-							String ss = split[i].trim();
-							try { info.latitude = Double.parseDouble(ss); } catch (Exception e) { }
-							continue;
-						}
-					}
-				} 
-			}
-			
-			in.close();
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.log(Level.FINEST, "OSGGridMap: doProcess called");
+        }
+        // can't run this module, init failed
+        if (info.getState() != 0) {
+            throw new Exception("There was some exception during init ...");
+        }
 
-	public static void main(String args[]) {
+        long ls = NTPDate.currentTimeMillis();
+        if (ls <= lastCall) {
+            return null;
+        }
 
-		monOSGGridMap osg = new monOSGGridMap();
-		
-		osg.init(new MNode("test", "127.0.0.1", new MCluster("CMap", null), null), "");
-		try {
-			for (int k = 0; k < 2; k++) {
-				osg.doProcess();
-				System.out.println("-------- sleeeping ----------");
-				Thread.sleep(5000);
-				System.out.println("-------- doProcess-ing --------- k=" + k);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.out.println(" failed to process !!!");
-		}
-	}
-	
+        lastCall = ls;
+        sites.clear();
+
+        try {
+            checkSite();
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "Got exception " + t, t);
+        }
+
+        for (Enumeration en = sites.elements(); en.hasMoreElements();) {
+            System.out.println("site: " + en.nextElement());
+        }
+
+        if (sites.size() == 0) {
+            // got no results...
+            logger.warning("Got no results when accessing " + host);
+            return null;
+        }
+
+        // the returned vector of eResults...
+        final Vector v = new Vector();
+        for (Enumeration en = sites.keys(); en.hasMoreElements();) {
+            String siteID = (String) en.nextElement();
+            GridSiteInfo info = (GridSiteInfo) sites.get(siteID);
+            if (info == null) {
+                continue;
+            }
+
+            if (!lastNodes.contains(siteID)) {
+                lastNodes.addLast(siteID);
+            }
+
+            eResult er = new eResult();
+            er.time = ls;
+            er.ClusterName = getClusterName();
+            er.NodeName = siteID;
+            er.FarmName = getFarmName();
+            er.Module = moduleName;
+            try {
+                byte[] buff = Utils.writeObject(info);
+                er.addSet("Info", buff);
+            } catch (Throwable t) {
+                logger.log(Level.WARNING, "Cannot serialize lcg_ldap", t);
+            }
+            v.add(er);
+
+            Result r = new Result();
+            r.time = ls;
+            r.ClusterName = getClusterName();
+            r.NodeName = siteID;
+            r.FarmName = getFarmName();
+            r.Module = moduleName;
+            if ((info.name == null) || (info.name.length() == 0) || info.name.equals("N/A")) {
+                r.addSet("Status", 0D);
+            } else if ((info.webURL == null) || (info.webURL.length() == 0) || info.webURL.equals("N/A")) {
+                r.addSet("Status", 0D);
+            } else {
+                r.addSet("Status", 1D);
+            }
+            v.add(r);
+        }
+
+        // also check for nodes to be removed...
+        for (Iterator it = lastNodes.iterator(); it.hasNext();) {
+            String m = (String) it.next();
+            if (!sites.containsKey(m)) {
+                eResult er = new eResult();
+                er.time = ls;
+                er.ClusterName = getClusterName();
+                er.NodeName = m;
+                er.FarmName = getFarmName();
+                er.Module = moduleName;
+                er.param = null;
+                er.param_name = null;
+                v.add(er);
+            }
+        }
+        lastNodes.clear();
+        for (Enumeration en = sites.keys(); en.hasMoreElements();) {
+            lastNodes.addLast(en.nextElement());
+        }
+        sites.clear();
+        if (logger.isLoggable(Level.FINER)) {
+            logger.log(Level.FINER, " Returning [ " + ((v == null) ? 0 : v.size()) + " ] results");
+        }
+        return v;
+    }
+
+    private void checkSite() {
+
+        final HashMap order = new HashMap();
+
+        try {
+            final URL url = new URL(host);
+            final URLConnection conn = url.openConnection();
+            final BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+            String line = in.readLine();
+            if (line == null) {
+                return;
+            }
+            if (line.startsWith("#")) {
+                line = line.substring(1);
+            }
+            String split[] = line.split(",");
+            if (split != null) {
+                for (int i = 0; i < split.length; i++) {
+                    order.put(Integer.valueOf(i), split[i].trim());
+                }
+            }
+
+            while ((line = in.readLine()) != null) {
+                if (line.length() == 0) {
+                    continue;
+                }
+                split = line.split(",");
+                if (split != null) {
+                    String name = null;
+                    for (int i = 0; i < split.length; i++) {
+                        final String key = (String) order.get(Integer.valueOf(i));
+                        if (key == null) {
+                            continue;
+                        }
+                        if (key.equals("name")) {
+                            name = split[i].trim();
+                        }
+                    }
+                    if (name == null) {
+                        continue; // advance to the next line..
+                    }
+
+                    GridSiteInfo info = null;
+                    if (sites.containsKey(name)) {
+                        info = (GridSiteInfo) sites.get(name);
+                    } else {
+                        info = new GridSiteInfo();
+                        sites.put(name, info);
+                    }
+                    info.name = name;
+                    info.niceName = name;
+                    for (int i = 0; i < split.length; i++) {
+                        final String key = (String) order.get(Integer.valueOf(i));
+                        if (key == null) {
+                            continue;
+                        }
+                        if (key.equals("host")) {
+                            String ss = split[i].trim();
+                            if (ss.indexOf('.') >= 0) {
+                                ss = ss.substring(ss.indexOf('.') + 1);
+                            }
+                            ss = "www." + ss;
+                            info.webURL = ss;
+                            continue;
+                        }
+                        if (key.equals("longitude")) {
+                            String ss = split[i].trim();
+                            try {
+                                info.longitude = Double.parseDouble(ss);
+                            } catch (Exception e) {
+                            }
+                            continue;
+                        }
+                        if (key.equals("latitude")) {
+                            String ss = split[i].trim();
+                            try {
+                                info.latitude = Double.parseDouble(ss);
+                            } catch (Exception e) {
+                            }
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            in.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String args[]) {
+
+        monOSGGridMap osg = new monOSGGridMap();
+
+        osg.init(new MNode("test", "127.0.0.1", new MCluster("CMap", null), null), "");
+        try {
+            for (int k = 0; k < 2; k++) {
+                osg.doProcess();
+                System.out.println("-------- sleeeping ----------");
+                Thread.sleep(5000);
+                System.out.println("-------- doProcess-ing --------- k=" + k);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println(" failed to process !!!");
+        }
+    }
+
 } // end of class monOSGGridMap
-
 

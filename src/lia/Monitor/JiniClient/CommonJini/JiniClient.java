@@ -57,9 +57,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
 
     private static final String default_LUDs = "monalisa.cacr.caltech.edu,monalisa.cern.ch";
 
-    private static final String COMPONENT = "lia.Monitor.JiniClient.CommonJini";
-
-    private static final Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(JiniClient.class.getName());
 
     public volatile LookupDiscoveryManager lookupDiscoveryManager = null;
 
@@ -96,7 +94,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
 
     private volatile boolean badConnection = false;
 
-    private Object sync = new Object();
+    private final Object sync = new Object();
 
     private final ConcurrentHashMap<ServiceID, Long> proxyError;
 
@@ -147,18 +145,17 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
         this.mainClientClass = mainClientClass;
         this.useFarmBan = useFarmBan;
         this.startMLLusHelper = startMLLusHelper;
-        if (useFarmBan)
+        if (useFarmBan) {
             FarmBan.setJiniClient(this);
+        }
     }
 
     public static final String getProxyIP(ServiceItem proxyItem) {
         final ServiceItem ps = proxyItem;
 
-        if (ps != null && ps.attributeSets != null) {
-            for (int i = 0; i < ps.attributeSets.length; i++) {
-                Entry e = ps.attributeSets[i];
-
-                if (e != null && e instanceof ProxyServiceEntry) {
+        if ((ps != null) && (ps.attributeSets != null)) {
+            for (Entry e : ps.attributeSets) {
+                if ((e != null) && (e instanceof ProxyServiceEntry)) {
                     return ((ProxyServiceEntry) e).ipAddress;
                 }
             }
@@ -185,23 +182,29 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
 
         final String groups1[] = gr1.split(",");
         final String groups2[] = gr2.split(",");
-        if (groups1 == null && groups2 == null)
+        if ((groups1 == null) && (groups2 == null)) {
             return true;
-        if (groups1 == null && groups2 != null)
+        }
+        if ((groups1 == null) && (groups2 != null)) {
             return false;
-        if (groups1 != null && groups2 == null)
+        }
+        if ((groups1 != null) && (groups2 == null)) {
             return false;
-        if (groups1.length != groups2.length)
+        }
+        if (groups1.length != groups2.length) {
             return false;
-        for (int i = 0; i < groups1.length; i++) {
+        }
+        for (String element : groups1) {
             boolean found = false;
-            for (int j = 0; j < groups2.length; j++)
-                if (groups1[i].equals(groups2[j])) {
+            for (String element2 : groups2) {
+                if (element.equals(element2)) {
                     found = true;
                     break;
                 }
-            if (!found)
+            }
+            if (!found) {
                 return false;
+            }
         }
         return true;
     }
@@ -214,112 +217,157 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
 
         MLControlEntry old_mlce = getEntry(old_si, MLControlEntry.class);
         MLControlEntry new_mlce = getEntry(new_si, MLControlEntry.class);
-        if (old_mlce == null && new_mlce != null)
+        if ((old_mlce == null) && (new_mlce != null)) {
             return false;
-        if (old_mlce != null && new_mlce == null)
+        }
+        if ((old_mlce != null) && (new_mlce == null)) {
             return false;
-        if (old_mlce != null && new_mlce != null) {
+        }
+        if ((old_mlce != null) && (new_mlce != null)) {
 
             // System.out.println("old_controlPort="+old_mlce.ControlPort);
             // System.out.println("new_controlPort="+new_mlce.ControlPort);
 
-            if (old_mlce.ControlPort == null && new_mlce.ControlPort != null)
+            if ((old_mlce.ControlPort == null) && (new_mlce.ControlPort != null)) {
                 return false;
-            if (old_mlce.ControlPort != null && new_mlce.ControlPort == null)
+            }
+            if ((old_mlce.ControlPort != null) && (new_mlce.ControlPort == null)) {
                 return false;
-            if (old_mlce.ControlPort != null && new_mlce.ControlPort != null && !old_mlce.ControlPort.equals(new_mlce.ControlPort))
+            }
+            if ((old_mlce.ControlPort != null) && (new_mlce.ControlPort != null)
+                    && !old_mlce.ControlPort.equals(new_mlce.ControlPort)) {
                 return false;
+            }
         }
         SiteInfoEntry old_sie = getEntry(old_si, SiteInfoEntry.class);
         SiteInfoEntry new_sie = getEntry(new_si, SiteInfoEntry.class);
-        if (old_sie == null && new_sie != null)
+        if ((old_sie == null) && (new_sie != null)) {
             return false;
-        if (old_sie != null && new_sie == null)
+        }
+        if ((old_sie != null) && (new_sie == null)) {
             return false;
-        if (old_sie != null && new_sie != null) {
-            if (old_sie.IPAddress == null && new_sie.IPAddress != null)
+        }
+        if ((old_sie != null) && (new_sie != null)) {
+            if ((old_sie.IPAddress == null) && (new_sie.IPAddress != null)) {
                 return false;
-            if (old_sie.IPAddress != null && new_sie.IPAddress == null)
+            }
+            if ((old_sie.IPAddress != null) && (new_sie.IPAddress == null)) {
                 return false;
-            if (old_sie.IPAddress != null && new_sie.IPAddress != null && !old_sie.IPAddress.equals(new_sie.IPAddress))
+            }
+            if ((old_sie.IPAddress != null) && (new_sie.IPAddress != null)
+                    && !old_sie.IPAddress.equals(new_sie.IPAddress)) {
                 return false;
-            if (old_sie.UnitName == null && new_sie.UnitName != null)
+            }
+            if ((old_sie.UnitName == null) && (new_sie.UnitName != null)) {
                 return false;
-            if (old_sie.UnitName != null && new_sie.UnitName == null)
+            }
+            if ((old_sie.UnitName != null) && (new_sie.UnitName == null)) {
                 return false;
-            if (old_sie.UnitName != null && new_sie.UnitName != null && !old_sie.UnitName.equals(new_sie.UnitName))
+            }
+            if ((old_sie.UnitName != null) && (new_sie.UnitName != null) && !old_sie.UnitName.equals(new_sie.UnitName)) {
                 return false;
-            if (old_sie.ML_PORT == null && new_sie.ML_PORT != null)
+            }
+            if ((old_sie.ML_PORT == null) && (new_sie.ML_PORT != null)) {
                 return false;
-            if (old_sie.ML_PORT != null && new_sie.ML_PORT == null)
+            }
+            if ((old_sie.ML_PORT != null) && (new_sie.ML_PORT == null)) {
                 return false;
-            if (old_sie.ML_PORT != null && new_sie.ML_PORT != null && !old_sie.ML_PORT.equals(new_sie.ML_PORT))
+            }
+            if ((old_sie.ML_PORT != null) && (new_sie.ML_PORT != null) && !old_sie.ML_PORT.equals(new_sie.ML_PORT)) {
                 return false;
+            }
 
             // System.out.println("old_registryPort="+old_sie.REGISTRY_PORT);
             // System.out.println("new_registryPort="+new_sie.REGISTRY_PORT);
 
-            if (old_sie.REGISTRY_PORT == null && new_sie.REGISTRY_PORT != null)
+            if ((old_sie.REGISTRY_PORT == null) && (new_sie.REGISTRY_PORT != null)) {
                 return false;
-            if (old_sie.REGISTRY_PORT != null && new_sie.REGISTRY_PORT == null)
+            }
+            if ((old_sie.REGISTRY_PORT != null) && (new_sie.REGISTRY_PORT == null)) {
                 return false;
-            if (old_sie.REGISTRY_PORT != null && new_sie.REGISTRY_PORT != null && !old_sie.REGISTRY_PORT.equals(new_sie.REGISTRY_PORT))
+            }
+            if ((old_sie.REGISTRY_PORT != null) && (new_sie.REGISTRY_PORT != null)
+                    && !old_sie.REGISTRY_PORT.equals(new_sie.REGISTRY_PORT)) {
                 return false;
+            }
         }
         GenericMLEntry old_gmle = getEntry(old_si, GenericMLEntry.class);
         GenericMLEntry new_gmle = getEntry(new_si, GenericMLEntry.class);
-        if (old_gmle == null && new_gmle != null)
+        if ((old_gmle == null) && (new_gmle != null)) {
             return false;
-        if (old_gmle != null && new_gmle == null)
+        }
+        if ((old_gmle != null) && (new_gmle == null)) {
             return false;
-        if (old_gmle != null && new_gmle != null) {
-            if (old_gmle.hash == null && new_gmle.hash != null)
+        }
+        if ((old_gmle != null) && (new_gmle != null)) {
+            if ((old_gmle.hash == null) && (new_gmle.hash != null)) {
                 return false;
-            if (old_gmle.hash != null && new_gmle.hash == null)
+            }
+            if ((old_gmle.hash != null) && (new_gmle.hash == null)) {
                 return false;
-            if (old_gmle.hash != null && new_gmle.hash != null) {
-                if (old_gmle.hash.containsKey("hostName") && !new_gmle.hash.containsKey("hostName"))
+            }
+            if ((old_gmle.hash != null) && (new_gmle.hash != null)) {
+                if (old_gmle.hash.containsKey("hostName") && !new_gmle.hash.containsKey("hostName")) {
                     return false;
-                if (!old_gmle.hash.containsKey("hostName") && new_gmle.hash.containsKey("hostName"))
+                }
+                if (!old_gmle.hash.containsKey("hostName") && new_gmle.hash.containsKey("hostName")) {
                     return false;
-                if (old_gmle.hash.containsKey("hostName") && new_gmle.hash.containsKey("hostName") && !old_gmle.hash.get("hostName").equals(new_gmle.hash.get("hostName")))
+                }
+                if (old_gmle.hash.containsKey("hostName") && new_gmle.hash.containsKey("hostName")
+                        && !old_gmle.hash.get("hostName").equals(new_gmle.hash.get("hostName"))) {
                     return false;
-                if (old_gmle.hash.containsKey("ipAddress") && !new_gmle.hash.containsKey("ipAddress"))
+                }
+                if (old_gmle.hash.containsKey("ipAddress") && !new_gmle.hash.containsKey("ipAddress")) {
                     return false;
-                if (!old_gmle.hash.containsKey("ipAddress") && new_gmle.hash.containsKey("ipAddress"))
+                }
+                if (!old_gmle.hash.containsKey("ipAddress") && new_gmle.hash.containsKey("ipAddress")) {
                     return false;
-                if (old_gmle.hash.containsKey("ipAddress") && new_gmle.hash.containsKey("ipAddress") && !old_gmle.hash.get("ipAddress").equals(new_gmle.hash.get("ipAddress")))
+                }
+                if (old_gmle.hash.containsKey("ipAddress") && new_gmle.hash.containsKey("ipAddress")
+                        && !old_gmle.hash.get("ipAddress").equals(new_gmle.hash.get("ipAddress"))) {
                     return false;
+                }
             }
         }
         MonaLisaEntry old_mle = getEntry(old_si, MonaLisaEntry.class);
         MonaLisaEntry new_mle = getEntry(new_si, MonaLisaEntry.class);
-        if (old_mle == null && new_mle != null)
+        if ((old_mle == null) && (new_mle != null)) {
             return false;
-        if (old_mle != null && new_mle == null)
+        }
+        if ((old_mle != null) && (new_mle == null)) {
             return false;
-        if (old_mle != null && new_mle != null) {
+        }
+        if ((old_mle != null) && (new_mle != null)) {
             // check latitude
-            if (old_mle.LAT == null && new_mle.LAT != null)
+            if ((old_mle.LAT == null) && (new_mle.LAT != null)) {
                 return false;
-            if (old_mle.LAT != null && new_mle.LAT == null)
+            }
+            if ((old_mle.LAT != null) && (new_mle.LAT == null)) {
                 return false;
-            if (old_mle.LAT != null && new_mle.LAT != null && !old_mle.LAT.equals(new_mle.LAT))
+            }
+            if ((old_mle.LAT != null) && (new_mle.LAT != null) && !old_mle.LAT.equals(new_mle.LAT)) {
                 return false;
+            }
             // check longitude
-            if (old_mle.LONG == null && new_mle.LONG != null)
+            if ((old_mle.LONG == null) && (new_mle.LONG != null)) {
                 return false;
-            if (old_mle.LONG != null && new_mle.LONG == null)
+            }
+            if ((old_mle.LONG != null) && (new_mle.LONG == null)) {
                 return false;
-            if (old_mle.LONG != null && new_mle.LONG != null && !old_mle.LONG.equals(new_mle.LONG))
+            }
+            if ((old_mle.LONG != null) && (new_mle.LONG != null) && !old_mle.LONG.equals(new_mle.LONG)) {
                 return false;
+            }
             // check group
-            if (old_mle.Group == null && new_mle.Group != null)
+            if ((old_mle.Group == null) && (new_mle.Group != null)) {
                 return false;
-            if (old_mle.Group != null && new_mle.Group == null)
+            }
+            if ((old_mle.Group != null) && (new_mle.Group == null)) {
                 return false;
-            if (old_mle.Group != null && new_mle.Group != null && !checkSameGroups(old_mle.Group, new_mle.Group))
+            }
+            if ((old_mle.Group != null) && (new_mle.Group != null) && !checkSameGroups(old_mle.Group, new_mle.Group)) {
                 return false;
+            }
         }
         return true;
     }
@@ -332,7 +380,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
         // System.out.println("old_gmle="+old_gmle.hash);
         // System.out.println("new_gmle="+new_gmle.hash);
 
-        if (old_gmle != null && old_gmle.hash != null && new_gmle != null && new_gmle.hash != null) {
+        if ((old_gmle != null) && (old_gmle.hash != null) && (new_gmle != null) && (new_gmle.hash != null)) {
             if (new_gmle.hash.containsKey("OS_PortMap")) {
                 return false;
             }
@@ -341,8 +389,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
     }
 
     public void actualizeFarms(ArrayList<ServiceItem> activeFarms) {
-        if (activeFarms == null) // no farm was found
+        if (activeFarms == null) {
             return;
+        }
 
         HashMap<ServiceID, ServiceItem> h = new HashMap<ServiceID, ServiceItem>();
         boolean addedFarm = false;
@@ -359,7 +408,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                     try {
                         if (!checkGMLEForPortMap(old_si, farm)) {
                             GenericMLEntry gmle = getEntry(farm, GenericMLEntry.class);
-                            if (gmle != null && gmle.hash != null && gmle.hash.containsKey("OS_PortMap")) {
+                            if ((gmle != null) && (gmle.hash != null) && gmle.hash.containsKey("OS_PortMap")) {
                                 ArrayList<?> list = (ArrayList<?>) gmle.hash.get("OS_PortMap");
                                 portMapChanged(farm.serviceID, list);
                             }
@@ -387,8 +436,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
           // in order to allow initialization of all refrences to the newly added farms. If this is
           // skipped, it might be possible to remove a farm before completely adding it, so that
           // the snodes (from SerMonitorBase) and farms (from JiniClient) has become unsynchronized.
-        if (addedFarm)
+        if (addedFarm) {
             waitServiceThreads("...");
+        }
 
         // remove old farm
         for (Iterator<ServiceID> it = farms.keySet().iterator(); it.hasNext();) {
@@ -416,8 +466,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
     private final Map<ServiceID, Long> htFarmBanNotifications = new ConcurrentHashMap<ServiceID, Long>();
 
     public boolean isBanned(ServiceItem si) {
-        if (!useFarmBan)
+        if (!useFarmBan) {
             return false;
+        }
         SiteInfoEntry sie = getEntry(si, SiteInfoEntry.class);
         String ipad = null;
         String un = null;
@@ -429,7 +480,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             if (FarmBan.isFarmBanned(un) || FarmBan.isIPBanned(ipad)) {
                 Long l = htFarmBanNotifications.get(si.serviceID);
 
-                if (l == null || TimeUnit.NANOSECONDS.toMinutes(Utils.nanoNow() - l.longValue()) > 30) {
+                if ((l == null) || (TimeUnit.NANOSECONDS.toMinutes(Utils.nanoNow() - l.longValue()) > 30)) {
                     System.out.println("Farm is banned: " + si.serviceID + " (" + un + " @ " + ipad + ")");
                     htFarmBanNotifications.put(si.serviceID, Long.valueOf(Utils.nanoNow()));
                 }
@@ -446,7 +497,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             SiteInfoEntry sie = getEntry(si, SiteInfoEntry.class);
             String un = sie != null ? sie.UnitName : null;
 
-            if (un != null && un.equals(sFarmName)) {
+            if ((un != null) && un.equals(sFarmName)) {
                 removeNode(si.serviceID); // force rediscovery
             }
         }
@@ -459,20 +510,23 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             SiteInfoEntry sie = getEntry(si, SiteInfoEntry.class);
             String ipad = sie != null ? sie.IPAddress : null;
 
-            if (ipad != null && ipad.equals(sIP)) {
+            if ((ipad != null) && ipad.equals(sIP)) {
                 removeNode(si.serviceID); // force rediscovery
             }
         }
     }
 
     public static final <T extends Entry> T getEntry(ServiceItem si, Class<T> entryClass) {
-        if (si == null)
+        if (si == null) {
             return null;
+        }
 
         final Entry[] attrs = si.attributeSets;
-        for (final Entry entry : attrs)
-            if (entry.getClass() == entryClass)
+        for (final Entry entry : attrs) {
+            if (entry.getClass() == entryClass) {
                 return entryClass.cast(entry);
+            }
+        }
 
         return null;
     }
@@ -487,13 +541,14 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
         } // sync
         logger.log(Level.INFO, "Closing connection with proxy");
 
-        if (proxyService != null && proxyService.serviceID != null) {
+        if ((proxyService != null) && (proxyService.serviceID != null)) {
             proxyErr(proxyService);
         }
 
-        if (p != null && p.serviceID != null) {
+        if ((p != null) && (p.serviceID != null)) {
             if (proxyError.remove(p.serviceID) != null) {
-                logger.log(Level.INFO, "Proxy with SID: " + p.serviceID + " IP: " + getProxyIP(p) + " removed from black list");
+                logger.log(Level.INFO, "Proxy with SID: " + p.serviceID + " IP: " + getProxyIP(p)
+                        + " removed from black list");
             }
         }
 
@@ -505,10 +560,14 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             logger.log(Level.WARNING, "\n\n proxyErr called with null proxyServiceItem \n\n");
         }
 
-        logger.log(Level.INFO, " Adding proxy with SID: " + proxyServiceItem.serviceID + " IP: " + getProxyIP(proxyServiceItem) + " to the black list for: " + TimeUnit.NANOSECONDS.toSeconds(PROXY_ERROR_INTERVAL.get()) + " seconds");
+        logger.log(Level.INFO,
+                " Adding proxy with SID: " + proxyServiceItem.serviceID + " IP: " + getProxyIP(proxyServiceItem)
+                        + " to the black list for: " + TimeUnit.NANOSECONDS.toSeconds(PROXY_ERROR_INTERVAL.get())
+                        + " seconds");
         proxyError.put(proxyServiceItem.serviceID, Long.valueOf(Utils.nanoNow()));
     }
 
+    @Override
     public void run() {
         logger.log(Level.INFO, ">> Start trying to make a connection to proxy");
 
@@ -523,14 +582,14 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
 
                 final boolean bProxyConnVerified = verifyProxyConnection();
 
-                if (bProxyConnVerified == false || foundProxy != null || badConnection) {
+                if ((bProxyConnVerified == false) || (foundProxy != null) || badConnection) {
                     // note the time we started connecting to proxy
                     final long nStartCreatingProxyConnection = System.currentTimeMillis();
 
                     // set the proxy with the bad connection in the error prone proxies cache
-                    if (badConnection && proxyService != null) {
+                    if (badConnection && (proxyService != null)) {
                         // set the current proxy to be errorProne
-                        if (proxyService != null && proxyService.serviceID != null) {
+                        if ((proxyService != null) && (proxyService.serviceID != null)) {
                             proxyErr(proxyService);
                         }
                         badConnection = false;
@@ -539,7 +598,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                     if (bProxyConnVerified == false) {
                         // if current connection with proxy is broken, make sure that no farm is alive
                         // this will also be called later, but it might block in the findBestProxy for a longer time...
-                        if (proxyService != null && proxyService.serviceID != null) {
+                        if ((proxyService != null) && (proxyService.serviceID != null)) {
                             proxyErr(proxyService);
                         }
                         actualizeFarms(new ArrayList<ServiceItem>());
@@ -553,8 +612,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                             foundProxy = null;
                         }
                     }
-                    if (nextProxy == null)
+                    if (nextProxy == null) {
                         nextProxy = findBestProxy(null);
+                    }
 
                     // ramiro: ServiceID has equals() ... should be faster ...
                     // if(proxyService == null || !
@@ -562,7 +622,8 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                     // verifyProxyConnection() == false){
 
                     // if found another proxy OR connection with current proxy is broken,
-                    if (proxyService == null || !nextProxy.serviceID.equals(proxyService.serviceID) || bProxyConnVerified == false) {
+                    if ((proxyService == null) || !nextProxy.serviceID.equals(proxyService.serviceID)
+                            || (bProxyConnVerified == false)) {
                         if (bProxyConnVerified == true) {// should be the case only if changed from the GUI
 
                             logger.log(Level.INFO, "Closing connection with proxy");
@@ -570,7 +631,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                             // close current connection or make sure that it's closed
 
                             // ramiro: add this to bad proxy black list
-                            if (proxyService != null && proxyService.serviceID != null) {
+                            if ((proxyService != null) && (proxyService.serviceID != null)) {
                                 proxyErr(proxyService);
                             }
                             closeProxyConnection();
@@ -582,7 +643,8 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                         proxyService = nextProxy;
                         connectToProxy(proxyService);
 
-                        logger.log(Level.INFO, ">> Connection to proxy realised in " + (System.currentTimeMillis() - nStartCreatingProxyConnection) + " miliseconds");
+                        logger.log(Level.INFO, ">> Connection to proxy realised in "
+                                + (System.currentTimeMillis() - nStartCreatingProxyConnection) + " miliseconds");
                         // skip sleeping at the end to find the farms faster
                         continue;
                     }
@@ -643,25 +705,27 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
     private String updatePrefString(String sGroups, String group, boolean in) {
 
         String groupsToChange[] = group.split(",");
-        if (groupsToChange == null || groupsToChange.length == 0) {
-            if (logger.isLoggable(Level.FINEST))
+        if ((groupsToChange == null) || (groupsToChange.length == 0)) {
+            if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINE, "Group " + group + " error on decomposition...");
+            }
             return sGroups;
         }
         if (in) {
-            for (int i = 0; i < groupsToChange.length; i++) {
+            for (String element : groupsToChange) {
                 // add this group [i] to the list if not already there
                 StringTokenizer stk = new StringTokenizer(sGroups, ",");
                 boolean found = false;
                 while (stk.hasMoreTokens()) {
                     String oldGroup = stk.nextToken();
-                    if (oldGroup.equals(groupsToChange[i])) {
+                    if (oldGroup.equals(element)) {
                         found = true;
                         break;
                     }
                 }
-                if (!found)
-                    sGroups += ((sGroups.length() == 0) ? groupsToChange[i] : "," + groupsToChange[i]);
+                if (!found) {
+                    sGroups += ((sGroups.length() == 0) ? element : "," + element);
+                }
             }
         } else {
             // remove this groups from the list
@@ -670,13 +734,15 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             while (stk.hasMoreTokens()) {
                 String oldGroup = stk.nextToken();
                 boolean found = false;
-                for (int i = 0; i < groupsToChange.length; i++)
-                    if (oldGroup.equals(groupsToChange[i])) {
+                for (String element : groupsToChange) {
+                    if (oldGroup.equals(element)) {
                         found = true;
                         break;
                     }
-                if (!found)
+                }
+                if (!found) {
                     sGroups += ((sGroups.length() == 0) ? oldGroup : "," + oldGroup);
+                }
             }
         }
         return sGroups;
@@ -692,8 +758,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
      *            current list of active groups
      */
     public void updateUserGroupPreferences(String group, boolean selected) {
-        if (mainClientClass == null)
+        if (mainClientClass == null) {
             return;
+        }
 
         // update preference file
         try {
@@ -748,15 +815,16 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
      * list, according to selected
      */
     private void putInSGroups(String sGroups, boolean selected) {
-        if (sGroups == null)
+        if (sGroups == null) {
             return;
+        }
         StringTokenizer tz = new StringTokenizer(sGroups, ",");
         while (tz.hasMoreTokens()) {
             String ss = tz.nextToken();
             // commented to allow these options to be overwritten
             // if(! SGroups.containsKey(ss)) {
             Integer oldSel = SGroups.get(ss);
-            if (oldSel == null || (oldSel.intValue() != (selected ? 1 : 0))) {
+            if ((oldSel == null) || (oldSel.intValue() != (selected ? 1 : 0))) {
                 SGroups.put(ss, Integer.valueOf(selected ? 1 : 0));
                 updateUserGroupPreferences(ss, selected);
             }
@@ -797,12 +865,14 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             /**
              * @param codesource  
              */
+            @Override
             public PermissionCollection getPermissions(CodeSource codesource) {
                 Permissions perms = new Permissions();
                 perms.add(new AllPermission());
                 return (perms);
             }
 
+            @Override
             public void refresh() {
                 //not now
             }
@@ -816,6 +886,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
 
             SecureContextExecutor.getInstance().execute(new PrivilegedExceptionAction<Object>() {
 
+                @Override
                 public Object run() throws Exception {
 
                     // get specified LookupLocators[]
@@ -832,7 +903,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                             logger.log(Level.WARNING, "Failed to create the LookupDiscoveryManager. Will retry.", e);
                         }
                     }
-                    
+
                     LeaseRenewalManager lrm = null;
                     while (lrm == null) {
                         try {
@@ -841,18 +912,20 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                             logger.log(Level.WARNING, "Failed to create the LeaseRenewalManager. Will retry. Cause:", e);
                         }
                     }
-                    
+
                     while (sdm == null) {
                         try {
                             sdm = new ServiceDiscoveryManager(lookupDiscoveryManager, lrm);
                         } catch (Exception e) {
-                            logger.log(Level.WARNING, "Failed to create ServiceDiscoveryManager. Will retry. Cause: ", e);
+                            logger.log(Level.WARNING, "Failed to create ServiceDiscoveryManager. Will retry. Cause: ",
+                                    e);
                         }
                     }
 
                     MLJiniManagersProvider.setManagers(lookupDiscoveryManager, sdm, null);
-                    if (startMLLusHelper)
+                    if (startMLLusHelper) {
                         mlLusHelper = MLLUSHelper.getInstance();
+                    }
                     return null;
                 }
             });
@@ -866,11 +939,13 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
     /** Add to the sytem codebase the user given codebase. (useful for clients that provide a dl) */
     private void setUserCodeBase() {
         String codebase = System.getProperty("java.rmi.server.codebase");
-        if (codebase == null)
+        if (codebase == null) {
             codebase = "";
+        }
         String userCodeBase = AppConfig.getProperty("lia.Monitor.userCodeBase");
-        if (userCodeBase != null)
+        if (userCodeBase != null) {
             codebase = userCodeBase.replace(',', ' ').trim() + " " + codebase;
+        }
         System.setProperty("java.rmi.server.codebase", codebase.trim());
     }
 
@@ -894,8 +969,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
         sb.append("\n");
         logger.log(Level.INFO, sb.toString());
 
-        if (i == count)
+        if (i == count) {
             return locators;
+        }
 
         LookupLocator[] nlocators = new LookupLocator[i];
         for (int j = 0; j < i; j++) {
@@ -909,13 +985,15 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
      * finds the best proxy; get topology information if not available
      */
     public ServiceItem findBestProxy(ServiceItem someProxy) {
-        if (someProxy != null)
+        if (someProxy != null) {
             return someProxy;
-        if (asC == null && netC == null)
+        }
+        if ((asC == null) && (netC == null)) {
             getTopologyData();
+        }
         logger.log(Level.INFO, " [ JiniClient ] Searching for proxy services...");
         ServiceItem[] proxies = null;
-        while (proxies == null || proxies.length == 0) {
+        while ((proxies == null) || (proxies.length == 0)) {
             mlLusHelper.forceUpdate();
             try {
                 Thread.sleep(50);
@@ -972,15 +1050,16 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             return true;
         } catch (Exception e) {
             logger.log(Level.WARNING, "Error connectiong to the proxy", e);
-            if (proxyS.serviceID != null)
+            if (proxyS.serviceID != null) {
                 proxyErr(proxyS);
+            }
         }
         return false;
     }
 
     /**
-	 * 
-	 */
+     * 
+     */
     private void cleanupProxyErrHash() {
 
         try {
@@ -1001,7 +1080,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                     final Map.Entry<ServiceID, Long> entry = it.next();
                     key = entry.getKey();
                     final Long time = entry.getValue();
-                    if (Utils.nanoNow() - time.longValue() > PROXY_ERROR_INTERVAL.get()) {
+                    if ((Utils.nanoNow() - time.longValue()) > PROXY_ERROR_INTERVAL.get()) {
                         logger.log(Level.INFO, " [ JiniClient ] Removing proxy with SID: " + key + " from black list");
                         it.remove();
                     }// if
@@ -1011,7 +1090,8 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             } // for
 
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ JiniClient ] Got exception in cleanupProxyErrHash. proxyError.size() = " + proxyError.size(), t);
+            logger.log(Level.WARNING, " [ JiniClient ] Got exception in cleanupProxyErrHash. proxyError.size() = "
+                    + proxyError.size(), t);
         }
     }
 
@@ -1022,40 +1102,41 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
         // try to reverse lookup
         final Set<String> pProxiesIPList = new HashSet<String>();
         if (prefProxies != null) {
-            for (final String proxyHostName : prefProxies)
+            for (final String proxyHostName : prefProxies) {
                 try {
                     final InetAddress[] allIPs = InetAddress.getAllByName(proxyHostName);
-                    for (final InetAddress ip : allIPs)
+                    for (final InetAddress ip : allIPs) {
                         pProxiesIPList.add(ip.getHostAddress());
+                    }
                 } catch (Throwable t) {
                     logger.log(Level.WARNING, " [ JiniClient ] Unable to got the IPs for proxy entry: " + proxyHostName);
                 }
+            }
         }
 
         cleanupProxyErrHash();
 
-        if (services == null || services.length == 0) {
+        if ((services == null) || (services.length == 0)) {
             return null;
         } // if
 
         ServiceItem minProxy = null;
         double value = Double.MAX_VALUE;
 
-        for (int i = 0; i < services.length; i++) {
-            ServiceItem min = services[i];
-
+        for (ServiceItem min : services) {
             ServiceID pID = min.serviceID;
-            if (pID == null || proxyError.containsKey(pID)) { // ignore proxies prone to errors.
-                logger.log(Level.INFO, " Ignoring proxy with SID: " + pID + " IP: " + getProxyIP(min) + " ... still in the black list");
+            if ((pID == null) || proxyError.containsKey(pID)) { // ignore proxies prone to errors.
+                logger.log(Level.INFO, " Ignoring proxy with SID: " + pID + " IP: " + getProxyIP(min)
+                        + " ... still in the black list");
                 continue;
             } // if
 
             double points = 0;
             Entry[] attrs = min.attributeSets;
             GenericMLEntry generic = null;
-            for (int j = 0; j < attrs.length; j++) {
-                if (attrs[j] instanceof GenericMLEntry) {
-                    generic = (GenericMLEntry) attrs[j];
+            for (Entry attr : attrs) {
+                if (attr instanceof GenericMLEntry) {
+                    generic = (GenericMLEntry) attr;
                     break;
                 } // if
             } // for
@@ -1068,19 +1149,19 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
 
                 boolean bClose = false;
 
-                if (netP != null && netC != null && netP.equals(netC)) {
+                if ((netP != null) && (netC != null) && netP.equals(netC)) {
                     points = points + 0; // 20 points for the same network
                     bClose = true;
                 } else {
-                    if (asP != null && asC != null && asP.equals(asC)) {
+                    if ((asP != null) && (asC != null) && asP.equals(asC)) {
                         points = points + 10; // 40 points for the same as
                         bClose = true;
                     } else {
-                        if (countryP != null && countryC != null && countryP.equals(countryC)) {
+                        if ((countryP != null) && (countryC != null) && countryP.equals(countryC)) {
                             points = points + 15; // 50 points for the same country
                             bClose = true;
                         } else {
-                            if (continentP != null && continentC != null && continentP.equals(continentC)) {
+                            if ((continentP != null) && (continentC != null) && continentP.equals(continentC)) {
                                 points = points + 40;
                             } else {
                                 points = points + 50;
@@ -1096,12 +1177,12 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
 
                 Double load = (Double) generic.hash.get("Load5");
 
-                if (load != null && !load.isNaN()) {
+                if ((load != null) && !load.isNaN()) {
 
                     if (bClose) {
-                        points = points + 5 * load.doubleValue();
+                        points = points + (5 * load.doubleValue());
                     } else {
-                        points = points + 10 * load.doubleValue();
+                        points = points + (10 * load.doubleValue());
                     } // if - else
                 } // if
 
@@ -1123,13 +1204,17 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                          * then, if not found, put the IpAddrCache to look for it in another thread
                          */
                         String hostAddress = ((ProxyServiceEntry) attrs[0]).proxyName;
-                        if (hostAddress == null)
+                        if (hostAddress == null) {
                             hostAddress = IpAddrCache.getHostName(ipAddress, true);
-                        else
+                        } else {
                             IpAddrCache.putIPandHostInCache(ipAddress, hostAddress);
-                        if (hostAddress == null)
+                        }
+                        if (hostAddress == null) {
                             hostAddress = ipAddress;
-                        logger.log(Level.INFO, "PROXY " + hostAddress + ":" + portNumber + "\n" + "net=" + netP + " as=" + asP + " country=" + countryP + " continent=" + continentP + " clients=" + nrClients + " Load5=" + load + " points=" + points);
+                        }
+                        logger.log(Level.INFO, "PROXY " + hostAddress + ":" + portNumber + "\n" + "net=" + netP
+                                + " as=" + asP + " country=" + countryP + " continent=" + continentP + " clients="
+                                + nrClients + " Load5=" + load + " points=" + points);
                         // } catch (UnknownHostException e) {
                         // e.printStackTrace();
                         // }
@@ -1141,8 +1226,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                 } // if
             } // if
         } // for
-        if (minProxy == null) // in case no Proxy has gmlEntry
+        if (minProxy == null) {
             minProxy = services[0];
+        }
         return minProxy;
     } // findProxyWithMinClients
 
@@ -1199,8 +1285,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             }
         }
         int n = groupsSet.size();
-        if (n == 0)
+        if (n == 0) {
             return null;
+        }
         return groupsSet.toArray(new String[n]);
     }
 
@@ -1211,8 +1298,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
         for (Map.Entry<String, Integer> entry : SGroups.entrySet()) {
             final String group = entry.getKey();
             final Integer select = entry.getValue();
-            if (select.intValue() == 1) // a selected group
+            if (select.intValue() == 1) {
                 selectedGroups.add(group);
+            }
         } // for
 
         return selectedGroups;
@@ -1221,8 +1309,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
     private String[] getGroups() {
 
         Vector<String> selectedGroups = getVGroups();
-        if (selectedGroups == null)
+        if (selectedGroups == null) {
             return null;
+        }
         String[] selectedG = selectedGroups.toArray(new String[selectedGroups.size()]);
         return selectedG;
     }
@@ -1238,16 +1327,22 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
         // sGList+=(i>0?",":"")+v.get(i);
         // System.out.println("<mluc> active groups : "+sGList);
         // }
-        return new MonMessageClientsProxy("proxy", "c", v, null);
+        final boolean bCompress = AppConfig.getb("lia.Monitor.Client.compress", true);
+
+        //TODO stil bug in the client
+        //hack to notify all configs as they are without diffs - 
+        logger.log(Level.INFO, "--> Compressed configs - " + bCompress);
+        return new MonMessageClientsProxy("proxy", (bCompress) ? "c" : "u", v, null);
     }
 
     public void addLUS(String host, int port) throws Exception {
         LookupLocator[] ll = new LookupLocator[1];
         logger.log(Level.INFO, " Adding LUS  Host = " + host);
-        if (port > 0)
+        if (port > 0) {
             ll[0] = new LookupLocator(host, port);
-        else
+        } else {
             ll[0] = new LookupLocator("jini://" + host);
+        }
         lookupDiscoveryManager.addLocators(ll);
     }
 
@@ -1314,7 +1409,8 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                 BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                 String line = reader.readLine();
                 if (line == null) {
-                    logger.log(Level.WARNING, "Received empty response while reading topology data from " + url.getHost());
+                    logger.log(Level.WARNING,
+                            "Received empty response while reading topology data from " + url.getHost());
                     return false;
                 }
                 line = line.trim();
@@ -1339,8 +1435,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                         countryCode = st.nextToken();
                     }
 
-                    if (i != 2 && i != 3 && i != 8 && i != 9)
+                    if ((i != 2) && (i != 3) && (i != 8) && (i != 9)) {
                         st.nextToken();
+                    }
 
                 } // while
             } else {
@@ -1349,7 +1446,8 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             }
             huc.disconnect();
 
-            logger.log(Level.INFO, "Client topology data : AS=" + as + " NET=" + network + " country=" + countryCode + " continent=" + continentCode + " LONG=" + lon + " LAT=" + lat);
+            logger.log(Level.INFO, "Client topology data : AS=" + as + " NET=" + network + " country=" + countryCode
+                    + " continent=" + continentCode + " LONG=" + lon + " LAT=" + lat);
 
             // export attributes
             asC = as;
@@ -1375,7 +1473,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
         long currentTime;
 
         logger.log(Level.INFO, "Searching a topology service...");
-        while (topSer == null || topSer.length == 0) {
+        while ((topSer == null) || (topSer.length == 0)) {
             currentTime = System.nanoTime();
             if (TimeUnit.NANOSECONDS.toSeconds(currentTime - startTime) > timeout) {
                 logger.log(Level.WARNING, "Timeout while searching topology service");
@@ -1394,8 +1492,8 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             }
         } // while
 
-        for (int i = 0; i < topSer.length; i++) {
-            GenericMLEntry gmle = getEntry(topSer[i], GenericMLEntry.class);
+        for (ServiceItem element : topSer) {
+            GenericMLEntry gmle = getEntry(element, GenericMLEntry.class);
             if (gmle == null) {
                 logger.log(Level.WARNING, "The GMLEntry for the topology service is null");
                 return;
@@ -1405,8 +1503,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
                 logger.log(Level.WARNING, "The URL of the topology service is null");
                 return;
             }
-            if (queryTopoService(topoSerURL))
+            if (queryTopoService(topoSerURL)) {
                 break;
+            }
         }
     }
 
@@ -1484,8 +1583,9 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
             sRet = "<font color='#E68C0B'><b>warning</b></font> (over <b>75%</b>)";
         } else if (dProxyMsgBufStatus < 100) {
             sRet = "<font color='#E45D33'><b>WARNING</b></font> (over <b>90%</b>)";
-        } else
+        } else {
             sRet = "<font color='#D94F4F'><b>ERROR</b></font> (at <b>100%</b>, closing connection)";
+        }
         return sRet;
     }
 
@@ -1513,13 +1613,18 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
      */
     private void reloadConfig() {
         try {
-            PROXY_ERROR_INTERVAL.set(TimeUnit.SECONDS.toNanos(AppConfig.getl("lia.Monitor.JiniClient.CommonJini.PROXY_ERROR_INTERVAL", 300L)));
+            PROXY_ERROR_INTERVAL.set(TimeUnit.SECONDS.toNanos(AppConfig.getl(
+                    "lia.Monitor.JiniClient.CommonJini.PROXY_ERROR_INTERVAL", 300L)));
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ JiniClient ] Unable to reload PROXY_ERROR_INTERVAL. Will set default value. Cause: ", t);
+            logger.log(Level.WARNING,
+                    " [ JiniClient ] Unable to reload PROXY_ERROR_INTERVAL. Will set default value. Cause: ", t);
             PROXY_ERROR_INTERVAL.set(TimeUnit.SECONDS.toNanos(300));
         }
-        
-        logger.log(Level.WARNING, " [ JiniClient ] PROXY_ERROR_INTERVAL se to: " + TimeUnit.NANOSECONDS.toSeconds(PROXY_ERROR_INTERVAL.get()) + " seconds.");
+
+        logger.log(
+                Level.WARNING,
+                " [ JiniClient ] PROXY_ERROR_INTERVAL se to: "
+                        + TimeUnit.NANOSECONDS.toSeconds(PROXY_ERROR_INTERVAL.get()) + " seconds.");
     }
 
     /**
@@ -1528,6 +1633,7 @@ public abstract class JiniClient extends Thread implements AppConfigChangeListen
      * @author ramiro
      * @since Jun 21, 2007
      */
+    @Override
     public void notifyAppConfigChanged() {
         try {
             reloadConfig();

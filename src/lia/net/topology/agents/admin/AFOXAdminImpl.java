@@ -21,7 +21,7 @@ public class AFOXAdminImpl extends RangePortUnicastRemoteObject implements OSAdm
     private static final long serialVersionUID = -3921673507268556255L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(AFOXAdminImpl.class.getName());
+    private static final Logger logger = Logger.getLogger(AFOXAdminImpl.class.getName());
 
     final AFOXAgent parent;
 
@@ -62,7 +62,8 @@ public class AFOXAdminImpl extends RangePortUnicastRemoteObject implements OSAdm
      * @throws RemoteException 
      */
     @Override
-    public String connectPorts(String sPort, String dPort, String connParams, boolean fullDuplex) throws RemoteException {
+    public String connectPorts(String sPort, String dPort, String connParams, boolean fullDuplex)
+            throws RemoteException {
         return parent.connectPorts(sPort, dPort, connParams, fullDuplex);
     }
 
@@ -74,7 +75,8 @@ public class AFOXAdminImpl extends RangePortUnicastRemoteObject implements OSAdm
      * @throws RemoteException 
      */
     @Override
-    public String disconnectPorts(String sPort, String dPort, String connParams, boolean fullDuplex) throws RemoteException {
+    public String disconnectPorts(String sPort, String dPort, String connParams, boolean fullDuplex)
+            throws RemoteException {
         return parent.disconnectPorts(sPort, dPort, connParams, fullDuplex);
     }
 
@@ -108,7 +110,8 @@ public class AFOXAdminImpl extends RangePortUnicastRemoteObject implements OSAdm
      * @throws RemoteException 
      */
     @Override
-    public String changeRSVP(String msgRetryInvl, String ntfRetryInvl, String grInvl, String grcInvl) throws RemoteException {
+    public String changeRSVP(String msgRetryInvl, String ntfRetryInvl, String grInvl, String grcInvl)
+            throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -127,7 +130,9 @@ public class AFOXAdminImpl extends RangePortUnicastRemoteObject implements OSAdm
      * @throws RemoteException 
      */
     @Override
-    public String addCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj, String helloInvl, String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin, String deadInvlMax) throws RemoteException {
+    public String addCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj, String helloInvl,
+            String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin, String deadInvlMax)
+            throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -155,7 +160,9 @@ public class AFOXAdminImpl extends RangePortUnicastRemoteObject implements OSAdm
      * @throws RemoteException 
      */
     @Override
-    public String changeCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj, String helloInvl, String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin, String deadInvlMax) throws RemoteException {
+    public String changeCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj,
+            String helloInvl, String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin,
+            String deadInvlMax) throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -173,7 +180,8 @@ public class AFOXAdminImpl extends RangePortUnicastRemoteObject implements OSAdm
      * @throws RemoteException  
      */
     @Override
-    public String addAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric, String ospfAdj, String adjType, String rsvpRRFlag, String rsvpGRFlag, String ntfProc) throws RemoteException {
+    public String addAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric, String ospfAdj,
+            String adjType, String rsvpRRFlag, String rsvpGRFlag, String ntfProc) throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -200,7 +208,9 @@ public class AFOXAdminImpl extends RangePortUnicastRemoteObject implements OSAdm
      * @throws RemoteException 
      */
     @Override
-    public String changeAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric, String ospfAdj, String adjType, String rsvpRRFlag, String rsvpGRFlag, String ntfProc) throws RemoteException {
+    public String changeAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric,
+            String ospfAdj, String adjType, String rsvpRRFlag, String rsvpGRFlag, String ntfProc)
+            throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -242,7 +252,9 @@ public class AFOXAdminImpl extends RangePortUnicastRemoteObject implements OSAdm
      * @throws RemoteException 
      */
     @Override
-    public String changeLink(String name, String localIP, String remoteIP, String linkType, String adj, String wdmAdj, String remoteIf, String wdmRemoteIf, String lmpVerify, String fltDetect, String metric, String port) throws RemoteException {
+    public String changeLink(String name, String localIP, String remoteIP, String linkType, String adj, String wdmAdj,
+            String remoteIf, String wdmRemoteIf, String lmpVerify, String fltDetect, String metric, String port)
+            throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -265,6 +277,5 @@ public class AFOXAdminImpl extends RangePortUnicastRemoteObject implements OSAdm
     public String deleteMLPathConn(String olID) throws RemoteException {
         return "Not implemented yet!";
     }
-
 
 }

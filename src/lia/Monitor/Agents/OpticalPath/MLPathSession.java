@@ -29,7 +29,7 @@ import lia.util.telnet.OSTelnetFactory;
 public final class MLPathSession implements LeaseEventListener {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(MLPathSession.class.getName());
+    private static final Logger logger = Logger.getLogger(MLPathSession.class.getName());
 
     private class ReceivedCmd {
 
@@ -41,7 +41,7 @@ public final class MLPathSession implements LeaseEventListener {
 
         String dPort;
 
-//        String pDconn;
+        //        String pDconn;
 
         boolean isFDX;
 
@@ -72,9 +72,9 @@ public final class MLPathSession implements LeaseEventListener {
      */
     private class XDRMsgSessionTask implements Runnable {
 
-        private LinkedList ll;
+        private final LinkedList ll;
 
-        private AtomicBoolean running;
+        private final AtomicBoolean running;
 
         XDRMsgSessionTask() {
             ll = new LinkedList();
@@ -92,85 +92,86 @@ public final class MLPathSession implements LeaseEventListener {
             }
 
             switch (xdrMsg.opCode) {
-                case 0: {
-                    xdrMsg.data = theAgent.getPeers();
+            case 0: {
+                xdrMsg.data = theAgent.getPeers();
+                break;
+            }
+            case 1: {
+                String cmd = xdrMsg.data;
+                if ((cmd == null) || (cmd.length() == 0)) {
+                    xdrMsg.data = "Could not understand request ... [ MCONN | DCONN ]:-source - destination:-isFDX";
                     break;
                 }
-                case 1: {
-                    String cmd = xdrMsg.data;
-                    if (cmd == null || cmd.length() == 0) {
-                        xdrMsg.data = "Could not understand request ... [ MCONN | DCONN ]:-source - destination:-isFDX";
-                        break;
-                    }
 
-                    // MCONN:-srcIP - dstIP:-fdx:-verbose
-                    String[] cmdTokens = cmd.split(":-");
+                // MCONN:-srcIP - dstIP:-fdx:-verbose
+                String[] cmdTokens = cmd.split(":-");
 
-                    if (cmdTokens.length != 4) {
-                        xdrMsg.data = "Could not understand request ... [ MCONN | DCONN ]:-source - destination:-isFDX";
-                        break;
-                    }
+                if (cmdTokens.length != 4) {
+                    xdrMsg.data = "Could not understand request ... [ MCONN | DCONN ]:-source - destination:-isFDX";
+                    break;
+                }
 
-                    boolean makeConn = cmdTokens[0].equals("MCONN");
+                boolean makeConn = cmdTokens[0].equals("MCONN");
 
-                    if (!makeConn && !cmdTokens[0].equals("DCONN")) {
-                        xdrMsg.data = "Could not understand request ... [ MCONN | DCONN ]:-source - destination:-isFDX";
-                        break;
-                    }
+                if (!makeConn && !cmdTokens[0].equals("DCONN")) {
+                    xdrMsg.data = "Could not understand request ... [ MCONN | DCONN ]:-source - destination:-isFDX";
+                    break;
+                }
 
-                    String[] sd = cmdTokens[1].split(" - ");
+                String[] sd = cmdTokens[1].split(" - ");
 
-                    if (sd.length != 2) {
-                        xdrMsg.data = "Could not understand request ... [ MCONN | DCONN ]:-source - destination:-isFDX";
-                        break;
-                    }
+                if (sd.length != 2) {
+                    xdrMsg.data = "Could not understand request ... [ MCONN | DCONN ]:-source - destination:-isFDX";
+                    break;
+                }
 
-                    boolean retv = false;
+                boolean retv = false;
 
-                    if (makeConn) {// Make conn
-                        opr = new OpticalPathRequest(sessionID, cmdTokens[2].equals("1"), cmdTokens[3].equals("1"));
-                        opr.source = sd[0];
-                        opr.destination = sd[1];
-                        retv = theAgent.makeConnection(opr);
-                    } else {// Delete conn
-                        retv = theAgent.deleteOLConns(opr);
-                        stopIt();
-                    }
+                if (makeConn) {// Make conn
+                    opr = new OpticalPathRequest(sessionID, cmdTokens[2].equals("1"), cmdTokens[3].equals("1"));
+                    opr.source = sd[0];
+                    opr.destination = sd[1];
+                    retv = theAgent.makeConnection(opr);
+                } else {// Delete conn
+                    retv = theAgent.deleteOLConns(opr);
+                    stopIt();
+                }
 
-                    if (retv) {
-                        xdrMsg.olID = opr.id.toString();
-                        if (makeConn) {
-                            xdrMsg.data = opr.readableOpticalPath;
-                        } else {
-                            xdrMsg.data = "Optical Path Released ... \n";
-                        }
+                if (retv) {
+                    xdrMsg.olID = opr.id.toString();
+                    if (makeConn) {
+                        xdrMsg.data = opr.readableOpticalPath;
                     } else {
-                        xdrMsg.data = opr.status.toString();
-                        xdrMsg.olID = "NoSuchLink";
-                        stopIt();
+                        xdrMsg.data = "Optical Path Released ... \n";
                     }
-                    long dT = System.currentTimeMillis() - sTime;
-                    xdrMsg.data += "\n Operation took " + dT + " ms";
-
-                    sendBackXDRMsg(xdrMsg);
-
-                    // Just do the lease
-                    if (retv && makeConn) {
-                        registerMasterLeases();
-                    }
-
-                    logger.log(Level.INFO, "\n\n notifyXDRMessage :- SENDING BACK :- " + xdrMsg.toString());
-                    break;
+                } else {
+                    xdrMsg.data = opr.status.toString();
+                    xdrMsg.olID = "NoSuchLink";
+                    stopIt();
                 }
-                case 2: {
-                    xdrMsg.data = "N/A";// sendPeersCMD(xdrMsg.data);
-                    break;
+                long dT = System.currentTimeMillis() - sTime;
+                xdrMsg.data += "\n Operation took " + dT + " ms";
+
+                sendBackXDRMsg(xdrMsg);
+
+                // Just do the lease
+                if (retv && makeConn) {
+                    registerMasterLeases();
                 }
+
+                logger.log(Level.INFO, "\n\n notifyXDRMessage :- SENDING BACK :- " + xdrMsg.toString());
+                break;
+            }
+            case 2: {
+                xdrMsg.data = "N/A";// sendPeersCMD(xdrMsg.data);
+                break;
+            }
             }
 
             logger.log(Level.INFO, "\n\n Session Age " + (System.currentTimeMillis() - sessionStartTime));
         }
 
+        @Override
         public void run() {
             String cName = Thread.currentThread().getName();
             try {
@@ -199,7 +200,8 @@ public final class MLPathSession implements LeaseEventListener {
                     }
                 }// while
             } catch (Throwable t) {
-                logger.log(Level.WARNING, " //TODO - FixMe TAKE SOME ACTION! XDRMsgSessionTask [ " + sessionID + " ] got Exc", t);
+                logger.log(Level.WARNING, " //TODO - FixMe TAKE SOME ACTION! XDRMsgSessionTask [ " + sessionID
+                        + " ] got Exc", t);
             } finally {
                 Thread.currentThread().setName(cName);
             }
@@ -215,7 +217,7 @@ public final class MLPathSession implements LeaseEventListener {
      */
     private class AgentMsgSessionTask implements Runnable {
 
-        private AgentMessage am;
+        private final AgentMessage am;
 
         RemoteAgentMsgWrapper[] raMsgs;
 
@@ -225,7 +227,7 @@ public final class MLPathSession implements LeaseEventListener {
         long sTime;
 
         AgentMsgSessionTask(AgentMessage am, RemoteAgentMsgWrapper raMsg, long sTime) throws Exception {
-            this(am, new RemoteAgentMsgWrapper[]{raMsg}, sTime);
+            this(am, new RemoteAgentMsgWrapper[] { raMsg }, sTime);
             ost = OSTelnetFactory.getControlInstance(theAgent.cfg.osi.type.shortValue());
         }
 
@@ -235,7 +237,7 @@ public final class MLPathSession implements LeaseEventListener {
             this.raMsgs = raMsgs;
             ost = OSTelnetFactory.getControlInstance(theAgent.cfg.osi.type.shortValue());
         }
-        
+
         /**
          * MCONN - REQ
          */
@@ -251,46 +253,20 @@ public final class MLPathSession implements LeaseEventListener {
 
             Long transactionID = null;
             theAgent.setDelayMonitoringResult();
-            if(raMsg.isFDX) {
+            if (raMsg.isFDX) {
 
-                transactionID =  theAgent.cfg.osi.beginTransaction(
-                        new OSPort[]{
-                                sOSPort, 
-                                dOSPort, 
-                                sOSPort.getPear(), 
-                                dOSPort.getPear()
-                                },
-                        new Integer[][] {
-                                new Integer[]{OpticalLink.CONNECTED_FREE},
-                                new Integer[]{OpticalLink.CONNECTED_FREE},
-                                new Integer[]{OpticalLink.CONNECTED_FREE},
-                                new Integer[]{OpticalLink.CONNECTED_FREE}
-                        },
-                        new Integer[]{
-                                OpticalLink.CONNECTED_ML_CONN, 
-                                OpticalLink.CONNECTED_ML_CONN, 
-                                OpticalLink.CONNECTED_ML_CONN,
-                                OpticalLink.CONNECTED_ML_CONN,
-                        }
-                        );
+                transactionID = theAgent.cfg.osi.beginTransaction(new OSPort[] { sOSPort, dOSPort, sOSPort.getPear(),
+                        dOSPort.getPear() }, new Integer[][] { new Integer[] { OpticalLink.CONNECTED_FREE },
+                        new Integer[] { OpticalLink.CONNECTED_FREE }, new Integer[] { OpticalLink.CONNECTED_FREE },
+                        new Integer[] { OpticalLink.CONNECTED_FREE } }, new Integer[] { OpticalLink.CONNECTED_ML_CONN,
+                        OpticalLink.CONNECTED_ML_CONN, OpticalLink.CONNECTED_ML_CONN, OpticalLink.CONNECTED_ML_CONN, });
             } else {
-                transactionID = theAgent.cfg.osi.beginTransaction(
-                        new OSPort[]{
-                                sOSPort, 
-                                dOSPort, 
-                                },
-                        new Integer[][] {
-                                new Integer[]{OpticalLink.CONNECTED_FREE},
-                                new Integer[]{OpticalLink.CONNECTED_FREE},
-                        },
-                        new Integer[]{
-                                OpticalLink.CONNECTED_ML_CONN, 
-                                OpticalLink.CONNECTED_ML_CONN, 
-                        }
-                        );
+                transactionID = theAgent.cfg.osi.beginTransaction(new OSPort[] { sOSPort, dOSPort, }, new Integer[][] {
+                        new Integer[] { OpticalLink.CONNECTED_FREE }, new Integer[] { OpticalLink.CONNECTED_FREE }, },
+                        new Integer[] { OpticalLink.CONNECTED_ML_CONN, OpticalLink.CONNECTED_ML_CONN, });
             }//else
-            
-            bstatus = (transactionID != null && ost != null);
+
+            bstatus = ((transactionID != null) && (ost != null));
             try {
                 if (bstatus) {
                     try {
@@ -299,45 +275,53 @@ public final class MLPathSession implements LeaseEventListener {
                         } else {
                             ost.makeConn(raMsg.unSplittedPorts);
                         }
-                    }catch(Throwable t) {
+                    } catch (Throwable t) {
                         bstatus = false;
-                        logger.log(Level.WARNING, " [ MLCopyAgent ] Got exception deleting conn: [ " + raMsg.unSplittedPorts + "]", t );
+                        logger.log(Level.WARNING, " [ MLCopyAgent ] Got exception deleting conn: [ "
+                                + raMsg.unSplittedPorts + "]", t);
                     }
                     if (logger.isLoggable(Level.FINER)) {
-                        logger.log(Level.FINER, "Making conn FDX = " + raMsg.isFDX + " [ " + raMsg.unSplittedPorts + " ] status = " + bstatus + ". It took [ " + (System.currentTimeMillis() - sTime) + " ]");
+                        logger.log(Level.FINER, "Making conn FDX = " + raMsg.isFDX + " [ " + raMsg.unSplittedPorts
+                                + " ] status = " + bstatus + ". It took [ " + (System.currentTimeMillis() - sTime)
+                                + " ]");
                     }
                 }
                 if (bstatus) {
 
                     theAgent.cfg.osi.commit(transactionID);
-                    ((OpticalLink)theAgent.cfg.osi.map.get(sOSPort)).opticalLinkID = raMsg.session;
-                    ((OpticalLink)theAgent.cfg.osi.map.get(dOSPort)).opticalLinkID = raMsg.session;
+                    theAgent.cfg.osi.map.get(sOSPort).opticalLinkID = raMsg.session;
+                    theAgent.cfg.osi.map.get(dOSPort).opticalLinkID = raMsg.session;
 
-                    theAgent.cfg.osi.crossConnects.put(sOSPort, new OpticalCrossConnectLink(sOSPort, dOSPort, Integer.valueOf(OpticalCrossConnectLink.OK)));
-                    
+                    theAgent.cfg.osi.crossConnects.put(sOSPort,
+                            new OpticalCrossConnectLink(sOSPort, dOSPort, Integer.valueOf(OpticalCrossConnectLink.OK)));
+
                     remoteLease = new Lease(sessionID, am.agentAddrS, 30 * 1000, MLPathSession.this, null);
                     ExpiredLeaseWatcher.getInstance().add(remoteLease);
                     Lease renewalLease = new Lease(sessionID, am.agentAddrS, 10 * 1000, null, theAgent);
                     LeaseRenewalManager.getInstance().add(renewalLease);
 
                     if (raMsg.isFDX) {
-                        theAgent.cfg.osi.crossConnects.put(dOSPort.getPear(), new OpticalCrossConnectLink(dOSPort.getPear(), sOSPort.getPear(), Integer.valueOf(OpticalCrossConnectLink.OK)));
-                        ((OpticalLink)theAgent.cfg.osi.map.get(sOSPort.getPear())).opticalLinkID = raMsg.session;
-                        ((OpticalLink)theAgent.cfg.osi.map.get(dOSPort.getPear())).opticalLinkID = raMsg.session;
+                        theAgent.cfg.osi.crossConnects.put(
+                                dOSPort.getPear(),
+                                new OpticalCrossConnectLink(dOSPort.getPear(), sOSPort.getPear(), Integer
+                                        .valueOf(OpticalCrossConnectLink.OK)));
+                        theAgent.cfg.osi.map.get(sOSPort.getPear()).opticalLinkID = raMsg.session;
+                        theAgent.cfg.osi.map.get(dOSPort.getPear()).opticalLinkID = raMsg.session;
                     }
                     theAgent.cfg.setNewConfiguration(theAgent.cfg.osi, 700);
                     // theAgent.sendBConfToAll();
-                    theAgent.receivedCMDs.put(raMsg.session, new ReceivedCmd(raMsg.session, am.agentAddrS, raMsg.sPort, raMsg.dPort, raMsg.isFDX));
+                    theAgent.receivedCMDs.put(raMsg.session, new ReceivedCmd(raMsg.session, am.agentAddrS, raMsg.sPort,
+                            raMsg.dPort, raMsg.isFDX));
                 } else {
                     theAgent.cfg.osi.rollback(transactionID);
                 }
 
-            } catch(Throwable t) {
+            } catch (Throwable t) {
                 logger.log(Level.WARNING, " Got exc", t);
                 theAgent.cfg.osi.rollback(transactionID);
             }
-            
-//            theAgent.clearDelayMonitoringResult();
+
+            //            theAgent.clearDelayMonitoringResult();
 
             return bstatus;
         }// handleMCONN()
@@ -353,86 +337,108 @@ public final class MLPathSession implements LeaseEventListener {
             boolean status = true;
 
             theAgent.setDelayMonitoringResult();
-            
+
             try {
                 if (raMsg.isFDX) {
                     ost.deleteFDXConn(raMsg.unSplittedPorts);
                 } else {
                     ost.deleteConn(raMsg.unSplittedPorts);
                 }
-            }catch(Throwable t) {
+            } catch (Throwable t) {
                 status = false;
-                logger.log(Level.WARNING, " [ MLCopyAgent ] Got exception deleting conn: [ " + raMsg.unSplittedPorts + "]", t );
+                logger.log(Level.WARNING, " [ MLCopyAgent ] Got exception deleting conn: [ " + raMsg.unSplittedPorts
+                        + "]", t);
             }
 
             OSPort sOSPort = new OSPort(raMsg.sPort, OSPort.INPUT_PORT);
             OSPort dOSPort = new OSPort(raMsg.dPort, OSPort.OUTPUT_PORT);
 
             if (logger.isLoggable(Level.FINEST)) {
-                logger.log(Level.FINEST, "Deleting conn [ " + raMsg.unSplittedPorts + " ] status = " + status + ". It took [ " + (System.currentTimeMillis() - sTime) + " ] DCONN from " + theAgent.getSwName(am.agentAddrS));
+                logger.log(
+                        Level.FINEST,
+                        "Deleting conn [ " + raMsg.unSplittedPorts + " ] status = " + status + ". It took [ "
+                                + (System.currentTimeMillis() - sTime) + " ] DCONN from "
+                                + theAgent.getSwName(am.agentAddrS));
             }
 
             if (status) {
                 theAgent.changePortState(sOSPort, OpticalLink.CONNECTED_FREE);
                 theAgent.changePortState(dOSPort, OpticalLink.CONNECTED_FREE);
-                ((OpticalLink)theAgent.cfg.osi.map.get(sOSPort)).opticalLinkID = null;
-                ((OpticalLink)theAgent.cfg.osi.map.get(dOSPort)).opticalLinkID = null;
+                theAgent.cfg.osi.map.get(sOSPort).opticalLinkID = null;
+                theAgent.cfg.osi.map.get(dOSPort).opticalLinkID = null;
                 theAgent.cfg.osi.crossConnects.remove(sOSPort);
-                
+
                 if (raMsg.isFDX) {
                     theAgent.changePortState(sOSPort.getPear(), OpticalLink.CONNECTED_FREE);
                     theAgent.changePortState(dOSPort.getPear(), OpticalLink.CONNECTED_FREE);
-                    
-                    ((OpticalLink)theAgent.cfg.osi.map.get(sOSPort.getPear())).opticalLinkID = null;
-                    ((OpticalLink)theAgent.cfg.osi.map.get(dOSPort.getPear())).opticalLinkID = null;
-                    
+
+                    theAgent.cfg.osi.map.get(sOSPort.getPear()).opticalLinkID = null;
+                    theAgent.cfg.osi.map.get(dOSPort.getPear()).opticalLinkID = null;
+
                     theAgent.cfg.osi.crossConnects.remove(dOSPort.getPear());
                 }//if isFDX
-                
+
                 theAgent.receivedCMDs.remove(raMsg.session);
             }
 
             if (!pdconn) {
                 stopIt();
-//                theAgent.clearDelayMonitoringResult();
+                //                theAgent.clearDelayMonitoringResult();
                 theAgent.cfg.setNewConfiguration(theAgent.cfg.osi, 700);
             } else {
-//                ReceivedCmd rc = (ReceivedCmd) theAgent.receivedCMDs.get(raMsg.session);
-//                if (rc != null) {
-//                    if (rc.pDconn == null) {
-//                        rc.pDconn = raMsg.unSplittedPorts;
-//                    } else {
-//                        rc.pDconn += " - " + raMsg.unSplittedPorts;
-//                    }
-//                }
+                //                ReceivedCmd rc = (ReceivedCmd) theAgent.receivedCMDs.get(raMsg.session);
+                //                if (rc != null) {
+                //                    if (rc.pDconn == null) {
+                //                        rc.pDconn = raMsg.unSplittedPorts;
+                //                    } else {
+                //                        rc.pDconn += " - " + raMsg.unSplittedPorts;
+                //                    }
+                //                }
             }
-//            theAgent.clearDelayMonitoringResult();
+            //            theAgent.clearDelayMonitoringResult();
             return status;
         }// handleDCONN()
 
         private boolean handleLRENEW(RemoteAgentMsgWrapper raMsg, long sTime) {
             try {
                 if (logger.isLoggable(Level.FINER)) {
-                    logger.log(Level.FINER, "\n\n {LEASE_SYSTEM} Got a remote ( " + theAgent.getSwName(am.agentAddrS) + " ) LRENEW MSG:" + raMsg.rawMSG);
+                    logger.log(Level.FINER, "\n\n {LEASE_SYSTEM} Got a remote ( " + theAgent.getSwName(am.agentAddrS)
+                            + " ) LRENEW MSG:" + raMsg.rawMSG);
                 }
 
                 if (opr == null) {
                     if (remoteLease == null) {
-                        logger.log(Level.WARNING, " [ ProtocolException ] Null opr & null remoteLease ... Or expired remote Lease from " + theAgent.getSwName(am.agentAddrS) + " MSG: " + raMsg.rawMSG);
+                        logger.log(Level.WARNING,
+                                " [ ProtocolException ] Null opr & null remoteLease ... Or expired remote Lease from "
+                                        + theAgent.getSwName(am.agentAddrS) + " MSG: " + raMsg.rawMSG);
                     } else {// LRENEW from the initiaor of this Distributed MLPathSession
-                        if (raMsg.session.equals(remoteLease.getSessionID()) && am.agentAddrS.equals(remoteLease.getRemoteAgentAddress())) {
-                            logger.log(Level.WARNING, " Renew PEER lease [ " + remoteLease + " ] from: " + theAgent.getSwName(am.agentAddrS) + " MSG: " + raMsg.rawMSG + "   OK!!! <----");
+                        if (raMsg.session.equals(remoteLease.getSessionID())
+                                && am.agentAddrS.equals(remoteLease.getRemoteAgentAddress())) {
+                            logger.log(
+                                    Level.WARNING,
+                                    " Renew PEER lease [ " + remoteLease + " ] from: "
+                                            + theAgent.getSwName(am.agentAddrS) + " MSG: " + raMsg.rawMSG
+                                            + "   OK!!! <----");
                             ExpiredLeaseWatcher.getInstance().renew(remoteLease, remoteLease.getLeaseRewalInterval());
                         } else {
-                            logger.log(Level.WARNING, " Renew PEER lease [ " + remoteLease + " ] from: " + theAgent.getSwName(am.agentAddrS) + " MSG: " + raMsg.rawMSG + "   NOT OK!!! ---->");
+                            logger.log(
+                                    Level.WARNING,
+                                    " Renew PEER lease [ " + remoteLease + " ] from: "
+                                            + theAgent.getSwName(am.agentAddrS) + " MSG: " + raMsg.rawMSG
+                                            + "   NOT OK!!! ---->");
                         }
                     }
                 } else {// LRENEW to initiator from one of the remote peers
                     Lease lease = (Lease) opr.leases.get(am.agentAddrS);
                     if (lease == null) {
-                        logger.log(Level.WARNING, " [ ProtocolException ] ? Or expired local Lease from " + theAgent.getSwName(am.agentAddrS) + " MSG: " + raMsg.rawMSG);
+                        logger.log(
+                                Level.WARNING,
+                                " [ ProtocolException ] ? Or expired local Lease from "
+                                        + theAgent.getSwName(am.agentAddrS) + " MSG: " + raMsg.rawMSG);
                     } else {
-                        logger.log(Level.WARNING, " Renew PEER lease [ " + lease + " ] from: " + theAgent.getSwName(am.agentAddrS) + " MSG: " + raMsg.rawMSG);
+                        logger.log(Level.WARNING,
+                                " Renew PEER lease [ " + lease + " ] from: " + theAgent.getSwName(am.agentAddrS)
+                                        + " MSG: " + raMsg.rawMSG);
                         ExpiredLeaseWatcher.getInstance().renew(lease, lease.getLeaseRewalInterval());
                     }
                 }
@@ -447,105 +453,108 @@ public final class MLPathSession implements LeaseEventListener {
          * PDOWN - REQ
          */
         private boolean handlePDOWN(RemoteAgentMsgWrapper raMsg, long sTime) throws Exception {
-            
+
             logger.log(Level.INFO, " Got remote PDOWN for: " + raMsg.dPort + " - " + raMsg.sPort);
-            if(opr == null || opr.links == null || opr.leases == null || opr.sentCMDs == null) {
-                logger.log(Level.WARNING ,"\n\n Got remote PDOWN for: " + raMsg.dPort + " - " + raMsg.sPort +
-                        "But MLPathSession no longer available!");
+            if ((opr == null) || (opr.links == null) || (opr.leases == null) || (opr.sentCMDs == null)) {
+                logger.log(Level.WARNING, "\n\n Got remote PDOWN for: " + raMsg.dPort + " - " + raMsg.sPort
+                        + "But MLPathSession no longer available!");
             }
-            
-            if(raMsg.sPort == null || raMsg.dPort == null || raMsg.sPort.equals("null") || raMsg.dPort.equals("null")) {
-                logger.log(Level.WARNING, "Cannot reroute for ID = [ " + opr.id + " ] Will stop this session! NULL sPort or dPort END POINT AT THE OTHER END !!!!! ");
+
+            if ((raMsg.sPort == null) || (raMsg.dPort == null) || raMsg.sPort.equals("null")
+                    || raMsg.dPort.equals("null")) {
+                logger.log(Level.WARNING, "Cannot reroute for ID = [ " + opr.id
+                        + " ] Will stop this session! NULL sPort or dPort END POINT AT THE OTHER END !!!!! ");
                 theAgent.deleteMLPathConn(opr.id);
                 return false;
             }
-            
+
             OSPort osp = new OSPort(raMsg.dPort, OSPort.INPUT_PORT);
             OpticalLink ol = null;
-            
-            if(am.agentAddrS.equals(theAgent.agentInfo.agentAddr)) {//it's me
-                ol = (OpticalLink)theAgent.cfg.osi.map.get(osp);
+
+            if (am.agentAddrS.equals(theAgent.agentInfo.agentAddr)) {//it's me
+                ol = theAgent.cfg.osi.map.get(osp);
             } else {
-                ol = (OpticalLink)((SyncOpticalSwitchInfo)theAgent.otherConfs.get(am.agentAddrS)).map.get(osp);
+                ol = ((SyncOpticalSwitchInfo) theAgent.otherConfs.get(am.agentAddrS)).map.get(osp);
             }
-            
+
             ol.state = Integer.valueOf(OpticalLink.CONNECTED | OpticalLink.CONN_FAIL);
-            String remoteAgentAddr = (String)theAgent.swNameAddrHash.get(ol.destination);
-            
+            String remoteAgentAddr = (String) theAgent.swNameAddrHash.get(ol.destination);
+
             SyncOpticalSwitchInfo remoteOSI = null;
-            if(remoteAgentAddr == null) {
-                if(ol.destination.equals(theAgent.cfg.osi.name)) {
+            if (remoteAgentAddr == null) {
+                if (ol.destination.equals(theAgent.cfg.osi.name)) {
                     remoteOSI = theAgent.cfg.osi;
                 } else {
                     logger.log(Level.SEVERE, " [ ProtocolException ] remoteAgentAddr cannot be null");
                     return false;
                 }
             }
-            
-            
-            if(remoteOSI == null) {
-                remoteOSI = (SyncOpticalSwitchInfo)theAgent.otherConfs.get(remoteAgentAddr);
-                if(remoteOSI == null) {
-                    logger.log(Level.SEVERE, " [ ProtocolException ] NoSuchConfiguration for remoteAgentAddr [ " + remoteAgentAddr + " ]");
+
+            if (remoteOSI == null) {
+                remoteOSI = (SyncOpticalSwitchInfo) theAgent.otherConfs.get(remoteAgentAddr);
+                if (remoteOSI == null) {
+                    logger.log(Level.SEVERE, " [ ProtocolException ] NoSuchConfiguration for remoteAgentAddr [ "
+                            + remoteAgentAddr + " ]");
                     return false;
                 }
             }
-            
-            OSPort remoteOSP = new OSPort(raMsg.sPort, OSPort.OUTPUT_PORT);
-            OpticalLink remoteOL = (OpticalLink)remoteOSI.map.get(remoteOSP);
 
-            if(remoteOL == null) {
-                logger.log(Level.SEVERE, " [ ProtocolException ] NoSuchOpticalLink for remoteAgentAddr [ " + remoteAgentAddr + " ] remotePort [ " + raMsg.sPort + " ]");
+            OSPort remoteOSP = new OSPort(raMsg.sPort, OSPort.OUTPUT_PORT);
+            OpticalLink remoteOL = remoteOSI.map.get(remoteOSP);
+
+            if (remoteOL == null) {
+                logger.log(Level.SEVERE, " [ ProtocolException ] NoSuchOpticalLink for remoteAgentAddr [ "
+                        + remoteAgentAddr + " ] remotePort [ " + raMsg.sPort + " ]");
                 return false;
             }
-            
+
             remoteOL.state = Integer.valueOf(OpticalLink.CONNECTED | OpticalLink.CONN_FAIL);
-            
+
             Hashtable oldLinks = opr.links;
             Hashtable oldLeases = opr.leases;
             Hashtable oldSentCMDs = opr.sentCMDs;
-            
+
             opr.links = new Hashtable();
             opr.leases = new Hashtable();
             opr.sentCMDs = new Hashtable();
-            
+
             boolean status = theAgent.makeConnection(opr, true);
-            
+
             if (status) {
                 logger.log(Level.INFO, " Older links: " + oldLinks);
                 logger.log(Level.INFO, " New links: " + opr.links);
-                
+
                 HashMap linksToBeRemoved = new HashMap();
                 HashMap alreadyCreatedLinks = new HashMap();
-                
+
                 //Determine which are the links that need to be deleted
                 for (Iterator itOld = oldLinks.entrySet().iterator(); itOld.hasNext();) {
-                    Map.Entry oldEntry = (Map.Entry)itOld.next();
-                    
-                    String dAgent = (String)oldEntry.getKey();
-                    String ports = (String)oldEntry.getValue();
-                    
-                    String newPorts = (String)opr.links.get(dAgent);
-                    
-                    if(newPorts == null || !ports.equals(newPorts)) {
+                    Map.Entry oldEntry = (Map.Entry) itOld.next();
+
+                    String dAgent = (String) oldEntry.getKey();
+                    String ports = (String) oldEntry.getValue();
+
+                    String newPorts = (String) opr.links.get(dAgent);
+
+                    if ((newPorts == null) || !ports.equals(newPorts)) {
                         linksToBeRemoved.put(dAgent, ports);
                     }
                 }//for - links to be deleted
-                
+
                 //Det already created links
-                for(Iterator it=opr.links.entrySet().iterator(); it.hasNext(); ) {
-                    Map.Entry entry = (Map.Entry)it.next();
-                    
+                for (Iterator it = opr.links.entrySet().iterator(); it.hasNext();) {
+                    Map.Entry entry = (Map.Entry) it.next();
+
                     String dAgent = (String) entry.getKey();
-                    String ports = (String)entry.getValue();
-                    
-                    String oldPorts = (String)oldLinks.get(dAgent);
-                    
-                    if(oldPorts != null && oldPorts.equals(ports)) {
+                    String ports = (String) entry.getValue();
+
+                    String oldPorts = (String) oldLinks.get(dAgent);
+
+                    if ((oldPorts != null) && oldPorts.equals(ports)) {
                         alreadyCreatedLinks.put(dAgent, ports);
                     }
                 }
-                
+
                 return theAgent.makeOLConns(opr, linksToBeRemoved, alreadyCreatedLinks);
             }
 
@@ -561,59 +570,63 @@ public final class MLPathSession implements LeaseEventListener {
 
             try {
                 boolean status = true;
-                
-                for(int i=0; i<raMsgs.length && status; i++) {
+
+                for (int i = 0; (i < raMsgs.length) && status; i++) {
                     switch (raMsgs[i].remoteCMD) {
-                        case RemoteAgentMsgWrapper.MCONN: {// MCONN
-                            status = handleMCONN(raMsgs[i], sTime);
-                            break;
+                    case RemoteAgentMsgWrapper.MCONN: {// MCONN
+                        status = handleMCONN(raMsgs[i], sTime);
+                        break;
+                    }
+                    case RemoteAgentMsgWrapper.DCONN: {// DCONN
+                        removeAllSessionLeases();
+                        status = handleDCONN(raMsgs[i], sTime, false);
+                        break;
+                    }
+                    case RemoteAgentMsgWrapper.PDCONN: {// DCONN
+                        removeAllSessionLeases();
+                        status = handleDCONN(raMsgs[i], sTime, true);
+                        break;
+                    }
+                    case RemoteAgentMsgWrapper.NCONF: {
+                        theAgent.cfg.setNewConfiguration(SyncOpticalSwitchInfo.fromOpticalSwitchInfo(Util
+                                .getOpticalSwitchInfo(new StringReader(raMsgs[i].conf))), -1);
+                        status = true;
+                    }
+                    case RemoteAgentMsgWrapper.LRENEW: {
+                        handleLRENEW(raMsgs[i], sTime);
+                        return;
+                    }
+                    case RemoteAgentMsgWrapper.PDOWN: {
+                        removeAllSessionLeases();
+                        status = handlePDOWN(raMsgs[i], sTime);
+                        if (status) {//succesfull reroute
+                            registerMasterLeases();
                         }
-                        case RemoteAgentMsgWrapper.DCONN: {// DCONN
-                            removeAllSessionLeases();
-                            status = handleDCONN(raMsgs[i], sTime, false);
-                            break;
-                        }
-                        case RemoteAgentMsgWrapper.PDCONN: {// DCONN
-                            removeAllSessionLeases();
-                            status = handleDCONN(raMsgs[i], sTime, true);
-                            break;
-                        }
-                        case RemoteAgentMsgWrapper.NCONF: {
-                            theAgent.cfg.setNewConfiguration(SyncOpticalSwitchInfo.fromOpticalSwitchInfo(Util.getOpticalSwitchInfo(new StringReader(raMsgs[i].conf))), -1);
-                            status = true;
-                        }
-                        case RemoteAgentMsgWrapper.LRENEW: {
-                            handleLRENEW(raMsgs[i], sTime);
-                            return;
-                        }
-                        case RemoteAgentMsgWrapper.PDOWN: {
-                            removeAllSessionLeases();
-                            status = handlePDOWN(raMsgs[i], sTime);
-                            if(status) {//succesfull reroute
-                                registerMasterLeases();
-                            }
-                            return;
-                        }
+                        return;
+                    }
                     }// end - switch
                 }//end for
 
                 String sStatus = "NACK";
                 String message = "NoSuchMSG";
-                
+
                 if (status) {
                     sStatus = "ACK";
                 }
-                
+
                 AgentMessage amB = null;
                 try {
                     StringBuilder sbMsg = new StringBuilder(50);
 
-                    sbMsg.append(RemoteAgentMsgWrapper.getDecodedRemoteCMD(raMsgs[0].remoteCMD)).append(MLCopyAgent.CMD_TOKEN).append(sStatus).append(MLCopyAgent.CMD_TOKEN);
-                    sbMsg.append("NOP").append(MLCopyAgent.CMD_TOKEN).append(raMsgs[0].remoteCMD_ID).append(MLCopyAgent.CMD_TOKEN).append(raMsgs[0].session);
+                    sbMsg.append(RemoteAgentMsgWrapper.getDecodedRemoteCMD(raMsgs[0].remoteCMD))
+                            .append(MLCopyAgent.CMD_TOKEN).append(sStatus).append(MLCopyAgent.CMD_TOKEN);
+                    sbMsg.append("NOP").append(MLCopyAgent.CMD_TOKEN).append(raMsgs[0].remoteCMD_ID)
+                            .append(MLCopyAgent.CMD_TOKEN).append(raMsgs[0].session);
 
                     message = sbMsg.toString();
 
-                    amB = theAgent.createMsg(MLCopyAgent.getAndIncrementMSGID(), 1, 1, 8, am.agentAddrS, theAgent.agentInfo.agentGroup, message);
+                    amB = theAgent.createMsg(MLCopyAgent.getAndIncrementMSGID(), 1, 1, 8, am.agentAddrS,
+                            theAgent.agentInfo.agentGroup, message);
                     theAgent.sendAgentMessage(amB);
 
                     if (logger.isLoggable(Level.FINER)) {
@@ -622,7 +635,8 @@ public final class MLPathSession implements LeaseEventListener {
 
                     theAgent.cfg.setNewConfiguration(theAgent.cfg.osi, 2000);
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, "Got exception trying to notify the peer ... sending the message" + amB, t);
+                    logger.log(Level.WARNING, "Got exception trying to notify the peer ... sending the message" + amB,
+                            t);
                 }
             } catch (Throwable t) {
                 logger.log(Level.WARNING, "Cannot commit conn from message " + am, t);
@@ -632,6 +646,7 @@ public final class MLPathSession implements LeaseEventListener {
 
         }
 
+        @Override
         public void run() {
             String cName = Thread.currentThread().getName();
             Thread.currentThread().setName(cName + " AgentMsgSessionTask for " + sessionID + " - runnig");
@@ -648,19 +663,19 @@ public final class MLPathSession implements LeaseEventListener {
     /**
      * I was born to have this name :)
      */
-    private String sessionID;
+    private final String sessionID;
 
     private Lease remoteLease;
 
-    private MLCopyAgent theAgent;
+    private final MLCopyAgent theAgent;
 
     private XDRGenericComm xdrComm;
 
     private XDRMsgSessionTask xdrMsgSessionTask;
 
-    private long sessionStartTime;
+    private final long sessionStartTime;
 
-    private AtomicBoolean alreadyStopped;
+    private final AtomicBoolean alreadyStopped;
 
     OpticalPathRequest opr;
 
@@ -718,7 +733,7 @@ public final class MLPathSession implements LeaseEventListener {
 
     void removeAllSessionLeases() {
         ExpiredLeaseWatcher elw = ExpiredLeaseWatcher.getInstance();
-        if (opr != null && opr.leases != null) {
+        if ((opr != null) && (opr.leases != null)) {
             for (Iterator it = opr.leases.values().iterator(); it.hasNext();) {
                 elw.remove((Lease) it.next());
             }
@@ -728,12 +743,16 @@ public final class MLPathSession implements LeaseEventListener {
 
         LeaseRenewalManager.getInstance().remove(sessionID);
     }
-    
+
     void stopIt() {
         // allow multiple stopIt() invocations
-        if (alreadyStopped.getAndSet(true)) return;
+        if (alreadyStopped.getAndSet(true)) {
+            return;
+        }
 
-        logger.log(Level.INFO, "\n\nMLPathSession finishes [ " + sessionID + " ] ... Age " + (System.currentTimeMillis() - sessionStartTime) + "\n\n");
+        logger.log(Level.INFO,
+                "\n\nMLPathSession finishes [ " + sessionID + " ] ... Age "
+                        + (System.currentTimeMillis() - sessionStartTime) + "\n\n");
         removeAllSessionLeases();
         theAgent.cleanupSession(sessionID);
 
@@ -743,9 +762,10 @@ public final class MLPathSession implements LeaseEventListener {
 
     private void handleLeaseExpired(Lease expiredLease) throws Exception {
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, " \n\n [ MLPathSession - handleLeaseExpired ] Lease [ " + expiredLease + " ]  expired  ...");
+            logger.log(Level.FINER, " \n\n [ MLPathSession - handleLeaseExpired ] Lease [ " + expiredLease
+                    + " ]  expired  ...");
         }
-        if (opr != null && opr.links != null) {
+        if ((opr != null) && (opr.links != null)) {
             boolean found = false;
             for (Iterator it = opr.leases.entrySet().iterator(); it.hasNext();) {
                 Map.Entry entry = (Map.Entry) it.next();
@@ -753,7 +773,8 @@ public final class MLPathSession implements LeaseEventListener {
                 if (l.equals(expiredLease)) {
                     found = true;
                     if (logger.isLoggable(Level.FINER)) {
-                        logger.log(Level.FINER, " \n\n [ MLPathSession - handleLeaseExpired ] Lease [ " + expiredLease + " ] @ " + theAgent.getSwName(expiredLease.getRemoteAgentAddress()) + " expired  ...");
+                        logger.log(Level.FINER, " \n\n [ MLPathSession - handleLeaseExpired ] Lease [ " + expiredLease
+                                + " ] @ " + theAgent.getSwName(expiredLease.getRemoteAgentAddress()) + " expired  ...");
                     }
                     break;
                 }
@@ -761,7 +782,8 @@ public final class MLPathSession implements LeaseEventListener {
 
             if (!found) {
                 if (logger.isLoggable(Level.FINER)) {
-                    logger.log(Level.FINER, " \n\n [ MLPathSession - handleLeaseExpired ] [ProtocolException] Lease " + expiredLease + " NOT found in my opr.links  ...");
+                    logger.log(Level.FINER, " \n\n [ MLPathSession - handleLeaseExpired ] [ProtocolException] Lease "
+                            + expiredLease + " NOT found in my opr.links  ...");
                 }
                 return;
             }// if - !found
@@ -769,11 +791,13 @@ public final class MLPathSession implements LeaseEventListener {
             // do it asynch
             MLCopyAgent.getExecutor().execute(new Runnable() {
 
+                @Override
                 public void run() {
                     try {
                         theAgent.deleteOLConns(opr);
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, " [ MLPathSession - handleLeaseExpired ] Got exception deleting conns", t);
+                        logger.log(Level.WARNING,
+                                " [ MLPathSession - handleLeaseExpired ] Got exception deleting conns", t);
                     } finally {
                         stopIt();
                     }
@@ -785,7 +809,8 @@ public final class MLPathSession implements LeaseEventListener {
         if (remoteLease != null) {
             long sTime = System.currentTimeMillis();
             if (logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, " \n\n [ MLPathSession - handleLeaseExpired ] Lease Expired !!!  MASTER IS DOWNNNNNN!!!!!!!!");
+                logger.log(Level.FINER,
+                        " \n\n [ MLPathSession - handleLeaseExpired ] Lease Expired !!!  MASTER IS DOWNNNNNN!!!!!!!!");
             }
             boolean status = true;
             OSTelnet ost = OSTelnetFactory.getControlInstance(theAgent.cfg.osi.type.shortValue());
@@ -793,26 +818,28 @@ public final class MLPathSession implements LeaseEventListener {
 
             ReceivedCmd rc = (ReceivedCmd) theAgent.receivedCMDs.get(sessionID);
             if (rc == null) {
-                logger.log(Level.INFO, " \n\n [ MLPathSession - handleLeaseExpired ] [ProtocolException !] Lease Expired ... but no such ReceivedCmd !!!\n");
+                logger.log(Level.INFO,
+                        " \n\n [ MLPathSession - handleLeaseExpired ] [ProtocolException !] Lease Expired ... but no such ReceivedCmd !!!\n");
             }
 
             String connKey = rc.sPort + " - " + rc.dPort;
             try {
                 if (rc.isFDX) {
-                   ost.deleteFDXConn(connKey);
+                    ost.deleteFDXConn(connKey);
                 } else {
-                   ost.deleteConn(connKey);
+                    ost.deleteConn(connKey);
                 }
-            }catch(Throwable t) {
+            } catch (Throwable t) {
                 status = false;
-                logger.log(Level.WARNING, " [ MLCopyAgent ] Got exception deleting conn: [ " + connKey + "]", t );
+                logger.log(Level.WARNING, " [ MLCopyAgent ] Got exception deleting conn: [ " + connKey + "]", t);
             }
 
             OSPort sOSPort = new OSPort(rc.sPort, OSPort.INPUT_PORT);
             OSPort dOSPort = new OSPort(rc.dPort, OSPort.OUTPUT_PORT);
 
             if (logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, "Deleting conn [ " + connKey + " ] status = " + status + ". It took [ " + (System.currentTimeMillis() - sTime) + " ]");
+                logger.log(Level.FINER, "Deleting conn [ " + connKey + " ] status = " + status + ". It took [ "
+                        + (System.currentTimeMillis() - sTime) + " ]");
             }
 
             if (status) {
@@ -820,27 +847,28 @@ public final class MLPathSession implements LeaseEventListener {
                 theAgent.changePortState(sOSPort, OpticalLink.CONNECTED_FREE);
                 theAgent.changePortState(dOSPort, OpticalLink.CONNECTED_FREE);
 
-                ((OpticalLink)theAgent.cfg.osi.map.get(sOSPort)).opticalLinkID = null;
-                ((OpticalLink)theAgent.cfg.osi.map.get(dOSPort)).opticalLinkID = null;
+                theAgent.cfg.osi.map.get(sOSPort).opticalLinkID = null;
+                theAgent.cfg.osi.map.get(dOSPort).opticalLinkID = null;
 
                 theAgent.cfg.osi.crossConnects.remove(sOSPort);
                 if (rc.isFDX) {
                     theAgent.changePortState(sOSPort.getPear(), OpticalLink.CONNECTED_FREE);
                     theAgent.changePortState(dOSPort.getPear(), OpticalLink.CONNECTED_FREE);
 
-                    ((OpticalLink)theAgent.cfg.osi.map.get(sOSPort.getPear())).opticalLinkID = null;
-                    ((OpticalLink)theAgent.cfg.osi.map.get(dOSPort.getPear())).opticalLinkID = null;
-                    
+                    theAgent.cfg.osi.map.get(sOSPort.getPear()).opticalLinkID = null;
+                    theAgent.cfg.osi.map.get(dOSPort.getPear()).opticalLinkID = null;
+
                     theAgent.cfg.osi.crossConnects.remove(dOSPort.getPear());
                 }
                 theAgent.cfg.setNewConfiguration(theAgent.cfg.osi, -1);
                 theAgent.receivedCMDs.remove(sessionID);
             }
 
-//            theAgent.clearDelayMonitoringResult();
+            //            theAgent.clearDelayMonitoringResult();
 
         } else {
-            logger.log(Level.INFO, " \n\n [ MLPathSession - handleLeaseExpired ] [HANDLED] Lease Expired ... but I have no opr and no remoteLease !!!");
+            logger.log(Level.INFO,
+                    " \n\n [ MLPathSession - handleLeaseExpired ] [HANDLED] Lease Expired ... but I have no opr and no remoteLease !!!");
         }
         stopIt();
     }
@@ -867,17 +895,21 @@ public final class MLPathSession implements LeaseEventListener {
 
     }
 
+    @Override
     public void notify(LeaseEvent event) {
         // TODO Auto-generated method stub
-        if (event.lease != null && event.lease.getSessionID() != null && event.lease.getSessionID().equals(sessionID)) {
+        if ((event.lease != null) && (event.lease.getSessionID() != null)
+                && event.lease.getSessionID().equals(sessionID)) {
             try {
                 handleLeaseExpired(event.lease);
-            }catch(Throwable t) {
+            } catch (Throwable t) {
                 logger.log(Level.WARNING, " Got EXception ", t);
             }
             stopIt();
         } else {
-            logger.log(Level.INFO, " \n\n [ MLPathSession - notify :- Expired Lease ] [ProtocolException] Lease Expired ... but I it is not my sessionID !!!");
+            logger.log(
+                    Level.INFO,
+                    " \n\n [ MLPathSession - notify :- Expired Lease ] [ProtocolException] Lease Expired ... but I it is not my sessionID !!!");
         }
     }
 }

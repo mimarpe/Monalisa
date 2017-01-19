@@ -11,6 +11,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Vector;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import lia.Monitor.monitor.AppConfig;
 import lia.Monitor.monitor.MNode;
@@ -30,8 +31,10 @@ import lia.util.ntp.NTPDate;
 public class monFDTClient extends FDTManagedController {
 
     private static final long serialVersionUID = -2431447364463205440L;
+    /** Logger used by this class */
+    private static final Logger logger = Logger.getLogger(monFDTClient.class.getName());
 
-    private String[] sResTypes = new String[0]; // dynamic
+    private final String[] sResTypes = new String[0]; // dynamic
 
     static public String ModuleName = "FDTClient";
 
@@ -41,6 +44,7 @@ public class monFDTClient extends FDTManagedController {
 
     private int lMeasurementID = Math.abs(randomGenerator.nextInt());
 
+    @Override
     public MonModuleInfo init(MNode node, String args) {
         // update the module info
         MonModuleInfo info = super.init(node, args);
@@ -62,12 +66,15 @@ public class monFDTClient extends FDTManagedController {
         return info;
     }
 
+    @Override
     public Object doProcess() throws Exception {
 
         if (info.getState() != 0) {
             throw new IOException("[FDTClient: " + this.Node.getName() + "]  Module could not be initialized");
         }
-        final String sFDTClientsURL = getModuleConfiguration().getProperty("controlURL", AppConfig.getProperty("fdt.controlURL", DEFAULT_FDT_CONF_URL)) + FDT_CLIENTS_CONF;
+        final String sFDTClientsURL = getModuleConfiguration().getProperty("controlURL",
+                AppConfig.getProperty("fdt.controlURL", DEFAULT_FDT_CONF_URL))
+                + FDT_CLIENTS_CONF;
 
         // by default, the client should not start
         // it should stop if it fails to get its config
@@ -78,14 +85,18 @@ public class monFDTClient extends FDTManagedController {
         // check the URL and perform start/restart actions of fdt client
         URLConnection conn = null;
         try {
-            if (logger.isLoggable(Level.FINEST))
+            if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, "[FDTClient] Reading ..." + sFDTClientsURL.toString());
+            }
             final String myName = getName();
             String status = (prBackgroundProcess.isRunning()) ? "0" : "1";
-            String sURL = sFDTClientsURL + "&user.name=" + encode(System.getProperty("user.name")) + "&machine.name=" + encode(myName == null ? InetAddress.getLocalHost().toString() : myName) + "&client.status=" + encode(status);
+            String sURL = sFDTClientsURL + "&user.name=" + encode(System.getProperty("user.name")) + "&machine.name="
+                    + encode(myName == null ? InetAddress.getLocalHost().toString() : myName) + "&client.status="
+                    + encode(status);
             URL url = new URL(sURL);
-            if (logger.isLoggable(Level.FINEST))
+            if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, "[FDTClient] Announcement " + sURL);
+            }
             conn = getURLConnection(url);
             conn.connect();
         } catch (IOException e) {
@@ -101,8 +112,9 @@ public class monFDTClient extends FDTManagedController {
             try {
                 final InputStream is = conn.getInputStream();
                 newConfig.load(is);
-                if (logger.isLoggable(Level.FINEST))
+                if (logger.isLoggable(Level.FINEST)) {
                     logger.log(Level.FINEST, "[FDTClient] Got config:" + newConfig);
+                }
                 is.close();
             } catch (IOException e) {
                 logger.log(Level.WARNING, "[FDTClient] Error while reading config from URL.", e);
@@ -122,11 +134,13 @@ public class monFDTClient extends FDTManagedController {
     /**
      * @see lia.Monitor.monitor.MonitoringModule#ResTypes()
      */
+    @Override
     public String[] ResTypes() {
         return sResTypes;
     }
 
     // module is ignored here since we know for sure that we are in client mode.
+    @Override
     public XDRMessage execCommand(String module, String command, List args) {
         final long rightNow = NTPDate.currentTimeMillis();
         if (logger.isLoggable(Level.FINEST)) {
@@ -138,7 +152,7 @@ public class monFDTClient extends FDTManagedController {
             if (command.equalsIgnoreCase("monitorTransfer")) {
                 if (args.size() < 3) {
                     final String key = (String) args.get(0);
-                    if (key != null && "RESTARTME".equalsIgnoreCase(key.trim())) {
+                    if ((key != null) && "RESTARTME".equalsIgnoreCase(key.trim())) {
                         // RESTART THE CLIENT (todo: factor-out this code)
                         try {
                             stopFDT();
@@ -146,31 +160,33 @@ public class monFDTClient extends FDTManagedController {
                             bActive = true;
                             reportStatus("client.status", "0");
                             if (logger.isLoggable(Level.FINEST)) {
-                                logger.log(Level.FINEST, "[FDTClient]  Restarted [ Running=" + prBackgroundProcess.isRunning() + " ]");
+                                logger.log(Level.FINEST,
+                                        "[FDTClient]  Restarted [ Running=" + prBackgroundProcess.isRunning() + " ]");
                             }
                         } catch (IOException e) {
                             logger.log(Level.WARNING, "[FDTClient] Error while trying to stop & startFDT.", e);
                         }
                         return XDRMessage.getSuccessMessage("Restarted");
                     }// RESTART
-                    
+
                     logger.log(Level.WARNING, "[FDTClient] Invalid monitorTransfer parameters");
                     xdrOutput.payload = "Invalid monitorTransfer parameters";
                     xdrOutput.status = XDRMessage.ERROR;
-                    
+
                 } else {
                     try {
                         Vector paramNames = new Vector();
                         Vector paramValues = new Vector();
                         String sName, sValue;
-                        for (int j = 1; j < args.size() - 1; j += 2) {
+                        for (int j = 1; j < (args.size() - 1); j += 2) {
                             try {
                                 sName = ((String) args.get(j)).trim();
                                 sValue = ((String) args.get(j + 1)).trim();
                                 paramNames.addElement(sName);
                                 paramValues.addElement(Double.valueOf(sValue));
                             } catch (Exception e) {
-                                logger.log(Level.WARNING, "[FDTClient-MON] [skipped] Invalid mon value. Cause: " + e.getMessage());
+                                logger.log(Level.WARNING,
+                                        "[FDTClient-MON] [skipped] Invalid mon value. Cause: " + e.getMessage());
                             }
                         }
                         paramNames.add("MeasurementID");
@@ -181,17 +197,18 @@ public class monFDTClient extends FDTManagedController {
                         for (Iterator iterator = paramValues.iterator(); iterator.hasNext(); i++) {
                             aParamValues[i] = ((Double) iterator.next()).doubleValue();
                         }
-                        Result rResult = new Result(Node.getFarmName(), "FDT_Link_" + linkName, myName + "_" + (String) args.get(0), resultsModName, aParamNames, aParamValues);
+                        Result rResult = new Result(Node.getFarmName(), "FDT_Link_" + linkName, myName + "_"
+                                + (String) args.get(0), resultsModName, aParamNames, aParamValues);
                         rResult.time = rightNow;
                         addToBufferedResults(rResult);
                         // apMon.sendParameters("Link_" + linkName, myName + "_" + args.get(0), paramNames.size(),
                         // paramNames, paramValues);
                         xdrOutput.payload = "OK";
                         xdrOutput.status = XDRMessage.SUCCESS;
-                        if (logger.isLoggable(Level.FINE))
-                            logger.log(Level.FINE, "[FDTClient-MON] Monitoring values published: Servers {0} {1} {2}", new Object[] {
-                                    myName + "_" + args.get(0), paramNames, paramValues
-                            });
+                        if (logger.isLoggable(Level.FINE)) {
+                            logger.log(Level.FINE, "[FDTClient-MON] Monitoring values published: Servers {0} {1} {2}",
+                                    new Object[] { myName + "_" + args.get(0), paramNames, paramValues });
+                        }
                     } catch (NumberFormatException e) {
                         logger.warning("Wrong parameter:" + args.get(2) + ".  integer/float/double values required");
                         xdrOutput.payload = "Wrong parameter.  integer/float/double values required";
@@ -210,6 +227,7 @@ public class monFDTClient extends FDTManagedController {
         }
     }
 
+    @Override
     protected void startFDT(Properties config) throws IOException {
         final String ip;
         String cmd;
@@ -220,8 +238,9 @@ public class monFDTClient extends FDTManagedController {
         if (cmd != null) {
             cmd = cmd.replaceAll("%JAR%", getFDTJar()).replaceAll("%IP%", ip);
         }
-        if (logger.isLoggable(Level.INFO))
+        if (logger.isLoggable(Level.INFO)) {
             logger.log(Level.INFO, "[FDTClient] Starting FDT client for[" + ip + "] using:[" + cmd + "]");
+        }
         try {
             String trace = getStdoutFirstLines("tracepath " + ip, 100).toString();
             reportTrace(ip, trace);
@@ -235,9 +254,11 @@ public class monFDTClient extends FDTManagedController {
 
     }
 
+    @Override
     protected void stopFDT() throws IOException {
-        if (logger.isLoggable(Level.INFO))
+        if (logger.isLoggable(Level.INFO)) {
             logger.log(Level.INFO, "[FDTClient] Stopping FDT client with cmd: " + prBackgroundProcess.getSCmd());
+        }
         prBackgroundProcess.stopProcess();
     }
 
@@ -259,13 +280,17 @@ public class monFDTClient extends FDTManagedController {
             logger.log(Level.WARNING, "Error while taking config parameters", ex);
         }
         String crtCommand = "";
-        if (!isNull(ip))
-            crtCommand = FDT_CLIENT_CMD_PREFIX.replaceAll("%JAR%", getFDTJar()).replaceAll("%IP%", ip) + " " + config.getProperty("client.command") + " " + FDT_CLIENT_CMD_SUFFIX;
+        if (!isNull(ip)) {
+            crtCommand = FDT_CLIENT_CMD_PREFIX.replaceAll("%JAR%", getFDTJar()).replaceAll("%IP%", ip) + " "
+                    + config.getProperty("client.command") + " " + FDT_CLIENT_CMD_SUFFIX;
+        }
         bNewStatus = bNewStatus && !isNull(crtCommand);
 
         bActive = prBackgroundProcess.isRunning();
-        if (logger.isLoggable(Level.FINEST))
-            logger.log(Level.FINEST, "[FDTClient] PrvActive:[" + bActive + "] PrvCmd[:" + prvCommand + "] CrtActive:[" + bNewStatus + "] CrtCmd:[" + crtCommand + "] \n");
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.log(Level.FINEST, "[FDTClient] PrvActive:[" + bActive + "] PrvCmd[:" + prvCommand + "] CrtActive:["
+                    + bNewStatus + "] CrtCmd:[" + crtCommand + "] \n");
+        }
 
         if ((bActive && !bNewStatus) || (!isNull(prvCommand) && isNull(crtCommand))) {
             try {
@@ -296,8 +321,9 @@ public class monFDTClient extends FDTManagedController {
         }
 
         prvCommand = crtCommand;
-        if (logger.isLoggable(Level.FINEST))
+        if (logger.isLoggable(Level.FINEST)) {
             logger.fine("[FDTCLient] No change in client status [running:" + bActive + "]");
+        }
         return;
     }
 

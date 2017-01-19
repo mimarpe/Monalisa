@@ -21,7 +21,7 @@ import lia.util.ntp.NTPDate;
 public class McastGanglia extends Thread {
 
     /** The Logger */
-    private static final transient Logger logger = Logger.getLogger(McastGanglia.class.getName());
+    private static final Logger logger = Logger.getLogger(McastGanglia.class.getName());
 
     protected MulticastSocket socket = null;
 
@@ -29,11 +29,11 @@ public class McastGanglia extends Thread {
 
     final byte[] buf = new byte[8192];
 
-    private MNode Node;
+    private final MNode Node;
 
-    private String Module;
+    private final String Module;
 
-    private Vector<Result> rezBuff = new Vector<Result>();
+    private final Vector<Result> rezBuff = new Vector<Result>();
 
     static MGangliaMetrics gm = new MGangliaMetrics();
 
@@ -51,6 +51,7 @@ public class McastGanglia extends Thread {
 
     }
 
+    @Override
     public void run() {
         DatagramPacket packet = new DatagramPacket(buf, buf.length);
 
@@ -59,7 +60,7 @@ public class McastGanglia extends Thread {
                 socket.receive(packet);
                 final InetAddress address = packet.getAddress();
                 final int len = packet.getLength();
-                if(logger.isLoggable(Level.FINEST)) {
+                if (logger.isLoggable(Level.FINEST)) {
                     logger.finest(" [ McastGanglia ] recived pkt from: " + address + " len=" + len);
                 }
                 final byte[] data = packet.getData();
@@ -78,7 +79,7 @@ public class McastGanglia extends Thread {
                 if (key == 0) {
                     // custom gmetric
                     final String type = xdrIS.readString();
-                    if(logger.isLoggable(Level.FINEST)) {
+                    if (logger.isLoggable(Level.FINEST)) {
                         logger.finest(" [ McastGanglia ] custom packet type: " + type);
                     }
                     xdrIS.pad();
@@ -91,9 +92,9 @@ public class McastGanglia extends Thread {
                     }
                     rezBuff.add(r);
                     continue;
-                } else if (key >= MGangliaMetrics.gMetrics.length || key < 0) {
+                } else if ((key >= MGangliaMetrics.gMetrics.length) || (key < 0)) {
                     logger.log(Level.INFO, "No such metric. key = " + key);
-                } else if (key < MGangliaMetrics.MIN_RESERVED_KEY || key > MGangliaMetrics.MAX_RESERVED_KEY) {
+                } else if ((key < MGangliaMetrics.MIN_RESERVED_KEY) || (key > MGangliaMetrics.MAX_RESERVED_KEY)) {
                     String gModule = MGangliaMetrics.gMetrics[key];
                     Ganglia2MLMetric g2ml = (Ganglia2MLMetric) gm.g2mlh.get(gModule);
                     if (g2ml != null) {
@@ -101,26 +102,26 @@ public class McastGanglia extends Thread {
                         // g2ml.mlMetric );
                         double value = 0;
                         switch (g2ml.xdrType) {
-                            case XDRMLMappings.XDR_INT16:
-                                value = xdrIS.readInt();
-                                xdrIS.pad();
-                                break;
-                            case XDRMLMappings.XDR_INT32:
-                                value = xdrIS.readInt();
-                                xdrIS.pad();
-                                break;
-                            case XDRMLMappings.XDR_INT64:
-                                value = xdrIS.readLong();
-                                xdrIS.pad();
-                                break;
-                            case XDRMLMappings.XDR_REAL32:
-                                value = xdrIS.readFloat();
-                                xdrIS.pad();
-                                break;
-                            case XDRMLMappings.XDR_REAL64:
-                                value = xdrIS.readDouble();
-                                xdrIS.pad();
-                                break;
+                        case XDRMLMappings.XDR_INT16:
+                            value = xdrIS.readInt();
+                            xdrIS.pad();
+                            break;
+                        case XDRMLMappings.XDR_INT32:
+                            value = xdrIS.readInt();
+                            xdrIS.pad();
+                            break;
+                        case XDRMLMappings.XDR_INT64:
+                            value = xdrIS.readLong();
+                            xdrIS.pad();
+                            break;
+                        case XDRMLMappings.XDR_REAL32:
+                            value = xdrIS.readFloat();
+                            xdrIS.pad();
+                            break;
+                        case XDRMLMappings.XDR_REAL64:
+                            value = xdrIS.readDouble();
+                            xdrIS.pad();
+                            break;
                         }
 
                         // Quick Fix for memory and Network
@@ -143,8 +144,9 @@ public class McastGanglia extends Thread {
     public Collection<Result> getResults() {
         synchronized (rezBuff) {
             try {
-                if (rezBuff.size() == 0)
+                if (rezBuff.size() == 0) {
                     return Collections.EMPTY_LIST;
+                }
                 return new ArrayList<Result>(rezBuff);
             } finally {
                 rezBuff.clear();
@@ -154,7 +156,8 @@ public class McastGanglia extends Thread {
 
     public static void main(String[] args) {
         try {
-            new McastGanglia(InetAddress.getByName("239.2.11.71"), 8649, new MNode("localhost", null, null), "monMcastGanlia");
+            new McastGanglia(InetAddress.getByName("239.2.11.71"), 8649, new MNode("localhost", null, null),
+                    "monMcastGanlia");
         } catch (Throwable ex) {
             ex.printStackTrace();
         }

@@ -1,5 +1,5 @@
 /*
- * $Id: MLLogSender.java 6872 2010-10-11 22:19:58Z ramiro $
+ * $Id: MLLogSender.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.util.logging.relay;
 
@@ -11,6 +11,7 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,7 +31,7 @@ import lia.util.threads.MonALISAExecutors;
 public class MLLogSender implements Runnable {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger("lia.util.logging.relay.MLLogSender");
+    private static final Logger logger = Logger.getLogger(MLLogSender.class.getName());
 
     private static volatile int MAX_LOG_MSGS = 150; // we are not GMAIL or Yahoo! or mail.cs.pub.ro :) ?
 
@@ -51,19 +52,18 @@ public class MLLogSender implements Runnable {
 
     private static final ConcurrentHashMap<Long, MLLogMsgEntry> waitingNotif = new ConcurrentHashMap<Long, MLLogMsgEntry>();
 
-    private static final Object initLock = new Object();
-
-    private static ProxyWorker pw;
+    private static final AtomicReference<ProxyWorker> proxyWorkerPointer = new AtomicReference<ProxyWorker>(null);
 
     private static StatusThread statusThread;
 
-    private AtomicLong totalSent = new AtomicLong(0);
+    private final AtomicLong totalSent = new AtomicLong(0);
 
     static {
         reloadCfgParams();
 
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
                 reloadCfgParams();
             }
@@ -91,30 +91,39 @@ public class MLLogSender implements Runnable {
             this.retries = retries;
         }
 
+        @Override
         public int compareTo(Delayed o) {
-            if (o.equals(this))
+            if (o.equals(this)) {
                 return 0;
+            }
             MLLogMsgEntry msg = (MLLogMsgEntry) o;
-            if (msg.nextRetry > nextRetry)
+            if (msg.nextRetry > nextRetry) {
                 return -1;
-            if (msg.nextRetry < nextRetry)
+            }
+            if (msg.nextRetry < nextRetry) {
                 return 1;
+            }
 
-            if (id < msg.id)
+            if (id < msg.id) {
                 return -1;
-            if (id > msg.id)
+            }
+            if (id > msg.id) {
                 return 1;
+            }
             return 0;
         }
 
+        @Override
         public long getDelay(TimeUnit unit) {
             return unit.convert(nextRetry - Utils.nanoNow(), TimeUnit.NANOSECONDS);
         }
 
+        @Override
         public boolean equals(Object o) {
             return ((MLLogMsgEntry) o).id == id;
         }
 
+        @Override
         public int hashCode() {
             // from Long.hascode()
             return (int) (id ^ (id >>> 32));
@@ -138,6 +147,7 @@ public class MLLogSender implements Runnable {
             StatusThread.this.interrupt();
         }
 
+        @Override
         public void run() {
             logger.log(Level.INFO, " [ MLLogS ] [ StatusThread ] started ...");
             while (alive.get()) {
@@ -160,10 +170,7 @@ public class MLLogSender implements Runnable {
 
     // only from this package
     public static final void setPW(ProxyWorker pw) {
-        synchronized (initLock) {
-            MLLogSender.pw = pw;
-            initLock.notify();
-        }
+        proxyWorkerPointer.set(pw);
     }
 
     private MLLogSender() {
@@ -188,7 +195,8 @@ public class MLLogSender implements Runnable {
         if (logRecQueue.size() > MAX_LOG_MSGS) {
             // That's life ... sometimes you loose
             if (logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, " [ MLLogS ] Too many notif info in the queue; Dropping notif info ... \n" + msg);
+                logger.log(Level.FINER, " [ MLLogS ] Too many notif info in the queue; Dropping notif info ... \n"
+                        + msg);
             }
             return;
         }
@@ -203,7 +211,8 @@ public class MLLogSender implements Runnable {
     public static synchronized MLLogSender getInstance() {
         if (me == null) {
             me = new MLLogSender();
-            MonALISAExecutors.getMLHelperExecutor().scheduleWithFixedDelay(me, 100 + Math.round(Math.random() * 10), 100 + Math.round(Math.random() * 10), TimeUnit.SECONDS);
+            MonALISAExecutors.getMLHelperExecutor().scheduleWithFixedDelay(me, 100 + Math.round(Math.random() * 10),
+                    100 + Math.round(Math.random() * 10), TimeUnit.SECONDS);
         }
         return me;
     }
@@ -216,6 +225,7 @@ public class MLLogSender implements Runnable {
                     final Properties newRemoteProps = plm.props;
                     new Thread(" ( ML ) Remote prop msg notifier ") {
 
+                        @Override
                         public void run() {
                             logger.log(Level.INFO, " RemoteProps notified");
                             AppConfig.setRemoteProps(newRemoteProps);
@@ -236,16 +246,18 @@ public class MLLogSender implements Runnable {
         StringBuilder sb = new StringBuilder();
         sb.append("\n ************** MLLogS Status *************** \n");
         sb.append("\n ---------- mq.size = ").append(logRecQueue.size()).append(" ------------- ");
-        if (logRecQueue.size() > 0 && logger.isLoggable(Level.FINEST)) {
+        if ((logRecQueue.size() > 0) && logger.isLoggable(Level.FINEST)) {
             for (MLLogMsgEntry mm : logRecQueue) {
-                sb.append("\n ---> [ ").append(new Date(mm.entryTime)).append(" <> ").append(new Date(mm.nextRetry)).append("] <---- \n");
+                sb.append("\n ---> [ ").append(new Date(mm.entryTime)).append(" <> ").append(new Date(mm.nextRetry))
+                        .append("] <---- \n");
                 sb.append(mm.msg).append("\n");
             }
         }
         sb.append("\n ---------- notif.size = ").append(waitingNotif.size()).append(" ------------- ");
-        if (waitingNotif.size() > 0 && logger.isLoggable(Level.FINEST)) {
+        if ((waitingNotif.size() > 0) && logger.isLoggable(Level.FINEST)) {
             for (MLLogMsgEntry mms : waitingNotif.values()) {
-                sb.append("\n ---> [ ").append(new Date(mms.entryTime)).append(" <> ").append(new Date(mms.nextRetry)).append("] <---- \n");
+                sb.append("\n ---> [ ").append(new Date(mms.entryTime)).append(" <> ").append(new Date(mms.nextRetry))
+                        .append("] <---- \n");
                 sb.append("\n").append(mms.msg);
             }
         }
@@ -253,7 +265,7 @@ public class MLLogSender implements Runnable {
         return sb.toString();
     }
 
-    private void deliverMsgs() {
+    private void deliverMsgs(ProxyWorker pw) {
         // will block until a new EMsg received
         MLLogMsgEntry eme = null;
         try {
@@ -303,7 +315,7 @@ public class MLLogSender implements Runnable {
     public void notifyDelivered(Long id) {
         try {
             MLLogMsgEntry removed = waitingNotif.remove(id);
-            if (removed != null && logRecQueue.remove(removed)) {
+            if ((removed != null) && logRecQueue.remove(removed)) {
                 if (logger.isLoggable(Level.FINER)) {
                     logger.log(Level.FINER, " [ MLLogS ] REMOVED from my cache " + id + " \n " + removed.msg);
                 }
@@ -330,13 +342,15 @@ public class MLLogSender implements Runnable {
             }
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, " [ MLLogS ] Got ex parsing lia.util.logging.relay.MLLogS.DELIVER_INTERNAL_NOTIF", t);
+                logger.log(Level.FINE,
+                        " [ MLLogS ] Got ex parsing lia.util.logging.relay.MLLogS.DELIVER_INTERNAL_NOTIF", t);
             }
             DELIVER_INTERNAL_NOTIF = true;
         }
 
         try {
-            MAX_LOG_MSGS = Integer.valueOf(AppConfig.getProperty("lia.util.logging.relay.MLLogS.MAX_LOG_MSGS", "150")).intValue();
+            MAX_LOG_MSGS = Integer.valueOf(AppConfig.getProperty("lia.util.logging.relay.MLLogS.MAX_LOG_MSGS", "150"))
+                    .intValue();
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, " [ MLLogS ] Got ex parsing lia.util.logging.relay.MLLogS.MAX_LOG_MSGS", t);
@@ -345,7 +359,8 @@ public class MLLogSender implements Runnable {
         }
 
         try {
-            RETRY_AFTER = Long.valueOf(AppConfig.getProperty("lia.util.logging.relay.MLLogS.RETRY_AFTER", "300")).longValue() * 1000;
+            RETRY_AFTER = Long.valueOf(AppConfig.getProperty("lia.util.logging.relay.MLLogS.RETRY_AFTER", "300"))
+                    .longValue() * 1000;
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, " [ MLLogS ] Got ex parsing lia.util.logging.relay.MLLogS.RETRY_AFTER", t);
@@ -354,7 +369,8 @@ public class MLLogSender implements Runnable {
         }
 
         try {
-            RETRY_AFTER_FACTOR = Long.valueOf(AppConfig.getProperty("lia.util.logging.relay.MLLogS.RETRY_AFTER", "2")).longValue();
+            RETRY_AFTER_FACTOR = Long.valueOf(AppConfig.getProperty("lia.util.logging.relay.MLLogS.RETRY_AFTER", "2"))
+                    .longValue();
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, " [ MLLogS ] Got ex parsing lia.util.logging.relay.MLLogS.RETRY_AFTER_FACTOR", t);
@@ -363,7 +379,8 @@ public class MLLogSender implements Runnable {
         }
 
         try {
-            MAX_RETRIES = Integer.valueOf(AppConfig.getProperty("lia.util.logging.relay.MLLogS.MAX_RETRIES", "50")).intValue();
+            MAX_RETRIES = Integer.valueOf(AppConfig.getProperty("lia.util.logging.relay.MLLogS.MAX_RETRIES", "50"))
+                    .intValue();
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, " [ MLLogS ] Got ex parsing lia.util.logging.relay.MLLogS.MAX_RETRIES", t);
@@ -384,31 +401,34 @@ public class MLLogSender implements Runnable {
         }
 
         if (logger.isLoggable(Level.FINEST)) {
-            logger.log(Level.FINEST, " [ MLLogS ] [ reloadCfgParams ]  " + " DELIVER_INTERNAL_NOTIF = " + DELIVER_INTERNAL_NOTIF + " MAX_LOG_MSGS = " + MAX_LOG_MSGS + " RETRY_AFTER = " + RETRY_AFTER + " RETRY_AFTER_FACTOR = " + RETRY_AFTER_FACTOR + " MAX_RETRIES = " + MAX_RETRIES);
+            logger.log(Level.FINEST, " [ MLLogS ] [ reloadCfgParams ]  " + " DELIVER_INTERNAL_NOTIF = "
+                    + DELIVER_INTERNAL_NOTIF + " MAX_LOG_MSGS = " + MAX_LOG_MSGS + " RETRY_AFTER = " + RETRY_AFTER
+                    + " RETRY_AFTER_FACTOR = " + RETRY_AFTER_FACTOR + " MAX_RETRIES = " + MAX_RETRIES);
         }
     }
 
     /**
      * let's dance ... or let's loop :)
      */
+    @Override
     public void run() {
         try {
-            synchronized (initLock) {
-                if (pw == null) {
-                    return;
-                }
+            final ProxyWorker pw = proxyWorkerPointer.get();
+            if (pw == null) {
+                return;
             }
-            deliverMsgs();
+            deliverMsgs(pw);
         } catch (Throwable t) {
             if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, " Got Exc sending msg", t);
             }
 
+        } finally {
             // Whatever happens - DO NOT LOOP!
             try {
                 Thread.sleep(20 * 1000);
-            } catch (Exception e1) {
-
+            } catch (Throwable t) {
+                //ignore
             }
         }
     }

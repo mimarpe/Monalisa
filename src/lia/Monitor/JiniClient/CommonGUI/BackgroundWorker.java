@@ -1,15 +1,11 @@
 package lia.Monitor.JiniClient.CommonGUI;
 
-import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * We use a single thread to do all background
@@ -23,17 +19,16 @@ import java.util.logging.Logger;
  */
 public final class BackgroundWorker {
 
-    protected static Logger logger = Logger.getLogger(BackgroundWorker.class.getName());
+    private final static ScheduledExecutorService timer = Executors
+            .newSingleThreadScheduledExecutor(new ThreadFactory() {
 
-    private final static ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
-
-        @Override
-        public Thread newThread(Runnable r) {
-            final Thread t = new Thread(r);
-            t.setName("(ML) BackgroundWorker");
-            return t;
-        }
-    });
+                @Override
+                public Thread newThread(Runnable r) {
+                    final Thread t = new Thread(r);
+                    t.setName("(ML) BackgroundWorker");
+                    return t;
+                }
+            });
 
     // the one and only instance of this class
     private static BackgroundWorker pt = new BackgroundWorker();
@@ -100,6 +95,7 @@ public final class BackgroundWorker {
             hasToRun = false;
         }
 
+        @Override
         public void run() {
 
             try {

@@ -36,638 +36,667 @@ import lia.Monitor.JiniClient.CommonGUI.OSG.GraphAlgs.RandomLayoutAlgorithm;
 import lia.Monitor.monitor.AppConfig;
 import net.jini.core.lookup.ServiceID;
 
-
 /**
  * The main class used to represent the graphical panel for the OSG.
  */
-public class OSGPanel extends JPanel implements graphical,
-		LayoutChangedListener, ComponentListener {
+public class OSGPanel extends JPanel implements graphical, LayoutChangedListener, ComponentListener {
 
-	static final long serialVersionUID = 281020052L;
-	
-	/** Logger name */
-	private static final transient String COMPONENT = "lia.Monitor.JiniClient.CommonGUI.OSG";
+    static final long serialVersionUID = 281020052L;
 
-	/** Logger used by this class */
-	private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    /** Logger used by this class */
+    private static final Logger logger = Logger.getLogger(OSGPanel.class.getName());
 
-	public OSGMenu cmdPane;
-	public OSGHistoryMenu hstPane;
-	public OSGCanvas canvasPane;
-	public OSGFTPHelper ftpHelper;
-	public OSGJOBHelper jobHelper;
-	public OSGParamHelper paramHelper;
-	
-	public boolean onlyToolTip = false;
-	public boolean onlyModule = false;
-	
-	public long historyTime = 30 * 60 * 1000;
+    public OSGMenu cmdPane;
+    public OSGHistoryMenu hstPane;
+    public OSGCanvas canvasPane;
+    public OSGFTPHelper ftpHelper;
+    public OSGJOBHelper jobHelper;
+    public OSGParamHelper paramHelper;
 
-	SerMonitorBase monitor;
-	volatile Map<ServiceID, rcNode> nodes;
-	volatile Vector<rcNode> vnodes;
-	
-	public HashMap userParams = new HashMap();
+    public boolean onlyToolTip = false;
+    public boolean onlyModule = false;
 
-	public static final Object syncGraphObj = new Object();
-	
-	public boolean showOnlyConnectedNodes = false;
+    public long historyTime = 30 * 60 * 1000;
 
-	public byte ftpTransferType = OSGFTPHelper.FTP_INPUT;
-	
-	public OSGPanel() {
-		super();
-		ginit();
-	}
+    SerMonitorBase monitor;
+    volatile Map<ServiceID, rcNode> nodes;
+    volatile Vector<rcNode> vnodes;
 
-	/**
-	 * Method used to initiate the graphical panels.
-	 */
-	void ginit() {
+    public HashMap userParams = new HashMap();
 
-		paramHelper = new OSGParamHelper();
-				
-		ftpHelper = new OSGFTPHelper(this);
-		jobHelper = new OSGJOBHelper(this);
+    public static final Object syncGraphObj = new Object();
 
-		cmdPane = new OSGMenu(this);
-		hstPane = new OSGHistoryMenu(this);
-		canvasPane = new OSGCanvas(this);
+    public boolean showOnlyConnectedNodes = false;
 
-		initLayout();
+    public byte ftpTransferType = OSGFTPHelper.FTP_INPUT;
 
-		setLayout(new BorderLayout());
+    public OSGPanel() {
+        super();
+        ginit();
+    }
 
-		add(cmdPane, BorderLayout.NORTH);
-		add(canvasPane, BorderLayout.CENTER);
-		add(hstPane, BorderLayout.SOUTH);
-		setBackground(Color.white);
+    /**
+     * Method used to initiate the graphical panels.
+     */
+    void ginit() {
 
-		TimerTask task = new TimerTask() {
-			public void run() {
-				ftpHelper.setNodes(nodes);
-				jobHelper.setNodes(nodes);
-				canvasPane.setNodes(nodes);
-				redoParams(canvasPane.currentNodes);
-				repaint();
-			}
-		};
-		BackgroundWorker.schedule(task, 10000, 4000);
-		addComponentListener(this);
-	}
-	
-	public void loadParamsState(){
-		
-		userParams.putAll(OSGConstants.UPARAMS);
-		
-		try{
-			String defSelParam = AppConfig.getProperty("lia.Monitor.param", null);
-			String defUnselParam = AppConfig.getProperty("lia.Monitor.paramUnselected", null);
-			String selParam = null; //monitor.getUserParamPreferences("lia.Monitor.param", defSelParam);
-			String unselParam = null; //monitor.getUserParamPreferences("lia.Monitor.paramUnselected", defUnselParam);
+        paramHelper = new OSGParamHelper();
 
-			if (defSelParam != null)
-				putInUserParams(defSelParam, true);
-			if (defUnselParam != null)
-				putInUserParams(defUnselParam, false);
-			
-			if (selParam != null)
-				putInUserParams(selParam, true);
-			if (unselParam != null)
-				putInUserParams(unselParam, false);
-			
-			cmdPane.nodesShown.setSelected(getParamState("nodes"));
-			cmdPane.cpuShown.setSelected(getParamState("cpu"));
-			cmdPane.ioShown.setSelected(getParamState("io"));
-			cmdPane.cpuTimeShown.setSelected(getParamState("cputime"));
-			cmdPane.jobsShown.setSelected(getParamState("jobs"));
-			cmdPane.fJobsShown.setSelected(getParamState("fjobs"));
-		
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-	}
-	
-	/** helper for populate userParam
-	 *  puts in userParam only the param from a ","-sepparaed list, according to selected */
-	public void putInUserParams(String uParams, boolean selected) {
-		if (uParams == null) return;
-	    StringTokenizer tz = new StringTokenizer(uParams, ",");
-	    while (tz.hasMoreTokens()) {
-			String ss = tz.nextToken();
-			Integer oldSel = (Integer) userParams.get(ss);
-			if(oldSel == null || (oldSel.intValue() != (selected ? 1 : 0))){
-				userParams.put(ss, Integer.valueOf(selected ? 1 : 0));
-				//monitor.updateUserParamPreferences(ss, selected);
-			}
-		}
-	}
-	
-	public boolean getParamState(String name){
-		return ((Integer)userParams.get(name)).intValue() == 1;
-	}
-	
-	public void setShowShadow(boolean show) {
-		canvasPane.showShadow = show;
-		canvasPane.repaint();
-	}
-	
-	public void setShowSphere(boolean show) {
-		canvasPane.showSphere = show;
-		canvasPane.repaint();
-	}
+        ftpHelper = new OSGFTPHelper(this);
+        jobHelper = new OSGJOBHelper(this);
 
-	public void updateNode(rcNode node) {
-	}
+        cmdPane = new OSGMenu(this);
+        hstPane = new OSGHistoryMenu(this);
+        canvasPane = new OSGCanvas(this);
 
-	public void gupdate() {
-	}
+        initLayout();
 
-	public void setNodes(Map<ServiceID, rcNode> nodes, Vector<rcNode> vnodes) {
+        setLayout(new BorderLayout());
 
-		this.nodes = nodes;
-		this.vnodes = vnodes;
-	}
+        add(cmdPane, BorderLayout.NORTH);
+        add(canvasPane, BorderLayout.CENTER);
+        add(hstPane, BorderLayout.SOUTH);
+        setBackground(Color.white);
 
-	public void setSerMonitor(SerMonitorBase ms) {
-		this.monitor = ms;
-		loadParamsState();
-	}
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                ftpHelper.setNodes(nodes);
+                jobHelper.setNodes(nodes);
+                canvasPane.setNodes(nodes);
+                redoParams(canvasPane.currentNodes);
+                repaint();
+            }
+        };
+        BackgroundWorker.schedule(task, 10000, 4000);
+        addComponentListener(this);
+    }
 
-	public void setMaxFlowData(rcNode n, Vector v) {
-	}
+    public void loadParamsState() {
 
-	public void new_global_param(String name) {
-	}
+        userParams.putAll(OSGConstants.UPARAMS);
 
-	/**
-	 * Stuff regarding the current graphical layout
-	 */
+        try {
+            String defSelParam = AppConfig.getProperty("lia.Monitor.param", null);
+            String defUnselParam = AppConfig.getProperty("lia.Monitor.paramUnselected", null);
+            String selParam = null; //monitor.getUserParamPreferences("lia.Monitor.param", defSelParam);
+            String unselParam = null; //monitor.getUserParamPreferences("lia.Monitor.paramUnselected", defUnselParam);
 
-	/** The current layout transformer object */
-	LayoutTransformer layoutTransformer;
+            if (defSelParam != null) {
+                putInUserParams(defSelParam, true);
+            }
+            if (defUnselParam != null) {
+                putInUserParams(defUnselParam, false);
+            }
 
-	/** The name of the current layout */
-	String currentLayout = "None";
+            if (selParam != null) {
+                putInUserParams(selParam, true);
+            }
+            if (unselParam != null) {
+                putInUserParams(unselParam, false);
+            }
 
-	/** Flag used to cancel the current transform */
-	boolean currentTransformCancelled = false;
+            cmdPane.nodesShown.setSelected(getParamState("nodes"));
+            cmdPane.cpuShown.setSelected(getParamState("cpu"));
+            cmdPane.ioShown.setSelected(getParamState("io"));
+            cmdPane.cpuTimeShown.setSelected(getParamState("cputime"));
+            cmdPane.jobsShown.setSelected(getParamState("jobs"));
+            cmdPane.fJobsShown.setSelected(getParamState("fjobs"));
 
-	/** The current layout */
-	GraphLayoutAlgorithm layout = null;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-	public void initLayout() {
+    /** helper for populate userParam
+     *  puts in userParam only the param from a ","-sepparaed list, according to selected */
+    public void putInUserParams(String uParams, boolean selected) {
+        if (uParams == null) {
+            return;
+        }
+        StringTokenizer tz = new StringTokenizer(uParams, ",");
+        while (tz.hasMoreTokens()) {
+            String ss = tz.nextToken();
+            Integer oldSel = (Integer) userParams.get(ss);
+            if ((oldSel == null) || (oldSel.intValue() != (selected ? 1 : 0))) {
+                userParams.put(ss, Integer.valueOf(selected ? 1 : 0));
+                //monitor.updateUserParamPreferences(ss, selected);
+            }
+        }
+    }
 
-		TimerTask ttask = new LayoutUpdateTimerTask(this.getParent());
-		BackgroundWorker.schedule(ttask, 4000, 4000);
-		layoutTransformer = new LayoutTransformer(this);
-	}
+    public boolean getParamState(String name) {
+        return ((Integer) userParams.get(name)).intValue() == 1;
+    }
 
-	/**
-	 * Class used for the current update
-	 */
-	class LayoutUpdateTimerTask extends TimerTask {
-		Component parent;
+    public void setShowShadow(boolean show) {
+        canvasPane.showShadow = show;
+        canvasPane.repaint();
+    }
 
-		public LayoutUpdateTimerTask(Component parent) {
-			this.parent = parent;
-		}
+    public void setShowSphere(boolean show) {
+        canvasPane.showSphere = show;
+        canvasPane.repaint();
+    }
 
-		public void run() {
-			Thread
-					.currentThread()
-					.setName(
-							" ( ML ) - Farms OSG - OSGPanel layout update Timer Thread");
-			try {
-				if (parent != null && parent.isVisible()) {
-					if (!currentLayout.equals("SomeLayout"))
-						setLayoutType(currentLayout);
-					repaint();
-				}
-				;
-			} catch (Throwable t) {
-				logger.log(Level.WARNING, "Error executing", t);
-			}
-		}
-	};
+    @Override
+    public void updateNode(rcNode node) {
+    }
 
-	/**
-	 * Set the fix flag for the current drawn nodes.
-	 */
-	void unfixNodes() {
-		if (nodes != null)
-			for (final rcNode n : nodes.values())
-				n.fixed = false;
-	}
+    @Override
+    public void gupdate() {
+    }
 
-	/**
-	 * Called in order to set a new layout for the canvas.
-	 * 
-	 * @param type
-	 *                  The new type of the layout
-	 */
-	void setLayoutType(String type) {
+    @Override
+    public void setNodes(Map<ServiceID, rcNode> nodes, Vector<rcNode> vnodes) {
 
-		if (layout == null && type.equals("Elastic"))
-			currentLayout = "None";
-		if (layout != null && !type.equals(currentLayout)) {
-			currentLayout = "None";
-			layout.finish();
-		}
-		if (type.equals("Random") || type.equals("Grid") || type.equals("Map")
-				|| type.equals("None")) {
-			synchronized (syncGraphObj) {
-				unfixNodes();
-				GraphTopology topology = ftpHelper.constructTopology(ftpTransferType);
-				synchronized (canvasPane.getTreeLock()) {
-					canvasPane.vGraph = topology;
-				}
-				if (type.equals("Random"))
-					layout = new RandomLayoutAlgorithm(canvasPane.vGraph);
-				else if (type.equals("Grid"))
-					layout = new GridLayoutAlgorithm(canvasPane.vGraph);
-				else if (type.equals("Map"))
-					layout = new GeographicLayoutAlgorithm(canvasPane.vGraph);
-				else
-					layout = new NoLayoutAlgorithm(canvasPane.vGraph);
-				layoutTransformer.layoutChanged();
-			}
-		} else if (type.equals("Radial") || type.equals("Layered")) {
-			synchronized (syncGraphObj) {
-				unfixNodes();
-				GraphTopology topology = ftpHelper
-						.constructTopology(ftpTransferType);
-				synchronized (canvasPane.getTreeLock()) {
-					canvasPane.vGraph = topology;
-				}
-				if ((canvasPane.pickX == null)
-						|| (!nodes.containsValue(canvasPane.pickX)))
-					canvasPane.pickX = canvasPane.vGraph.findARoot();
-				if (canvasPane.pickX != null)
-					canvasPane.vGraph.pruneToTree(canvasPane.pickX); // convert
-																										// the
-																										// graph
-																										// to a
-																										// tree
-				if (type.equals("Radial"))
-					layout = new RadialLayoutAlgorithm(canvasPane.vGraph, canvasPane.pickX);
-				else
-					layout = new LayeredTreeLayoutAlgorithm(canvasPane.vGraph, canvasPane.pickX);
-				layoutTransformer.layoutChanged();
-			}
-		} else if (type.equals("Elastic")) {
-			if (currentLayout.equals("Elastic")) {
-				synchronized (syncGraphObj) {
-					GraphTopology topology = ftpHelper.constructTopology(ftpTransferType);
-					;
-					synchronized (canvasPane.getTreeLock()) {
-						canvasPane.vGraph = topology;
-					}
-					((SpringLayoutAlgorithm) layout).updateGT(canvasPane.vGraph);
-				}
-			} else {
-				synchronized (syncGraphObj) {
-					unfixNodes();
-					currentLayout = "Elastic";
-					GraphTopology topology = ftpHelper.constructTopology(ftpTransferType);
-					synchronized (canvasPane.getTreeLock()) {
-						canvasPane.vGraph = topology;
-					}
-					layout = new SpringLayoutAlgorithm(canvasPane.vGraph, this);
-					((SpringLayoutAlgorithm) layout).setStiffness(cmdPane.sldStiffness.getValue());
-					((SpringLayoutAlgorithm) layout).setRespRange(cmdPane.sldRepulsion.getValue());
-					layout.layOut();
-				}
-			}
-		}
-	}
+        this.nodes = nodes;
+        this.vnodes = vnodes;
+    }
 
-	/** called to stop the elastic update */
-	public void stopElastic() {
-		if (cmdPane.cbLayout.getSelectedItem().equals("Elastic")) {
-			synchronized (OSGPanel.syncGraphObj) {
-				cmdPane.cbLayout.setSelectedIndex(0);
-				currentLayout = "None";
-				if (layout != null)
-					layout.finish();
-				layout = null;
-			}
-		}
-	}
+    @Override
+    public void setSerMonitor(SerMonitorBase ms) {
+        this.monitor = ms;
+        loadParamsState();
+    }
 
-	/** used to compute a new layout */
-	public void computeNewLayout() {
-		synchronized (syncGraphObj) {
-			if (!(layout instanceof NoLayoutAlgorithm))
-				currentLayout = "SomeLayout";
-			canvasPane.range.setBounds(0, 0, canvasPane.getWidth(), canvasPane.getHeight());
-			canvasPane.range.grow(-canvasPane.wunit, -canvasPane.hunit);
-			layout.layOut();
+    @Override
+    public void setMaxFlowData(rcNode n, Vector v) {
+    }
 
-			// System.out.println("range: "+canvasPane.range);
+    @Override
+    public void new_global_param(String name) {
+    }
 
-			if (layout instanceof NoLayoutAlgorithm) { // currentLayout.equals("None")){
-				// System.out.println("exit1 "+currentLayout+" class
-				// "+layout.getClass().getName());
-				layout = null;
-				repaint();
-				return;
-			}
-			// transform smoothly from the current positions to the destination
-			long TRANSF_TOTAL_TIME = 2000; // 3
-																		// seconds
-			long STEP_DELAY = 30; // 30 millis
-			long nSteps = TRANSF_TOTAL_TIME / STEP_DELAY;
+    /**
+     * Stuff regarding the current graphical layout
+     */
 
-			// convert positions from relative [-1, 1] to [range]
-			for (Iterator it = canvasPane.vGraph.gnodes.iterator(); it
-					.hasNext();) {
-				GraphNode gn = (GraphNode) it.next();
-				if (!gn.rcnode.fixed) {
-					// System.out.println("old: "+gn.rcnode.x+"-"+gn.rcnode.y);
-					// System.out.println("pos: "+gn.pos.x+"-"+gn.pos.y);
-					gn.pos.x = canvasPane.range.x + (int) (canvasPane.range.width * (1.0 + gn.pos.x) / 2.0);
-					gn.pos.y = canvasPane.range.y + (int) (canvasPane.range.height * (1.0 + gn.pos.y) / 2.0);
-					// System.out.println("new: "+gn.pos.x+"-"+gn.pos.y);
-				}
-			}
-			currentTransformCancelled = false;
-			// perform transitions
-			for (int i = 0; i < nSteps && !currentTransformCancelled; i++) {
-				// System.out.println("transition "+i);
-				for (Iterator it = canvasPane.vGraph.gnodes.iterator(); it.hasNext();) {
-					GraphNode gn = (GraphNode) it.next();
-					if (!gn.rcnode.fixed) {
-						int dx = (int) ((gn.pos.x - gn.rcnode.osgX) / (nSteps - i));
-						int dy = (int) ((gn.pos.y - gn.rcnode.osgY) / (nSteps - i));
-						gn.rcnode.osgX += dx;
-						gn.rcnode.osgY += dy;
-					}
-				}
-				repaint();
-				try {
-					Thread.sleep(STEP_DELAY);
-				} catch (InterruptedException ex) {
-				}
-			}
+    /** The current layout transformer object */
+    LayoutTransformer layoutTransformer;
 
-			// final positions
-			for (Iterator it = canvasPane.vGraph.gnodes.iterator(); it.hasNext();) {
-				GraphNode gn = (GraphNode) it.next();
-				if (!gn.rcnode.fixed) {
-					gn.rcnode.osgX = (int) gn.pos.x;
-					gn.rcnode.osgY = (int) gn.pos.y;
-				}
-			}
-			// System.out.println("exit2 "+currentLayout+" class
-			// "+layout.getClass().getName());
-			// invoke the NoLayout algorithm to recompute visibility for the
-			// other nodes
-			layout = new NoLayoutAlgorithm(canvasPane.vGraph);
-			layout.layOut();
-			layout = null;
-			repaint();
-			currentLayout = "None";
-		}
-	}
+    /** The name of the current layout */
+    String currentLayout = "None";
 
-	public int setElasticLayout() {
-		canvasPane.range.setBounds(0, 0, getWidth(), getHeight());
-		canvasPane.range.grow(-canvasPane.wunit - 2, -canvasPane.hunit - 2);
-		int totalMovement = 0;
-		for (Iterator it = canvasPane.vGraph.gnodes.iterator(); it.hasNext();) {
-			GraphNode gn = (GraphNode) it.next();
-			int nx = gn.rcnode.osgX;
-			int ny = gn.rcnode.osgY;
-			gn.rcnode.osgX = (int) Math.round(gn.pos.x);
-			gn.rcnode.osgY = (int) Math.round(gn.pos.y);
-			if (gn.rcnode.osgX < canvasPane.range.x)
-				gn.rcnode.osgX = canvasPane.range.x;
-			if (gn.rcnode.osgY < canvasPane.range.y)
-				gn.rcnode.osgY = canvasPane.range.y;
-			if (gn.rcnode.osgX > canvasPane.range.getMaxX())
-				gn.rcnode.osgX = (int) canvasPane.range.getMaxX();
-			if (gn.rcnode.osgY > canvasPane.range.getMaxY())
-				gn.rcnode.osgY = (int) canvasPane.range.getMaxY();
-			gn.pos.setLocation(gn.rcnode.osgX, gn.rcnode.osgY);
-			totalMovement += Math.abs(gn.rcnode.osgX - nx)
-					+ Math.abs(gn.rcnode.osgY - ny);
-		}
-		repaint();
-		return totalMovement;
-	}
+    /** Flag used to cancel the current transform */
+    boolean currentTransformCancelled = false;
 
-	private TopologyThread tthread = null;
+    /** The current layout */
+    GraphLayoutAlgorithm layout = null;
 
-	static final Object lock = new Object();
+    public void initLayout() {
 
-	public synchronized void redoTopology() {
+        TimerTask ttask = new LayoutUpdateTimerTask(this.getParent());
+        BackgroundWorker.schedule(ttask, 4000, 4000);
+        layoutTransformer = new LayoutTransformer(this);
+    }
 
-		if (tthread == null)
-			tthread = new TopologyThread();
-		tthread.redoTopology();
-	}
+    /**
+     * Class used for the current update
+     */
+    class LayoutUpdateTimerTask extends TimerTask {
+        Component parent;
 
-	private class TopologyThread extends Thread {
+        public LayoutUpdateTimerTask(Component parent) {
+            this.parent = parent;
+        }
 
-		public boolean redo = false;
+        @Override
+        public void run() {
+            Thread.currentThread().setName(" ( ML ) - Farms OSG - OSGPanel layout update Timer Thread");
+            try {
+                if ((parent != null) && parent.isVisible()) {
+                    if (!currentLayout.equals("SomeLayout")) {
+                        setLayoutType(currentLayout);
+                    }
+                    repaint();
+                }
+                ;
+            } catch (Throwable t) {
+                logger.log(Level.WARNING, "Error executing", t);
+            }
+        }
+    };
 
-		public TopologyThread() {
-			super("( ML ) Topology Thread - OSG Panel");
-			start();
-		}
+    /**
+     * Set the fix flag for the current drawn nodes.
+     */
+    void unfixNodes() {
+        if (nodes != null) {
+            for (final rcNode n : nodes.values()) {
+                n.fixed = false;
+            }
+        }
+    }
 
-		public void redoTopology() {
+    /**
+     * Called in order to set a new layout for the canvas.
+     * 
+     * @param type
+     *                  The new type of the layout
+     */
+    void setLayoutType(String type) {
 
-			synchronized (lock) {
-				redo = true;
-				lock.notifyAll();
-			}
-		}
+        if ((layout == null) && type.equals("Elastic")) {
+            currentLayout = "None";
+        }
+        if ((layout != null) && !type.equals(currentLayout)) {
+            currentLayout = "None";
+            layout.finish();
+        }
+        if (type.equals("Random") || type.equals("Grid") || type.equals("Map") || type.equals("None")) {
+            synchronized (syncGraphObj) {
+                unfixNodes();
+                GraphTopology topology = ftpHelper.constructTopology(ftpTransferType);
+                synchronized (canvasPane.getTreeLock()) {
+                    canvasPane.vGraph = topology;
+                }
+                if (type.equals("Random")) {
+                    layout = new RandomLayoutAlgorithm(canvasPane.vGraph);
+                } else if (type.equals("Grid")) {
+                    layout = new GridLayoutAlgorithm(canvasPane.vGraph);
+                } else if (type.equals("Map")) {
+                    layout = new GeographicLayoutAlgorithm(canvasPane.vGraph);
+                } else {
+                    layout = new NoLayoutAlgorithm(canvasPane.vGraph);
+                }
+                layoutTransformer.layoutChanged();
+            }
+        } else if (type.equals("Radial") || type.equals("Layered")) {
+            synchronized (syncGraphObj) {
+                unfixNodes();
+                GraphTopology topology = ftpHelper.constructTopology(ftpTransferType);
+                synchronized (canvasPane.getTreeLock()) {
+                    canvasPane.vGraph = topology;
+                }
+                if ((canvasPane.pickX == null) || (!nodes.containsValue(canvasPane.pickX))) {
+                    canvasPane.pickX = canvasPane.vGraph.findARoot();
+                }
+                if (canvasPane.pickX != null) {
+                    canvasPane.vGraph.pruneToTree(canvasPane.pickX); // convert
+                }
+                // the
+                // graph
+                // to a
+                // tree
+                if (type.equals("Radial")) {
+                    layout = new RadialLayoutAlgorithm(canvasPane.vGraph, canvasPane.pickX);
+                } else {
+                    layout = new LayeredTreeLayoutAlgorithm(canvasPane.vGraph, canvasPane.pickX);
+                }
+                layoutTransformer.layoutChanged();
+            }
+        } else if (type.equals("Elastic")) {
+            if (currentLayout.equals("Elastic")) {
+                synchronized (syncGraphObj) {
+                    GraphTopology topology = ftpHelper.constructTopology(ftpTransferType);
+                    ;
+                    synchronized (canvasPane.getTreeLock()) {
+                        canvasPane.vGraph = topology;
+                    }
+                    ((SpringLayoutAlgorithm) layout).updateGT(canvasPane.vGraph);
+                }
+            } else {
+                synchronized (syncGraphObj) {
+                    unfixNodes();
+                    currentLayout = "Elastic";
+                    GraphTopology topology = ftpHelper.constructTopology(ftpTransferType);
+                    synchronized (canvasPane.getTreeLock()) {
+                        canvasPane.vGraph = topology;
+                    }
+                    layout = new SpringLayoutAlgorithm(canvasPane.vGraph, this);
+                    ((SpringLayoutAlgorithm) layout).setStiffness(cmdPane.sldStiffness.getValue());
+                    ((SpringLayoutAlgorithm) layout).setRespRange(cmdPane.sldRepulsion.getValue());
+                    layout.layOut();
+                }
+            }
+        }
+    }
 
-		public void run() {
-			while (true) {
-				synchronized (lock) {
-					while (!redo) {
-						try {
-							lock.wait();
-						} catch (Exception ex) {
-						}
-					}
-					redo = false;
-				}
-				GraphTopology topology = OSGPanel.this.ftpHelper
-						.constructTopology(OSGPanel.this.ftpTransferType);
-				synchronized (OSGPanel.this.canvasPane.getTreeLock()) {
-					OSGPanel.this.canvasPane.vGraph = topology;
-				}
-				if (!redo)
-					OSGPanel.this.repaint();
-			}
-		}
-	}
+    /** called to stop the elastic update */
+    public void stopElastic() {
+        if (cmdPane.cbLayout.getSelectedItem().equals("Elastic")) {
+            synchronized (OSGPanel.syncGraphObj) {
+                cmdPane.cbLayout.setSelectedIndex(0);
+                currentLayout = "None";
+                if (layout != null) {
+                    layout.finish();
+                }
+                layout = null;
+            }
+        }
+    }
 
-	// for param
+    /** used to compute a new layout */
+    @Override
+    public void computeNewLayout() {
+        synchronized (syncGraphObj) {
+            if (!(layout instanceof NoLayoutAlgorithm)) {
+                currentLayout = "SomeLayout";
+            }
+            canvasPane.range.setBounds(0, 0, canvasPane.getWidth(), canvasPane.getHeight());
+            canvasPane.range.grow(-canvasPane.wunit, -canvasPane.hunit);
+            layout.layOut();
 
-	public void redoParams(Vector nodes) {
+            // System.out.println("range: "+canvasPane.range);
 
-		if (nodes == null || nodes.size() == 0)
-			return;
+            if (layout instanceof NoLayoutAlgorithm) { // currentLayout.equals("None")){
+                // System.out.println("exit1 "+currentLayout+" class
+                // "+layout.getClass().getName());
+                layout = null;
+                repaint();
+                return;
+            }
+            // transform smoothly from the current positions to the destination
+            long TRANSF_TOTAL_TIME = 2000; // 3
+                                           // seconds
+            long STEP_DELAY = 30; // 30 millis
+            long nSteps = TRANSF_TOTAL_TIME / STEP_DELAY;
 
-		HashMap nod = paramHelper.requestNodes(nodes);
-		HashMap cpu = null;
-		HashMap cpuno = paramHelper.requestCpuNo(nodes);
-		HashMap io = null;
-		HashMap jobs = null;
-		HashMap fjobs = null;
-		HashMap cpuTime = null;
-		
-		if (getParamState("cpu"))
-			cpu = paramHelper.requestCPU(nodes);
-		if (getParamState("io"))
-			io = paramHelper.requestIO(nodes);
-		if (getParamState("jobs"))
-			jobs = jobHelper.requestJobs(nodes);
-		if (getParamState("fjobs"))
-			fjobs = jobHelper.requestFinishedJobs(nodes);
-		if (getParamState("cputime"))
-			cpuTime = jobHelper.requestCPUTime(nodes);
+            // convert positions from relative [-1, 1] to [range]
+            for (Iterator it = canvasPane.vGraph.gnodes.iterator(); it.hasNext();) {
+                GraphNode gn = (GraphNode) it.next();
+                if (!gn.rcnode.fixed) {
+                    // System.out.println("old: "+gn.rcnode.x+"-"+gn.rcnode.y);
+                    // System.out.println("pos: "+gn.pos.x+"-"+gn.pos.y);
+                    gn.pos.x = canvasPane.range.x + (int) ((canvasPane.range.width * (1.0 + gn.pos.x)) / 2.0);
+                    gn.pos.y = canvasPane.range.y + (int) ((canvasPane.range.height * (1.0 + gn.pos.y)) / 2.0);
+                    // System.out.println("new: "+gn.pos.x+"-"+gn.pos.y);
+                }
+            }
+            currentTransformCancelled = false;
+            // perform transitions
+            for (int i = 0; (i < nSteps) && !currentTransformCancelled; i++) {
+                // System.out.println("transition "+i);
+                for (Iterator it = canvasPane.vGraph.gnodes.iterator(); it.hasNext();) {
+                    GraphNode gn = (GraphNode) it.next();
+                    if (!gn.rcnode.fixed) {
+                        int dx = (int) ((gn.pos.x - gn.rcnode.osgX) / (nSteps - i));
+                        int dy = (int) ((gn.pos.y - gn.rcnode.osgY) / (nSteps - i));
+                        gn.rcnode.osgX += dx;
+                        gn.rcnode.osgY += dy;
+                    }
+                }
+                repaint();
+                try {
+                    Thread.sleep(STEP_DELAY);
+                } catch (InterruptedException ex) {
+                }
+            }
 
-		synchronized (canvasPane.nodeParams) {
-			canvasPane.nodeParams.clear();
-			for (int i = 0; i < nodes.size(); i++) {
-				rcNode n = (rcNode) nodes.get(i);
-				if (nod != null && nod.containsKey(n)) {
-					HashMap h = null;
-					if (canvasPane.nodeParams.containsKey(n))
-						h = (HashMap) canvasPane.nodeParams.get(n);
-					else {
-						h = new HashMap();
-						canvasPane.nodeParams.put(n, h);
-					}
-					h.put(paramHelper.nodesString, nod.get(n));
-				}
-				if (cpu != null && cpu.containsKey(n)) {
-					HashMap h = null;
-					if (canvasPane.nodeParams.containsKey(n))
-						h = (HashMap) canvasPane.nodeParams.get(n);
-					else {
-						h = new HashMap();
-						canvasPane.nodeParams.put(n, h);
-					}
-					h.put(paramHelper.cpuString, cpu.get(n));
-				}
-				if (cpuno != null && cpuno.containsKey(n)) {
-					HashMap h = null;
-					if (canvasPane.nodeParams.containsKey(n))
-						h = (HashMap) canvasPane.nodeParams.get(n);
-					else {
-						h = new HashMap();
-						canvasPane.nodeParams.put(n, h);
-					}
-					h.put(paramHelper.cpuNoString, cpuno.get(n));
-				}
-				if (io != null && io.containsKey(n)) {
-					HashMap h = null;
-					if (canvasPane.nodeParams.containsKey(n))
-						h = (HashMap) canvasPane.nodeParams.get(n);
-					else {
-						h = new HashMap();
-						canvasPane.nodeParams.put(n, h);
-					}
-					h.put(paramHelper.ioString, io.get(n));
-				}
-				if (jobs != null && jobs.containsKey(n)) {
-					HashMap h = null;
-					if (canvasPane.nodeParams.containsKey(n))
-						h = (HashMap) canvasPane.nodeParams.get(n);
-					else {
-						h = new HashMap();
-						canvasPane.nodeParams.put(n, h);
-					}
-					h.put(paramHelper.jobsString, jobs.get(n));
-				}
-				if (fjobs != null && fjobs.containsKey(n)) {
-					HashMap h = null;
-					if (canvasPane.nodeParams.containsKey(n))
-						h = (HashMap) canvasPane.nodeParams.get(n);
-					else {
-						h = new HashMap();
-						canvasPane.nodeParams.put(n, h);
-					}
-					h.put(paramHelper.fJobsString, fjobs.get(n));
-				}
-				if (cpuTime != null && cpuTime.containsKey(n)) {
-					HashMap h = null;
-					if (canvasPane.nodeParams.containsKey(n))
-						h = (HashMap) canvasPane.nodeParams.get(n);
-					else {
-						h = new HashMap();
-						canvasPane.nodeParams.put(n, h);
-					}
-					h.put(paramHelper.cpuTimeString, cpuTime.get(n));
-				}
-			}
-		}
-		canvasPane.repaint();
-	}
+            // final positions
+            for (Iterator it = canvasPane.vGraph.gnodes.iterator(); it.hasNext();) {
+                GraphNode gn = (GraphNode) it.next();
+                if (!gn.rcnode.fixed) {
+                    gn.rcnode.osgX = (int) gn.pos.x;
+                    gn.rcnode.osgY = (int) gn.pos.y;
+                }
+            }
+            // System.out.println("exit2 "+currentLayout+" class
+            // "+layout.getClass().getName());
+            // invoke the NoLayout algorithm to recompute visibility for the
+            // other nodes
+            layout = new NoLayoutAlgorithm(canvasPane.vGraph);
+            layout.layOut();
+            layout = null;
+            repaint();
+            currentLayout = "None";
+        }
+    }
 
-	public void componentResized(ComponentEvent e) {
-	}
+    @Override
+    public int setElasticLayout() {
+        canvasPane.range.setBounds(0, 0, getWidth(), getHeight());
+        canvasPane.range.grow(-canvasPane.wunit - 2, -canvasPane.hunit - 2);
+        int totalMovement = 0;
+        for (Iterator it = canvasPane.vGraph.gnodes.iterator(); it.hasNext();) {
+            GraphNode gn = (GraphNode) it.next();
+            int nx = gn.rcnode.osgX;
+            int ny = gn.rcnode.osgY;
+            gn.rcnode.osgX = (int) Math.round(gn.pos.x);
+            gn.rcnode.osgY = (int) Math.round(gn.pos.y);
+            if (gn.rcnode.osgX < canvasPane.range.x) {
+                gn.rcnode.osgX = canvasPane.range.x;
+            }
+            if (gn.rcnode.osgY < canvasPane.range.y) {
+                gn.rcnode.osgY = canvasPane.range.y;
+            }
+            if (gn.rcnode.osgX > canvasPane.range.getMaxX()) {
+                gn.rcnode.osgX = (int) canvasPane.range.getMaxX();
+            }
+            if (gn.rcnode.osgY > canvasPane.range.getMaxY()) {
+                gn.rcnode.osgY = (int) canvasPane.range.getMaxY();
+            }
+            gn.pos.setLocation(gn.rcnode.osgX, gn.rcnode.osgY);
+            totalMovement += Math.abs(gn.rcnode.osgX - nx) + Math.abs(gn.rcnode.osgY - ny);
+        }
+        repaint();
+        return totalMovement;
+    }
 
-	public void componentMoved(ComponentEvent e) {
-	}
+    private TopologyThread tthread = null;
 
-	public void componentShown(ComponentEvent e) {
+    static final Object lock = new Object();
 
-		ToolTipManager ttm = ToolTipManager.sharedInstance();
-		ttm.setInitialDelay(0);
-		ttm.setReshowDelay(0);
-		ttm.setDismissDelay(30 * 1000);
-	}
+    public synchronized void redoTopology() {
 
-	public void componentHidden(ComponentEvent e) {
-	}
+        if (tthread == null) {
+            tthread = new TopologyThread();
+        }
+        tthread.redoTopology();
+    }
 
-	public static void main(String args[]) {
-//		
-//		JFrame frame = new JFrame("Test");
-//		frame.setSize(800, 500);
-//		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//		frame.getContentPane().setLayout(new BorderLayout());
-//		
-//		OSGPanel p = new OSGPanel();
-//		Vector v = new Vector(); // init some fake nodes
-//		Hashtable h = new Hashtable();
-//		Random r = new Random();
-//		for (int i=0; i<100; i++) {
-//			rcNode n = new rcNode();
-//			n.x = r.nextInt(300);
-//			n.y = r.nextInt(300);
-//			MonaLisaEntry e = new MonaLisaEntry("farm_"+UUID.randomUUID().toString(), "test,test"+r.nextInt(2));
-//			SiteInfoEntry s = new SiteInfoEntry();
-//			ExtendedSiteInfoEntry ex = new ExtendedSiteInfoEntry();
-//			ServiceID ser = new ServiceID(r.nextLong(), r.nextLong());
-//			try {
-//				n.client = new tClient("farm_"+UUID.randomUUID().toString(), "100.100.100."+r.nextInt(255), UUID.randomUUID().toString(), r.nextInt(200), r.nextInt(200), r.nextInt(200), e, s, ex, null, ser);
-//			} catch (Throwable t) { }
-//			n.shortName = n.client.getFarmName();
-//			n.sid = n.client.tClientID;
-//			n.mlentry = e;
-//			// put load5
-//			Gresult res = new Gresult();
-//			res.Nodes = r.nextInt(300);
-//			res.hist = new int[5];
-//			for (int k=0; k<4; k++) res.hist[k] = (int)(res.Nodes * r.nextDouble() / 5);
-//			res.hist[4] = res.Nodes - (res.hist[0]+res.hist[1]+res.hist[2]+res.hist[3]);
-//			n.global_param.put("Load5", res);
-//			v.add(n);
-//			h.put(n.sid, n);
-//		}
-//		p.setNodes(h, v);
-//		
-//		frame.getContentPane().add(p, BorderLayout.CENTER);
-//		
-//		frame.setVisible(true);
-	}
+    private class TopologyThread extends Thread {
+
+        public boolean redo = false;
+
+        public TopologyThread() {
+            super("( ML ) Topology Thread - OSG Panel");
+            start();
+        }
+
+        public void redoTopology() {
+
+            synchronized (lock) {
+                redo = true;
+                lock.notifyAll();
+            }
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                synchronized (lock) {
+                    while (!redo) {
+                        try {
+                            lock.wait();
+                        } catch (Exception ex) {
+                        }
+                    }
+                    redo = false;
+                }
+                GraphTopology topology = OSGPanel.this.ftpHelper.constructTopology(OSGPanel.this.ftpTransferType);
+                synchronized (OSGPanel.this.canvasPane.getTreeLock()) {
+                    OSGPanel.this.canvasPane.vGraph = topology;
+                }
+                if (!redo) {
+                    OSGPanel.this.repaint();
+                }
+            }
+        }
+    }
+
+    // for param
+
+    public void redoParams(Vector nodes) {
+
+        if ((nodes == null) || (nodes.size() == 0)) {
+            return;
+        }
+
+        HashMap nod = paramHelper.requestNodes(nodes);
+        HashMap cpu = null;
+        HashMap cpuno = paramHelper.requestCpuNo(nodes);
+        HashMap io = null;
+        HashMap jobs = null;
+        HashMap fjobs = null;
+        HashMap cpuTime = null;
+
+        if (getParamState("cpu")) {
+            cpu = paramHelper.requestCPU(nodes);
+        }
+        if (getParamState("io")) {
+            io = paramHelper.requestIO(nodes);
+        }
+        if (getParamState("jobs")) {
+            jobs = jobHelper.requestJobs(nodes);
+        }
+        if (getParamState("fjobs")) {
+            fjobs = jobHelper.requestFinishedJobs(nodes);
+        }
+        if (getParamState("cputime")) {
+            cpuTime = jobHelper.requestCPUTime(nodes);
+        }
+
+        synchronized (canvasPane.nodeParams) {
+            canvasPane.nodeParams.clear();
+            for (int i = 0; i < nodes.size(); i++) {
+                rcNode n = (rcNode) nodes.get(i);
+                if ((nod != null) && nod.containsKey(n)) {
+                    HashMap h = null;
+                    if (canvasPane.nodeParams.containsKey(n)) {
+                        h = (HashMap) canvasPane.nodeParams.get(n);
+                    } else {
+                        h = new HashMap();
+                        canvasPane.nodeParams.put(n, h);
+                    }
+                    h.put(paramHelper.nodesString, nod.get(n));
+                }
+                if ((cpu != null) && cpu.containsKey(n)) {
+                    HashMap h = null;
+                    if (canvasPane.nodeParams.containsKey(n)) {
+                        h = (HashMap) canvasPane.nodeParams.get(n);
+                    } else {
+                        h = new HashMap();
+                        canvasPane.nodeParams.put(n, h);
+                    }
+                    h.put(paramHelper.cpuString, cpu.get(n));
+                }
+                if ((cpuno != null) && cpuno.containsKey(n)) {
+                    HashMap h = null;
+                    if (canvasPane.nodeParams.containsKey(n)) {
+                        h = (HashMap) canvasPane.nodeParams.get(n);
+                    } else {
+                        h = new HashMap();
+                        canvasPane.nodeParams.put(n, h);
+                    }
+                    h.put(paramHelper.cpuNoString, cpuno.get(n));
+                }
+                if ((io != null) && io.containsKey(n)) {
+                    HashMap h = null;
+                    if (canvasPane.nodeParams.containsKey(n)) {
+                        h = (HashMap) canvasPane.nodeParams.get(n);
+                    } else {
+                        h = new HashMap();
+                        canvasPane.nodeParams.put(n, h);
+                    }
+                    h.put(paramHelper.ioString, io.get(n));
+                }
+                if ((jobs != null) && jobs.containsKey(n)) {
+                    HashMap h = null;
+                    if (canvasPane.nodeParams.containsKey(n)) {
+                        h = (HashMap) canvasPane.nodeParams.get(n);
+                    } else {
+                        h = new HashMap();
+                        canvasPane.nodeParams.put(n, h);
+                    }
+                    h.put(paramHelper.jobsString, jobs.get(n));
+                }
+                if ((fjobs != null) && fjobs.containsKey(n)) {
+                    HashMap h = null;
+                    if (canvasPane.nodeParams.containsKey(n)) {
+                        h = (HashMap) canvasPane.nodeParams.get(n);
+                    } else {
+                        h = new HashMap();
+                        canvasPane.nodeParams.put(n, h);
+                    }
+                    h.put(paramHelper.fJobsString, fjobs.get(n));
+                }
+                if ((cpuTime != null) && cpuTime.containsKey(n)) {
+                    HashMap h = null;
+                    if (canvasPane.nodeParams.containsKey(n)) {
+                        h = (HashMap) canvasPane.nodeParams.get(n);
+                    } else {
+                        h = new HashMap();
+                        canvasPane.nodeParams.put(n, h);
+                    }
+                    h.put(paramHelper.cpuTimeString, cpuTime.get(n));
+                }
+            }
+        }
+        canvasPane.repaint();
+    }
+
+    @Override
+    public void componentResized(ComponentEvent e) {
+    }
+
+    @Override
+    public void componentMoved(ComponentEvent e) {
+    }
+
+    @Override
+    public void componentShown(ComponentEvent e) {
+
+        ToolTipManager ttm = ToolTipManager.sharedInstance();
+        ttm.setInitialDelay(0);
+        ttm.setReshowDelay(0);
+        ttm.setDismissDelay(30 * 1000);
+    }
+
+    @Override
+    public void componentHidden(ComponentEvent e) {
+    }
+
+    public static void main(String args[]) {
+        //		
+        //		JFrame frame = new JFrame("Test");
+        //		frame.setSize(800, 500);
+        //		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //		frame.getContentPane().setLayout(new BorderLayout());
+        //		
+        //		OSGPanel p = new OSGPanel();
+        //		Vector v = new Vector(); // init some fake nodes
+        //		Hashtable h = new Hashtable();
+        //		Random r = new Random();
+        //		for (int i=0; i<100; i++) {
+        //			rcNode n = new rcNode();
+        //			n.x = r.nextInt(300);
+        //			n.y = r.nextInt(300);
+        //			MonaLisaEntry e = new MonaLisaEntry("farm_"+UUID.randomUUID().toString(), "test,test"+r.nextInt(2));
+        //			SiteInfoEntry s = new SiteInfoEntry();
+        //			ExtendedSiteInfoEntry ex = new ExtendedSiteInfoEntry();
+        //			ServiceID ser = new ServiceID(r.nextLong(), r.nextLong());
+        //			try {
+        //				n.client = new tClient("farm_"+UUID.randomUUID().toString(), "100.100.100."+r.nextInt(255), UUID.randomUUID().toString(), r.nextInt(200), r.nextInt(200), r.nextInt(200), e, s, ex, null, ser);
+        //			} catch (Throwable t) { }
+        //			n.shortName = n.client.getFarmName();
+        //			n.sid = n.client.tClientID;
+        //			n.mlentry = e;
+        //			// put load5
+        //			Gresult res = new Gresult();
+        //			res.Nodes = r.nextInt(300);
+        //			res.hist = new int[5];
+        //			for (int k=0; k<4; k++) res.hist[k] = (int)(res.Nodes * r.nextDouble() / 5);
+        //			res.hist[4] = res.Nodes - (res.hist[0]+res.hist[1]+res.hist[2]+res.hist[3]);
+        //			n.global_param.put("Load5", res);
+        //			v.add(n);
+        //			h.put(n.sid, n);
+        //		}
+        //		p.setNodes(h, v);
+        //		
+        //		frame.getContentPane().add(p, BorderLayout.CENTER);
+        //		
+        //		frame.setVisible(true);
+    }
 } // end of class OSGPanel

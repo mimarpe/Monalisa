@@ -1,5 +1,5 @@
 /*
- * $Id: RangePortUnicastRemoteObject.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: RangePortUnicastRemoteObject.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 
 package lia.util.net.rmi;
@@ -18,10 +18,10 @@ import lia.util.net.TimeoutServerSocketFactory;
 
 public class RangePortUnicastRemoteObject extends UnicastRemoteObject {
     private static final long serialVersionUID = -3426582996451771949L;
-    
+
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(RangePortUnicastRemoteObject.class.getName());
-    
+    private static final Logger logger = Logger.getLogger(RangePortUnicastRemoteObject.class.getName());
+
     private int bindPort = -1;
     private Remote thisRef = null;
 
@@ -29,32 +29,42 @@ public class RangePortUnicastRemoteObject extends UnicastRemoteObject {
         this(new TimeoutClientSocketFactory(), new TimeoutServerSocketFactory());
     }
 
-    public RangePortUnicastRemoteObject( RMIClientSocketFactory rcsf, RMIServerSocketFactory rssf ) throws RemoteException {
+    public RangePortUnicastRemoteObject(RMIClientSocketFactory rcsf, RMIServerSocketFactory rssf)
+            throws RemoteException {
         this(rcsf, rssf, true);
     }
-    
-    public RangePortUnicastRemoteObject( RMIClientSocketFactory rcsf, RMIServerSocketFactory rssf, boolean shouldExport ) throws RemoteException {
+
+    public RangePortUnicastRemoteObject(RMIClientSocketFactory rcsf, RMIServerSocketFactory rssf, boolean shouldExport)
+            throws RemoteException {
         try {
-            UnicastRemoteObject.unexportObject(this,true);
-        }catch ( Throwable t ){ ; }
-        
-        if(shouldExport) {
+            UnicastRemoteObject.unexportObject(this, true);
+        } catch (Throwable t) {
+            ;
+        }
+
+        if (shouldExport) {
             thisRef = RMIRangePortExporter.export(this, rcsf, rssf);
-            
-            if ( thisRef == null ) {
+
+            if (thisRef == null) {
                 logger.log(Level.WARNING, " [ RangePortUnicastRemoteObject ] Cannot export!!");
                 return;
             }
-            
+
             bindPort = RMIRangePortExporter.getPort(thisRef);
-            logger.log(Level.INFO, " [ RangePortUnicastRemoteObject ] RMI Interface [ " + getClass().getName() +" ]:" + this + " exported on port: " + bindPort);
+            logger.log(Level.INFO, " [ RangePortUnicastRemoteObject ] RMI Interface [ " + getClass().getName() + " ]:"
+                    + this + " exported on port: " + bindPort);
         } else {
-            if(logger.isLoggable(Level.FINER)) {
+            if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, " [ RangePortUnicastRemoteObject ] will not export " + getClass().getName());
             }
         }
     }
-    public Remote getRemote() { return thisRef;}
 
-    public int getBindPort() { return bindPort;}
+    public Remote getRemote() {
+        return thisRef;
+    }
+
+    public int getBindPort() {
+        return bindPort;
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: ClientsCommunication.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: ClientsCommunication.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.ClientsFarmProxy;
 
@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
@@ -37,13 +36,13 @@ import net.jini.core.lookup.ServiceID;
  */
 public final class ClientsCommunication {
 
-    private static final transient Logger logger = Logger.getLogger(ClientsCommunication.class.getName());
+    private static final Logger logger = Logger.getLogger(ClientsCommunication.class.getName());
 
     private static final ServiceI service = Service.getServiceI(); // the service that is registered in LUSs
 
     private static final ConcurrentSkipListMap<Integer, ClientWorker> clients = new ConcurrentSkipListMap<Integer, ClientWorker>(); // clients
 
-    public static final MFarm[] NO_DIFF_CONF = new MFarm[0]; 
+    public static final MFarm[] NO_DIFF_CONF = new MFarm[0];
 
     // for generation unique ids for clients
     private static final AtomicInteger ID_SEQ = new AtomicInteger(0);
@@ -61,6 +60,7 @@ public final class ClientsCommunication {
     static {
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
                 reloadConfig();
             }
@@ -111,8 +111,9 @@ public final class ClientsCommunication {
     }
 
     public static final void addClientRate(Integer clientID, double totalRate, double confRate) {
-        if (clientID != null)
+        if (clientID != null) {
             clientsAccInfo.put(clientID, new ClientAccountingInfo(totalRate, confRate));
+        }
     } // addClientRate
 
     public static final Map<Integer, ClientAccountingInfo> getClienAccountingInfo() {
@@ -175,7 +176,9 @@ public final class ClientsCommunication {
                     cw.sendMsg(msg);
                 }
             } catch (Throwable t) {
-                logger.log(Level.WARNING, " [ ClientsCommuncation ] [ BROADCAST MSG ] Exception trying to send bcast msg: " + msg + " to: " + cw, t);
+                logger.log(Level.WARNING,
+                        " [ ClientsCommuncation ] [ BROADCAST MSG ] Exception trying to send bcast msg: " + msg
+                                + " to: " + cw, t);
             } // try - catch
         } // for
 
@@ -193,12 +196,13 @@ public final class ClientsCommunication {
 
         try {
             MonMessageClientsProxy mm = (MonMessageClientsProxy) message;
-            if (mm.ident != null && mm.ident instanceof Integer) { // a predicate
+            if ((mm.ident != null) && (mm.ident instanceof Integer)) { // a predicate
                 // verify times
                 monPredicate pred = (monPredicate) mm.result;
                 if (pred != null) {
-                    if (pred.tmax < 0 || (pred.tmax > 0 && pred.tmin <= 0)) {
-                        monPredicate pred1 = new monPredicate(pred.Farm, pred.Cluster, pred.Node, 0, -1, pred.parameters, pred.constraints);
+                    if ((pred.tmax < 0) || ((pred.tmax > 0) && (pred.tmin <= 0))) {
+                        monPredicate pred1 = new monPredicate(pred.Farm, pred.Cluster, pred.Node, 0, -1,
+                                pred.parameters, pred.constraints);
                         pred1.bLastVals = pred.bLastVals;
                         MonMessageClientsProxy newmm = new MonMessageClientsProxy(mm.tag, mm.ident, pred1, mm.farmID);
 
@@ -241,8 +245,9 @@ public final class ClientsCommunication {
     }
 
     public static final String getClientName(final Integer clientID) {
-        if (clientID == null)
+        if (clientID == null) {
             return null;
+        }
         final ClientWorker cw = clients.get(clientID);
         if (cw != null) {
             return cw.getName();
@@ -258,17 +263,21 @@ public final class ClientsCommunication {
         final boolean isFine = (isFiner || logger.isLoggable(Level.FINE));
 
         if (farmID == null) {
-            logger.log(Level.SEVERE, "\n\n~~~~~~ServiceID == null in ClientsCommunication~~~~dumping stack:\n", new Exception("Debug Exception: ServiceID == null in ClientsCommunication"));
+            logger.log(Level.SEVERE, "\n\n~~~~~~ServiceID == null in ClientsCommunication~~~~dumping stack:\n",
+                    new Exception("Debug Exception: ServiceID == null in ClientsCommunication"));
             return NO_DIFF_CONF;
         }
 
         if (configuration == null) {
-            logger.log(Level.SEVERE, "\n\n~~~~~~configuration == null in ClientsCommunication~~~~dumping stack:\n", new Exception("Debug Exception: configuration == null in ClientsCommunication"));
+            logger.log(Level.SEVERE, "\n\n~~~~~~configuration == null in ClientsCommunication~~~~dumping stack:\n",
+                    new Exception("Debug Exception: configuration == null in ClientsCommunication"));
             return NO_DIFF_CONF;
         } // if
 
         if (configuration.result == null) {
-            logger.log(Level.SEVERE, "\n\n~~~~ configuration.result == null in ClientsCommunication~~~~dumping stack:\n", new Exception("Debug Exception: configuration == null in ClientsCommunication"));
+            logger.log(Level.SEVERE,
+                    "\n\n~~~~ configuration.result == null in ClientsCommunication~~~~dumping stack:\n", new Exception(
+                            "Debug Exception: configuration == null in ClientsCommunication"));
             return NO_DIFF_CONF;
         } // if
 
@@ -288,7 +297,8 @@ public final class ClientsCommunication {
                 try {
                     diff = CompConfigV2.compareClusters(newConf, oldConf, lastConfMon);
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ ClientsCommunication ] comconfigV2 ignoring difff ... Got milk? ( exception ): ", t);
+                    logger.log(Level.WARNING,
+                            " [ ClientsCommunication ] comconfigV2 ignoring difff ... Got milk? ( exception ): ", t);
                     diff = null;
                 }
                 // diff = MFarmConfigUtils.compareClusters(newConf, oldConf, lastConfMon, debugInfo);
@@ -320,10 +330,14 @@ public final class ClientsCommunication {
                             try {
                                 configDebuggerLock.wait();
                             } catch (InterruptedException ie) {
-                                logger.log(Level.WARNING, " [ ClientsCommunication ] got interrupted exception while waiting for logging", ie);
+                                logger.log(
+                                        Level.WARNING,
+                                        " [ ClientsCommunication ] got interrupted exception while waiting for logging",
+                                        ie);
                                 Thread.interrupted();
                             } catch (Throwable t) {
-                                logger.log(Level.WARNING, " [ ClientsCommunication ] got general exception while waiting for logging", t);
+                                logger.log(Level.WARNING,
+                                        " [ ClientsCommunication ] got general exception while waiting for logging", t);
                             }
                         }// end sync
                     }
@@ -341,7 +355,10 @@ public final class ClientsCommunication {
 
             }
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ ClientsCommunication ] got exception checking for confs diffs. Will keep in sync with last received config", t);
+            logger.log(
+                    Level.WARNING,
+                    " [ ClientsCommunication ] got exception checking for confs diffs. Will keep in sync with last received config",
+                    t);
         } finally {
             final Vector vClusters = newConf.getClusters();
             final int clustersCount = vClusters.size();
@@ -368,8 +385,9 @@ public final class ClientsCommunication {
 
     public static final Map<ServiceID, MFarmClientConfigInfo> getFarmsConfByGrps(Set<String> groups) {
 
-        if (groups == null)
+        if (groups == null) {
             return Collections.emptyMap();
+        }
 
         final HashMap<ServiceID, MFarmClientConfigInfo> chmr = new HashMap<ServiceID, MFarmClientConfigInfo>();
 
@@ -382,7 +400,7 @@ public final class ClientsCommunication {
             try {
                 Set<String> grsForFarm = fw.getGroups();
 
-                if (grsForFarm != null && grsForFarm.size() > 0) {
+                if ((grsForFarm != null) && (grsForFarm.size() > 0)) {
                     for (final String group : groups) {
                         if (grsForFarm.contains(group)) {
                             chmr.put(sID, mcfi);
@@ -410,7 +428,8 @@ public final class ClientsCommunication {
         long h = l % 24;
         l /= 24;
         long d = l;
-        return (d > 0 ? d + " day" + (d != 1 ? "s" : "") + ", " : "") + (d > 0 || h > 0 ? h + "h, " : "") + m + "min";
+        return (d > 0 ? d + " day" + (d != 1 ? "s" : "") + ", " : "") + ((d > 0) || (h > 0) ? h + "h, " : "") + m
+                + "min";
     }
 
     /**
@@ -424,12 +443,11 @@ public final class ClientsCommunication {
         long uptime = 0;
         double raportTimeSec = 0;
 
-        if (lastMailDate != null && thisMailDate != null) {
+        if ((lastMailDate != null) && (thisMailDate != null)) {
             raportTimeSec = (thisMailDate.getTime() - lastMailDate.getTime()) / 1000.0;
         }
 
-        for (Iterator<ClientWorker> it = clients.values().iterator(); it.hasNext();) {
-            ClientWorker cw = it.next();
+        for (ClientWorker cw : clients.values()) {
             sb.append(cw.getName());
             sb.append("   ");
             sb.append("\n\tuptime: ");

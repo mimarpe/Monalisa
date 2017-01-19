@@ -1,5 +1,5 @@
 /*
- * $Id: ThreadPool.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: ThreadPool.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.util.DynamicThreadPoll;
 
@@ -23,7 +23,7 @@ import lia.util.threads.MonALISAExecutors;
 public class ThreadPool extends Thread {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(ThreadPool.class.getName());
+    private static final Logger logger = Logger.getLogger(ThreadPool.class.getName());
 
     public final LinkedList<TWorker> workers; // dynamic array of workers
 
@@ -57,25 +57,31 @@ public class ThreadPool extends Thread {
             this.mySeq = seq.getAndIncrement();
         }
 
+        @Override
         public int compareTo(Delayed o) {
-            if (o == this)
+            if (o == this) {
                 return 0;
+            }
 
             DelayedSchJobInt dsj = (DelayedSchJobInt) o;
 
             final long otherExecTime = dsj.job.get_exec_time();
             final long myExecTime = job.get_exec_time();
-            if (otherExecTime > myExecTime)
+            if (otherExecTime > myExecTime) {
                 return -1;
-            if (otherExecTime < myExecTime)
+            }
+            if (otherExecTime < myExecTime) {
                 return 1;
+            }
 
-            if (dsj.mySeq > mySeq)
+            if (dsj.mySeq > mySeq) {
                 return -1;
+            }
 
             return 1;
         }
 
+        @Override
         public long getDelay(TimeUnit unit) {
             return unit.convert(job.get_exec_time() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
         }
@@ -112,11 +118,13 @@ public class ThreadPool extends Thread {
     }
 
     public void addJob(SchJobInt job) {
-        if (job == null)
+        if (job == null) {
             return;
+        }
         jobs.offer(new DelayedSchJobInt(job));
     }
 
+    @Override
     public void run() {
         int len = 0;
 
@@ -130,7 +138,7 @@ public class ThreadPool extends Thread {
                 len = activeWorkers.size();
 
                 /* max 20 wks th */
-                while ((len > MAX_WORKERS - 1) && (workers.size() == 0)) {
+                while ((len > (MAX_WORKERS - 1)) && (workers.size() == 0)) {
                     try {
                         Thread.sleep(200);
                     } catch (Exception e) {
@@ -164,7 +172,7 @@ public class ThreadPool extends Thread {
         synchronized (workers) {
             boolean assignedJob = false;
 
-            while (workers.size() > 0 && !assignedJob) {
+            while ((workers.size() > 0) && !assignedJob) {
                 final TWorker oworker = workers.removeFirst();
                 if (oworker.workerIsAlive()) {
                     activeWorkers.add(oworker);
@@ -230,6 +238,7 @@ public class ThreadPool extends Thread {
 
     class VerifyWorkers implements Runnable {
 
+        @Override
         public void run() {
 
             long now = System.currentTimeMillis();
@@ -247,7 +256,8 @@ public class ThreadPool extends Thread {
                 // too much workers...save some memory
                 for (final Iterator<TWorker> it = workers.iterator(); it.hasNext();) {
                     final TWorker worker = it.next();
-                    if ((worker.idleTime.get() + TWorker.WORKER_IDLE_TIMEOUT.get() <= System.currentTimeMillis()) && workers.size() > (2 + activeWorkers.size())) {
+                    if (((worker.idleTime.get() + TWorker.WORKER_IDLE_TIMEOUT.get()) <= System.currentTimeMillis())
+                            && (workers.size() > (2 + activeWorkers.size()))) {
                         it.remove();
                         worker.finish();
                         killedwks++;
@@ -267,7 +277,8 @@ public class ThreadPool extends Thread {
                     if (!workers.contains(worker)) {
                         if (job != null) {
                             if (logger.isLoggable(Level.FINEST)) {
-                                logger.log(Level.FINEST, "[ ThPool ] ---->TimeOUT [ worker " + worker.getWorkerID() + " ]. Trying to stop it's job " + job);
+                                logger.log(Level.FINEST, "[ ThPool ] ---->TimeOUT [ worker " + worker.getWorkerID()
+                                        + " ]. Trying to stop it's job " + job);
                             }
                             try {
                                 job.stop();
@@ -281,19 +292,22 @@ public class ThreadPool extends Thread {
                                 worker.interrupt();
                             } catch (Throwable t) {
                                 if (logger.isLoggable(Level.FINE)) {
-                                    logger.log(Level.FINE, "[ ThPool ] [ HANDLED ]----> Got exception in worker.interrupt()", t);
+                                    logger.log(Level.FINE,
+                                            "[ ThPool ] [ HANDLED ]----> Got exception in worker.interrupt()", t);
                                 }
                             }
 
                             killedjobs++;
                         } else {
                             if (logger.isLoggable(Level.FINE)) {
-                                logger.log(Level.FINE, " [ HANDLED ] ---->TimeOUT worker = " + worker.getWorkerID() + "  BUT JOB==NULL. ");
+                                logger.log(Level.FINE, " [ HANDLED ] ---->TimeOUT worker = " + worker.getWorkerID()
+                                        + "  BUT JOB==NULL. ");
                             }
                         }
                     } else {
                         if (logger.isLoggable(Level.FINE)) {
-                            logger.log(Level.FINE, " [ HANDLED ] ---->TimeOUT worker = " + worker.getWorkerID() + "  BUT worker recovered ok :) !");
+                            logger.log(Level.FINE, " [ HANDLED ] ---->TimeOUT worker = " + worker.getWorkerID()
+                                    + "  BUT worker recovered ok :) !");
                         }
                     }
                 }// synchronized ( worker.syncNotifyResult )
@@ -310,6 +324,7 @@ public class ThreadPool extends Thread {
 
     class ThreadPoolStatus implements Runnable {
 
+        @Override
         public void run() {
             if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, "\n\n THP STATUS: " + state());

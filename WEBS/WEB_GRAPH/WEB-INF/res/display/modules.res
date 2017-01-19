@@ -7,7 +7,7 @@
 			    <<:continut:>>
 			</td>
 			<td align=right nowrap valign=bottom>
-			    (<a href="JavaScript:checkallmodules();" class="link">check all</a> | <a href="JavaScript:uncheckallmodules();" class="link">uncheck all</a>)
+			    (<a href="JavaScript:checkallmodules();" class="link">select all</a> | <a href="JavaScript:uncheckallmodules();" class="link">unselect all</a>)
 		        </td>
 		    </tr>
 		</table>

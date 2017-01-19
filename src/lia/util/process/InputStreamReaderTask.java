@@ -1,5 +1,5 @@
 /*
- * $Id: InputStreamReaderTask.java 6878 2010-10-12 20:20:16Z ramiro $
+ * $Id: InputStreamReaderTask.java 7419 2013-10-16 12:56:15Z ramiro $
  * Created on Oct 10, 2010
  */
 package lia.util.process;
@@ -7,11 +7,7 @@ package lia.util.process;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,14 +19,14 @@ import lia.util.Utils;
  */
 abstract class InputStreamReaderTask implements Callable<String> {
 
-    static final Logger logger = Logger.getLogger(InputStreamReaderTask.class.getName());
+    private static final Logger logger = Logger.getLogger(InputStreamReaderTask.class.getName());
 
     final BufferedReader reader;
 
     final boolean saveLog;
-    
+
     protected ExternalProcess procWrapper;
-    
+
     InputStreamReaderTask(InputStreamReader isr, boolean saveLog, ExternalProcess procWrapper) {
         this.reader = new BufferedReader(isr);
         this.saveLog = saveLog;
@@ -44,45 +40,45 @@ abstract class InputStreamReaderTask implements Callable<String> {
     @Override
     public String call() throws Exception {
         try {
-            
-//            if(logger.isLoggable(Level.FINER)) {
-//                logger.log(Level.FINER, "ISR started. entering barrier.");
-//            }
 
-//            if(barrier != null) {
-//                for(;;) {
-//                    if(procWrapper.timedOut.get() || procWrapper.finished.get()) {
-//                        break;
-//                    }
-//                    
-//                    try {
-//                        barrier.await(10, TimeUnit.SECONDS);
-//                        break;
-//                    } catch (InterruptedException e) {
-//                        if(procWrapper.timedOut.get()) {
-//                            //normal signaling
-//                            if(logger.isLoggable(Level.FINE)) {
-//                                logger.log(Level.FINE, " My process " + procWrapper + " timed out. ");
-//                            }
-//                        } else {
-//                            logger.log(Level.WARNING, " Got interrupted exception though process did not timed out ");
-//                        }
-//                        break;
-//                    } catch (BrokenBarrierException e) {
-//                        logger.log(Level.WARNING, " Got BrokenBarrierException though process did not timed out ");
-//                        break;
-//                    } catch (TimeoutException e) {
-//                        if(logger.isLoggable(Level.FINE)) {
-//                            logger.log(Level.FINE, " My process " + procWrapper + " timed out. ");
-//                        }
-//                    }
-//                }
-//            }
-//            
-//            if(logger.isLoggable(Level.FINER)) {
-//                logger.log(Level.FINER, " ISR started. exiting barrier.");
-//            }
-            
+            //            if(logger.isLoggable(Level.FINER)) {
+            //                logger.log(Level.FINER, "ISR started. entering barrier.");
+            //            }
+
+            //            if(barrier != null) {
+            //                for(;;) {
+            //                    if(procWrapper.timedOut.get() || procWrapper.finished.get()) {
+            //                        break;
+            //                    }
+            //                    
+            //                    try {
+            //                        barrier.await(10, TimeUnit.SECONDS);
+            //                        break;
+            //                    } catch (InterruptedException e) {
+            //                        if(procWrapper.timedOut.get()) {
+            //                            //normal signaling
+            //                            if(logger.isLoggable(Level.FINE)) {
+            //                                logger.log(Level.FINE, " My process " + procWrapper + " timed out. ");
+            //                            }
+            //                        } else {
+            //                            logger.log(Level.WARNING, " Got interrupted exception though process did not timed out ");
+            //                        }
+            //                        break;
+            //                    } catch (BrokenBarrierException e) {
+            //                        logger.log(Level.WARNING, " Got BrokenBarrierException though process did not timed out ");
+            //                        break;
+            //                    } catch (TimeoutException e) {
+            //                        if(logger.isLoggable(Level.FINE)) {
+            //                            logger.log(Level.FINE, " My process " + procWrapper + " timed out. ");
+            //                        }
+            //                    }
+            //                }
+            //            }
+            //            
+            //            if(logger.isLoggable(Level.FINER)) {
+            //                logger.log(Level.FINER, " ISR started. exiting barrier.");
+            //            }
+
             StringBuilder sb = new StringBuilder();
             for (;;) {
                 final String line = reader.readLine();
@@ -92,7 +88,7 @@ abstract class InputStreamReaderTask implements Callable<String> {
                     } catch (Throwable t) {
                         logger.log(Level.WARNING, "Exception while notify EOF. Cause:", t);
                     }
-                    return (sb.length() == 0)?"":sb.toString();
+                    return (sb.length() == 0) ? "" : sb.toString();
                 }
 
                 if (saveLog) {

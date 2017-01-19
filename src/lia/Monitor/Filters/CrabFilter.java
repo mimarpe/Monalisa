@@ -1,4 +1,4 @@
-/* $Id: CrabFilter.java 7050 2011-02-18 18:46:52Z ramiro $*/
+/* $Id: CrabFilter.java 7419 2013-10-16 12:56:15Z ramiro $*/
 package lia.Monitor.Filters;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class CrabFilter extends GenericMLFilter {
      */
     private static final long serialVersionUID = 7873080040030981851L;
     /** Logger used by this class */
-    static final transient Logger logger = Logger.getLogger("lia.Monitor.Filters.CrabFilter");
+    private static final Logger logger = Logger.getLogger(CrabFilter.class.getName());
     private static final String FILTER_NAME = "CrabFilter";
 
     //K: cluster name, v - ConcurrentHashMap with K: jobName, V: CrabJob
@@ -49,6 +49,7 @@ public class CrabFilter extends GenericMLFilter {
 
     private final class CleanupTask implements Runnable {
 
+        @Override
         public void run() {
             try {
 
@@ -60,7 +61,7 @@ public class CrabFilter extends GenericMLFilter {
                 StringBuilder sb = new StringBuilder();
                 final long now = NTPDate.currentTimeMillis();
                 final long nowTOUT = now - CONFIG_TIMEOUT.get();
-                
+
                 for (Iterator it = jobsClusterMap.entrySet().iterator(); it.hasNext();) {
 
                     final Map.Entry entry = (Map.Entry) it.next();
@@ -70,10 +71,13 @@ public class CrabFilter extends GenericMLFilter {
                     for (Iterator jit = jobsMap.values().iterator(); jit.hasNext();) {
                         final CrabJob job = (CrabJob) jit.next();
                         final long lastUpdate = job.lastResultTimestamp.get();
-                        if (lastUpdate > 0 && lastUpdate < nowTOUT) {
+                        if ((lastUpdate > 0) && (lastUpdate < nowTOUT)) {
                             removed = true;
-                            sb.append("\nremoving job [ ").append(job).append(" ] from jobsMap for cluster: ").append(clusterName);
-                            sb.append("Last heard [ ").append(lastUpdate).append("/").append(new Date(lastUpdate)).append(" ] CurrentTime [ ").append(now).append("/").append(new Date(now)).append(" ]");
+                            sb.append("\nremoving job [ ").append(job).append(" ] from jobsMap for cluster: ")
+                                    .append(clusterName);
+                            sb.append("Last heard [ ").append(lastUpdate).append("/").append(new Date(lastUpdate))
+                                    .append(" ] CurrentTime [ ").append(now).append("/").append(new Date(now))
+                                    .append(" ]");
                             jit.remove();
                         }
                     }
@@ -101,11 +105,11 @@ public class CrabFilter extends GenericMLFilter {
             }
         }
     }
-    
 
     static {
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
 
                 long newSleepTime = REPORT_DELAY.get() / 1000L;
@@ -114,7 +118,8 @@ public class CrabFilter extends GenericMLFilter {
                     newSleepTime = AppConfig.getl("lia.Monitor.Filters.CrabFilter.REPORT_DELAY", newSleepTime);
                     REPORT_DELAY.set(newSleepTime * 1000);
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ CrabFilter ] unable to parse lia.Monitor.Filters.CrabFilter.REPORT_DELAY", t);
+                    logger.log(Level.WARNING,
+                            " [ CrabFilter ] unable to parse lia.Monitor.Filters.CrabFilter.REPORT_DELAY", t);
                 }
 
                 long newEthMaxVal = ETH_MAX_VAL.get();
@@ -122,20 +127,24 @@ public class CrabFilter extends GenericMLFilter {
                     newEthMaxVal = AppConfig.getl("lia.Monitor.Filters.CrabFilter.ETH_MAX_VAL", ETH_MAX_VAL.get());
                     ETH_MAX_VAL.set(newEthMaxVal);
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ CrabFilter ] unable to parse lia.Monitor.Filters.CrabFilter.ETH_MAX_VAL", t);
+                    logger.log(Level.WARNING,
+                            " [ CrabFilter ] unable to parse lia.Monitor.Filters.CrabFilter.ETH_MAX_VAL", t);
                 }
-
 
                 long newConfigTimeout = CONFIG_TIMEOUT.get() / 1000L;
 
                 try {
-                    newConfigTimeout = AppConfig.getl("lia.Monitor.Filters.CrabFilter.CONFIG_TIMEOUT", newConfigTimeout);
+                    newConfigTimeout = AppConfig
+                            .getl("lia.Monitor.Filters.CrabFilter.CONFIG_TIMEOUT", newConfigTimeout);
                     CONFIG_TIMEOUT.set(newConfigTimeout * 1000);
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ CrabFilter ] unable to parse lia.Monitor.Filters.CrabFilter.CONFIG_TIMEOUT", t);
+                    logger.log(Level.WARNING,
+                            " [ CrabFilter ] unable to parse lia.Monitor.Filters.CrabFilter.CONFIG_TIMEOUT", t);
                 }
 
-                logger.log(Level.INFO, " [ CrabFilter ] (Re)Load config REPORT_DELAY = " + REPORT_DELAY.get() / 1000L + " seconds; ETH_MAX_VAL = " + ETH_MAX_VAL.get() + " kBytes/s; CONFIG_TIMEOUT = " + CONFIG_TIMEOUT.get() / 1000L + " seconds");
+                logger.log(Level.INFO, " [ CrabFilter ] (Re)Load config REPORT_DELAY = " + (REPORT_DELAY.get() / 1000L)
+                        + " seconds; ETH_MAX_VAL = " + ETH_MAX_VAL.get() + " kBytes/s; CONFIG_TIMEOUT = "
+                        + (CONFIG_TIMEOUT.get() / 1000L) + " seconds");
             }
         });
     }
@@ -154,7 +163,7 @@ public class CrabFilter extends GenericMLFilter {
         }
 
         void updateTraffic(final double speed, final long now) {
-            final double add = speed * (now - lastUpdate.get()) / 1000;
+            final double add = (speed * (now - lastUpdate.get())) / 1000;
             if (add < 0) {
                 StringBuilder sb = new StringBuilder(256);
                 sb.append("\n\n[ CrabFilter ] going back in time ?!? CrabJob ").append(this.crabJob);
@@ -169,6 +178,7 @@ public class CrabFilter extends GenericMLFilter {
             lastUpdate.set(now);
         }
 
+        @Override
         public String toString() {
             return " [ EthInt: " + ethName + " totalIO: " + totalIO + " lastUpdate: " + lastUpdate + " ] ";
         }
@@ -183,7 +193,7 @@ public class CrabFilter extends GenericMLFilter {
         private final AtomicLong lastResultTimestamp = new AtomicLong(0L);
         private final ConcurrentHashMap ethInterfaces = new ConcurrentHashMap();
         private double cpuUsage = 0D;
-        private AtomicInteger memUsage = new AtomicInteger(0);
+        private final AtomicInteger memUsage = new AtomicInteger(0);
 
         CrabJob(final String jobName, final String clusterName) {
             if (jobName == null) {
@@ -214,10 +224,12 @@ public class CrabFilter extends GenericMLFilter {
             return this.senderID;
         }
 
+        @Override
         public int hashCode() {
             return jobName.hashCode();
         }
 
+        @Override
         public boolean equals(Object o) {
             if (o == null) {
                 return false;
@@ -231,6 +243,7 @@ public class CrabFilter extends GenericMLFilter {
             return false;
         }
 
+        @Override
         public String toString() {
             return clusterName + "  ->  " + this.jobName + "; SenderID: " + getSenderID() + "; macID: " + getMacID();
         }
@@ -241,19 +254,23 @@ public class CrabFilter extends GenericMLFilter {
         MonALISAExecutors.getMLHelperExecutor().scheduleWithFixedDelay(new CleanupTask(), 60, 60, TimeUnit.SECONDS);
     }
 
+    @Override
     public String getName() {
         return FILTER_NAME;
     }
 
+    @Override
     public long getSleepTime() {
         return REPORT_DELAY.get();
     }
 
+    @Override
     public monPredicate[] getFilterPred() {
         return null;
     }
 
     //online (e)Results are notified here ...
+    @Override
     public void notifyResult(Object o) {
 
         final long now = NTPDate.currentTimeMillis();
@@ -274,11 +291,13 @@ public class CrabFilter extends GenericMLFilter {
                 if (o instanceof Result) {
                     try {
                         Result r = (Result) o;
-                        if (r.Module != null && r.Module.equals("monXDRUDP")) {
-                            if (r.ClusterName != null || r.ClusterName.length() == 0) {
+                        if ((r.Module != null) && r.Module.equals("monXDRUDP")) {
+                            if ((r.ClusterName != null) || (r.ClusterName.length() == 0)) {
 
-                                if (r.NodeName == null || r.NodeName.length() == 0) {
-                                    logger.log(Level.WARNING, " [ CrabFilter ] got a result with null/blank node name: " + r + " ignoring it");
+                                if ((r.NodeName == null) || (r.NodeName.length() == 0)) {
+                                    logger.log(Level.WARNING,
+                                            " [ CrabFilter ] got a result with null/blank node name: " + r
+                                                    + " ignoring it");
                                     return;
                                 }
 
@@ -295,8 +314,10 @@ public class CrabFilter extends GenericMLFilter {
                                     cj = (CrabJob) jobsMap.get(r.NodeName);
                                 }
 
-                                if (r.param == null || r.param_name == null) {
-                                    logger.log(Level.WARNING, " [ CrabFilter ] got a result with null/blank param_name or para: " + r + " ignoring it");
+                                if ((r.param == null) || (r.param_name == null)) {
+                                    logger.log(Level.WARNING,
+                                            " [ CrabFilter ] got a result with null/blank param_name or para: " + r
+                                                    + " ignoring it");
                                     return;
                                 }
 
@@ -307,8 +328,8 @@ public class CrabFilter extends GenericMLFilter {
                                     final String paramName = r.param_name[i];
                                     final double val = r.param[i];
 
-                                    if (paramName.indexOf("eth") >= 0 &&
-                                            (paramName.indexOf("_in") >= 0 || paramName.indexOf("_out") >= 0)) {
+                                    if ((paramName.indexOf("eth") >= 0)
+                                            && ((paramName.indexOf("_in") >= 0) || (paramName.indexOf("_out") >= 0))) {
                                         EthInt eth = (EthInt) cj.ethInterfaces.get(paramName);
 
                                         cj.lastResultTimestamp.set(now);
@@ -318,10 +339,11 @@ public class CrabFilter extends GenericMLFilter {
                                             continue;
                                         }
 
-                                        if (val >= 0 && val < ETH_MAX_VAL.get()) {
+                                        if ((val >= 0) && (val < ETH_MAX_VAL.get())) {
                                             eth.updateTraffic(val, r.time);
                                         } else {
-                                            logger.log(Level.WARNING, " [ CrabFilter ] Wrong eth traffic value for: " + cj + " value: " + val + " kBytes/s .... ignoring it");
+                                            logger.log(Level.WARNING, " [ CrabFilter ] Wrong eth traffic value for: "
+                                                    + cj + " value: " + val + " kBytes/s .... ignoring it");
                                         }
                                         continue;
                                     }
@@ -330,8 +352,9 @@ public class CrabFilter extends GenericMLFilter {
                                         final long cSenderID = cj.getSenderID();
                                         final long senderID = (long) r.param[i];
 
-                                        if (cSenderID >= 0 && cSenderID != senderID) {
-                                            logger.log(Level.WARNING, " \n\n SenderID has changed for CrabJob: " + cj + " OLD SenderID: " + cSenderID + " NEW SenderID: " + senderID);
+                                        if ((cSenderID >= 0) && (cSenderID != senderID)) {
+                                            logger.log(Level.WARNING, " \n\n SenderID has changed for CrabJob: " + cj
+                                                    + " OLD SenderID: " + cSenderID + " NEW SenderID: " + senderID);
                                         }
 
                                         cj.lastResultTimestamp.set(now);
@@ -347,20 +370,24 @@ public class CrabFilter extends GenericMLFilter {
                                 }
 
                             } else {
-                                logger.log(Level.WARNING, " [ CrabFilter ] got a result with null/blank cluster name: " + r + " ignoring it");
+                                logger.log(Level.WARNING, " [ CrabFilter ] got a result with null/blank cluster name: "
+                                        + r + " ignoring it");
                             }
                         }
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, " [ CrabFilter ] got exception in notifyResult processing Result " + o, t);
+                        logger.log(Level.WARNING, " [ CrabFilter ] got exception in notifyResult processing Result "
+                                + o, t);
                     }
                 } else if (o instanceof eResult) {
                     try {
                         final eResult er = (eResult) o;
-                        if (er.Module != null && er.Module.equals("monXDRUDP")) {
-                            if (er.ClusterName != null || er.ClusterName.length() == 0) {
+                        if ((er.Module != null) && er.Module.equals("monXDRUDP")) {
+                            if ((er.ClusterName != null) || (er.ClusterName.length() == 0)) {
 
-                                if (er.NodeName == null || er.NodeName.length() == 0) {
-                                    logger.log(Level.WARNING, " [ CrabFilter ] got a result with null/blank node name: " + er + " ignoring it");
+                                if ((er.NodeName == null) || (er.NodeName.length() == 0)) {
+                                    logger.log(Level.WARNING,
+                                            " [ CrabFilter ] got a result with null/blank node name: " + er
+                                                    + " ignoring it");
                                     return;
                                 }
 
@@ -377,8 +404,10 @@ public class CrabFilter extends GenericMLFilter {
                                     cj = (CrabJob) jobsMap.get(er.NodeName);
                                 }
 
-                                if (er.param == null || er.param_name == null) {
-                                    logger.log(Level.WARNING, " [ CrabFilter ] got a result with null/blank param_name or para: " + er + " ignoring it");
+                                if ((er.param == null) || (er.param_name == null)) {
+                                    logger.log(Level.WARNING,
+                                            " [ CrabFilter ] got a result with null/blank param_name or para: " + er
+                                                    + " ignoring it");
                                     return;
                                 }
 
@@ -395,7 +424,8 @@ public class CrabFilter extends GenericMLFilter {
                                         }
 
                                         if (!cmacID.equals(macID)) {
-                                            logger.log(Level.WARNING, " \n\n MACID has changed for CrabJob: " + cj + " OLD MAC: " + cmacID + " NEW MAC: " + macID);
+                                            logger.log(Level.WARNING, " \n\n MACID has changed for CrabJob: " + cj
+                                                    + " OLD MAC: " + cmacID + " NEW MAC: " + macID);
                                             cj.setMacID(macID);
                                         }
                                     }
@@ -403,10 +433,12 @@ public class CrabFilter extends GenericMLFilter {
                             }
                         }
                     } catch (Throwable t) {
-                        logger.log(Level.WARNING, " [ CrabFilter ] got exception in notifyResult processing eResult " + o, t);
+                        logger.log(Level.WARNING, " [ CrabFilter ] got exception in notifyResult processing eResult "
+                                + o, t);
                     }
                 } else {
-                    logger.log(Level.WARNING, " [ CrabFilter ] unknown result received. Class : " + o.getClass() + "     v: " + o);
+                    logger.log(Level.WARNING, " [ CrabFilter ] unknown result received. Class : " + o.getClass()
+                            + "     v: " + o);
                 }
 
             }//sync
@@ -416,6 +448,7 @@ public class CrabFilter extends GenericMLFilter {
         }
     }
 
+    @Override
     public Object expressResults() {
         final long now = NTPDate.currentTimeMillis();
         final double dt = (now - lastRun) / 1000D;
@@ -433,7 +466,8 @@ public class CrabFilter extends GenericMLFilter {
                         sb.append("\n===========\nCrabJob: ").append(job);
                         for (Iterator ethi = job.ethInterfaces.values().iterator(); ethi.hasNext();) {
                             EthInt eth = (EthInt) ethi.next();
-                            sb.append("\n --> Eth=").append(eth.ethName).append("; totalIO=").append(eth.totalIO.get()).append("; lastUpdate=").append(eth.lastUpdate.get());
+                            sb.append("\n --> Eth=").append(eth.ethName).append("; totalIO=").append(eth.totalIO.get())
+                                    .append("; lastUpdate=").append(eth.lastUpdate.get());
                         }
                     }
                 }
@@ -443,7 +477,6 @@ public class CrabFilter extends GenericMLFilter {
             Vector retV = new Vector(jobsClusterMap.size());
 
             synchronized (lock) {
-
 
                 for (Iterator it = jobsClusterMap.entrySet().iterator(); it.hasNext();) {
 
@@ -497,10 +530,11 @@ public class CrabFilter extends GenericMLFilter {
                             previousJob.setMacID(macID);
                         } else {
                             if (!oldMacID.equals(macID)) {
-                                logger.log(Level.WARNING, "\n\n [ CrabFilter ] (expressResult) MAC Addrd changed for cJob: " + job + " previousJob: " + previousJob + " ??????? \n\n");
+                                logger.log(Level.WARNING,
+                                        "\n\n [ CrabFilter ] (expressResult) MAC Addrd changed for cJob: " + job
+                                                + " previousJob: " + previousJob + " ??????? \n\n");
                             }
                         }
-
 
                         if (macAddrSet.contains(macID)) {
                             continue;
@@ -519,7 +553,8 @@ public class CrabFilter extends GenericMLFilter {
 
                             EthInt oldEth = (EthInt) previousJob.ethInterfaces.get(eth.ethName);
                             if (oldEth == null) {
-                                previousJob.ethInterfaces.putIfAbsent(eth.ethName, new EthInt(eth.ethName, eth.lastUpdate.get(), previousJob));
+                                previousJob.ethInterfaces.putIfAbsent(eth.ethName, new EthInt(eth.ethName,
+                                        eth.lastUpdate.get(), previousJob));
                                 oldEth = (EthInt) previousJob.ethInterfaces.get(eth.ethName);
                                 oldEth.totalIO.set(eth.totalIO.get());
                                 continue;
@@ -528,7 +563,8 @@ public class CrabFilter extends GenericMLFilter {
                             final double d = eth.totalIO.get() - oldEth.totalIO.get();
 
                             if (d < 0) {
-                                logger.log(Level.WARNING, " [ CrabFilter ] expressResult negative diff for job: " + job + " Eth: " + eth + " oldEth: " + oldEth);
+                                logger.log(Level.WARNING, " [ CrabFilter ] expressResult negative diff for job: " + job
+                                        + " Eth: " + eth + " oldEth: " + oldEth);
                             } else {
                                 if (eth.ethName.indexOf("_in") >= 0) {
                                     diff_in += d;
@@ -547,7 +583,7 @@ public class CrabFilter extends GenericMLFilter {
                     if (macAddrSet.size() >= 1) {
                         r.addSet("Total_IN", total_IN / dt);
                         r.addSet("Total_OUT", total_OUT / dt);
-                        r.addSet("Avg_cpu_usage", (double) total_CPU_USAGE / (double) tJobs_cpu);
+                        r.addSet("Avg_cpu_usage", total_CPU_USAGE / tJobs_cpu);
                         retV.add(r);
                     }
                 }
@@ -561,7 +597,8 @@ public class CrabFilter extends GenericMLFilter {
             }
 
             if (retV.size() > 0) {
-                logger.log(Level.FINE, " [ CrabFilter ] expressResults .... returning " + retV.size() + " results: " + retV);
+                logger.log(Level.FINE, " [ CrabFilter ] expressResults .... returning " + retV.size() + " results: "
+                        + retV);
                 return retV;
             }
 

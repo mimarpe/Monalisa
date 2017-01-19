@@ -1,5 +1,5 @@
 /*
- * $Id: monOSCrossConns.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: monOSCrossConns.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.modules;
 
@@ -45,13 +45,11 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
     private static final long serialVersionUID = 3853069777126780557L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(monOSCrossConns.class.getName());
+    private static final Logger logger = Logger.getLogger(monOSCrossConns.class.getName());
 
     public MNode Node;
 
-    static String[] ResTypes = {
-        "Port-Conn"
-    };
+    static String[] ResTypes = { "Port-Conn" };
 
     public MonModuleInfo info;
 
@@ -97,9 +95,12 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
         shouldPublishPortsList = false;
     }
 
+    @Override
     public MonModuleInfo init(MNode Node, String arg) {
         this.Node = Node;
-        logger.log(Level.INFO, "monOSCrossConns: farmName=" + Node.getFarmName() + " clusterName= " + Node.getClusterName() + " nodeName=" + Node.getName() + " arg = " + arg);
+        logger.log(Level.INFO,
+                "monOSCrossConns: farmName=" + Node.getFarmName() + " clusterName= " + Node.getClusterName()
+                        + " nodeName=" + Node.getName() + " arg = " + arg);
         if (arg.startsWith("\"")) {
             arg = arg.substring(1);
         }
@@ -108,8 +109,8 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
         }
         String[] args = arg.split("(\\s)*;(\\s)*");
         if (args != null) {
-            for (int i = 0; i < args.length; i++) {
-                String argT = args[i].trim();
+            for (String arg2 : args) {
+                String argT = arg2.trim();
                 if (argT.startsWith("SwitchType")) {
                     String switchName = argT.split("(\\s)*=(\\s)*")[1];
                     logger.log(Level.INFO, "monOSCrossConns: swType = " + switchName);
@@ -144,22 +145,25 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
 
     private void reloadConf() {
         ArrayList newPortsList = new ArrayList();
-        if (moduleConfFile == null)
+        if (moduleConfFile == null) {
             return;
+        }
 
         try {
             int lineCount = 0;// just for debugging...
             BufferedReader br = new BufferedReader(new FileReader(moduleConfFile));
             for (String line = br.readLine(); line != null; line = br.readLine()) {
-                if (line.trim().startsWith("#"))
+                if (line.trim().startsWith("#")) {
                     continue; // ignore possible comments
+                }
                 lineCount++;
                 try {
                     String[] linePorts = line.split("(\\s)*,(\\s)*");
-                    if (linePorts == null || linePorts.length == 0)
+                    if ((linePorts == null) || (linePorts.length == 0)) {
                         continue;
-                    for (int i = 0; i < linePorts.length; i++) {
-                        String port = linePorts[i].trim();
+                    }
+                    for (String linePort : linePorts) {
+                        String port = linePort.trim();
                         if (port.length() > 0) {
                             newPortsList.add(port);
                         }
@@ -173,7 +177,7 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
         }
 
         synchronized (portsSync) {
-            if (newPortsList != null && !firstTime) {
+            if ((newPortsList != null) && !firstTime) {
                 try {
                     publisher.publish("OS_PortMap", newPortsList);
                 } catch (Throwable t) {
@@ -186,19 +190,20 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
 
     private Vector getCrossConnects() {
         switch (switchType) {
-            case (OSTelnet.CALIENT): {
-                return getCrossConnectsCalient();
-            }
-            case (OSTelnet.GLIMMERGLASS): {
-                return getCrossConnectsGlimmer();
-            }
+        case (OSTelnet.CALIENT): {
+            return getCrossConnectsCalient();
+        }
+        case (OSTelnet.GLIMMERGLASS): {
+            return getCrossConnectsGlimmer();
+        }
         }
         return null;
     }
 
     private String getRealGLPort(String port) {
-        if (port == null)
+        if (port == null) {
             return null;
+        }
         if (port.indexOf("100") != -1) {
             return port.substring(3);
         }
@@ -215,8 +220,8 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
             // TODO - do it faster
             String[] lines = osConn.execCmdAndGet(monOSPortsPower.GLIMMER_TL1_CMD_PORT_POWER, OSTelnet.PPOWER_CTAG);
             String line;
-            for (int linIt = 0; linIt < lines.length; linIt++) {
-                line = lines[linIt];
+            for (String line2 : lines) {
+                line = line2;
                 try {
                     String trimmedLine = line.trim();
                     if (logger.isLoggable(Level.FINEST)) {
@@ -260,8 +265,9 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
     private Vector getCrossConnectsGlimmer() {
         if (portsList == null) {
             fillPortsListGlimmer();
-            if (portsList == null)
+            if (portsList == null) {
                 return null;
+            }
         }
         Vector retv = new Vector();
         HashMap cLinks = new HashMap();
@@ -278,15 +284,18 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
             // "GGN:IPORTID=10003,IPORTNAME=,OPORTID=0,OPORTNAME=,CONNID=0,CONNSTATE=single,CONNCAUSE=none,INPWR=-49.094,OUTPWR=0.000,PWRLOSS=0.000,CONNLOCK=0,CONNLOCKUSER="
 
             // TODO - Do it faster
-            String[] lines = osConn.execCmdAndGet("rtrv-crs-fiber::all:" + OSTelnet.CCONN_CTAG + OSTelnet.TL1_FINISH_CMD, OSTelnet.CCONN_CTAG);
+            String[] lines = osConn.execCmdAndGet("rtrv-crs-fiber::all:" + OSTelnet.CCONN_CTAG
+                    + OSTelnet.TL1_FINISH_CMD, OSTelnet.CCONN_CTAG);
             String line;
-            for (int linIt = 0; linIt < lines.length; linIt++) {
-                line = lines[linIt].trim();
-                if (!line.startsWith("\"") || !line.endsWith("\"") || line.length() < 6)
+            for (String line2 : lines) {
+                line = line2.trim();
+                if (!line.startsWith("\"") || !line.endsWith("\"") || (line.length() < 6)) {
                     continue;
+                }
                 String cline = line.substring(5, line.length() - 1);
-                if (cline == null)
+                if (cline == null) {
                     continue;
+                }
                 cline = cline.trim();
                 if (cline.length() > 0) {
                     // stripped should be something like the line below:
@@ -306,15 +315,16 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
                     boolean ccOk = false;
 
                     boolean bDestPortChecked = false;
-                    
+
                     for (int i = 0; i < tSlen; i++) {
 
                         final String[] sVals = EQ_PATTERN.split(tmpSplit[i]);
 
-                        if (sVals == null || sVals.length < 2)
+                        if ((sVals == null) || (sVals.length < 2)) {
                             continue;
+                        }
 
-                        if (rsPort == null && sVals[0].equals("IPORTID")) {
+                        if ((rsPort == null) && sVals[0].equals("IPORTID")) {
                             // assert rsPort == null
                             rsPort = getRealGLPort(sVals[1]);
                             if (rsPort == null) {
@@ -322,8 +332,8 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
                             }
                         }
 
-                        if (rdPort == null && sVals[0].equals("OPORTID")) {
-                            bDestPortChecked =  true;
+                        if ((rdPort == null) && sVals[0].equals("OPORTID")) {
+                            bDestPortChecked = true;
                             rdPort = getRealGLPort(sVals[1]);
                             if (rdPort == null) {
                                 break;
@@ -339,12 +349,12 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
                         }
                     }
 
-                    if (bDestPortChecked && rsPort == null && rdPort == null) {
+                    if (bDestPortChecked && (rsPort == null) && (rdPort == null)) {
                         logger.log(Level.WARNING, " Got null ports for line " + cline);
                         continue;
                     }
 
-                    if (rsPort == null || rdPort == null) {
+                    if ((rsPort == null) || (rdPort == null)) {
                         continue;
                     }
 
@@ -410,13 +420,15 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
 
             String[] lines = osConn.execCmdAndGet("rtrv-crs::,:" + OSTelnet.CCONN_CTAG + "::,,;", OSTelnet.CCONN_CTAG);
             String line;
-            for (int linIt = 0; linIt < lines.length; linIt++) {
-                line = lines[linIt].trim();
-                if (!line.startsWith("\"") || !line.endsWith("\""))
+            for (String line2 : lines) {
+                line = line2.trim();
+                if (!line.startsWith("\"") || !line.endsWith("\"")) {
                     continue;
+                }
                 String cline = line.substring(1, line.length() - 1);
-                if (cline == null)
+                if (cline == null) {
                     continue;
+                }
                 cline = cline.trim();
                 int len1 = cline.length();
                 if (len1 > 0) {
@@ -425,7 +437,7 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
                     // "10.13a.1-10.13a.2:SRCPORT=10.13a.1,DSTPORT=10.13a.2,GRPNAME=TESTGROUP,CONNNAME=13A.1_TO_13A.2,CONNTYPE=2WAY,AS=IS,OS=IS,OC=OK,PS=UPR,AL=CL,MATRIXUSED=31.1"
                     String stripped = cline;
                     String[] secondSplitS = stripped.trim().split(":");
-                    if (secondSplitS == null || secondSplitS.length < 2) {
+                    if ((secondSplitS == null) || (secondSplitS.length < 2)) {
                         continue;
                     }
                     // String connID = secondSplitS[0];
@@ -444,8 +456,9 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
                     // String [9]= "AL=CL"
                     // String [10]= "MATRIXUSED=31.1"
                     String[] tmpSplit = secondSplitS[1].split(",");
-                    if (tmpSplit.length != 11)
+                    if (tmpSplit.length != 11) {
                         continue;
+                    }
 
                     String srcPortS = tmpSplit[0].split("=")[1];
                     String dstPortS = tmpSplit[1].split("=")[1];
@@ -453,7 +466,7 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
                     key = srcPortS + " - " + dstPortS;
                     String revKey = dstPortS + " - " + srcPortS;
 
-                    if (portsList != null && portsList.contains(srcPortS) && portsList.contains(dstPortS)) {
+                    if ((portsList != null) && portsList.contains(srcPortS) && portsList.contains(dstPortS)) {
                         Result rez = new Result();
                         rez.FarmName = Node.getFarmName();
                         rez.ClusterName = Node.getClusterName();
@@ -471,7 +484,7 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
                         }
                         retv.add(rez);
 
-                        if (tmpSplit[4] != null && tmpSplit[4].indexOf("2WAY") != -1) {
+                        if ((tmpSplit[4] != null) && (tmpSplit[4].indexOf("2WAY") != -1)) {
                             rez = new Result();
                             rez.FarmName = Node.getFarmName();
                             rez.ClusterName = Node.getClusterName();
@@ -525,8 +538,9 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
     }
 
     private ArrayList computeDiff(HashMap cLinks) {
-        if (lastConns == null)
+        if (lastConns == null) {
             return null;
+        }
         ArrayList retv = new ArrayList();
         for (Iterator it = lastConns.keySet().iterator(); it.hasNext();) {
             String oldKey = (String) it.next();
@@ -556,6 +570,7 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
         return retv;
     }
 
+    @Override
     public Object doProcess() throws Exception {
         long sTime = System.currentTimeMillis();
         Vector v = null;
@@ -624,38 +639,47 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
         }
     }
 
+    @Override
     public MonModuleInfo getInfo() {
         return info;
     }
 
+    @Override
     public String[] ResTypes() {
         return ResTypes;
     }
 
+    @Override
     public String getOsName() {
         return "linux";
     }
 
+    @Override
     public MNode getNode() {
         return Node;
     }
 
+    @Override
     public String getClusterName() {
         return Node.getClusterName();
     }
 
+    @Override
     public String getFarmName() {
         return Node.getFarmName();
     }
 
+    @Override
     public String getTaskName() {
         return moduleName;
     }
 
+    @Override
     public boolean isRepetitive() {
         return isRepetitive;
     }
 
+    @Override
     public boolean stop() {
         logger.log(Level.INFO, " monSys300CMap stop() Request . SHOULD NOT!!!");
         return true;
@@ -679,8 +703,9 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
         try {
             for (int k = 0; k < 10000; k++) {
                 Vector bb = (Vector) aa.doProcess();
-                for (int q = 0; q < bb.size(); q++)
+                for (int q = 0; q < bb.size(); q++) {
                     System.out.println(bb.get(q));
+                }
                 System.out.println("-------- sleeeping ----------");
                 Thread.sleep(5000);
                 System.out.println("-------- doProcess-ing --------- k=" + k);
@@ -690,8 +715,9 @@ public class monOSCrossConns extends cmdExec implements MonitoringModule, Observ
         }
     }
 
+    @Override
     public void update(Observable o, Object arg) {
-        if (o != null && o.equals(dfw)) {// just extra check
+        if ((o != null) && o.equals(dfw)) {// just extra check
             reloadConf();
         }
     }

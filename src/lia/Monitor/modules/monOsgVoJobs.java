@@ -24,6 +24,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +48,7 @@ import lia.util.ntp.NTPDate;
 class VOSummaryExt implements Cloneable {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.modules.monOsgVoJobs");
+    private static final Logger logger = Logger.getLogger(VOSummaryExt.class.getName());
 
     /* parameters obtained from a queue manager: */
     long run_time_t; // total wall clock time for the jobs, in seconds
@@ -275,8 +276,9 @@ class JobInfoExt {
         sb.append("\tsize=").append(size);
         sb.append("\tdisk_usage=").append(disk_usage);
         sb.append("\tVO=").append(VO);
-        if (serverName != null)
+        if (serverName != null) {
             sb.append("\tserverName").append(serverName);
+        }
         return sb.toString();
     }
 }
@@ -290,7 +292,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
     static final long serialVersionUID = 607200518051980L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.modules.monOsgVoJobs");
+    private static final Logger logger = Logger.getLogger(monOsgVoJobs.class.getName());
 
     protected String monalisaHome = null;
 
@@ -424,9 +426,8 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
     protected boolean individualUsersResults = false;
 
     /** The results that this module provides. */
-    protected static String[] MyResTypes = {
-            "RunningJobs", "IdleJobs", "HeldJobs", "SubmittedJobs", "RunTime", "WallClockTime", "DiskUsage", "JobsSize"
-    };
+    protected static String[] MyResTypes = { "RunningJobs", "IdleJobs", "HeldJobs", "SubmittedJobs", "RunTime",
+            "WallClockTime", "DiskUsage", "JobsSize" };
 
     /* properties that should be set in ml.properties for email configuration */
     protected static String emailNotifyProperty = "lia.Monitor.modules.monOsgVoJobs.emailNotify";
@@ -657,89 +658,91 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             String sVal;
             Boolean bVal;
 
-            for (int j = 0; j < argList.length; j++) {
+            for (String element : argList) {
 
-                sVal = VO_Utils.getSArgumentValue(argList[j], "mapfile", logger);
+                sVal = VO_Utils.getSArgumentValue(element, "mapfile", logger);
                 if (sVal != null) {
                     mapfile = sVal;
                     logger.log(Level.INFO, "Using map file: " + mapfile);
                     continue;
                 }
 
-                bVal = VO_Utils.getBArgumentValue(argList[j], "testmode", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "testmode", logger);
                 if (bVal != null) {
                     testmode = bVal.booleanValue();
                     continue;
                 }
 
-                bVal = VO_Utils.getBArgumentValue(argList[j], "donotpublishjobinfo", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "donotpublishjobinfo", logger);
                 if (bVal != null) {
-                    if (bVal.equals(Boolean.TRUE))
+                    if (bVal.equals(Boolean.TRUE)) {
                         shouldPublishJobInfo = false;
-                    else
+                    } else {
                         shouldPublishJobInfo = true;
+                    }
                     continue;
                 }
 
-                bVal = VO_Utils.getBArgumentValue(argList[j], "checkcmdexitstatus", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "checkcmdexitstatus", logger);
                 if (bVal != null) {
                     checkExitStatus = bVal.booleanValue();
                     continue;
                 }
 
                 /* flag to enable the use of condor_q -global */
-                bVal = VO_Utils.getBArgumentValue(argList[j], "condoruseglobal", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "condoruseglobal", logger);
                 if (bVal != null) {
                     condorUseGlobal = bVal.booleanValue();
                     continue;
                 }
 
                 /* flag to disable the use of the "plain" condor_q command */
-                bVal = VO_Utils.getBArgumentValue(argList[j], "condorquickmode", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "condorquickmode", logger);
                 if (bVal != null) {
                     condorQuickMode = bVal.booleanValue();
                     continue;
                 }
 
                 /* flag to enable the parsing of the Condor history file */
-                bVal = VO_Utils.getBArgumentValue(argList[j], "condorhistorycheck", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "condorhistorycheck", logger);
                 if (bVal != null) {
                     checkCondorHist = bVal.booleanValue();
                     continue;
                 }
 
                 /* flag to disable the parsing of the Condor history file */
-                if (argList[j].toLowerCase().startsWith("nocondorhistorycheck")) {
+                if (element.toLowerCase().startsWith("nocondorhistorycheck")) {
                     checkCondorHist = false;
                     logger.info("CondorHistoryCheck option disabled");
                 }
 
                 /* the location of the Condor history file */
-                sVal = VO_Utils.getSArgumentValue(argList[j], "condorhistoryfile", logger);
+                sVal = VO_Utils.getSArgumentValue(element, "condorhistoryfile", logger);
                 if (sVal != null) {
-                    if (condorHistFiles == null)
+                    if (condorHistFiles == null) {
                         condorHistFiles = new Vector<String>();
+                    }
                     condorHistFiles.add(sVal);
                     logger.log(Level.INFO, "Using Condor history file: " + sVal);
                     continue;
                 }
 
                 /* flag to enable the parsing of the PBS accounting logs */
-                bVal = VO_Utils.getBArgumentValue(argList[j], "pbshistorycheck", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "pbshistorycheck", logger);
                 if (bVal != null) {
                     checkPBSHist = bVal.booleanValue();
                     continue;
                 }
 
                 /* flag to disable the parsing of the PBS accounting logs */
-                if (argList[j].toLowerCase().startsWith("nopbshistorycheck")) {
+                if (element.toLowerCase().startsWith("nopbshistorycheck")) {
                     checkPBSHist = false;
                     logger.info("PBSHistoryCheck option disabled");
                     continue;
                 }
 
                 /* the location of the PBS accounting log directory */
-                sVal = VO_Utils.getSArgumentValue(argList[j], "pbslogdir", logger);
+                sVal = VO_Utils.getSArgumentValue(element, "pbslogdir", logger);
                 if (sVal != null) {
                     pbsLogDir = sVal;
                     logger.log(Level.INFO, "Using PBS accounting log directory: " + pbsLogDir);
@@ -750,7 +753,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                  * flag to disable the execution of the additional command qstat
                  * -a
                  */
-                bVal = VO_Utils.getBArgumentValue(argList[j], "pbsquickmode", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "pbsquickmode", logger);
                 if (bVal != null) {
                     pbsQuickMode = bVal.booleanValue();
                     continue;
@@ -760,14 +763,14 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                  * flag to enable/disable the -u argument for the LSF bjobs
                  * command
                  */
-                bVal = VO_Utils.getBArgumentValue(argList[j], "lsfuseroption", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "lsfuseroption", logger);
                 if (bVal != null) {
                     lsfUserOpt = bVal.booleanValue();
                     continue;
                 }
 
                 /* the location of the PBS accounting log directory */
-                sVal = VO_Utils.getSArgumentValue(argList[j], "lsfusername", logger);
+                sVal = VO_Utils.getSArgumentValue(element, "lsfusername", logger);
                 if (sVal != null) {
                     lsfUserName = sVal;
                     logger.log(Level.INFO, "User name for LSF bjobs: " + lsfUserName);
@@ -775,7 +778,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 }
 
                 /* flag to enable the use of mixed cases in VOs names */
-                bVal = VO_Utils.getBArgumentValue(argList[j], "mixedcasevos", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "mixedcasevos", logger);
                 if (bVal != null) {
                     mixedCaseVOs = bVal.booleanValue();
                     continue;
@@ -785,28 +788,28 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                  * flag to enable the interruption of the module execution if 3
                  * consecutive doProcess-es throwed an exception
                  */
-                bVal = VO_Utils.getBArgumentValue(argList[j], "cansuspend", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "cansuspend", logger);
                 if (bVal != null) {
                     canSuspend = bVal.booleanValue();
                     continue;
                 }
 
-                bVal = VO_Utils.getBArgumentValue(argList[j], "finishedjobsresults", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "finishedjobsresults", logger);
                 if (bVal != null) {
                     finishedJobsResults = bVal.booleanValue();
                     continue;
                 }
 
-                bVal = VO_Utils.getBArgumentValue(argList[j], "individualusersresults", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "individualusersresults", logger);
                 if (bVal != null) {
                     individualUsersResults = bVal.booleanValue();
                     continue;
                 }
 
-                sVal = VO_Utils.getSArgumentValue(argList[j], "server", logger);
+                sVal = VO_Utils.getSArgumentValue(element, "server", logger);
                 if (sVal != null) {
                     this.nCondorServers++;
-                    String argName = argList[j].split("(\\s)*=(\\s)*")[0].trim();
+                    String argName = element.split("(\\s)*=(\\s)*")[0].trim();
                     String sIdx = argName.substring(6);
                     if (sIdx.length() > 0) {
                         int idx = Integer.parseInt(sIdx);
@@ -818,9 +821,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                     continue;
                 }
 
-                sVal = VO_Utils.getSArgumentValue(argList[j], "pool", logger);
+                sVal = VO_Utils.getSArgumentValue(element, "pool", logger);
                 if (sVal != null) {
-                    String argName = argList[j].split("(\\s)*=(\\s)*")[0].trim();
+                    String argName = element.split("(\\s)*=(\\s)*")[0].trim();
                     String sIdx = argName.substring(4);
                     if (sIdx.length() > 0) {
                         int idx = Integer.parseInt(sIdx);
@@ -829,40 +832,41 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                     continue;
                 }
 
-                if (argList[j].toLowerCase().startsWith("condorconstraints")) {
-                    int poz = argList[j].indexOf('=');
-                    String argVal = argList[j].substring(poz + 1);
+                if (element.toLowerCase().startsWith("condorconstraints")) {
+                    int poz = element.indexOf('=');
+                    String argVal = element.substring(poz + 1);
                     condorConstraints = argVal.trim();
                     logger.log(Level.INFO, "Added Condor constraints: " + condorConstraints);
                     continue;
                 }
 
-                sVal = VO_Utils.getSArgumentValue(argList[j], "condorformatoption", logger);
+                sVal = VO_Utils.getSArgumentValue(element, "condorformatoption", logger);
                 if (sVal != null) {
-                    if (sVal.toLowerCase().equals("on"))
+                    if (sVal.toLowerCase().equals("on")) {
                         condorFormatOption = ON;
-                    else if (sVal.toLowerCase().equals("off"))
+                    } else if (sVal.toLowerCase().equals("off")) {
                         condorFormatOption = OFF;
-                    else
+                    } else {
                         condorFormatOption = ALTERNATIVE;
+                    }
 
                     logger.log(Level.INFO, "Condor format option: " + sVal);
                     continue;
                 }
 
-                bVal = VO_Utils.getBArgumentValue(argList[j], "adjustjobstatistics", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "adjustjobstatistics", logger);
                 if (bVal != null) {
                     adjustJobStatistics = bVal.booleanValue();
                     continue;
                 }
 
-                bVal = VO_Utils.getBArgumentValue(argList[j], "novostatistics", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "novostatistics", logger);
                 if (bVal != null) {
                     noVoStatistics = bVal.booleanValue();
                     continue;
                 }
 
-                bVal = VO_Utils.getBArgumentValue(argList[j], "verboselogging", logger);
+                bVal = VO_Utils.getBArgumentValue(element, "verboselogging", logger);
                 if (bVal != null) {
                     verboseLogging = bVal.booleanValue();
                     continue;
@@ -872,8 +876,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         } // end if args
 
         info.ResTypes = ResTypes();
-        if (inNode.farm != null)
+        if (inNode.farm != null) {
             farmName = inNode.farm.name;
+        }
 
         return info;
     } // end method init
@@ -894,8 +899,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
      */
     protected void initializeEnv(boolean firstTime) throws Exception {
         logger.log(Level.INFO, "[monOsgVoJobs] Initializing monOsgVoJobs module...");
-        if (isInternalModule)
+        if (isInternalModule) {
             setupEmailNotification();
+        }
         loadUserVoMapTable();
         // logger.finest("After loading VoMapTable: " + voMixedCase.size() +
         // " voAccts: " + voAccts.size());
@@ -908,8 +914,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         if (firstTime) {
             VOjobsInfo = new Hashtable<String, VOSummaryExt>();
             userJobsInfo = new Hashtable<String, VOSummaryExt>();
-            if (noVoStatistics)
+            if (noVoStatistics) {
                 VOjobsInfo.put(noVoName, new VOSummaryExt());
+            }
             oTotalVOS = new VOSummaryExt();
         }
 
@@ -937,11 +944,12 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         Enumeration<String> voi = VOjobsInfo.keys();
         while (voi.hasMoreElements()) {
             String key = voi.nextElement();
-            if (key.equals(noVoName))
+            if (key.equals(noVoName)) {
                 continue;
+            }
             if (!voMixedCase.contains(key)) {
                 VOSummaryExt oVOSummary = VOjobsInfo.get(key);
-                if (oVOSummary != null && oTotalVOS != null) {
+                if ((oVOSummary != null) && (oTotalVOS != null)) {
                     logger.fine("Updating VO totals - removed VO " + key);
                     oTotalVOS.submittedJobs_t -= oVOSummary.submittedJobs_t;
                     oTotalVOS.finishedJobs_t -= oVOSummary.finishedJobs_t;
@@ -991,10 +999,12 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             firstInit = false;
             try {
                 getJobManagers();
-                if (jobMgr.get(VO_Utils.CONDOR) != null)
+                if (jobMgr.get(VO_Utils.CONDOR) != null) {
                     condorAcc = new VO_CondorAccounting(condorHistFiles);
-                if (jobMgr.get(VO_Utils.PBS) != null)
+                }
+                if (jobMgr.get(VO_Utils.PBS) != null) {
                     pbsAcc = new VO_PBSAccounting(pbsLogDir);
+                }
             } catch (Exception e1) {
                 throw e1;
             }
@@ -1038,11 +1048,16 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         // Initialize the command for the job manager types
         // -------------------------------------------------------
         if (testmode) {
-            jobMgr.put(VO_Utils.CONDOR, "CONDOR_LOCATION/cat " + monalisaHome + "/Service/usr_code/" + VoModulesDir + "/testdata/condor");
-            jobMgr.put(VO_Utils.PBS, "PBS_LOCATION/cat " + monalisaHome + "/Service/usr_code/" + VoModulesDir + "/testdata/pbs");
-            jobMgr.put(VO_Utils.LSF, "LSF_LOCATION/cat " + monalisaHome + "/Service/usr_code/" + VoModulesDir + "/testdata/lsf");
-            jobMgr.put(VO_Utils.FBS, "FBS_LOCATION/cat " + monalisaHome + "/Service/usr_code/" + VoModulesDir + "/testdata/fbs");
-            jobMgr.put(VO_Utils.SGE, "SGE_LOCATION/cat " + monalisaHome + "/Service/usr_code/" + VoModulesDir + "/testdata/sge");
+            jobMgr.put(VO_Utils.CONDOR, "CONDOR_LOCATION/cat " + monalisaHome + "/Service/usr_code/" + VoModulesDir
+                    + "/testdata/condor");
+            jobMgr.put(VO_Utils.PBS, "PBS_LOCATION/cat " + monalisaHome + "/Service/usr_code/" + VoModulesDir
+                    + "/testdata/pbs");
+            jobMgr.put(VO_Utils.LSF, "LSF_LOCATION/cat " + monalisaHome + "/Service/usr_code/" + VoModulesDir
+                    + "/testdata/lsf");
+            jobMgr.put(VO_Utils.FBS, "FBS_LOCATION/cat " + monalisaHome + "/Service/usr_code/" + VoModulesDir
+                    + "/testdata/fbs");
+            jobMgr.put(VO_Utils.SGE, "SGE_LOCATION/cat " + monalisaHome + "/Service/usr_code/" + VoModulesDir
+                    + "/testdata/sge");
         } else {
             /* make up the Condor command */
             final StringBuilder condorCmd[] = new StringBuilder[3];
@@ -1053,13 +1068,14 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             StringBuilder crtCmd[] = initCondorCmds();
 
             String constraints = "";
-            if (condorConstraints != null)
+            if (condorConstraints != null) {
                 constraints = " -constraint " + "\\\"" + condorConstraints + "\\\"";
+            }
 
             if (condorServers.size() == 0) {
 
                 final String pool = condorPools.get(Integer.valueOf(0));
-                if (pool != null && !pool.isEmpty()) {
+                if ((pool != null) && !pool.isEmpty()) {
                     crtCmd[0].append(" -pool ").append(pool);
                     crtCmd[1].append(" -pool ").append(pool);
                     crtCmd[2].append(" -pool ").append(pool);
@@ -1087,7 +1103,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                     crtCmd[1].append(" -name ").append(crtServer);
                     crtCmd[2].append(" -name ").append(crtServer);
 
-                    if (crtPool != null && !crtPool.isEmpty()) {
+                    if ((crtPool != null) && !crtPool.isEmpty()) {
                         crtCmd[0].append(" -pool ").append(crtPool);
                         crtCmd[1].append(" -pool ").append(crtPool);
                         crtCmd[2].append(" -pool ").append(crtPool);
@@ -1110,8 +1126,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             jobMgr.put(VO_Utils.PBS, "PBS_LOCATION/bin/qstat && echo " + VO_Utils.okString);
             jobMgr.put(VO_Utils.PBS2, "PBS_LOCATION/bin/qstat -a && echo " + VO_Utils.okString);
             String lsfCmd = "LSF_LOCATION/bin/bjobs -l";
-            if (this.lsfUserOpt)
+            if (this.lsfUserOpt) {
                 lsfCmd = lsfCmd + " -u " + this.lsfUserName;
+            }
             jobMgr.put(VO_Utils.LSF, lsfCmd + " && echo " + VO_Utils.okString);
             // jobMgr.put(VO_Utils.LSF, "LSF_LOCATION/bin/bjobs -a -l && echo "
             // + VO_Utils.okString);
@@ -1137,10 +1154,12 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             String newloc = entry.getValue();
 
             String jobManager = jobMgrKey;
-            if (jobMgrKey.startsWith(VO_Utils.CONDOR))
+            if (jobMgrKey.startsWith(VO_Utils.CONDOR)) {
                 jobManager = VO_Utils.CONDOR;
-            if (jobMgrKey.startsWith(VO_Utils.PBS))
+            }
+            if (jobMgrKey.startsWith(VO_Utils.PBS)) {
                 jobManager = VO_Utils.PBS;
+            }
 
             String verCmd = versionCmd.get(jobManager);
 
@@ -1178,7 +1197,8 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                  * location of the history files must be set manually in the
                  * conf file. If it wasn't set, disable history processing.
                  */
-                if ((this.condorUseGlobal || this.condorServers.size() > 0) && this.checkCondorHist == true && this.condorHistFiles == null) {
+                if ((this.condorUseGlobal || (this.condorServers.size() > 0)) && (this.checkCondorHist == true)
+                        && (this.condorHistFiles == null)) {
                     logger.warning("Non-local Condor servers will be used and the location of the history files was not specified. Disabling history log processing...");
                     this.checkCondorHist = false;
                 }
@@ -1200,7 +1220,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 File fd = new File(pbsLogDir);
                 if (!fd.exists() || !fd.canRead()) {
                     logger.log(Level.WARNING,
-                               "The PBS accounting log dir could not be found or is not readable. No history information will be provided.");
+                            "The PBS accounting log dir could not be found or is not readable. No history information will be provided.");
                     this.checkPBSHist = false;
                 }
             } // if - PBS
@@ -1209,18 +1229,18 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 String SGE_ARCH = "UNKOWN";
                 try {
                     BufferedReader br = new BufferedReader(new InputStreamReader(Runtime.getRuntime()
-                                                                                        .exec(location + "/util/arch")
-                                                                                        .getInputStream()));
+                            .exec(location + "/util/arch").getInputStream()));
                     String line = br.readLine();
-                    if (line == null)
+                    if (line == null) {
                         break;
+                    }
                     SGE_ARCH = line.trim();
                 } catch (Throwable t) {
                     SGE_ARCH = "UNKOWN";
                 }
 
                 addToMsg(methodName, "SGE_ARCH = " + SGE_ARCH);
-                if (SGE_ARCH.equals("UNKNOWN") || SGE_ARCH.length() == 0) {
+                if (SGE_ARCH.equals("UNKNOWN") || (SGE_ARCH.length() == 0)) {
                     addToMsg(methodName, " Ignoring SGE !");
                     jmi.remove();
                     continue;
@@ -1261,8 +1281,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         } // end of for (Enum...
 
         // Determine the job managers' versions
-        for (Iterator<Map.Entry<String, String>> vci = versionCmd.entrySet().iterator(); vci.hasNext();) {
-            Map.Entry<String, String> vcEntry = vci.next();
+        for (Entry<String, String> vcEntry : versionCmd.entrySet()) {
             String vcKey = vcEntry.getKey();
             String vcVal = vcEntry.getValue();
 
@@ -1273,23 +1292,23 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             String mgrVersion = null;
             if (buff1 != null) {
                 while ((vLine = buff1.readLine()) != null) {
-                    if (vLine.startsWith(VO_Utils.okString))
+                    if (vLine.startsWith(VO_Utils.okString)) {
                         versionOk = true;
-                    else if (mgrVersion == null) // we only need the first line
-                                                 // from the command's output
+                    } else if (mgrVersion == null) {
+                        // from the command's output
                         mgrVersion = vLine;
+                    }
                 }
             }
 
-            if (versionOk && mgrVersion != null) {
+            if (versionOk && (mgrVersion != null)) {
                 jobMgrVersions.put(vcKey, mgrVersion);
             } else {
                 countNewError(VO_Utils.INTERNAL_JMGR_VERSION);
                 MLLogEvent<String, Integer> mlle = new MLLogEvent<String, Integer>();
                 mlle.logParameters.put("Error Code", Integer.valueOf(VO_Utils.INTERNAL_JMGR_VERSION));
-                logger.log(crtLevel[VO_Utils.INTERNAL_JMGR_VERSION], "Could not determine version for job manager: " + vcKey, new Object[] {
-                    mlle
-                });
+                logger.log(crtLevel[VO_Utils.INTERNAL_JMGR_VERSION], "Could not determine version for job manager: "
+                        + vcKey, new Object[] { mlle });
                 jobMgrVersions.put(vcKey, vcKey);
             }
         }
@@ -1301,9 +1320,10 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
      * filename will be null if the file does not exist or cannot be read.
      */
     protected void initCondorHistoryFiles() {
-        if (this.condorHistFiles == null && !this.condorUseGlobal && this.nCondorServers == 0) {
+        if ((this.condorHistFiles == null) && !this.condorUseGlobal && (this.nCondorServers == 0)) {
             /* we only need the local history file */
-            String localCmd = this.condorLocation + "/bin/condor_config_val LOCAL_DIR 2>&1 && echo " + VO_Utils.okString;
+            String localCmd = this.condorLocation + "/bin/condor_config_val LOCAL_DIR 2>&1 && echo "
+                    + VO_Utils.okString;
             logger.info("Using command to determine Condor local dir: " + localCmd);
             try {
                 BufferedReader buff1 = procOutput(localCmd, CMD_DELAY);
@@ -1331,7 +1351,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 fd = new File((condorHistFiles.get(i)));
                 if (!fd.exists() || !fd.canRead()) {
                     logger.log(Level.WARNING,
-                               "The Condor history file cannot be found or cannot be read. No history information will be provided.");
+                            "The Condor history file cannot be found or cannot be read. No history information will be provided.");
                     this.haveCondorHistFiles = false;
                 } else {
                     logger.info("Using Condor history file: " + condorHistFiles.get(i));
@@ -1378,9 +1398,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 Integer errCode = Integer.valueOf(this.errorCode);
                 mlle.logParameters.put("Error Code", errCode);
                 mlle.logParameters.put("Error Message", VO_Utils.voJobsErrCodes.get(errCode));
-                logger.log(crtLevel[this.errorCode], "Error seting module environment", new Object[] {
-                        mlle, exc
-                });
+                logger.log(crtLevel[this.errorCode], "Error seting module environment", new Object[] { mlle, exc });
                 throw exc;
             }
 
@@ -1434,8 +1452,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
              * once in a while, try the plain condor_q command even if it
              * previously failed
              */
-            if (execCnt % 50 == 0)
+            if ((execCnt % 50) == 0) {
                 this.failedCondorQ = false;
+            }
 
             // -- Start the Job Queue Manager collectors ---
             Vector<Result> fjResults = new Vector<Result>();
@@ -1444,8 +1463,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
 
             boolean bret = collectJobMgrData(fjResults);
             if (bret == false) {
-                if (this.errorCode == 0)
+                if (this.errorCode == 0) {
                     this.errorCode = VO_Utils.INTERNAL_FIRST_EXEC;
+                }
 
                 // String firstErrMsg =
                 // (String)VO_Utils.voJobsErrCodes.get(Integer.valueOf(this.errorCode));
@@ -1453,8 +1473,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 // mlle.logParameters.put("Error Code",
                 // Integer.valueOf(this.errorCode));
                 // mlle.logParameters.put("Error Message", firstErrMsg);
-                if (logger.isLoggable(Level.FINE))
+                if (logger.isLoggable(Level.FINE)) {
                     logger.fine("Failed getting jobs status, retrying after 20s...");
+                }
                 try {
                     Thread.sleep(20000);
                 } catch (Throwable t) {
@@ -1475,23 +1496,24 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
              */
 
             if (bret == true) {
-                if (finishedJobsResults)
+                if (finishedJobsResults) {
                     v.addAll(fjResults);
+                }
                 // put these at the end of the vector because they may contain
                 // eResults
                 // for finished jobs
                 v.addAll(getResults());
 
             } else {
-                throw new Exception("Second attempt to get jobs status from any job manager failed, no results were sent");
+                throw new Exception(
+                        "Second attempt to get jobs status from any job manager failed, no results were sent");
             }
 
             /* see if we had jobs with decreasing CPU/run time */
             if (mlleInconsist.logParameters.size() > 0) {
                 mlleInconsist.logParameters.put("Error Code", Integer.valueOf(VO_Utils.INTERNAL_JMGR_INCONSIST));
-                logger.log(crtLevel[VO_Utils.INTERNAL_JMGR_INCONSIST], "Got jobs with decreasing CPU or run time", new Object[] {
-                    mlleInconsist
-                });
+                logger.log(crtLevel[VO_Utils.INTERNAL_JMGR_INCONSIST], "Got jobs with decreasing CPU or run time",
+                        new Object[] { mlleInconsist });
             }
 
             /* create eResults for the VOs that do not have any more jobs */
@@ -1499,14 +1521,16 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             while (it.hasNext()) {
                 String crtVo = it.next();
                 if (!activeVos.contains(crtVo)) {
-                    if (logger.isLoggable(Level.FINE))
+                    if (logger.isLoggable(Level.FINE)) {
                         logger.log(Level.FINE, "VO " + crtVo + " has no more jobs");
+                    }
                     // this VO has no more jobs, delete the jobs cluster
                     eResult erv = new eResult();
-                    if (mixedCaseVOs)
+                    if (mixedCaseVOs) {
                         erv.ClusterName = crtVo + "_JOBS_OSG";
-                    else
+                    } else {
                         erv.ClusterName = crtVo.toUpperCase() + "_JOBS_OSG";
+                    }
                     erv.NodeName = null;
                     erv.FarmName = farmName;
                     erv.param = null;
@@ -1551,8 +1575,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                             for (int j = 0; j < vr.size(); j++) {
                                 haveResult = true;
                                 Result cr = vr.get(j);
-                                if (cr.NodeName.equals(oldRes.NodeName))
+                                if (cr.NodeName.equals(oldRes.NodeName)) {
                                     voFound = true;
+                                }
                             }
 
                         }
@@ -1613,8 +1638,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 if (logger.isLoggable(Level.FINE)) {
                     logger.fine("Sending eResults for " + er.NodeName);
                 }
-                if (!mixedCaseVOs)
+                if (!mixedCaseVOs) {
                     er.NodeName = er.NodeName.toUpperCase();
+                }
                 v.add(er);
                 v.add(new eResult(er.FarmName, er.ClusterName + "_Rates", er.NodeName, ModuleName, er.param_name));
 
@@ -1632,8 +1658,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             // logger.info("Module configuration changed...");
         }
 
-        if (excMailMsg != null && isInternalModule && this.execCnt % SAMPLE_PER_ERRORS == 0)
+        if ((excMailMsg != null) && isInternalModule && ((this.execCnt % SAMPLE_PER_ERRORS) == 0)) {
             sendExceptionEmail(excMailMsg);
+        }
 
         prevDoProcessTime = crtDoProcessTime;
         crtDoProcessTime = NTPDate.currentTimeMillis();
@@ -1655,7 +1682,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
 
         /* add the results for the job manager versions */
         // TODO change this
-        if (execCnt % 10 == 0) {
+        if ((execCnt % 10) == 0) {
             eResult jmvRes = new eResult();
             jmvRes.ClusterName = Node.getClusterName() + "_Totals";
             jmvRes.NodeName = "Status";
@@ -1663,8 +1690,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             jmvRes.time = cTime;
             jmvRes.FarmName = farmName;
 
-            for (Iterator<Map.Entry<String, String>> jmvi = jobMgrVersions.entrySet().iterator(); jmvi.hasNext();) {
-                Map.Entry<String, String> jmvEntry = jmvi.next();
+            for (Entry<String, String> jmvEntry : jobMgrVersions.entrySet()) {
                 String jmvKey = jmvEntry.getKey();
                 String jmvVal = jmvEntry.getValue();
                 jmvRes.addSet(jmvKey + "_Version", jmvVal);
@@ -1679,8 +1705,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         // -- save the latest results (to be included in the status email) ----
         lastResults = new StringBuilder();
         int maxResults = maxResultsEmailed;
-        if (maxResults > v.size())
+        if (maxResults > v.size()) {
             maxResults = v.size();
+        }
         for (int i = 0; i < maxResults; i++) {
             try {
                 lastResults.append("\n[" + i + "]" + v.elementAt(i));
@@ -1689,24 +1716,27 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             }
         }
 
-        if (isInternalModule)
+        if (isInternalModule) {
             sendStatusEmail();
+        }
 
         // -- update the error logging counters ----
         refreshErrorCount();
 
         StringBuilder logExit = new StringBuilder(8192);
 
-        logExit.append("Execution time for doProcess() [").append(execCnt).append("]: ").append(totalProcessingTime).append(" ms");
+        logExit.append("Execution time for doProcess() [").append(execCnt).append("]: ").append(totalProcessingTime)
+                .append(" ms");
         execCnt = (execCnt + 1) % 2000000;
-        logExit.append("; Number of results returned: ").append(v.size()).append("; Error code: ").append(this.errorCode);
+        logExit.append("; Number of results returned: ").append(v.size()).append("; Error code: ")
+                .append(this.errorCode);
         logger.info(logExit.toString());
         if (!hmNoVoUsers.isEmpty()) {
             final StringBuilder sbUserWarn = new StringBuilder(1024);
             sbUserWarn.append("\n\n----------------------------------------------------");
-            sbUserWarn.append("\nUsers which cannot be mapped to any VOs( count = ").append(hmNoVoUsers.size()).append("):\n");
-            for (Iterator<Map.Entry<String, String>> it = hmNoVoUsers.entrySet().iterator(); it.hasNext();) {
-                Map.Entry<String, String> entry = it.next();
+            sbUserWarn.append("\nUsers which cannot be mapped to any VOs( count = ").append(hmNoVoUsers.size())
+                    .append("):\n");
+            for (Entry<String, String> entry : hmNoVoUsers.entrySet()) {
                 sbUserWarn.append("\n").append(entry.getKey()).append(" --> ").append(entry.getValue());
             }
             sbUserWarn.append("\n\n----------------------------------------------------");
@@ -1728,28 +1758,32 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
          * if decreasing cpu time / run time was reported, don't make a Result
          * for the job
          */
-        if (jobInfo.error_status_cpu == JobInfoExt.JOB_SUSPENDED || jobInfo.error_status_run == JobInfoExt.JOB_SUSPENDED) {
+        if ((jobInfo.error_status_cpu == JobInfoExt.JOB_SUSPENDED)
+                || (jobInfo.error_status_run == JobInfoExt.JOB_SUSPENDED)) {
             return null;
         }
 
         Result r = new Result();
 
-        if (mixedCaseVOs)
+        if (mixedCaseVOs) {
             r.ClusterName = jobInfo.VO + "_JOBS_OSG";
-        else
+        } else {
             r.ClusterName = jobInfo.VO.toUpperCase() + "_JOBS_OSG";
+        }
 
         r.NodeName = jobInfo.id;
         r.FarmName = farmName;
         r.time = NTPDate.currentTimeMillis();
-        if (jobInfo.error_status_cpu == JobInfoExt.JOB_MODIFIED && this.adjustJobStatistics)
+        if ((jobInfo.error_status_cpu == JobInfoExt.JOB_MODIFIED) && this.adjustJobStatistics) {
             r.addSet("CPUTime", jobInfo.cpu_time + jobInfo.cpu_time_old);
-        else
+        } else {
             r.addSet("CPUTime", jobInfo.cpu_time);
+        }
 
         // r.addSet("RunTime", jobInfo.run_time/(double)MIN_SEC);
-        if (jobInfo.jobManager.equals(VO_Utils.CONDOR) || (jobInfo.jobManager.equals(VO_Utils.PBS) && pbsQuickMode == false)) {
-            if (jobInfo.error_status_run == JobInfoExt.JOB_MODIFIED && this.adjustJobStatistics) {
+        if (jobInfo.jobManager.equals(VO_Utils.CONDOR)
+                || (jobInfo.jobManager.equals(VO_Utils.PBS) && (pbsQuickMode == false))) {
+            if ((jobInfo.error_status_run == JobInfoExt.JOB_MODIFIED) && this.adjustJobStatistics) {
                 r.addSet("RunTime", (double) (jobInfo.run_time + jobInfo.run_time_old) / (double) MIN_SEC);
                 r.addSet("WallClockTime", jobInfo.run_time + jobInfo.run_time_old);
             } else {
@@ -1759,10 +1793,12 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         }
 
         if (jobInfo.jobManager.equals(VO_Utils.CONDOR) || jobInfo.jobManager.equals(VO_Utils.LSF)
-                || jobInfo.jobManager.equals(VO_Utils.SGE))
+                || jobInfo.jobManager.equals(VO_Utils.SGE)) {
             r.addSet("Size", jobInfo.size);
-        if (jobInfo.jobManager.equals(VO_Utils.CONDOR))
+        }
+        if (jobInfo.jobManager.equals(VO_Utils.CONDOR)) {
             r.addSet("DiskUsage", jobInfo.disk_usage);
+        }
         r.Module = ModuleName;
 
         return r;
@@ -1776,7 +1812,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
 
         /* get the rate statistics for jobs */
         Vector<Object> jd = getJobDiff();
-        if (jd != null && jd.size() > 0) {
+        if ((jd != null) && (jd.size() > 0)) {
             v.addAll(jd);
         }
 
@@ -1818,7 +1854,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         if (lastRun != 0) {
             vd = getVODiff();
         }
-        if (vd != null && vd.size() > 0) {
+        if ((vd != null) && (vd.size() > 0)) {
             v.addAll(vd);
         }
 
@@ -1827,7 +1863,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             if (lastRun != 0) {
                 ud = getUserDiff();
             }
-            if (ud != null && ud.size() > 0) {
+            if ((ud != null) && (ud.size() > 0)) {
                 v.addAll(ud);
             }
         }
@@ -1895,8 +1931,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 r.ClusterName = Node.getClusterName();
                 r.NodeName = VO;
                 r.FarmName = farmName;
-                if (!mixedCaseVOs)
+                if (!mixedCaseVOs) {
                     r.NodeName = r.NodeName.toUpperCase();
+                }
                 r.time = cTime;
                 r.Module = ModuleName;
 
@@ -1905,8 +1942,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 r1.ClusterName = Node.getClusterName() + "_Rates";
                 r1.NodeName = VO;
                 r1.FarmName = farmName;
-                if (!mixedCaseVOs)
+                if (!mixedCaseVOs) {
                     r1.NodeName = r1.NodeName.toUpperCase();
+                }
                 r1.time = cTime;
                 r1.Module = ModuleName;
 
@@ -1970,22 +2008,25 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                     r1.addSet("VO_Status", 1);
                 }
                 retV.add(r);
-                if (execCnt > 0)
+                if (execCnt > 0) {
                     retV.add(r1);
+                }
 
                 /* if the VO has just became active send a 0 rates result */
-                if (((activeVos.contains(VO) && !oldActiveVos.contains(VO)) || (!activeVos.contains(VO) && oldActiveVos.contains(VO)))
-                        && execCnt > 0) {
+                if (((activeVos.contains(VO) && !oldActiveVos.contains(VO)) || (!activeVos.contains(VO) && oldActiveVos
+                        .contains(VO))) && (execCnt > 0)) {
                     Result rZero = new Result();
                     rZero.ClusterName = Node.getClusterName() + "_Rates";
                     rZero.NodeName = VO;
                     rZero.FarmName = farmName;
-                    if (!mixedCaseVOs)
+                    if (!mixedCaseVOs) {
                         rZero.NodeName = rZero.NodeName.toUpperCase();
-                    if (activeVos.contains(VO))
+                    }
+                    if (activeVos.contains(VO)) {
                         rZero.time = prevDoProcessTime;
-                    else
+                    } else {
                         rZero.time = cTime + 1000;
+                    }
                     rZero.Module = ModuleName;
                     Result rDummy = new Result();
                     fillSummaryResults(new VOSummaryExt(), new VOSummaryExt(), rDummy, rZero, 1);
@@ -2052,20 +2093,22 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                     r1.addSet("User_Status", 1);
                 }
                 retV.add(r);
-                if (execCnt > 0)
+                if (execCnt > 0) {
                     retV.add(r1);
+                }
 
                 /* if the user has just became active send a 0 rates result */
-                if (((activeUsers.contains(userName) && !oldActiveUsers.contains(userName)) || (!activeUsers.contains(userName) && oldActiveUsers.contains(userName)))
-                        && execCnt > 0) {
+                if (((activeUsers.contains(userName) && !oldActiveUsers.contains(userName)) || (!activeUsers
+                        .contains(userName) && oldActiveUsers.contains(userName))) && (execCnt > 0)) {
                     Result rZero = new Result();
                     rZero.ClusterName = Node.getClusterName() + "_Users_Rates";
                     rZero.NodeName = userName;
                     rZero.FarmName = farmName;
-                    if (activeUsers.contains(userName))
+                    if (activeUsers.contains(userName)) {
                         rZero.time = prevDoProcessTime;
-                    else
+                    } else {
                         rZero.time = cTime + 1000;
+                    }
                     rZero.Module = ModuleName;
                     Result rDummy = new Result();
                     fillSummaryResults(new VOSummaryExt(), new VOSummaryExt(), rDummy, rZero, 1);
@@ -2094,14 +2137,18 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
      */
     private void fillSummaryResults(VOSummaryExt cVOSummary, VOSummaryExt oVOSummary, Result r, Result r1, double dTime) {
         boolean haveCondor = false, havePBS = false, haveSGE = false, haveLSF = false;
-        if (jobMgr.get("CONDOR") != null)
+        if (jobMgr.get("CONDOR") != null) {
             haveCondor = true;
-        if (jobMgr.get("PBS") != null)
+        }
+        if (jobMgr.get("PBS") != null) {
             havePBS = true;
-        if (jobMgr.get("SGE") != null)
+        }
+        if (jobMgr.get("SGE") != null) {
             haveSGE = true;
-        if (jobMgr.get("LSF") != null)
+        }
+        if (jobMgr.get("LSF") != null) {
             haveLSF = true;
+        }
 
         r.addSet("RunningJobs", cVOSummary.runningjobs);
         r.addSet("IdleJobs", cVOSummary.idlejobs);
@@ -2145,20 +2192,23 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 // double oCondorCPU = ocpu_usr.doubleValue() +
                 // ocpu_sys.doubleValue();
                 double cpuUsrDiff = cpu_usr.doubleValue() - ocpu_usr.doubleValue();
-                if (cpuUsrDiff < 0)
+                if (cpuUsrDiff < 0) {
                     cpuUsrDiff = 0;
+                }
                 double cpuSysDiff = cpu_sys.doubleValue() - ocpu_sys.doubleValue();
-                if (cpuUsrDiff < 0)
+                if (cpuUsrDiff < 0) {
                     cpuSysDiff = 0;
+                }
                 r.addSet("CPUUsrCondorHist", cpuUsrDiff);
                 r.addSet("CPUSysCondorHist", cpuSysDiff);
             } catch (Exception e) {
-                if (dTime > 1.0)
+                if (dTime > 1.0) {
                     /*
                      * if dTime = 1 we only called this function to send some 0
                      * rates for inactive VOs
                      */
                     logger.log(Level.FINE, "Got exception when getting Condor parameters", e);
+                }
             }
 
             // r.addSet("FinishedJobsCondor", cVOSummary.CondorFinishedJobs);
@@ -2189,7 +2239,8 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         }
 
         /* parameters reported by Condor, PBS and LSF */
-        if ((haveLSF || haveCondor || havePBS) && (!haveSGE && !(havePBS && !checkPBSHist) && !(haveCondor && !haveCondorHistFiles))) {
+        if ((haveLSF || haveCondor || havePBS)
+                && (!haveSGE && !(havePBS && !checkPBSHist) && !(haveCondor && !haveCondorHistFiles))) {
             r.addSet("FinishedJobs_Success", cVOSummary.successJobs);
             r1.addSet("FinishedJobs_Success_R", cVOSummary.successJobs / dTime);
             r.addSet("FinishedJobs_Error", cVOSummary.errorJobs);
@@ -2240,18 +2291,20 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
 
             /* check if the job belongs now to a different VO */
             boolean bVOChanged = false;
-            if (oldJobInfo.VO != null && crtJobInfo != null) {
-                if (!oldJobInfo.VO.equals(crtJobInfo.VO))
+            if ((oldJobInfo.VO != null) && (crtJobInfo != null)) {
+                if (!oldJobInfo.VO.equals(crtJobInfo.VO)) {
                     bVOChanged = true;
+                }
             }
 
-            if (crtJobInfo == null || bVOChanged) {// finished job or VO changed
+            if ((crtJobInfo == null) || bVOChanged) {// finished job or VO changed
                 /* remove the job from the old VO cluster */
                 eResult r = new eResult();
-                if (mixedCaseVOs)
+                if (mixedCaseVOs) {
                     r.ClusterName = oldJobInfo.VO + "_JOBS_OSG";
-                else
+                } else {
                     r.ClusterName = oldJobInfo.VO.toUpperCase() + "_JOBS_OSG";
+                }
 
                 r.FarmName = farmName;
                 r.NodeName = oldJobInfo.id;
@@ -2331,45 +2384,50 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
 
         // --- query the queue managers and get the output of the commands
         // ------
-        if (logger.isLoggable(Level.FINE))
+        if (logger.isLoggable(Level.FINE)) {
             logger.fine("Start querying the job managers...");
+        }
         this.haveSuccessfulCommand = false;
 
         // perform 2 steps: in the first one we execute the usual commands and
         // in the second one we execute condor_q -format if condor_q failed
         for (int step = 1; step <= 2; step++) {
-            for (Iterator<Map.Entry<String, String>> jmi = jobMgr.entrySet().iterator(); jmi.hasNext();) {
+            for (Entry<String, String> entry : jobMgr.entrySet()) {
                 String jobManager = null;
                 BufferedReader[] cmdStreams = null;
                 BufferedReader[] cmdStreams2 = null;
 
-                Map.Entry<String, String> entry = jmi.next();
                 jobManager = entry.getKey();
                 StringBuilder erOutput = null, erOutput2 = null;
 
                 long t1 = System.currentTimeMillis();
                 try {
                     if (step == 1) {
-                        if (jobManager.equals(VO_Utils.CONDOR2) || jobManager.equals(VO_Utils.PBS2))
+                        if (jobManager.equals(VO_Utils.CONDOR2) || jobManager.equals(VO_Utils.PBS2)) {
                             // the additional commands will be processed
                             // together with the base ones
                             continue;
-                        if (jobManager.equals(VO_Utils.CONDOR3) && condorFormatOption != ON
-                                && !(condorFormatOption == ALTERNATIVE && failedCondorQ))
+                        }
+                        if (jobManager.equals(VO_Utils.CONDOR3) && (condorFormatOption != ON)
+                                && !((condorFormatOption == ALTERNATIVE) && failedCondorQ)) {
                             continue;
+                        }
                         if (jobManager.equals(VO_Utils.CONDOR)
-                                && (condorFormatOption == ON || (condorFormatOption == ALTERNATIVE && failedCondorQ)))
+                                && ((condorFormatOption == ON) || ((condorFormatOption == ALTERNATIVE) && failedCondorQ))) {
                             continue;
+                        }
                     } else {
-                        if (!jobManager.equals(VO_Utils.CONDOR3))
+                        if (!jobManager.equals(VO_Utils.CONDOR3)) {
                             continue;
+                        }
                     }
 
                     int nCommandsToCheck;
-                    if (jobManager.startsWith(VO_Utils.CONDOR))
+                    if (jobManager.startsWith(VO_Utils.CONDOR)) {
                         nCommandsToCheck = nCondorCommands;
-                    else
+                    } else {
                         nCommandsToCheck = 1;
+                    }
 
                     String cmd1 = entry.getValue();
 
@@ -2385,17 +2443,17 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                         String nullErrMsg = VO_Utils.voJobsErrCodes.get(ierr);
                         nullErrMsg += "; Ignoring output from " + jobManager;
                         erOutput = VO_Utils.getFirstLines(cmdStreams[1], 20);
-                        if (erOutput != null)
+                        if (erOutput != null) {
                             nullErrMsg += ("\n Error output of the command: \n" + erOutput);
+                        }
 
                         MLLogEvent<String, Object> mlle = new MLLogEvent<String, Object>();
                         mlle.logParameters.put("Error Code", Integer.valueOf(this.errorCode));
                         mlle.logParameters.put("Error Message", nullErrMsg);
-                        logger.log(crtLevel[this.errorCode], nullErrMsg, new Object[] {
-                            mlle
-                        });
-                        if (isInternalModule && crtLevel[this.errorCode].equals(Level.WARNING))
+                        logger.log(crtLevel[this.errorCode], nullErrMsg, new Object[] { mlle });
+                        if (isInternalModule && crtLevel[this.errorCode].equals(Level.WARNING)) {
                             sendExceptionEmail("Job manager error:\n" + nullErrMsg);
+                        }
                         continue;
                     }
 
@@ -2406,14 +2464,17 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                         // get information from the condor_q command
                         try {
                             if (jobManager.equals(VO_Utils.CONDOR)) {
-                                condorInfo = condorAcc.parseCondorQLongOutput(cmdStreams[0], nCommandsToCheck, checkExitStatus);
-                                if (condorAcc.canUseCondorQ == false)
+                                condorInfo = condorAcc.parseCondorQLongOutput(cmdStreams[0], nCommandsToCheck,
+                                        checkExitStatus);
+                                if (condorAcc.canUseCondorQ == false) {
                                     this.condorQuickMode = true;
+                                }
                             } else {
                                 if (logger.isLoggable(Level.FINE)) {
                                     logger.fine("Using condor_q with -format...");
                                 }
-                                condorInfo = condorAcc.parseCondorQFormatOutput(cmdStreams[0], nCommandsToCheck, checkExitStatus);
+                                condorInfo = condorAcc.parseCondorQFormatOutput(cmdStreams[0], nCommandsToCheck,
+                                        checkExitStatus);
                             }
 
                             if (jobManager.equals(VO_Utils.CONDOR) && !condorQuickMode) {
@@ -2432,13 +2493,13 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                                     countNewError(this.errorCode);
                                     String errMsg = "No output was obtained from the plain condor_q command";
                                     erOutput2 = VO_Utils.getFirstLines(cmdStreams2[1], 20);
-                                    if (erOutput2 != null)
+                                    if (erOutput2 != null) {
                                         errMsg += ("\n Error output from command: " + erOutput2);
+                                    }
                                     logger.log(crtLevel[this.errorCode], errMsg);
                                 } else {
                                     Hashtable<String, JobInfoExt> q2Info = condorAcc.parseCondorQOutput(cmdStreams2[0],
-                                                                                                        nCommandsToCheck,
-                                                                                                        checkExitStatus);
+                                            nCommandsToCheck, checkExitStatus);
 
                                     /*
                                      * replace the run time obtained from
@@ -2469,7 +2530,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                                 logger.fine("Cmd execution time: " + (t2 - t1) + "; max delay: " + CMD_DELAY);
                             }
 
-                            if (t2 - t1 >= CMD_DELAY) {
+                            if ((t2 - t1) >= CMD_DELAY) {
                                 this.errorCode = VO_Utils.INTERNAL_JMGR_TIMEOUT;
                             } else if (t instanceof ModuleException) {
                                 this.errorCode = ((ModuleException) t).getCode();
@@ -2482,23 +2543,26 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                              * if both condor_q and condor_q -format fail, don't
                              * keep -format as the default option
                              */
-                            if (step == 2 && jobManager.equals(VO_Utils.CONDOR3) && condorFormatOption == ALTERNATIVE && failedCondorQ)
+                            if ((step == 2) && jobManager.equals(VO_Utils.CONDOR3)
+                                    && (condorFormatOption == ALTERNATIVE) && failedCondorQ) {
                                 failedCondorQ = false;
+                            }
 
-                            if (step == 1 && condorFormatOption == ALTERNATIVE) {
+                            if ((step == 1) && (condorFormatOption == ALTERNATIVE)) {
                                 MLLogEvent<String, Object> mlle = new MLLogEvent<String, Object>();
                                 Integer iErrCode = Integer.valueOf(this.errorCode);
                                 String sErrMsg = t.getMessage(); // (String)VO_Utils.voJobsErrCodes.get(iErrCode);
                                 erOutput = VO_Utils.getFirstLines(cmdStreams[1], 20);
-                                if (erOutput != null)
+                                if (erOutput != null) {
                                     sErrMsg += ("\n Error output from the command: \n" + erOutput);
+                                }
                                 mlle.logParameters.put("Error Code", iErrCode);
                                 mlle.logParameters.put("CmdExecTime", Long.valueOf(t2 - t1));
-                                if (sErrMsg != null)
+                                if (sErrMsg != null) {
                                     mlle.logParameters.put("Error message", new String(sErrMsg));
-                                logger.log(crtLevel[this.errorCode], "Exception parsing the output of condor_q", new Object[] {
-                                        mlle, t
-                                });
+                                }
+                                logger.log(crtLevel[this.errorCode], "Exception parsing the output of condor_q",
+                                        new Object[] { mlle, t });
                                 logger.log(crtLevel[this.errorCode], sErrMsg);
                                 logger.log(crtLevel[this.errorCode], "Trying condor_q -format....");
                                 condorqFirstError = true;
@@ -2511,12 +2575,13 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
 
                         // get information from the Condor history file
                         if (this.checkCondorHist) {
-                            if (!this.haveCondorHistFiles && execCnt % 10 == 0) {
+                            if (!this.haveCondorHistFiles && ((execCnt % 10) == 0)) {
                                 logger.info("Attempting to find Condor history files...");
                                 this.initCondorHistoryFiles();
 
-                                if (this.haveCondorHistFiles)
+                                if (this.haveCondorHistFiles) {
                                     condorAcc = new VO_CondorAccounting(condorHistFiles);
+                                }
                             }
                             if (this.haveCondorHistFiles) {
                                 Vector<Hashtable<String, Object>> histInfo = condorAcc.getHistoryInfo();
@@ -2551,13 +2616,13 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                                 this.errorCode = ierr.intValue();
                                 String errMsg = "No output was obtained from the qstat -a command";
                                 erOutput2 = VO_Utils.getFirstLines(cmdStreams2[1], 20);
-                                if (erOutput2 != null)
+                                if (erOutput2 != null) {
                                     errMsg += ("\n Error output from command: \n" + erOutput2);
+                                }
                                 logger.log(Level.WARNING, errMsg);
                             } else {
-                                Hashtable<String, JobInfoExt> q2Info = VO_PBSAccounting.parseQstatAOutput(cmdStreams2[0],
-                                                                                                          nCommandsToCheck,
-                                                                                                          checkExitStatus);
+                                Hashtable<String, JobInfoExt> q2Info = VO_PBSAccounting.parseQstatAOutput(
+                                        cmdStreams2[0], nCommandsToCheck, checkExitStatus);
 
                                 /* use the run time obtained from qstat -a */
                                 logger.log(Level.FINE, "Getting additional info from qstat -a...");
@@ -2570,8 +2635,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                                             if (q2Key.startsWith(jInfo.id)) {
 
                                                 JobInfoExt j2Info = q2Info.get(q2Key);
-                                                if (j2Info != null)
+                                                if (j2Info != null) {
                                                     jInfo.run_time = j2Info.run_time;
+                                                }
                                             } // if
                                         } // while
 
@@ -2626,7 +2692,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                         logger.fine("Cmd execution time: " + (t2 - t1) + "; max delay: " + CMD_DELAY);
                     }
 
-                    if (t2 - t1 >= CMD_DELAY) {
+                    if ((t2 - t1) >= CMD_DELAY) {
                         this.errorCode = VO_Utils.INTERNAL_JMGR_TIMEOUT;
                         // logger.log(Level.WARNING,
                         // "Got timeout when executing command...");
@@ -2648,8 +2714,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                     if (cmdStreams != null) {
                         erOutput = VO_Utils.getFirstLines(cmdStreams[1], 20);
                         if (erOutput != null) {
-                            if (sErrMsg == null)
+                            if (sErrMsg == null) {
                                 sErrMsg = new String();
+                            }
                             sErrMsg += ("\n Error output from job manager command: \n" + erOutput);
                         }
                     }
@@ -2657,26 +2724,28 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                     if (cmdStreams2 != null) {
                         erOutput2 = VO_Utils.getFirstLines(cmdStreams2[1], 20);
                         if (erOutput2 != null) {
-                            if (sErrMsg == null)
+                            if (sErrMsg == null) {
                                 sErrMsg = new String();
+                            }
                             sErrMsg += ("\n Error output from job manager additional command: \n" + erOutput2);
                         }
                     }
                     mlle.logParameters.put("Error Code", iErrCode);
-                    if (sErrMsg != null)
+                    if (sErrMsg != null) {
                         mlle.logParameters.put("Error message", new String(sErrMsg));
+                    }
                     mlle.logParameters.put("CmdExecTime", Long.valueOf(t2 - t1));
 
-                    logger.log(crtLevel[this.errorCode], "Error in collectJobMgrData: ", new Object[] {
-                            mlle, t
-                    });
+                    logger.log(crtLevel[this.errorCode], "Error in collectJobMgrData: ", new Object[] { mlle, t });
                     logger.log(crtLevel[this.errorCode], sErrMsg, sw.toString());
 
                     // this.cmdErrCnt = (this.cmdErrCnt + 1) % ERR_CNT_PERIOD;
-                    if (isInternalModule && crtLevel[this.errorCode].equals(Level.WARNING))
-                        sendExceptionEmail("Job manager error:\n" + sErrMsg + "\n Exception stacktrace: \n" + sw.toString());
-                    // throw new Exception("collectJobMgrData - " +
-                    // sw.toString()) ;
+                    if (isInternalModule && crtLevel[this.errorCode].equals(Level.WARNING)) {
+                        sendExceptionEmail("Job manager error:\n" + sErrMsg + "\n Exception stacktrace: \n"
+                                + sw.toString());
+                        // throw new Exception("collectJobMgrData - " +
+                        // sw.toString()) ;
+                    }
                 } // end try/catch
             } // end of for (jobMgr...)
 
@@ -2691,17 +2760,22 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             break;
         } // end of for (step...)
 
-        if (!this.haveSuccessfulCommand)
+        if (!this.haveSuccessfulCommand) {
             return false;
+        }
 
-        if (condorInfo != null)
+        if (condorInfo != null) {
             processJobsInfo(condorInfo, VO_Utils.CONDOR);
-        if (pbsInfo != null)
+        }
+        if (pbsInfo != null) {
             processJobsInfo(pbsInfo, VO_Utils.PBS);
-        if (sgeInfo != null)
+        }
+        if (sgeInfo != null) {
             processJobsInfo(sgeInfo, VO_Utils.SGE);
-        if (lsfInfo != null)
+        }
+        if (lsfInfo != null) {
             processJobsInfo(lsfInfo, VO_Utils.LSF);
+        }
 
         return true;
     } // end method
@@ -2735,11 +2809,12 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                     hmNoVoUsers.put(jobInfo.user, jobInfo.id + " @ [ " + now + " / " + new Date(now) + " ]");
                 }
 
-                if (this.noVoStatistics)
+                if (this.noVoStatistics) {
                     jobInfo.VO = noVoName;
-                else
+                } else {
                     // skip this job
                     continue;
+                }
             }
 
             Integer dupId = htJobIds.get(jobInfo.id);
@@ -2752,30 +2827,34 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
              * the queue manager may report a non-zero job size even if the job
              * has not started yet
              */
-            if (jobInfo.cpu_time == 0 && jobInfo.run_time == 0)
+            if ((jobInfo.cpu_time == 0) && (jobInfo.run_time == 0)) {
                 jobInfo.size = 0;
+            }
 
             /*
              * if we have a new job we must update the number of submitted jobs
              */
             boolean haveNewJob = false;
-            if (jobsInfo.get(jobInfo.id) == null)
+            if (jobsInfo.get(jobInfo.id) == null) {
                 haveNewJob = true;
+            }
 
             boolean haveOldFinishedJob = false;
             if (!jobInfo.status.equals("F")) {
                 currentJobsInfo.put(jobInfo.id, jobInfo);
             } else {
                 currentFinishedJobsInfo.put(jobInfo.id, jobInfo);
-                if (finishedJobsInfo.containsKey(jobInfo.id))
+                if (finishedJobsInfo.containsKey(jobInfo.id)) {
                     haveOldFinishedJob = true;
+                }
             }
 
             if (!haveOldFinishedJob) {
                 try {
                     updateJobSummaries(jobInfo, haveNewJob);
-                    if (logger.isLoggable(Level.FINE))
+                    if (logger.isLoggable(Level.FINE)) {
                         logger.fine("Got " + jobManager + " job: " + jobInfo);
+                    }
                 } catch (Exception ex) {
                     logger.log(Level.WARNING, "updateJobSummaries() got exception: ", ex);
                     inconsistentJobInfo = true;
@@ -2792,12 +2871,12 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             mlle.logParameters.put("Error Code", iErrCode);
             mlle.logParameters.put("Duplicate IDs", vDuplicateIds);
 
-            if (sErrMsg != null)
+            if (sErrMsg != null) {
                 mlle.logParameters.put("Error message", sErrMsg);
+            }
 
-            logger.log(crtLevel[this.errorCode], "Found duplicate job ID(s): " + vDuplicateIds.toString(), new Object[] {
-                mlle
-            });
+            logger.log(crtLevel[this.errorCode], "Found duplicate job ID(s): " + vDuplicateIds.toString(),
+                    new Object[] { mlle });
         }
 
     }
@@ -2809,10 +2888,12 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
      *            Job information that will be added to the VO statistics.
      */
     private void updateJobSummaries(JobInfoExt jobInfo, boolean haveNewJob) throws Exception {
-        if (!this.activeVos.contains(jobInfo.VO))
+        if (!this.activeVos.contains(jobInfo.VO)) {
             this.activeVos.add(jobInfo.VO);
-        if (!this.activeUsers.contains(jobInfo.user))
+        }
+        if (!this.activeUsers.contains(jobInfo.user)) {
             this.activeUsers.add(jobInfo.user);
+        }
 
         /* update the statistics that count the number of jobs */
         VOSummaryExt vos = currentVOjobsInfo.get(jobInfo.VO);
@@ -2840,10 +2921,12 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             jobInfo.error_status_run = oldInfo.error_status_run;
             jobInfo.cpu_time_old = oldInfo.cpu_time_old;
             jobInfo.run_time_old = oldInfo.run_time_old;
-            if (jobInfo.status.equals("F") && jobInfo.cpu_time < oldInfo.cpu_time)
+            if (jobInfo.status.equals("F") && (jobInfo.cpu_time < oldInfo.cpu_time)) {
                 jobInfo.cpu_time = oldInfo.cpu_time;
-            if (jobInfo.status.equals("F") && jobInfo.run_time < oldInfo.run_time)
+            }
+            if (jobInfo.status.equals("F") && (jobInfo.run_time < oldInfo.run_time)) {
                 jobInfo.run_time = oldInfo.run_time;
+            }
 
             long crt_run_time = jobInfo.run_time;
             long crt_cpu_time = jobInfo.cpu_time;
@@ -2881,12 +2964,13 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             if (haveInconsistency) {
                 this.errorCode = VO_Utils.INTERNAL_JMGR_INCONSIST;
                 countNewError(this.errorCode);
-                String errMsg = "*** Decreasing run time or CPU time for job " + jobInfo.id + "( cpu time: " + jobInfo.cpu_time
-                        + ", old cpu time: " + oldInfo.cpu_time + " ; run time:  " + jobInfo.run_time + ", old run time: "
-                        + oldInfo.run_time;
+                String errMsg = "*** Decreasing run time or CPU time for job " + jobInfo.id + "( cpu time: "
+                        + jobInfo.cpu_time + ", old cpu time: " + oldInfo.cpu_time + " ; run time:  "
+                        + jobInfo.run_time + ", old run time: " + oldInfo.run_time;
 
-                if (mlleInconsist.logParameters.size() < 20)
+                if (mlleInconsist.logParameters.size() < 20) {
                     mlleInconsist.logParameters.put(new String(jobInfo.id), errMsg);
+                }
                 logger.log(crtLevel[this.errorCode], errMsg);
             }
 
@@ -2900,13 +2984,15 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 } else {
                     crt_run_time = jobInfo.run_time_old;
                     countNewError(VO_Utils.INTERNAL_JMGR_INCONSIST);
-                    if (oldInfo.run_time == 0 && jobInfo.run_time > 0) {
-                        String errMsg = "*** Inconsistent run time for suspended job " + jobInfo.id + "( cpu time: " + jobInfo.cpu_time
-                                + ", old cpu time: " + oldInfo.cpu_time + ", cpu time before suspension: " + jobInfo.cpu_time_old
-                                + " ; run time:  " + jobInfo.run_time + ", old run time: " + oldInfo.run_time + " )";
+                    if ((oldInfo.run_time == 0) && (jobInfo.run_time > 0)) {
+                        String errMsg = "*** Inconsistent run time for suspended job " + jobInfo.id + "( cpu time: "
+                                + jobInfo.cpu_time + ", old cpu time: " + oldInfo.cpu_time
+                                + ", cpu time before suspension: " + jobInfo.cpu_time_old + " ; run time:  "
+                                + jobInfo.run_time + ", old run time: " + oldInfo.run_time + " )";
 
-                        if (mlleInconsist.logParameters.size() < 20)
+                        if (mlleInconsist.logParameters.size() < 20) {
                             mlleInconsist.logParameters.put(new String(jobInfo.id), errMsg);
+                        }
                         logger.log(crtLevel[VO_Utils.INTERNAL_JMGR_INCONSIST], errMsg);
                     }
                 }
@@ -2926,13 +3012,15 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 } else {
                     crt_cpu_time = jobInfo.cpu_time_old;
                     countNewError(VO_Utils.INTERNAL_JMGR_INCONSIST);
-                    if (oldInfo.cpu_time == 0 && jobInfo.cpu_time > 0) {
-                        String errMsg = "*** Inconsistent CPU time for suspended job " + jobInfo.id + "( cpu time: " + jobInfo.cpu_time
-                                + ", old cpu time: " + oldInfo.cpu_time + ", cpu time before suspension:  " + jobInfo.cpu_time_old
-                                + "; run time:  " + jobInfo.run_time + ", old run time: " + oldInfo.run_time + " )";
+                    if ((oldInfo.cpu_time == 0) && (jobInfo.cpu_time > 0)) {
+                        String errMsg = "*** Inconsistent CPU time for suspended job " + jobInfo.id + "( cpu time: "
+                                + jobInfo.cpu_time + ", old cpu time: " + oldInfo.cpu_time
+                                + ", cpu time before suspension:  " + jobInfo.cpu_time_old + "; run time:  "
+                                + jobInfo.run_time + ", old run time: " + oldInfo.run_time + " )";
 
-                        if (mlleInconsist.logParameters.size() < 20)
+                        if (mlleInconsist.logParameters.size() < 20) {
                             mlleInconsist.logParameters.put(jobInfo.id, errMsg);
+                        }
                         logger.log(crtLevel[VO_Utils.INTERNAL_JMGR_INCONSIST], errMsg);
                     }
                 }
@@ -3010,10 +3098,11 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                     vos.submittedJobs++;
                 }
 
-                if (jobInfo.exit_status == 0)
+                if (jobInfo.exit_status == 0) {
                     vos.successJobs++;
-                else
+                } else {
                     vos.errorJobs++;
+                }
             }
         } else {
             vos.unknownjobs += 1;
@@ -3039,8 +3128,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         Vector<Result> vret = new Vector<Result>();
 
         if (jobVo == null) {
-            if (logger.isLoggable(Level.FINE))
+            if (logger.isLoggable(Level.FINE)) {
                 logger.fine("[monOsgVoJobs] no VO for user " + user);
+            }
             jobVo = noVoName;
         }
 
@@ -3051,7 +3141,8 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         String procId = lProc.toString();
         String scheddName = (String) hJobInfo.get("sScheddName");
         if (scheddName == null) {
-            logger.log(Level.WARNING, "Unable to determine the machine's hostname, ignoring Condor history record for job" + clusterId);
+            logger.log(Level.WARNING,
+                    "Unable to determine the machine's hostname, ignoring Condor history record for job" + clusterId);
             return vret;
         }
         String cJobId = "CONDOR_" + clusterId + "." + procId + "_" + scheddName;
@@ -3078,28 +3169,29 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             /* update other parameters in the VO and user summaries */
             Double remoteCpuUsr = (Double) hJobInfo.get("dRemoteUserCpu");
             Double localCpuUsr = (Double) hJobInfo.get("dLocalUserCpu");
-            if (remoteCpuUsr != null && localCpuUsr != null) {
+            if ((remoteCpuUsr != null) && (localCpuUsr != null)) {
                 jobCpuUsr = remoteCpuUsr.doubleValue() + localCpuUsr.doubleValue();
             }
 
             Double remoteCpuSys = (Double) hJobInfo.get("dRemoteSysCpu");
             Double localCpuSys = (Double) hJobInfo.get("dLocalSysCpu");
-            if (remoteCpuSys != null && localCpuSys != null) {
+            if ((remoteCpuSys != null) && (localCpuSys != null)) {
                 jobCpuSys = remoteCpuSys.doubleValue() + localCpuSys.doubleValue();
             }
 
             Double runtime = (Double) hJobInfo.get("dRemoteWallClockTime");
-            if (runtime != null)
+            if (runtime != null) {
                 jobRuntime = runtime.doubleValue();
+            }
 
             if (oldInfo != null) {
-                if (jobCpuUsr + jobCpuSys >= oldInfo.cpu_time) {
+                if ((jobCpuUsr + jobCpuSys) >= oldInfo.cpu_time) {
                     oldInfo.cpu_time = (long) (jobCpuUsr + jobCpuSys);
-                    vos.cpu_time_t += (jobCpuUsr + jobCpuSys - oldInfo.cpu_time);
-                    userSumm.cpu_time_t += (jobCpuUsr + jobCpuSys - oldInfo.cpu_time);
-                } else if (jobCpuUsr + jobCpuSys + 0.0001 < oldInfo.cpu_time) {
-                    logger.info("CPU time for Condor job " + clusterId + " has inconsistent values: " + (jobCpuUsr + jobCpuSys)
-                            + " in the history log and " + oldInfo.cpu_time + " in condor_q");
+                    vos.cpu_time_t += ((jobCpuUsr + jobCpuSys) - oldInfo.cpu_time);
+                    userSumm.cpu_time_t += ((jobCpuUsr + jobCpuSys) - oldInfo.cpu_time);
+                } else if ((jobCpuUsr + jobCpuSys + 0.0001) < oldInfo.cpu_time) {
+                    logger.info("CPU time for Condor job " + clusterId + " has inconsistent values: "
+                            + (jobCpuUsr + jobCpuSys) + " in the history log and " + oldInfo.cpu_time + " in condor_q");
                 }
                 if (jobRuntime > oldInfo.run_time) {
                     oldInfo.run_time = (long) jobRuntime;
@@ -3141,17 +3233,19 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             Long exitStatus = (Long) hJobInfo.get("lExitStatus");
             Boolean exitBySignal = (Boolean) hJobInfo.get("bExitBySignal");
             String remReason = (String) hJobInfo.get("sRemoveReason");
-            if (exitCode != null || exitStatus != null) {
+            if ((exitCode != null) || (exitStatus != null)) {
                 boolean exitSig = false;
                 boolean removed = false;
-                if (exitBySignal != null)
+                if (exitBySignal != null) {
                     exitSig = exitBySignal.booleanValue();
-                if (remReason != null)
+                }
+                if (remReason != null) {
                     removed = true;
+                }
 
                 /* try to obtain the ExitCode value which is more accurate */
                 if (exitCode != null) {
-                    if (exitCode.longValue() != 0 || exitSig || removed) {
+                    if ((exitCode.longValue() != 0) || exitSig || removed) {
                         vos.errorJobs++;
                         userSumm.errorJobs++;
                     } else {
@@ -3160,7 +3254,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                     }
                 } else {
                     /* if we don't have ExitCode, use ExitStatus */
-                    if (exitStatus.longValue() != 0 || exitSig || removed) {
+                    if ((exitStatus.longValue() != 0) || exitSig || removed) {
                         vos.errorJobs++;
                         userSumm.errorJobs++;
                     } else {
@@ -3177,10 +3271,11 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 Result exitRes = (Result) jobInfoToResult(oldInfo);
                 /* make sure this result will be before the eResult for the job */
                 exitRes.time = exitRes.time - 10;
-                if (exitCode != null)
+                if (exitCode != null) {
                     exitRes.addSet("ExitStatus", exitCode.doubleValue());
-                else if (exitStatus != null)
+                } else if (exitStatus != null) {
                     exitRes.addSet("ExitStatus", exitStatus.doubleValue());
+                }
                 vret.add(exitRes);
             }
 
@@ -3193,49 +3288,53 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             Long startTime = (Long) hJobInfo.get("lJobStartDate");
             Long complTime = (Long) hJobInfo.get("lCompletionDate");
             Long crtStatus = (Long) hJobInfo.get("lEnteredCurrentStatus");
-            if (startTime != null & complTime != null && crtStatus != null) {
+            if (((startTime != null) & (complTime != null)) && (crtStatus != null)) {
                 long st = startTime.longValue();
                 long ct = complTime.longValue();
-                if (ct == 0)
+                if (ct == 0) {
                     ct = crtStatus.longValue();
-                // logger.info("### Dates: " + new Date(st) + " " + new
-                // Date(ct));
+                    // logger.info("### Dates: " + new Date(st) + " " + new
+                    // Date(ct));
+                }
 
                 for (int i = 0; i < 4; i++) {
                     vres[i] = new Result();
                     vres[i].ClusterName = "osgVO_JOBS_Finished";
-                    if (mixedCaseVOs)
+                    if (mixedCaseVOs) {
                         vres[i].NodeName = jobVo;
-                    else
+                    } else {
                         vres[i].NodeName = jobVo.toUpperCase();
+                    }
 
                     vres[i].Module = ModuleName;
                     vres[i].FarmName = farmName;
                     switch (i) {
-                        case 0:
-                            vres[i].time = st - 1;
-                            break;
-                        case 1:
-                            vres[i].time = st;
-                            break;
-                        case 2:
-                            vres[i].time = ct;
-                            break;
-                        case 3:
-                            vres[i].time = ct + 1;
+                    case 0:
+                        vres[i].time = st - 1;
+                        break;
+                    case 1:
+                        vres[i].time = st;
+                        break;
+                    case 2:
+                        vres[i].time = ct;
+                        break;
+                    case 3:
+                        vres[i].time = ct + 1;
                     }
 
                     // logger.info("### cpu: " + jobCpuUsr + " " + jobCpuSys +
                     // " ct: " + ct + " st" + st);
                     double avgCpu = ((jobCpuUsr + jobCpuSys) * 1000) / (ct - st);
-                    if (i == 0 || i == 3)
+                    if ((i == 0) || (i == 3)) {
                         vres[i].addSet(cJobId, 0);
-                    else
+                    } else {
                         vres[i].addSet(cJobId, avgCpu);
+                    }
                     vret.add(vres[i]);
                     logger.finest("Sending result for finished job: " + vres[i]);
-                    if (i == 3)
+                    if (i == 3) {
                         crtFinResults.add(vres[i]);
+                    }
                 }
             } else {
                 logger.fine("Could not get job start/completion time for Condor job" + cJobId);
@@ -3249,11 +3348,10 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             Integer iErrCode = Integer.valueOf(this.errorCode);
             String sErrMsg = VO_Utils.voJobsErrCodes.get(iErrCode);
             mlle.logParameters.put("Error Code", iErrCode);
-            if (sErrMsg != null)
+            if (sErrMsg != null) {
                 mlle.logParameters.put("Error message", new String(sErrMsg));
-            logger.log(Level.WARNING, "updateVoSummaryCondor got exception ", new Object[] {
-                    mlle, t
-            });
+            }
+            logger.log(Level.WARNING, "updateVoSummaryCondor got exception ", new Object[] { mlle, t });
         }
         return vret;
     }
@@ -3272,7 +3370,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
 
         Double remoteCpuUsr = (Double) hJobInfo.get("dRemoteUserCpu");
         Double localCpuUsr = (Double) hJobInfo.get("dLocalUserCpu");
-        if (remoteCpuUsr != null && localCpuUsr != null) {
+        if ((remoteCpuUsr != null) && (localCpuUsr != null)) {
             jobCpuUsr = remoteCpuUsr.doubleValue() + localCpuUsr.doubleValue();
             Double oCpuUsr = vos.paramsCondorH.get("CondorCpuUsr_t");
             vos.paramsCondorH.put("CondorCpuUsr_t", Double.valueOf(jobCpuUsr + oCpuUsr.doubleValue()));
@@ -3280,7 +3378,7 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
 
         Double remoteCpuSys = (Double) hJobInfo.get("dRemoteSysCpu");
         Double localCpuSys = (Double) hJobInfo.get("dLocalSysCpu");
-        if (remoteCpuSys != null && localCpuSys != null) {
+        if ((remoteCpuSys != null) && (localCpuSys != null)) {
             jobCpuSys = remoteCpuSys.doubleValue() + localCpuSys.doubleValue();
             Double oCpuSys = vos.paramsCondorH.get("CondorCpuSys_t");
             vos.paramsCondorH.put("CondorCpuSys_t", Double.valueOf(jobCpuSys + oCpuSys.doubleValue()));
@@ -3288,24 +3386,31 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
 
         Double bytesSent = (Double) hJobInfo.get("dBytesSent");
         Double oldBytesSent = vos.paramsCondorH.get("CondorBytesSent_t");
-        if (bytesSent != null && oldBytesSent != null) {
-            vos.paramsCondorH.put("CondorBytesSent_t", Double.valueOf(bytesSent.doubleValue() + oldBytesSent.doubleValue()));
+        if ((bytesSent != null) && (oldBytesSent != null)) {
+            vos.paramsCondorH.put("CondorBytesSent_t",
+                    Double.valueOf(bytesSent.doubleValue() + oldBytesSent.doubleValue()));
         }
 
         Double bytesRecvd = (Double) hJobInfo.get("dBytesRecvd");
         Double oldBytesRecvd = vos.paramsCondorH.get("CondorBytesRecvd_t");
-        if (bytesRecvd != null && oldBytesRecvd != null)
-            vos.paramsCondorH.put("CondorBytesRecvd_t", Double.valueOf(bytesRecvd.doubleValue() + oldBytesRecvd.doubleValue()));
+        if ((bytesRecvd != null) && (oldBytesRecvd != null)) {
+            vos.paramsCondorH.put("CondorBytesRecvd_t",
+                    Double.valueOf(bytesRecvd.doubleValue() + oldBytesRecvd.doubleValue()));
+        }
 
         Double fileReadBytes = (Double) hJobInfo.get("dFileReadBytes");
         Double oldFileReadBytes = vos.paramsCondorH.get("CondorFileReadBytes_t");
-        if (fileReadBytes != null && oldFileReadBytes != null)
-            vos.paramsCondorH.put("CondorFileReadBytes_t", Double.valueOf(fileReadBytes.doubleValue() + oldFileReadBytes.doubleValue()));
+        if ((fileReadBytes != null) && (oldFileReadBytes != null)) {
+            vos.paramsCondorH.put("CondorFileReadBytes_t",
+                    Double.valueOf(fileReadBytes.doubleValue() + oldFileReadBytes.doubleValue()));
+        }
 
         Double fileWriteBytes = (Double) hJobInfo.get("dFileWriteBytes");
         Double oldFileWriteBytes = vos.paramsCondorH.get("CondorFileWriteBytes_t");
-        if (fileWriteBytes != null && oldFileWriteBytes != null)
-            vos.paramsCondorH.put("CondorFileWriteBytes_t", Double.valueOf(fileWriteBytes.doubleValue() + oldFileWriteBytes.doubleValue()));
+        if ((fileWriteBytes != null) && (oldFileWriteBytes != null)) {
+            vos.paramsCondorH.put("CondorFileWriteBytes_t",
+                    Double.valueOf(fileWriteBytes.doubleValue() + oldFileWriteBytes.doubleValue()));
+        }
     }
 
     /**
@@ -3337,8 +3442,9 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
         JobInfoExt oldInfo = null;
         while (jikeys.hasMoreElements()) {
             String jikey = jikeys.nextElement();
-            if (jobId.startsWith(jikey))
+            if (jobId.startsWith(jikey)) {
                 oldInfo = jobsInfo.get(jikey);
+            }
         }
 
         try {
@@ -3363,15 +3469,15 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             if (oldInfo != null) {
                 if (jobCpu > oldInfo.cpu_time) {
                     // vos.cpu_time_t += (jobCpu - oldInfo.cpu_time);
-                } else if (jobCpu + 0.0001 < oldInfo.cpu_time) {
-                    logger.info("CPU time for PBS job " + jobId + " has inconsistent values: " + jobCpu + " in the accounting log and "
-                            + oldInfo.cpu_time + " in qstat");
+                } else if ((jobCpu + 0.0001) < oldInfo.cpu_time) {
+                    logger.info("CPU time for PBS job " + jobId + " has inconsistent values: " + jobCpu
+                            + " in the accounting log and " + oldInfo.cpu_time + " in qstat");
                 }
                 if (jobRuntime > oldInfo.run_time) {
                     // vos.run_time_t += (jobRuntime - oldInfo.run_time);
                 } else {
-                    logger.info("Runtime for PBS job " + jobId + " has inconsistent values: " + jobRuntime + " in the accounting log and "
-                            + oldInfo.run_time + " in qstat");
+                    logger.info("Runtime for PBS job " + jobId + " has inconsistent values: " + jobRuntime
+                            + " in the accounting log and " + oldInfo.run_time + " in qstat");
                 }
             } else {
                 /*
@@ -3406,14 +3512,15 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             if (exitRes != null) {
                 /* make sure this result will be before the eResult for the job */
                 exitRes.time = exitRes.time - 10;
-                if (exitCode != null)
+                if (exitCode != null) {
                     exitRes.addSet("ExitStatus", exitCode.doubleValue());
+                }
                 vret.add(exitRes);
             }
 
             Long startTime = (Long) hJobInfo.get("lStartDate");
             Long complTime = (Long) hJobInfo.get("lCompletionDate");
-            if (startTime != null && complTime != null) {
+            if ((startTime != null) && (complTime != null)) {
                 long st = startTime.longValue();
                 long ct = complTime.longValue();
 
@@ -3421,38 +3528,42 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
                 for (int i = 0; i < 4; i++) {
                     vres[i] = new Result();
                     vres[i].ClusterName = "osgVO_JOBS_Finished";
-                    if (mixedCaseVOs)
+                    if (mixedCaseVOs) {
                         vres[i].NodeName = jobVo;
-                    else
+                    } else {
                         vres[i].NodeName = jobVo.toUpperCase();
+                    }
 
                     vres[i].Module = ModuleName;
                     vres[i].FarmName = farmName;
                     switch (i) {
-                        case 0:
-                            vres[i].time = st - 1;
-                            break;
-                        case 1:
-                            vres[i].time = st;
-                            break;
-                        case 2:
-                            vres[i].time = ct;
-                            break;
-                        case 3:
-                            vres[i].time = ct + 1;
+                    case 0:
+                        vres[i].time = st - 1;
+                        break;
+                    case 1:
+                        vres[i].time = st;
+                        break;
+                    case 2:
+                        vres[i].time = ct;
+                        break;
+                    case 3:
+                        vres[i].time = ct + 1;
                     }
 
                     double avgCpu = 0.0;
-                    if (ct - st > 0)
+                    if ((ct - st) > 0) {
                         avgCpu = (jobCpu * 1000) / (ct - st);
+                    }
 
-                    if (i == 0 || i == 3)
+                    if ((i == 0) || (i == 3)) {
                         vres[i].addSet(jobId, 0);
-                    else
+                    } else {
                         vres[i].addSet(jobId, avgCpu);
+                    }
                     vret.add(vres[i]);
-                    if (i == 3)
+                    if (i == 3) {
                         crtFinResults.add(vres[i]);
+                    }
                     logger.finest("Sending result for finished job: " + vres[i]);
                     // logger.finest("### jobCpu " + jobCpu + " ct " + ct +
                     // " st " + st);
@@ -3470,11 +3581,10 @@ public class monOsgVoJobs extends monVoModules implements MonitoringModule {
             Integer iErrCode = Integer.valueOf(this.errorCode);
             String sErrMsg = VO_Utils.voJobsErrCodes.get(iErrCode);
             mlle.logParameters.put("Error Code", iErrCode);
-            if (sErrMsg != null)
+            if (sErrMsg != null) {
                 mlle.logParameters.put("Error message", new String(sErrMsg));
-            logger.log(Level.WARNING, "updateVoSummaryPBS got exception ", new Object[] {
-                    mlle, t
-            });
+            }
+            logger.log(Level.WARNING, "updateVoSummaryPBS got exception ", new Object[] { mlle, t });
         }
         return vret;
     }

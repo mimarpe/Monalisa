@@ -501,7 +501,7 @@ public class Histogram implements Serializable {
 				int value = me.getKey().intValue();
 				int count = me.getValue().intValue();
 				
-				System.err.println("value : "+value+", count : "+count);
+//				System.err.println("value : "+value+", count : "+count);
 				
 				sum += value * count;
 			}

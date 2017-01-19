@@ -42,7 +42,7 @@ public class Force10Agent extends TopoAgent<MLComputerHostConfig, HostRawPort> {
     private static final long serialVersionUID = -9066933336159877461L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(Force10Agent.class.getName());
+    private static final Logger logger = Logger.getLogger(Force10Agent.class.getName());
 
     Force10Host host;
 
@@ -50,6 +50,7 @@ public class Force10Agent extends TopoAgent<MLComputerHostConfig, HostRawPort> {
 
     private final class ComputerHostStateFetcher implements Runnable {
 
+        @Override
         public void run() {
             try {
                 publishAttrs();
@@ -74,6 +75,7 @@ public class Force10Agent extends TopoAgent<MLComputerHostConfig, HostRawPort> {
 
     private static final class ResultMonitorTask implements Runnable {
 
+        @Override
         public void run() {
             //not used yet
         }
@@ -81,6 +83,7 @@ public class Force10Agent extends TopoAgent<MLComputerHostConfig, HostRawPort> {
 
     private final class ConfigPublisherTask implements Runnable {
 
+        @Override
         public void run() {
             try {
                 if (shouldReloadConfig.compareAndSet(true, false)) {
@@ -152,14 +155,14 @@ public class Force10Agent extends TopoAgent<MLComputerHostConfig, HostRawPort> {
     }
 
     private static final MLComputerHostConfig getLocalConfig() {
-        MLComputerHostConfig config =null;
+        MLComputerHostConfig config = null;
         try {
             config = new MLComputerHostConfig(AppConfig.getProperty("FORCE10_CONFIG_FILE"));
         } catch (Throwable t) {
             logger.log(Level.WARNING, "Unable to load Force10Agent agent. Cause:", t);
             throw new InstantiationError("Unable to load Force10Agent agent");
         }
-        
+
         return config;
     }
 
@@ -193,6 +196,7 @@ public class Force10Agent extends TopoAgent<MLComputerHostConfig, HostRawPort> {
     /**
      * @param r  
      */
+    @Override
     public void addNewResult(Object r) {
         // TODO Auto-generated method stub
 
@@ -226,8 +230,8 @@ public class Force10Agent extends TopoAgent<MLComputerHostConfig, HostRawPort> {
             } else if (o instanceof Result[]) {// notify an Array of
                 // ResultS...but not a Vector
                 Result[] rez = (Result[]) o;
-                for (int i = 0; i < rez.length; i++) {
-                    notifResults.add(rez[i]);
+                for (Result element : rez) {
+                    notifResults.add(element);
                 }
             } else {// notify anything else
                 notifResults.add(o);
@@ -278,9 +282,11 @@ public class Force10Agent extends TopoAgent<MLComputerHostConfig, HostRawPort> {
         new Force10Agent("Test", "Test", "Test").doWork();
     }
 
+    @Override
     public void notifyConfig(RawConfigInterface<HostRawPort> oldConfig, RawConfigInterface<HostRawPort> newConfig) {
         StringBuilder sb = new StringBuilder();
-        sb.append("\n\n old config \n\n ").append(oldConfig).append("\n\n new config \n\n").append(newConfig).append("\n\n");
+        sb.append("\n\n old config \n\n ").append(oldConfig).append("\n\n new config \n\n").append(newConfig)
+                .append("\n\n");
         shouldReloadConfig.compareAndSet(false, true);
         logger.log(Level.INFO, sb.toString());
     }

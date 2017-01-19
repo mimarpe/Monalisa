@@ -31,270 +31,279 @@ import net.jini.core.lookup.ServiceItem;
  * @version Sep 7, 2005 8:53:46 PM
  */
 public class AuthZManager extends Thread {
-	protected static final int DEFAULT_AUTHZ_PORT = 6066;
+    protected static final int DEFAULT_AUTHZ_PORT = 6066;
 
-	/** Logger used by this class */
-	private static final transient Logger logger = Logger.getLogger("lia.util.security.AuthZManager");
+    /** Logger used by this class */
+    private static final Logger logger = Logger.getLogger(AuthZManager.class.getName());
 
-	// authorization server used for authorize clients
-	private String authzServer;
-	private static long CHECK_CLIENTS_INTERVAL;
-	static {
-		try {
-			CHECK_CLIENTS_INTERVAL = Long.parseLong(AppConfig.getProperty("lia.Monitor.Agents.OpticalPath.comm.AuthZManager.check_interval"));
-		} catch (Throwable t) {
-			CHECK_CLIENTS_INTERVAL = 60 * 60 * 1000;// 1h
-		}
-	}
+    // authorization server used for authorize clients
+    private String authzServer;
+    private static long CHECK_CLIENTS_INTERVAL;
+    static {
+        try {
+            CHECK_CLIENTS_INTERVAL = Long.parseLong(AppConfig
+                    .getProperty("lia.Monitor.Agents.OpticalPath.comm.AuthZManager.check_interval"));
+        } catch (Throwable t) {
+            CHECK_CLIENTS_INTERVAL = 60 * 60 * 1000;// 1h
+        }
+    }
 
-	private Set clients;
-	private volatile boolean hasToRun = true;
+    private final Set clients;
+    private volatile boolean hasToRun = true;
 
-	private Object _lock = new Object();
+    private final Object _lock = new Object();
 
-	public final  static String OSADMINS_GROUP= "OSAdmins";
-	public final  static String OSDAEMONS_GROUP= "OSDaemons";
-	private final String[] authorization_groups; 
-	public AuthZManager(String[] authorization_groups) {
-		this.authorization_groups=authorization_groups;
-		setAuthzServiceAddress();
-		//this.authzServer = as;
-		// create the clients map
-		clients = Collections.synchronizedSet(new HashSet());
-	}
-	/**
-	 * Default authorization group is set to {@link #AuthZManager.OSADMINS_GROUP}
-	 * @param authorization_groups
-	 */
-	public AuthZManager() {
-		this.authorization_groups=new String[] {"OSADMINS_GROUP"};
-		
-		setAuthzServiceAddress();
-		//this.authzServer = as;
-		// create the clients map
-		clients = Collections.synchronizedSet(new HashSet());
-	}
+    public final static String OSADMINS_GROUP = "OSAdmins";
+    public final static String OSDAEMONS_GROUP = "OSDaemons";
+    private final String[] authorization_groups;
 
-	public void run() {
-		while (hasToRun) {
+    public AuthZManager(String[] authorization_groups) {
+        this.authorization_groups = authorization_groups;
+        setAuthzServiceAddress();
+        //this.authzServer = as;
+        // create the clients map
+        clients = Collections.synchronizedSet(new HashSet());
+    }
 
-			synchronized (_lock) {
-				if (authzServer == null)
-					setAuthzServiceAddress();
-			}
+    /**
+     * Default authorization group is set to {@link #AuthZManager.OSADMINS_GROUP}
+     * @param authorization_groups
+     */
+    public AuthZManager() {
+        this.authorization_groups = new String[] { "OSADMINS_GROUP" };
 
-			System.out.println("AuthZManager started: Using AuthzService:" + authzServer);
-			synchronized (clients) {
-				if (clients.size() > 0) {
-					for (Iterator iter = clients.iterator(); iter.hasNext();) {
-						SSLSocket client = (SSLSocket) iter.next();
-						if (client.isClosed()) {
-							iter.remove();
-							continue;
-						}
-						//  isAuthorized ?
-						if (! checkClient(client) ){
-							try {
-								// close the connection since the client is not
-								// authorized anymore to use this service
-								client.close();
-							} catch (IOException e) {
-								logger.log(Level.WARNING, "Closing client connection failed", e);
-							}
-							iter.remove();
-						}
-					}// for clients..
-				}// if size>0
-			}// synch
-			try {
-				Thread.sleep(CHECK_CLIENTS_INTERVAL);
-			} catch (InterruptedException e) {
-				hasToRun = false;
-				if (logger.isLoggable(Level.WARNING)) {
-					logger.log(Level.WARNING, "AuthZ Thread interrupted");
-				}
-			}
-		}// while
+        setAuthzServiceAddress();
+        //this.authzServer = as;
+        // create the clients map
+        clients = Collections.synchronizedSet(new HashSet());
+    }
 
-	}
+    @Override
+    public void run() {
+        while (hasToRun) {
 
-	public void finish() {
-		this.hasToRun = false;
-	}
+            synchronized (_lock) {
+                if (authzServer == null) {
+                    setAuthzServiceAddress();
+                }
+            }
 
-	private Socket connectToAuthzService(final String host) throws IOException {
-		Socket sock = null;
-		// Create a socket with a timeout			
-		String[] aHost = host.split(":");
-		InetAddress addr = InetAddress.getByName(aHost[0]);
-		int port = DEFAULT_AUTHZ_PORT;
-		// if port supplied
-		if (aHost.length == 2)
-			try {
-				int p = Integer.parseInt(aHost[1]);
-				port = p < 0 ? DEFAULT_AUTHZ_PORT : p;
-			} catch (NumberFormatException nfe) {
-				port = DEFAULT_AUTHZ_PORT;
-			}
+            System.out.println("AuthZManager started: Using AuthzService:" + authzServer);
+            synchronized (clients) {
+                if (clients.size() > 0) {
+                    for (Iterator iter = clients.iterator(); iter.hasNext();) {
+                        SSLSocket client = (SSLSocket) iter.next();
+                        if (client.isClosed()) {
+                            iter.remove();
+                            continue;
+                        }
+                        //  isAuthorized ?
+                        if (!checkClient(client)) {
+                            try {
+                                // close the connection since the client is not
+                                // authorized anymore to use this service
+                                client.close();
+                            } catch (IOException e) {
+                                logger.log(Level.WARNING, "Closing client connection failed", e);
+                            }
+                            iter.remove();
+                        }
+                    }// for clients..
+                }// if size>0
+            }// synch
+            try {
+                Thread.sleep(CHECK_CLIENTS_INTERVAL);
+            } catch (InterruptedException e) {
+                hasToRun = false;
+                if (logger.isLoggable(Level.WARNING)) {
+                    logger.log(Level.WARNING, "AuthZ Thread interrupted");
+                }
+            }
+        }// while
 
-		SocketAddress sockaddr = new InetSocketAddress(addr, port);
-		// Create an unbound socket
-		sock = new Socket();
-		// This method will block no more than 60s.
-		// If the timeout occurs, SocketTimeoutException is
-		// thrown.
-		sock.connect(sockaddr, 60000);
-		return sock;
-	}
+    }
 
-	public boolean checkClient(final String subjectDN)  {
-		logger.log(Level.INFO, "AuthZManager checkClient:  "+ subjectDN);
-		
-		AuthZResponse response;
+    public void finish() {
+        this.hasToRun = false;
+    }
 
-		/*
-		 * this.issuerDN=certs[0].getIssuerDN().toString();
-		 * this.clientPublicKey=certs[0].getPublicKey();
-		 */
-		final String fAuthZServer;
-		try {
-		synchronized (_lock) {
-			if (authzServer == null) {
-				//search in LUS
-				setAuthzServiceAddress();
-				//failed to get authz service from LUS?
-				if (authzServer == null) {
-					//"No Authz Service available"
-					logger.log(Level.SEVERE, "No Authz Service available");
-					return false;
-				}
-			}
-			//not null
-			fAuthZServer = authzServer;
-		}
+    private Socket connectToAuthzService(final String host) throws IOException {
+        Socket sock = null;
+        // Create a socket with a timeout			
+        String[] aHost = host.split(":");
+        InetAddress addr = InetAddress.getByName(aHost[0]);
+        int port = DEFAULT_AUTHZ_PORT;
+        // if port supplied
+        if (aHost.length == 2) {
+            try {
+                int p = Integer.parseInt(aHost[1]);
+                port = p < 0 ? DEFAULT_AUTHZ_PORT : p;
+            } catch (NumberFormatException nfe) {
+                port = DEFAULT_AUTHZ_PORT;
+            }
+        }
 
-		Socket sock = null;
-		ObjectInputStream ois = null;
-		ObjectOutputStream oos = null;
+        SocketAddress sockaddr = new InetSocketAddress(addr, port);
+        // Create an unbound socket
+        sock = new Socket();
+        // This method will block no more than 60s.
+        // If the timeout occurs, SocketTimeoutException is
+        // thrown.
+        sock.connect(sockaddr, 60000);
+        return sock;
+    }
 
-		//try {		
-		// Create an unbound socket
-		sock = connectToAuthzService(fAuthZServer);
+    public boolean checkClient(final String subjectDN) {
+        logger.log(Level.INFO, "AuthZManager checkClient:  " + subjectDN);
 
-		oos = new ObjectOutputStream(sock.getOutputStream());
-		ois = new ObjectInputStream(sock.getInputStream());
-		
-		AuthZRequest request = new AuthZRequest(subjectDN, authorization_groups );
-		oos.writeObject(request);
-		oos.flush();
+        AuthZResponse response;
 
-		logger.fine("[AUTHZ] Request sent...Waiting response for: " + request);
+        /*
+         * this.issuerDN=certs[0].getIssuerDN().toString();
+         * this.clientPublicKey=certs[0].getPublicKey();
+         */
+        final String fAuthZServer;
+        try {
+            synchronized (_lock) {
+                if (authzServer == null) {
+                    //search in LUS
+                    setAuthzServiceAddress();
+                    //failed to get authz service from LUS?
+                    if (authzServer == null) {
+                        //"No Authz Service available"
+                        logger.log(Level.SEVERE, "No Authz Service available");
+                        return false;
+                    }
+                }
+                //not null
+                fAuthZServer = authzServer;
+            }
 
-		try {
-			response = (AuthZResponse) ois.readObject();
-		} catch (ClassNotFoundException e) {
-			if (logger.isLoggable(Level.WARNING)) {
-				logger.log(Level.FINEST, "Received an unknown authorization response (CCE)");
-			}
-			return false;
-		}
+            Socket sock = null;
+            ObjectInputStream ois = null;
+            ObjectOutputStream oos = null;
 
-		if (logger.isLoggable(Level.FINEST)) {
-			logger.log(Level.FINEST, "\n\nAuthz response for " +subjectDN+": "+ response + " IsAuthorized?"+response.isAuthorized());
-		}
-		return response.isAuthorized();
+            //try {		
+            // Create an unbound socket
+            sock = connectToAuthzService(fAuthZServer);
 
-		} catch (IOException e) {
-		 if (logger.isLoggable(Level.WARNING)) 
-				logger.log(Level.WARNING, "Failed to fetch the permissions for [" + subjectDN + "] from [" + authzServer	+ "]. Invalidating authorization service");
-			synchronized (_lock) {
-				authzServer = null;
-			}
-		 return false;
-		 }
-	}
+            oos = new ObjectOutputStream(sock.getOutputStream());
+            ois = new ObjectInputStream(sock.getInputStream());
 
-	/**
-	 * @param s -
-	 *            client connection
-	 * @return true is client is listed in authorization service as a trusted
-	 *         one, false if he is unknown in authorization server
-	 */
-	public boolean checkClient(final SSLSocket s) {
-		logger.log(Level.INFO, "AuthZManager checkClient:  "+ s);
-		// blocks until hanshaking completed
-		SSLSession session = s.getSession();
+            AuthZRequest request = new AuthZRequest(subjectDN, authorization_groups);
+            oos.writeObject(request);
+            oos.flush();
 
-		javax.security.cert.X509Certificate[] certs;
-		try {
-			certs = session.getPeerCertificateChain();
-		} catch (SSLPeerUnverifiedException e) {
-			e.printStackTrace();
-			return false;
-		}
-		if (logger.isLoggable(Level.FINE)) {
-			StringBuilder sb = new StringBuilder();
-			String hostname = session.getPeerHost();
-			sb.append("certificate chain from " + hostname + ": ChainLength" + certs.length);
-			for (int i = 0; i < certs.length; i++) {
-				sb.append("\n--------\nSubjectDN-X509Certificate[" + i + "]=" + certs[i].getSubjectDN());
-				sb.append("\nIssuerDN-X509Certificate[" + i + "]=" + certs[i].getIssuerDN());
-			}
-			logger.log(Level.FINE, sb.toString());
-		}
-		return checkClient(certs[0].getSubjectDN().toString());
+            logger.fine("[AUTHZ] Request sent...Waiting response for: " + request);
 
-	}
+            try {
+                response = (AuthZResponse) ois.readObject();
+            } catch (ClassNotFoundException e) {
+                if (logger.isLoggable(Level.WARNING)) {
+                    logger.log(Level.FINEST, "Received an unknown authorization response (CCE)");
+                }
+                return false;
+            }
 
-	/**
-	 * register this client connection for period checks of permissions
-	 * 
-	 * @param s
-	 */
+            if (logger.isLoggable(Level.FINEST)) {
+                logger.log(Level.FINEST, "\n\nAuthz response for " + subjectDN + ": " + response + " IsAuthorized?"
+                        + response.isAuthorized());
+            }
+            return response.isAuthorized();
 
-	public void registerClient(SSLSocket s) {
-		synchronized (clients) {
-			this.clients.add(s);
-		}
-	}
+        } catch (IOException e) {
+            if (logger.isLoggable(Level.WARNING)) {
+                logger.log(Level.WARNING, "Failed to fetch the permissions for [" + subjectDN + "] from ["
+                        + authzServer + "]. Invalidating authorization service");
+            }
+            synchronized (_lock) {
+                authzServer = null;
+            }
+            return false;
+        }
+    }
 
-	/**
-	 * update the authorization service from LUSs
-	 */
-	private void setAuthzServiceAddress() {
-		// get IPID service address
-		String tAuthzServer = null;
-		try {
-			MLLUSHelper.getInstance().forceUpdate();
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException ex) {
-			}
-			ServiceItem[] si = MLLUSHelper.getInstance().getAuthzServices();
-			if (si == null || si.length == 0 || si[0].attributeSets.length == 0) {
-				logger.log(Level.SEVERE, "No Authz service was found (yet)");
-				tAuthzServer = null;
-			} else {
-				GenericMLEntry gmle = (GenericMLEntry) si[0].attributeSets[0];
-				if (gmle.hash != null) {
-					tAuthzServer = (String) gmle.hash.get("hostname");
-					logger.log(Level.INFO, "Found an Authz service at " + gmle); 
-				}
-			}
+    /**
+     * @param s -
+     *            client connection
+     * @return true is client is listed in authorization service as a trusted
+     *         one, false if he is unknown in authorization server
+     */
+    public boolean checkClient(final SSLSocket s) {
+        logger.log(Level.INFO, "AuthZManager checkClient:  " + s);
+        // blocks until hanshaking completed
+        SSLSession session = s.getSession();
 
-		} catch (Exception ex) {
-			logger.log(Level.WARNING, "While updating authz services list, got:", ex);
-		}
+        javax.security.cert.X509Certificate[] certs;
+        try {
+            certs = session.getPeerCertificateChain();
+        } catch (SSLPeerUnverifiedException e) {
+            e.printStackTrace();
+            return false;
+        }
+        if (logger.isLoggable(Level.FINE)) {
+            StringBuilder sb = new StringBuilder();
+            String hostname = session.getPeerHost();
+            sb.append("certificate chain from " + hostname + ": ChainLength" + certs.length);
+            for (int i = 0; i < certs.length; i++) {
+                sb.append("\n--------\nSubjectDN-X509Certificate[" + i + "]=" + certs[i].getSubjectDN());
+                sb.append("\nIssuerDN-X509Certificate[" + i + "]=" + certs[i].getIssuerDN());
+            }
+            logger.log(Level.FINE, sb.toString());
+        }
+        return checkClient(certs[0].getSubjectDN().toString());
 
-		synchronized (_lock) {
-			authzServer = tAuthzServer;
-		}
-	}
+    }
 
-	//getters
-	public String getAuthzServer() {
-		synchronized (_lock) {
-			return this.authzServer;
-		}
-	}
+    /**
+     * register this client connection for period checks of permissions
+     * 
+     * @param s
+     */
+
+    public void registerClient(SSLSocket s) {
+        synchronized (clients) {
+            this.clients.add(s);
+        }
+    }
+
+    /**
+     * update the authorization service from LUSs
+     */
+    private void setAuthzServiceAddress() {
+        // get IPID service address
+        String tAuthzServer = null;
+        try {
+            MLLUSHelper.getInstance().forceUpdate();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {
+            }
+            ServiceItem[] si = MLLUSHelper.getInstance().getAuthzServices();
+            if ((si == null) || (si.length == 0) || (si[0].attributeSets.length == 0)) {
+                logger.log(Level.SEVERE, "No Authz service was found (yet)");
+                tAuthzServer = null;
+            } else {
+                GenericMLEntry gmle = (GenericMLEntry) si[0].attributeSets[0];
+                if (gmle.hash != null) {
+                    tAuthzServer = (String) gmle.hash.get("hostname");
+                    logger.log(Level.INFO, "Found an Authz service at " + gmle);
+                }
+            }
+
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "While updating authz services list, got:", ex);
+        }
+
+        synchronized (_lock) {
+            authzServer = tAuthzServer;
+        }
+    }
+
+    //getters
+    public String getAuthzServer() {
+        synchronized (_lock) {
+            return this.authzServer;
+        }
+    }
 }

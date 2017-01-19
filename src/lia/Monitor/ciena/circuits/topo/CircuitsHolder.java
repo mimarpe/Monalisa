@@ -1,5 +1,5 @@
 /*
- * $Id: CircuitsHolder.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: CircuitsHolder.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.ciena.circuits.topo;
 
@@ -19,7 +19,7 @@ import lia.Monitor.ciena.circuits.topo.tl1.TL1CDCICircuitsHolder;
  */
 public final class CircuitsHolder {
 
-    private static final transient Logger logger = Logger.getLogger(CircuitsHolder.class.getName());
+    private static final Logger logger = Logger.getLogger(CircuitsHolder.class.getName());
     /**
      * K = swName; V: CDCICircuitsHolder
      */
@@ -50,34 +50,43 @@ public final class CircuitsHolder {
 
     public final void notifyTL1Responses(TL1CDCICircuitsHolder[] responses) {
         if (logger.isLoggable(Level.FINEST)) {
-            logger.log(Level.FINEST, "\n\n[ CircuitsHolder ] [ notifyTL1Responses ] Circuits TL1 response(s):\n" + Arrays.toString(responses) + "\n\n");
+            logger.log(Level.FINEST, "\n\n[ CircuitsHolder ] [ notifyTL1Responses ] Circuits TL1 response(s):\n"
+                    + Arrays.toString(responses) + "\n\n");
         }
 
-        for (int i = 0; i < responses.length; i++) {
+        for (TL1CDCICircuitsHolder response : responses) {
 
-            final TL1CDCICircuitsHolder tl1CircuitsHolder = responses[i];
+            final TL1CDCICircuitsHolder tl1CircuitsHolder = response;
             final TopoEntry entry = cdciMap.get(tl1CircuitsHolder.swName);
 
             // check if already cached or if the same topology as in previous iterations
-            if (entry == null || entry.tl1CircuitsHolder == null || !tl1CircuitsHolder.equals(entry.tl1CircuitsHolder)) {
+            if ((entry == null) || (entry.tl1CircuitsHolder == null)
+                    || !tl1CircuitsHolder.equals(entry.tl1CircuitsHolder)) {
                 try {
-                    cdciMap.put(tl1CircuitsHolder.swName, new TopoEntry(tl1CircuitsHolder,
-                            CDCICircuitsHolder.fromTL1CircuitsHolder(tl1CircuitsHolder)));
+                    cdciMap.put(
+                            tl1CircuitsHolder.swName,
+                            new TopoEntry(tl1CircuitsHolder, CDCICircuitsHolder
+                                    .fromTL1CircuitsHolder(tl1CircuitsHolder)));
                     if (logger.isLoggable(Level.FINE)) {
                         if (logger.isLoggable(Level.FINER)) {
-                            logger.log(Level.FINER, "[ CircuitsHolder ] [ notifyTL1Responses ] New TL1 response: " + tl1CircuitsHolder);
+                            logger.log(Level.FINER, "[ CircuitsHolder ] [ notifyTL1Responses ] New TL1 response: "
+                                    + tl1CircuitsHolder);
                         } else {
-                            logger.log(Level.FINE, "[ CircuitsHolder ] [ notifyTL1Responses ] Added TL1 response for node: " + tl1CircuitsHolder.swName);
+                            logger.log(Level.FINE,
+                                    "[ CircuitsHolder ] [ notifyTL1Responses ] Added TL1 response for node: "
+                                            + tl1CircuitsHolder.swName);
                         }
                     }
                 } catch (Throwable t) {
                     logger.log(Level.WARNING,
-                            " [ CircuitsHolder ] [ notifyTL1Responses ] got exception parsing TL1 response " + tl1CircuitsHolder, t);
+                            " [ CircuitsHolder ] [ notifyTL1Responses ] got exception parsing TL1 response "
+                                    + tl1CircuitsHolder, t);
                 }
             } else {
                 entry.lastUpdate.set(System.currentTimeMillis());
                 if (logger.isLoggable(Level.FINE)) {
-                    logger.log(Level.FINE, "[ CircuitsHolder ] [ notifyTL1Responses ] OSRP TL1 Topo for nodeID: " + tl1CircuitsHolder.swName + " already in the local cache");
+                    logger.log(Level.FINE, "[ CircuitsHolder ] [ notifyTL1Responses ] OSRP TL1 Topo for nodeID: "
+                            + tl1CircuitsHolder.swName + " already in the local cache");
                 }
             }
         }
@@ -92,7 +101,7 @@ public final class CircuitsHolder {
 
         return ret.toArray(new TL1CDCICircuitsHolder[ret.size()]);
     }
-    
+
     public final CDCICircuitsHolder[] getAllCDCICircuits() {
         ArrayList<CDCICircuitsHolder> ret = new ArrayList<CDCICircuitsHolder>();
         for (final TopoEntry entry : cdciMap.values()) {
@@ -101,7 +110,7 @@ public final class CircuitsHolder {
 
         return ret.toArray(new CDCICircuitsHolder[ret.size()]);
     }
-    
+
     public final String[] getAllNodeNames() {
         return cdciMap.keySet().toArray(new String[0]);
     }

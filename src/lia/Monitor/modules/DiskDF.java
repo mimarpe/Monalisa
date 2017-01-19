@@ -11,7 +11,6 @@ import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import lia.Monitor.monitor.AppConfig;
 import lia.Monitor.monitor.MNode;
@@ -32,11 +31,6 @@ public class DiskDF extends AbstractSchJobMonitoring {
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * Message logger
-	 */
-	static final transient Logger logger = Logger.getLogger(DiskDF.class.getName());
-
-	/**
 	 * Excluded file system types
 	 */
 	final Set<String> excludedFSTypes = new HashSet<String>();
@@ -47,8 +41,8 @@ public class DiskDF extends AbstractSchJobMonitoring {
 	final Set<String> excludedPartitions = new HashSet<String>();
 
 	/**
-     * 
-     */
+	 *
+	 */
 	public DiskDF() {
 		excludedFSTypes.add("none");
 		excludedFSTypes.add("afs");
@@ -73,7 +67,7 @@ public class DiskDF extends AbstractSchJobMonitoring {
 		excludedPartitions.add("devpts");
 		excludedPartitions.add("AFS");
 		excludedPartitions.add("fusectl");
-		
+
 		// solaris-specific
 		excludedPartitions.add("proc");
 		excludedPartitions.add("/devices");
@@ -83,15 +77,15 @@ public class DiskDF extends AbstractSchJobMonitoring {
 		excludedPartitions.add("objfs");
 		excludedPartitions.add("sharefs");
 		excludedPartitions.add("fd");
-		
+
 		// mac-specific
 		excludedPartitions.add("devfs");
 		excludedPartitions.add("fdesc");
 
 		String s = AppConfig.getProperty("lia.Monitor.modules.DiskDF.exclude_fstypes");
 
-		if (s != null && s.trim().length() >= 0) {
-			StringTokenizer st = new StringTokenizer(s, " \t,;");
+		if ((s != null) && (s.trim().length() >= 0)) {
+			final StringTokenizer st = new StringTokenizer(s, " \t,;");
 
 			while (st.hasMoreTokens())
 				excludedFSTypes.add(st.nextToken());
@@ -99,8 +93,8 @@ public class DiskDF extends AbstractSchJobMonitoring {
 
 		s = AppConfig.getProperty("lia.Monitor.modules.DiskDF.exclude_partitions");
 
-		if (s != null && s.trim().length() >= 0) {
-			StringTokenizer st = new StringTokenizer(s, " \t,;");
+		if ((s != null) && (s.trim().length() >= 0)) {
+			final StringTokenizer st = new StringTokenizer(s, " \t,;");
 
 			while (st.hasMoreTokens())
 				excludedPartitions.add(st.nextToken());
@@ -163,13 +157,13 @@ public class DiskDF extends AbstractSchJobMonitoring {
 
 		/**
 		 * Initialize with one line from /proc/mounts
-		 * 
+		 *
 		 * @param mountLine
 		 */
 		public MountPoint(final String mountLine) {
 			final StringTokenizer st = new StringTokenizer(mountLine);
 
-			if (isLinuxOS()){
+			if (isLinuxOS()) {
 				partition = st.nextToken();
 				mountPoint = st.nextToken();
 				fsType = st.nextToken();
@@ -180,73 +174,72 @@ public class DiskDF extends AbstractSchJobMonitoring {
 					options = null;
 			}
 			else
-			if (isSolarisOS() || isMacOS()){
-				String sMountPoint = null;
-				
-				while (st.hasMoreTokens()){
-					final String sTok = st.nextToken();
-					
-					if (sTok.equals("on"))
-						break;
-					
-					if (sMountPoint == null)
-						sMountPoint = sTok;
-					else
-						sMountPoint += " "+sMountPoint;
-				}
-				
-				final String sPartition = st.nextToken();
-				
-				if (isSolarisOS()){
-					// <mountpoint> on <device> <option> on <date>
-					mountPoint = sMountPoint;
-					partition = sPartition;
-				}
-				else{
-					// <device> on <mountpoint> (<options>)
-					mountPoint = sPartition;
-					partition = sMountPoint;
-				}
-				
-				String sOptions = null;
-				
-				while (st.hasMoreTokens()){
-					final String sTok = st.nextToken();
-					
-					if (sTok.equals("on"))
-						break;
-					
-					if (sOptions==null)
-						sOptions = sTok;
-					else
-						sOptions += " "+sTok;
-				}
-				
-				options = sOptions;
-				
-				if (isSolarisOS()){
-					fsType = "Solaris";
-				}
-				else{
-					String sFsType = "MacOS";
-					
-					if (options!=null){
-						StringTokenizer stok = new StringTokenizer(options, "(),; ");
-						
-						sFsType = stok.nextToken();
+				if (isSolarisOS() || isMacOS()) {
+					String sMountPoint = null;
+
+					while (st.hasMoreTokens()) {
+						final String sTok = st.nextToken();
+
+						if (sTok.equals("on"))
+							break;
+
+						if (sMountPoint == null)
+							sMountPoint = sTok;
+						else
+							sMountPoint += " " + sMountPoint;
 					}
-					
-					fsType = sFsType;
+
+					final String sPartition = st.nextToken();
+
+					if (isSolarisOS()) {
+						// <mountpoint> on <device> <option> on <date>
+						mountPoint = sMountPoint;
+						partition = sPartition;
+					}
+					else {
+						// <device> on <mountpoint> (<options>)
+						mountPoint = sPartition;
+						partition = sMountPoint;
+					}
+
+					String sOptions = null;
+
+					while (st.hasMoreTokens()) {
+						final String sTok = st.nextToken();
+
+						if (sTok.equals("on"))
+							break;
+
+						if (sOptions == null)
+							sOptions = sTok;
+						else
+							sOptions += " " + sTok;
+					}
+
+					options = sOptions;
+
+					if (isSolarisOS())
+						fsType = "Solaris";
+					else {
+						String sFsType = "MacOS";
+
+						if (options != null) {
+							final StringTokenizer stok = new StringTokenizer(options, "(),; ");
+
+							sFsType = stok.nextToken();
+						}
+
+						fsType = sFsType;
+					}
 				}
-			}
-			else
-				throw new IllegalAccessError();
+				else
+					throw new IllegalAccessError();
 
 			if (partition.equals("TOTAL"))
 				size = used = available = 0;
 		}
-		
-		public MountPoint(final String partition, final String mountPoint, final String fsType, final String options){
+
+		public MountPoint(final String partition, final String mountPoint, final String fsType, final String options) {
 			this.partition = partition;
 			this.mountPoint = mountPoint;
 			this.fsType = fsType;
@@ -263,14 +256,13 @@ public class DiskDF extends AbstractSchJobMonitoring {
 			if (options == null)
 				return true;
 
-			if (isSolarisOS()){
-				return options.indexOf("read only")>=0;
-			}
-			
+			if (isSolarisOS())
+				return options.indexOf("read only") >= 0;
+
 			final StringTokenizer st = new StringTokenizer(options, "(), /");
 
 			while (st.hasMoreTokens()) {
-				String s = st.nextToken();
+				final String s = st.nextToken();
 
 				if (s.equals("ro"))
 					return true;
@@ -288,8 +280,7 @@ public class DiskDF extends AbstractSchJobMonitoring {
 		 * @throws Throwable
 		 */
 		public boolean getDF() throws Throwable {
-			final String output = ExternalProcesses.getCmdOutput(Arrays.asList("df", "-P", "-B", "1024", mountPoint),
-				true, 30L, TimeUnit.SECONDS);
+			final String output = ExternalProcesses.getCmdOutput(Arrays.asList("df", "-P", "-B", "1024", mountPoint), true, 30L, TimeUnit.SECONDS);
 
 			final BufferedReader br = new BufferedReader(new StringReader(output));
 
@@ -312,23 +303,23 @@ public class DiskDF extends AbstractSchJobMonitoring {
 
 			br.close();
 
-			return size > 0 && used >= 0 && available >= 0;
+			return (size > 0) && (used >= 0) && (available >= 0);
 		}
 
 		public boolean shouldConsider() {
 			if (excludedFSTypes.contains(fsType))
 				return false;
 
-			if (partition.indexOf(':') >= 0 || partition.startsWith("automount"))
+			if ((partition.indexOf(':') >= 0) || partition.startsWith("automount"))
 				return false;
 
 			if (excludedPartitions.contains(partition))
 				return false;
-			
-			if (isMacOS()){
-				if (options!=null && (options.indexOf("autofs")>=0 || options.indexOf("automounted")>=0))
+
+			if (isMacOS()) {
+				if ((options != null) && ((options.indexOf("autofs") >= 0) || (options.indexOf("automounted") >= 0)))
 					return false;
-				
+
 				if (partition.startsWith("map "))
 					return false;
 			}
@@ -352,8 +343,8 @@ public class DiskDF extends AbstractSchJobMonitoring {
 			r.addSet(s + "_usedMB", used);
 			r.addSet(s + "_availMB", available);
 
-			r.addSet(s + "_usage", used * 100 / size);
-			r.addSet(s + "_available", available * 100 / size);
+			r.addSet(s + "_usage", (used * 100) / size);
+			r.addSet(s + "_available", (available * 100) / size);
 		}
 
 		public void addToeResult(final eResult er) {
@@ -371,7 +362,7 @@ public class DiskDF extends AbstractSchJobMonitoring {
 		}
 
 		public double getUsage() {
-			return used * 100 / size;
+			return (used * 100) / size;
 		}
 	}
 
@@ -381,9 +372,9 @@ public class DiskDF extends AbstractSchJobMonitoring {
 			return null;
 
 		final Map<String, MountPoint> m = new TreeMap<String, MountPoint>();
-		
+
 		final BufferedReader br;
-		
+
 		if (isLinuxOS())
 			br = new BufferedReader(new FileReader("/proc/mounts"));
 		else
@@ -394,18 +385,15 @@ public class DiskDF extends AbstractSchJobMonitoring {
 		while ((sLine = br.readLine()) != null) {
 			final MountPoint mp = new MountPoint(sLine);
 
-			if (!mp.shouldConsider()) {
+			if (!mp.shouldConsider())
 				// System.err.println("Not local");
 				continue;
-			}
 
 			try {
-				if (!mp.getDF()) {
+				if (!mp.getDF())
 					// System.err.println("DF failed");
 					continue;
-				}
-			}
-			catch (Throwable t) {
+			} catch (final Throwable t) {
 				// System.err.println("DF exception : "+e);
 				continue;
 			}
@@ -434,7 +422,7 @@ public class DiskDF extends AbstractSchJobMonitoring {
 			mp.addToResult(r);
 			mp.addToeResult(er);
 
-			if (!mp.isRO() && (mostUsed == null || mostUsed.getUsage() < mp.getUsage()))
+			if (!mp.isRO() && ((mostUsed == null) || (mostUsed.getUsage() < mp.getUsage())))
 				mostUsed = mp;
 		}
 
@@ -443,32 +431,30 @@ public class DiskDF extends AbstractSchJobMonitoring {
 		total.addToResult(r);
 		total.addToeResult(er);
 
-		double usageThresholdWarning = AppConfig.getd("lia.Monitor.modules.DiskDF.usage_threshold_warning", 90);
+		final double usageThresholdWarning = AppConfig.getd("lia.Monitor.modules.DiskDF.usage_threshold_warning", 90);
 		double usageThresholdError = AppConfig.getd("lia.Monitor.modules.DiskDF.usage_threshold_error", 95);
 
-		if (usageThresholdWarning > usageThresholdError) {
+		if (usageThresholdWarning > usageThresholdError)
 			usageThresholdError = usageThresholdWarning;
-		}
 
 		if (mostUsed != null) {
 			final double usage = mostUsed.getUsage();
 
 			if (usage >= usageThresholdError) {
-				er.addSet("Message", "Error: partition " + mostUsed.mountPoint + " (" + mostUsed.partition + ") is "
-					+ DoubleFormat.point(usage) + "% used (" + DoubleFormat.size(mostUsed.available, "M") + "B free / "
-					+ DoubleFormat.size(mostUsed.size, "M") + "B total)");
+				er.addSet("Message", "Error: partition " + mostUsed.mountPoint + " (" + mostUsed.partition + ") is " + DoubleFormat.point(usage) + "% used (" + formatSize(mostUsed.available)
+						+ " free / " + formatSize(mostUsed.size) + " total)");
 
 				r.addSet("Status", 1);
 			}
-			else if (usage >= usageThresholdWarning) {
-				er.addSet("Message", "Warning: partition " + mostUsed.mountPoint + " (" + mostUsed.partition + ") is "
-					+ DoubleFormat.point(usage) + "% used (" + DoubleFormat.size(mostUsed.available, "M") + "B free / "
-					+ DoubleFormat.size(mostUsed.size, "M") + "B total)");
-
-				r.addSet("Status", 2);
-			}
 			else
-				r.addSet("Status", 0);
+				if (usage >= usageThresholdWarning) {
+					er.addSet("Message", "Warning: partition " + mostUsed.mountPoint + " (" + mostUsed.partition + ") is " + DoubleFormat.point(usage) + "% used (" + formatSize(mostUsed.available)
+							+ " free / " + formatSize(mostUsed.size) + " total)");
+
+					r.addSet("Status", 2);
+				}
+				else
+					r.addSet("Status", 0);
 		}
 
 		final Vector<Object> ret = new Vector<Object>();
@@ -479,8 +465,14 @@ public class DiskDF extends AbstractSchJobMonitoring {
 		return ret;
 	}
 
+	private static String formatSize(final double sizeInM) {
+		final String ret = DoubleFormat.size(sizeInM, "M");
+
+		return ret.endsWith("B") ? ret : ret + "B";
+	}
+
 	@Override
-	protected MonModuleInfo initArgs(String args) {
+	protected MonModuleInfo initArgs(final String args) {
 		return null;
 	}
 
@@ -488,8 +480,8 @@ public class DiskDF extends AbstractSchJobMonitoring {
 	 * @param args
 	 * @throws Exception
 	 */
-	public static void main(String[] args) throws Exception {
-		DiskDF df = new DiskDF();
+	public static void main(final String[] args) throws Exception {
+		final DiskDF df = new DiskDF();
 		df.init(new MNode("localhost", null, null), "");
 
 		Utils.dumpResults(df.doProcess());

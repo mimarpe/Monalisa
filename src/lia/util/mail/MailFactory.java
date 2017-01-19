@@ -10,13 +10,13 @@ import lia.Monitor.monitor.AppConfigChangeListener;
 
 public class MailFactory {
 
-    private static final transient Logger logger = Logger.getLogger("lia.util.mail.MailFactory");
+    private static final Logger logger = Logger.getLogger(MailFactory.class.getName());
 
     private MailSender mailSender;
 
-    private Lock mailSenderReadLock;
+    private final Lock mailSenderReadLock;
 
-    private Lock mailSenderWriteLock;
+    private final Lock mailSenderWriteLock;
 
     private static MailFactory _thisInstance;
 
@@ -31,6 +31,7 @@ public class MailFactory {
         reloadConfig();
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
                 reloadConfig();
             }
@@ -48,18 +49,18 @@ public class MailFactory {
         mailSenderWriteLock.lock();
         try {
             if (mailSender == null) {
-                if (sMailerSender == null || sMailerSender.equals("PMSender")) {
+                if ((sMailerSender == null) || sMailerSender.equals("PMSender")) {
                     mailSender = PMSender.getInstance();
                 } else {
                     mailSender = DirectMailSender.getInstance();
                 }
             } else {
                 if (mailSender instanceof PMSender) {
-                    if (sMailerSender != null && !sMailerSender.equals("PMSender")) {
+                    if ((sMailerSender != null) && !sMailerSender.equals("PMSender")) {
                         mailSender = DirectMailSender.getInstance();
                     }
                 } else {
-                    if (sMailerSender == null || sMailerSender.equals("PMSender")) {
+                    if ((sMailerSender == null) || sMailerSender.equals("PMSender")) {
                         mailSender = PMSender.getInstance();
                     }
                 }

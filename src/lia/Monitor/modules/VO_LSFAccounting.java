@@ -13,7 +13,7 @@ import java.util.logging.Logger;
  */
 public class VO_LSFAccounting {
 
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.modules.VO_LSFAccounting");
+    private static final Logger logger = Logger.getLogger(VO_LSFAccounting.class.getName());
 
     /**
      * Parses the output of the bjobs -l command.
@@ -28,7 +28,8 @@ public class VO_LSFAccounting {
      * @return A Vector with JobInfoExt objects correspunding to the current jobs
      * @throws Exception
      */
-    public static Vector<JobInfoExt> parseLSFOutput(BufferedReader buff, int nCommandsToCheck, boolean checkExitStatus) throws Exception {
+    public static Vector<JobInfoExt> parseLSFOutput(BufferedReader buff, int nCommandsToCheck, boolean checkExitStatus)
+            throws Exception {
         Vector<JobInfoExt> ret = new Vector<JobInfoExt>();
         String line;
         Integer parseErrCode = VO_Utils.jobMgrParseErrors.get(VO_Utils.LSF);
@@ -40,13 +41,15 @@ public class VO_LSFAccounting {
         StringBuilder firstLines = new StringBuilder();
         int lineCnt = 0;
 
-        if (logger.isLoggable(Level.FINEST))
+        if (logger.isLoggable(Level.FINEST)) {
             logger.log(Level.FINEST, "[VO_LSFAccounting] Parsing LSF output... ");
+        }
         JobInfoExt jobInfo = null;
         try {
             while ((line = buff.readLine()) != null) {
-                if (lineCnt < 10)
+                if (lineCnt < 10) {
                     firstLines.append(line + "\n");
+                }
                 lineCnt++;
 
                 logger.finest("Parsing line from LSF bjobs output: " + line);
@@ -56,9 +59,10 @@ public class VO_LSFAccounting {
                     continue;
                 }
                 /* if we have a new job record */
-                if (jobInfo == null || line.startsWith("----------")) {
-                    if (jobInfo != null)
+                if ((jobInfo == null) || line.startsWith("----------")) {
+                    if (jobInfo != null) {
                         ret.add(jobInfo);
+                    }
                     // logger.finest("[VO_LSFAccounting] added job: " + jobInfo);
                     jobInfo = new JobInfoExt();
                     jobInfo.jobManager = "LSF";
@@ -74,8 +78,9 @@ public class VO_LSFAccounting {
                     StringBuilder sb = new StringBuilder(line.trim());
                     String line1 = null;
                     while ((line1 = buff.readLine()) != null) {
-                        if (line1.indexOf("Submitted from host") >= 0)
+                        if (line1.indexOf("Submitted from host") >= 0) {
                             break;
+                        }
                         sb.append(line1.trim());
                     }
                     StringTokenizer st = new StringTokenizer(sb.toString(), ", ");
@@ -103,12 +108,14 @@ public class VO_LSFAccounting {
                              * DONE, EXIT => finished job
                              * UNKWN, ZOMBI => unknown status
                              */
-                            if (st.hasMoreTokens())
+                            if (st.hasMoreTokens()) {
                                 tok = st.nextToken();
-                            else
+                            } else {
                                 tok = "<UNKWN>";
-                            if (!tok.endsWith(">"))
+                            }
+                            if (!tok.endsWith(">")) {
                                 tok = "<UNKWN>";
+                            }
 
                             String status = tok.substring(1, tok.length() - 1);
                             if (status.equals("RUN")) {
@@ -188,31 +195,36 @@ public class VO_LSFAccounting {
                             jobInfo.size += Double.parseDouble(st.nextToken()) * valMultiplier(st.nextToken());
                         }
                     } catch (Exception e) {
-                        logger.info("Error parsing line: " + line + "\n Memory information will not be reported for the job.");
+                        logger.info("Error parsing line: " + line
+                                + "\n Memory information will not be reported for the job.");
                     }
                     continue;
                 }
 
             } // while
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Error parsing the output of bjobs - sample from command output:\n " + firstLines.toString());
+            logger.log(Level.WARNING,
+                    "Error parsing the output of bjobs - sample from command output:\n " + firstLines.toString());
             throw e;
         }
-        if (okCnt < nCommandsToCheck && checkExitStatus) {
+        if ((okCnt < nCommandsToCheck) && checkExitStatus) {
             // logger.warning("Error output from bjobs: " + firstLines.toString());
-            throw new ModuleException("The bjobs command returned with error - command output:\n" + firstLines.toString(),
-                                      parseErrCode.intValue());
+            throw new ModuleException("The bjobs command returned with error - command output:\n"
+                    + firstLines.toString(), parseErrCode.intValue());
         }
         return ret;
     }
 
     public static double valMultiplier(String unit) {
-        if (unit.startsWith("M"))
+        if (unit.startsWith("M")) {
             return 1;
-        if (unit.startsWith("G"))
+        }
+        if (unit.startsWith("G")) {
             return 1024;
-        if (unit.startsWith("K"))
+        }
+        if (unit.startsWith("K")) {
             return 1.0 / 1024;
+        }
         return 1;
     }
 }

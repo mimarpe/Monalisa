@@ -1,5 +1,5 @@
 /*
- * $Id: GenericMLFilter.java 7269 2012-06-26 13:44:55Z ramiro $
+ * $Id: GenericMLFilter.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.Filters;
 
@@ -32,12 +32,12 @@ import lia.util.threads.MonALISAExecutors;
 public abstract class GenericMLFilter implements MonitorFilter, Runnable {
 
     /**
-	 * 
-	 */
+     * 
+     */
     private static final long serialVersionUID = 7734400449888103027L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(GenericMLFilter.class.getName());
+    private static final Logger logger = Logger.getLogger(GenericMLFilter.class.getName());
 
     /**
      * flag that shows if the filter is active or was destroyed
@@ -115,7 +115,8 @@ public abstract class GenericMLFilter implements MonitorFilter, Runnable {
     public void removeClient(MonitorClient client) {
         if (!clients.remove(client)) {
             if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, "[ GenericMLFilter ] removedClient (" + client + " ) == Not OK! Client not found!");
+                logger.log(Level.FINE, "[ GenericMLFilter ] removedClient (" + client
+                        + " ) == Not OK! Client not found!");
             }
         } else {
             if (logger.isLoggable(Level.FINER)) {
@@ -167,8 +168,8 @@ public abstract class GenericMLFilter implements MonitorFilter, Runnable {
                 } else if (o instanceof Result[]) {// notify an Array of
                                                    // ResultS...but not a Vector
                     Result[] rez = (Result[]) o;
-                    for (int i = 0; i < rez.length; i++) {
-                        notifResults.add(rez[i]);
+                    for (Result element : rez) {
+                        notifResults.add(element);
                     }
                 } else {// notify anything else
                     notifResults.add(o);
@@ -207,7 +208,7 @@ public abstract class GenericMLFilter implements MonitorFilter, Runnable {
 
             // try to not let the user run the filter for at least
             // MIN_THREAD_SLEEP millis
-            if (sleepTime < MIN_THREAD_SLEEP && shouldLimitSleepTime) {
+            if ((sleepTime < MIN_THREAD_SLEEP) && shouldLimitSleepTime) {
                 sleepTime = MIN_THREAD_SLEEP;
             }
 
@@ -216,9 +217,8 @@ public abstract class GenericMLFilter implements MonitorFilter, Runnable {
         }
 
         if (logger.isLoggable(Level.FINE)) {
-            logger.log(Level.FINE,
-                       "The filter: " + getClass().getName() + "  will be rescheduled for " + sleepTime + " ms = "
-                               + new Date(System.currentTimeMillis() + sleepTime));
+            logger.log(Level.FINE, "The filter: " + getClass().getName() + "  will be rescheduled for " + sleepTime
+                    + " ms = " + new Date(System.currentTimeMillis() + sleepTime));
         }
 
         try {
@@ -248,26 +248,27 @@ public abstract class GenericMLFilter implements MonitorFilter, Runnable {
      */
     @Override
     public void addNewResult(Object o) {
-        if (o == null)
+        if (o == null) {
             return;
+        }
 
         if (o instanceof Vector) {
             Vector<?> v = (Vector<?>) o;
-            if (v.size() == 0)
+            if (v.size() == 0) {
                 return;
+            }
             for (int i = 0; i < v.size(); i++) {
                 addNewResult(v.elementAt(i));
             }
         } else if (o instanceof Result) {
             Result r = (Result) o;
             monPredicate[] fPreds = getFilterPred();
-            if (fPreds == null || fPreds.length == 0) {
+            if ((fPreds == null) || (fPreds.length == 0)) {
                 notifyResult(o);
                 return;
             }
 
-            for (int i = 0; i < fPreds.length; i++) {
-                monPredicate p = fPreds[i];
+            for (monPredicate p : fPreds) {
                 Result rr = DataSelect.matchResult(r, p);
                 if (rr != null) {
                     notifyResult(rr);
@@ -276,13 +277,12 @@ public abstract class GenericMLFilter implements MonitorFilter, Runnable {
         } else if (o instanceof eResult) {
             eResult r = (eResult) o;
             monPredicate[] fPreds = getFilterPred();
-            if (fPreds == null || fPreds.length == 0) {
+            if ((fPreds == null) || (fPreds.length == 0)) {
                 notifyResult(o);
                 return;
             }
 
-            for (int i = 0; i < fPreds.length; i++) {
-                monPredicate p = fPreds[i];
+            for (monPredicate p : fPreds) {
                 eResult rr = DataSelect.matchResult(r, p);
                 if (rr != null) {
                     notifyResult(rr);
@@ -297,11 +297,13 @@ public abstract class GenericMLFilter implements MonitorFilter, Runnable {
      * @param v
      */
     void informClients(Vector<?> v) {
-        if (v == null || v.size() == 0)
+        if ((v == null) || (v.size() == 0)) {
             return;
+        }
         String fName = getName();
-        if (fName == null || fName.length() == 0)
+        if ((fName == null) || (fName.length() == 0)) {
             return;
+        }
         for (MonitorClient mc : clients) {
             try {
                 mc.notifyResult(v, fName);

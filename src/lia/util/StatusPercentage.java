@@ -5,6 +5,7 @@ import java.util.List;
 
 import lia.Monitor.Store.Cache;
 import lia.Monitor.monitor.Result;
+import lia.Monitor.monitor.TimestampedResult;
 import lia.web.utils.DoubleFormat;
 
 /**
@@ -73,14 +74,14 @@ public class StatusPercentage {
 	/**
 	 * Data to analyze
 	 */
-	private List lResults;
+	private List<TimestampedResult> lResults;
 	
 	/**
 	 * Create the statistics from a list of Result objects
 	 * 
 	 * @param l data to analyze
 	 */
-	public StatusPercentage(final List l){
+	public StatusPercentage(final List<TimestampedResult> l){
 		this.lResults = l;
 	}
 
@@ -122,7 +123,7 @@ public class StatusPercentage {
 			return;
 		}
 		
-		analyze(0, lResults.size(), Cache.getResultTime(lResults.get(0))-lMeasurementInterval, Cache.getResultTime(lResults.get(lResults.size()-1)));
+		analyze(0, lResults.size(), lResults.get(0).getTime()-lMeasurementInterval, lResults.get(lResults.size()-1).getTime());
 	}
 	
 	/**

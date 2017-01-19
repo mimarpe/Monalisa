@@ -35,7 +35,7 @@ import lia.util.ntp.NTPDate;
  * 
  * @author ramiro 
  */
-public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort>{
+public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort> {
 
     /**
      * 
@@ -43,13 +43,14 @@ public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort>{
     private static final long serialVersionUID = 4791677603526813530L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(CienaAgent.class.getName());
+    private static final Logger logger = Logger.getLogger(CienaAgent.class.getName());
 
     CienaHost host;
     AtomicBoolean shouldReloadConfig = new AtomicBoolean(false);
 
     private final class ComputerHostStateFetcher implements Runnable {
 
+        @Override
         public void run() {
             try {
                 publishAttrs();
@@ -74,6 +75,7 @@ public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort>{
 
     private static final class ResultMonitorTask implements Runnable {
 
+        @Override
         public void run() {
             //not used yet
         }
@@ -81,37 +83,38 @@ public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort>{
 
     private final class ConfigPublisherTask implements Runnable {
 
+        @Override
         public void run() {
             try {
-                if(shouldReloadConfig.compareAndSet(true, false)) {
+                if (shouldReloadConfig.compareAndSet(true, false)) {
                     updateState();
                 }
                 deliverResults2ML(expressResults());
-            }catch(Throwable t) {
+            } catch (Throwable t) {
                 logger.log(Level.WARNING, " Unable to deliver results", t);
             }
         }
     }
-    
+
     private MLLinksMsg getLinks() {
         Map<HostRawPort, OutgoingLink> confMap = config.outgoingLinks();
-        if(confMap == null) {
+        if (confMap == null) {
             final Map<UUID, OutgoingLink> linksMap = Collections.emptyMap();
             return new MLLinksMsg(host.id(), DeviceType.CIENA, linksMap);
         }
-        
+
         Map<UUID, OutgoingLink> pMap = new HashMap<UUID, OutgoingLink>(confMap.size());
         CienaPort[] allPorts = host.getPorts();
-        for(final Map.Entry<HostRawPort, OutgoingLink> entry: confMap.entrySet()) {
+        for (final Map.Entry<HostRawPort, OutgoingLink> entry : confMap.entrySet()) {
             final HostRawPort rawPort = entry.getKey();
-            for(final CienaPort cPort: allPorts) {
-                if(cPort.name().equals(rawPort.portName)) {
+            for (final CienaPort cPort : allPorts) {
+                if (cPort.name().equals(rawPort.portName)) {
                     pMap.put(cPort.id(), entry.getValue());
                     break;
                 }
             }
         }
-        
+
         return new MLLinksMsg(host.id(), DeviceType.CIENA, pMap);
     }
 
@@ -130,7 +133,7 @@ public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort>{
             } catch (Throwable t) {
                 logger.log(Level.WARNING, "Cannot serialize OS state", t);
             }
-            
+
             try {
                 byte[] buff = Utils.writeObject(new TopoMsg(agentID, serviceID, TopoMsg.Type.ML_LINKS, getLinks()));
                 er.addSet("LINKS_CONFIG", buff);
@@ -155,7 +158,7 @@ public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort>{
             throw new InstantiationError("Unable to load ComputerHostAgent agent");
         }
     }
-    
+
     private static final MLComputerHostConfig getLocalConfig() {
         MLComputerHostConfig config = null;
         try {
@@ -170,8 +173,8 @@ public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort>{
 
     private void invalidateHost() {
         GenericEntity.clearIDFromCache(host.id());
-        for(CienaPort cp: this.host.getPorts()) {
-            if(cp.outgoingLink() != null) {
+        for (CienaPort cp : this.host.getPorts()) {
+            if (cp.outgoingLink() != null) {
                 GenericEntity.clearIDFromCache(cp.outgoingLink().id());
             }
             GenericEntity.clearIDFromCache(cp.id());
@@ -180,23 +183,24 @@ public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort>{
 
     private void updateState() {
         try {
-            if(host != null) {
+            if (host != null) {
                 invalidateHost();
                 host = null;
             }
             host = new CienaHost(config.hostName());
-            for(HostRawPort hrp: config.hostPorts()) {
+            for (HostRawPort hrp : config.hostPorts()) {
                 host.addPort(new CienaPort(hrp.portName, host, hrp.portType));
             }
-        }catch(Throwable t) {
+        } catch (Throwable t) {
             logger.log(Level.WARNING, " got exception update state", t);
         }
-        
+
     }
 
     /**
      * @param r  
      */
+    @Override
     public void addNewResult(Object r) {
         // TODO Auto-generated method stub
 
@@ -230,8 +234,8 @@ public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort>{
             } else if (o instanceof Result[]) {// notify an Array of
                 // ResultS...but not a Vector
                 Result[] rez = (Result[]) o;
-                for (int i = 0; i < rez.length; i++) {
-                    notifResults.add(rez[i]);
+                for (Result element : rez) {
+                    notifResults.add(element);
                 }
             } else {// notify anything else
                 notifResults.add(o);
@@ -283,9 +287,11 @@ public class CienaAgent extends TopoAgent<MLComputerHostConfig, HostRawPort>{
         new CienaAgent("Test", "Test", "Test").doWork();
     }
 
+    @Override
     public void notifyConfig(RawConfigInterface<HostRawPort> oldConfig, RawConfigInterface<HostRawPort> newConfig) {
         StringBuilder sb = new StringBuilder();
-        sb.append("\n\n old config \n\n ").append(oldConfig).append("\n\n new config \n\n").append(newConfig).append("\n\n");
+        sb.append("\n\n old config \n\n ").append(oldConfig).append("\n\n new config \n\n").append(newConfig)
+                .append("\n\n");
         shouldReloadConfig.compareAndSet(false, true);
         logger.log(Level.INFO, sb.toString());
     }

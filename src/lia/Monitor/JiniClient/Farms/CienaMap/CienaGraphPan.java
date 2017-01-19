@@ -56,13 +56,11 @@ import lia.Monitor.ciena.osrp.topo.OsrpNode;
 import lia.Monitor.ciena.osrp.topo.OsrpTopoHolder;
 import lia.Monitor.ciena.osrp.topo.OsrpTopology;
 
-public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionListener, LayoutChangedListener, ActionListener {
-
-    /** Logger Name */
-    private static final transient String COMPONENT = "lia.Monitor.JiniClient.Farms.CienaMap";
+public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionListener, LayoutChangedListener,
+        ActionListener {
 
     /** The Logger */
-    static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(CienaGraphPan.class.getName());
 
     Hashtable nodes = new Hashtable();// local nodes
 
@@ -82,7 +80,7 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
 
     static Font osFont = new Font("Arial", Font.BOLD, 12);
 
-    private BufferedImage osImage;// optical switch image
+    private final BufferedImage osImage;// optical switch image
 
     private int osImgWidth = 75;// set at loading iamge moment
 
@@ -117,13 +115,13 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
 
     private CienaLTP currentSelectedLink = null;
 
-    private Vector currentSelectedPath = new Vector();
+    private final Vector currentSelectedPath = new Vector();
 
     private CienaNode currentSelectedNode = null;
 
-    private Hashtable paths = new Hashtable();
+    private final Hashtable paths = new Hashtable();
 
-    private Vector links = new Vector();
+    private final Vector links = new Vector();
 
     private boolean drawOSRP = true;
 
@@ -142,8 +140,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
     Rectangle actualRange = new Rectangle();
 
     public static synchronized final CienaGraphPan getInstance(CienaMapPan gmapPan) {
-        if (_instance == null)
+        if (_instance == null) {
             _instance = new CienaGraphPan(gmapPan);
+        }
         return _instance;
     }
 
@@ -176,7 +175,7 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         repaint();
     }
 
-    private boolean first = true;
+    private final boolean first = true;
 
     /**
      * synchronizes local view of nodes set with global one by adding and removing nodes
@@ -188,13 +187,15 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                 try {
                     String osrpNodeID = it.next().toString();
                     OsrpTopology topo = OsrpTopoHolder.getOsrptopology(osrpNodeID);
-                    if (topo == null || topo.getAllNodesNames() == null || topo.getAllNodesNames().size() == 0)
+                    if ((topo == null) || (topo.getAllNodesNames() == null) || (topo.getAllNodesNames().size() == 0)) {
                         continue;
+                    }
                     Set nodesNames = topo.getAllNodesNames();
                     for (Iterator it1 = nodesNames.iterator(); it1.hasNext();) {
                         OsrpNode on = topo.getNodeWitName(it1.next().toString());
-                        if (on == null || on.locality != OsrpNode.LOCAL)
+                        if ((on == null) || (on.locality != OsrpNode.LOCAL)) {
                             continue;
+                        }
                         CienaNode n = null;
                         if (nodes.containsKey(on.name)) {
                             n = (CienaNode) nodes.get(on.name);
@@ -209,8 +210,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                             nodes.put(on.name, n);
                         }
                         n.dirty = true;
-                        if (on.osrpLtpsMap == null || on.osrpLtpsMap.size() == 0)
+                        if ((on.osrpLtpsMap == null) || (on.osrpLtpsMap.size() == 0)) {
                             continue;
+                        }
                         for (Iterator it2 = on.osrpLtpsMap.keySet().iterator(); it2.hasNext();) {
                             Object id = it2.next();
                             OsrpLtp ol = (OsrpLtp) on.osrpLtpsMap.get(id);
@@ -239,11 +241,13 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             for (Enumeration en = nodes.keys(); en.hasMoreElements();) {
                 Object key = en.nextElement();
                 CienaNode n = (CienaNode) nodes.get(key);
-                if (!n.dirty)
+                if (!n.dirty) {
                     toRemove.add(key);
+                }
             }
-            for (int i = 0; i < toRemove.size(); i++)
+            for (int i = 0; i < toRemove.size(); i++) {
                 nodes.remove(toRemove.get(i));
+            }
             toRemove.clear();
             for (Enumeration en = nodes.keys(); en.hasMoreElements();) {
                 Object key = en.nextElement();
@@ -252,11 +256,13 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                 for (Iterator it = n.osrpLtpsMap.keySet().iterator(); it.hasNext();) {
                     Object k = it.next();
                     CienaLTP l = (CienaLTP) n.osrpLtpsMap.get(k);
-                    if (!l.dirty)
+                    if (!l.dirty) {
                         toRemove.add(k);
+                    }
                 }
-                for (int i = 0; i < toRemove.size(); i++)
+                for (int i = 0; i < toRemove.size(); i++) {
                     n.osrpLtpsMap.remove(toRemove.get(i));
+                }
                 toRemove.clear();
                 for (Iterator it = n.osrpLtpsMap.keySet().iterator(); it.hasNext();) {
                     Object k = it.next();
@@ -271,16 +277,15 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             } else {
                 String[] n = new String[h.cdciMap.size()];
                 int i = 0;
-                for (Iterator en = h.cdciMap.keySet().iterator(); en.hasNext() && i < n.length;) {
+                for (Iterator en = h.cdciMap.keySet().iterator(); en.hasNext() && (i < n.length);) {
                     String swName = (String) en.next();
                     n[i] = swName;
                     i++;
                 }
                 gmapPan.swDropDown.setContent(n);
                 String names[] = h.getAllNodeNames();
-                if (names != null)
-                    for (int ii = 0; ii < names.length; ii++) {
-                        String swName = names[ii];
+                if (names != null) {
+                    for (String swName : names) {
                         Hashtable pHash = null;
                         if (paths.containsKey(swName)) {
                             pHash = (Hashtable) paths.get(swName);
@@ -289,12 +294,13 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                             paths.put(swName, pHash);
                         }
                         CDCICircuitsHolder hh = getCDCICircuitHolder(swName);
-                        if (hh.sncMap == null || hh.sncMap.size() == 0)
+                        if ((hh.sncMap == null) || (hh.sncMap.size() == 0)) {
                             continue;
-                        for (Iterator it = hh.sncMap.keySet().iterator(); it.hasNext();) {
-                            String pName = (String) it.next();
+                        }
+                        for (Object element : hh.sncMap.keySet()) {
+                            String pName = (String) element;
                             CienaPath p = null;
-                            SNC s = (SNC) hh.sncMap.get(pName);
+                            SNC s = hh.sncMap.get(pName);
                             if (pHash.containsKey(pName)) {
                                 p = (CienaPath) pHash.get(pName);
                             } else {
@@ -306,6 +312,7 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                             // System.out.println(p);
                         }
                     }
+                }
                 redoSNCs();
             }
         }
@@ -314,11 +321,13 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
     private final CDCICircuitsHolder getCDCICircuitHolder(String name) {
         CircuitsHolder h = CircuitsHolder.getInstance();
         CDCICircuitsHolder hh[] = h.getAllCDCICircuits();
-        if (hh == null)
+        if (hh == null) {
             return null;
-        for (int i = 0; i < hh.length; i++) {
-            if (hh[i].swName.equals(name))
-                return hh[i];
+        }
+        for (CDCICircuitsHolder element : hh) {
+            if (element.swName.equals(name)) {
+                return element;
+            }
         }
         return null;
     }
@@ -329,20 +338,23 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             LinkedList l = new LinkedList();
             for (Iterator en = gmapPan.swDropDown.stores.keySet().iterator(); en.hasNext();) {
                 String k = (String) en.next();
-                if (k.equals("All") || k.equals("None"))
+                if (k.equals("All") || k.equals("None")) {
                     continue;
+                }
                 if (gmapPan.swDropDown.getValueFor(k)) { // is selected...
                     CDCICircuitsHolder hh = getCDCICircuitHolder(k);
-                    if (hh.sncMap == null || hh.sncMap.size() == 0)
+                    if ((hh.sncMap == null) || (hh.sncMap.size() == 0)) {
                         continue;
-                    for (Iterator it = hh.sncMap.keySet().iterator(); it.hasNext();) {
-                        String name = (String) it.next();
+                    }
+                    for (Object element : hh.sncMap.keySet()) {
+                        String name = (String) element;
                         if (paths.containsKey(k)) {
                             Hashtable hPath = (Hashtable) paths.get(k);
                             if (hPath.containsKey(name)) {
                                 CienaPath path = (CienaPath) hPath.get(name);
-                                if (!path.pathCompleted())
+                                if (!path.pathCompleted()) {
                                     continue;
+                                }
                             }
                         }
                         if (!l.contains(name)) {
@@ -360,7 +372,7 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             }
             String s[] = new String[l.size()];
             int i = 0;
-            for (Iterator it = l.iterator(); it.hasNext() && i < s.length;) {
+            for (Iterator it = l.iterator(); it.hasNext() && (i < s.length);) {
                 s[i] = (String) it.next();
                 i++;
             }
@@ -372,8 +384,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         int nr = 0;
         for (Enumeration en = paths.keys(); en.hasMoreElements();) {
             String swName = (String) en.nextElement();
-            if (!gmapPan.swDropDown.getValueFor(swName))
+            if (!gmapPan.swDropDown.getValueFor(swName)) {
                 continue;
+            }
             Hashtable pHash = (Hashtable) paths.get(swName);
             for (Enumeration en1 = pHash.keys(); en1.hasMoreElements();) {
                 String pName = (String) en1.nextElement();
@@ -406,18 +419,19 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             // System.out.println("nodes size is 0");
             // if no nodes any more, remove the panel from left menu
             long currentTime = System.currentTimeMillis();
-            if (startTimeOut == -1)
+            if (startTimeOut == -1) {
                 startTimeOut = currentTime;
-            else {
-                if (currentTime - startTimeOut >= TIME_OUT) {
+            } else {
+                if ((currentTime - startTimeOut) >= TIME_OUT) {
                     // the maximum waiting time has passed, so, remove the panel
                     monitor.main.removeGraphical("OS GMap");
                     // monitor.main.jpMenu.pack();
                     return true;
                 }
             }
-        } else
+        } else {
             startTimeOut = -1;
+        }
         return false;
     }
 
@@ -429,15 +443,18 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             this.parent = parent;
         }
 
+        @Override
         public void run() {
-            Thread.currentThread().setName(" ( ML ) - CienaMap - CienaGraphPan Layout Update Timer Thread: checks stop condition and sets layout.");
+            Thread.currentThread()
+                    .setName(
+                            " ( ML ) - CienaMap - CienaGraphPan Layout Update Timer Thread: checks stop condition and sets layout.");
             if (shouldStop()) {
                 this.cancel();
                 return;
             }
             ;
             try {
-                if (parent != null && parent.isVisible()) {
+                if ((parent != null) && parent.isVisible()) {
                     if (!currentLayout.equals("SomeLayout")) {
                         setLayoutType(currentLayout);
                     }
@@ -453,9 +470,10 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
 
     void setLayoutType(String type) {
         // System.out.println("setLayoutType:"+type);
-        if (layout == null && type.equals("Elastic"))
+        if ((layout == null) && type.equals("Elastic")) {
             currentLayout = "None";
-        if (layout != null && !type.equals(currentLayout)) {
+        }
+        if ((layout != null) && !type.equals(currentLayout)) {
             currentLayout = "None";
             layout.finish();
         }
@@ -467,27 +485,31 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             synchronized (syncGraphObj) {
                 unfixNodes();
                 vGraph = GraphTopology.constructCienaTree(nodes);
-                if (type.equals("Random"))
+                if (type.equals("Random")) {
                     layout = new RandomLayoutAlgorithm(vGraph);
-                else if (type.equals("Grid"))
+                } else if (type.equals("Grid")) {
                     layout = new GridLayoutAlgorithm(vGraph);
-                else
+                } else {
                     layout = new NoLayoutLayoutAlgorithm(vGraph);
+                }
                 layoutTransformer.layoutChanged();
             }
         } else if (type.equals("Radial") || type.equals("Layered")) {
             synchronized (syncGraphObj) {
                 unfixNodes();
                 vGraph = GraphTopology.constructCienaTree(nodes);
-                if ((pickX == null) || (!nodes.containsValue(pickX)))
+                if ((pickX == null) || (!nodes.containsValue(pickX))) {
                     pickX = vGraph.findCienaRoot();
+                }
                 // System.out.println("layout "+type+" from "+pickX.UnitName);
-                if (pickX != null)
+                if (pickX != null) {
                     vGraph.pruneToTree(pickX); // convert the graph to a tree
-                if (type.equals("Radial"))
+                }
+                if (type.equals("Radial")) {
                     layout = new RadialLayoutAlgorithm(vGraph, pickX);
-                else
+                } else {
                     layout = new LayeredTreeLayoutAlgorithm(vGraph, pickX);
+                }
                 layoutTransformer.layoutChanged();
             }
         } else if (type.equals("Elastic")) {
@@ -529,8 +551,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
     public static BufferedImage loadBuffImage(String imageFileName) {
         BufferedImage res = null;
         try {
-            if (imageFileName == null)
+            if (imageFileName == null) {
                 return null;
+            }
             ClassLoader myClassLoader = CienaGraphPan.class.getClassLoader();
             URL imageURL;
             if (imageFileName.indexOf("://") >= 0) {
@@ -567,8 +590,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
     public static BufferedImage loadGlowBuffImage(String imageFileName) {
         BufferedImage res = null;
         try {
-            if (imageFileName == null)
+            if (imageFileName == null) {
                 return null;
+            }
             ClassLoader myClassLoader = CienaGraphPan.class.getClassLoader();
             URL imageURL;
             if (imageFileName.indexOf("://") >= 0) {
@@ -595,8 +619,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         int midX = res.getWidth(null) / 2;
         int midY = res.getHeight(null) / 2;
         int max = midX;
-        if (max > midY)
+        if (max > midY) {
             max = midY;
+        }
         if (res != null) {
             for (int i = 0; i < res.getWidth(null); i++) {
                 for (int j = 0; j < res.getHeight(null); j++) {
@@ -605,22 +630,28 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                     int green = (argb >> 8) & 0xff;
                     int blue = argb & 0xff;
                     int alpha = (argb >> 24) & 0xff;
-                    double dist = Math.sqrt((i - midX) * (i - midX) + (j - midY) * (j - midY)) / max;
-                    red = (int) (red * (1 + 0.2 * dist));
-                    green = (int) (green * (1 + 0.2 * dist));
-                    blue = (int) (blue * (1 + 0.2 * dist));
-                    if (red < 0)
+                    double dist = Math.sqrt(((i - midX) * (i - midX)) + ((j - midY) * (j - midY))) / max;
+                    red = (int) (red * (1 + (0.2 * dist)));
+                    green = (int) (green * (1 + (0.2 * dist)));
+                    blue = (int) (blue * (1 + (0.2 * dist)));
+                    if (red < 0) {
                         red = 0;
-                    if (red > 255)
+                    }
+                    if (red > 255) {
                         red = 255;
-                    if (green < 0)
+                    }
+                    if (green < 0) {
                         green = 0;
-                    if (green > 255)
+                    }
+                    if (green > 255) {
                         green = 255;
-                    if (blue < 0)
+                    }
+                    if (blue < 0) {
                         blue = 0;
-                    if (blue > 255)
+                    }
+                    if (blue > 255) {
                         blue = 255;
+                    }
                     argb = (alpha << 24) | (red << 16) | (green << 8) | blue;
                     res.setRGB(i, j, argb);
                 }
@@ -643,22 +674,26 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
                 int argb = image.getRGB(x, y);
-                argb = (int) ((argb >> 24 & 0xFF) * 0.5) << 24 | shadowColor.getRGB() & 0x00FFFFFF;
+                argb = ((int) (((argb >> 24) & 0xFF) * 0.5) << 24) | (shadowColor.getRGB() & 0x00FFFFFF);
                 mask.setRGB(x, y, argb);
             }
         }
         return mask;
     }
 
+    @Override
     public void mouseClicked(MouseEvent e) {
     }
 
+    @Override
     public void mouseEntered(MouseEvent e) {
     }
 
+    @Override
     public void mouseExited(MouseEvent e) {
     }
 
+    @Override
     public void mousePressed(MouseEvent e) {
         int x = e.getX();
         int y = e.getY();
@@ -666,8 +701,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         for (Enumeration en = nodes.elements(); en.hasMoreElements();) {
             CienaNode n = (CienaNode) en.nextElement();
             n.selected = false;
-            if (n == null || n.limits == null || (showOnlyConnectedNodes && !n.isLayoutHandled))
+            if ((n == null) || (n.limits == null) || (showOnlyConnectedNodes && !n.isLayoutHandled)) {
                 continue;
+            }
             if (n.limits.contains(x, y)) {
                 pick = n;
                 pick.fixed = true;
@@ -680,7 +716,8 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             synchronized (syncGraphObj) {
                 pickX = pick;
             }
-            if (currentLayout.equals("Elastic") || gmapPan.cbLayout.getSelectedItem().equals("Layered") || gmapPan.cbLayout.getSelectedItem().equals("Radial")) {
+            if (currentLayout.equals("Elastic") || gmapPan.cbLayout.getSelectedItem().equals("Layered")
+                    || gmapPan.cbLayout.getSelectedItem().equals("Radial")) {
                 currentTransformCancelled = true;
                 setLayoutType((String) gmapPan.cbLayout.getSelectedItem());
             }
@@ -688,6 +725,7 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         e.consume();
     }
 
+    @Override
     public void mouseReleased(MouseEvent e) {
         if ((pick != null) /* && (e.getButton() == MouseEvent.BUTTON2) */) {
             pick.fixed = false;
@@ -701,6 +739,7 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         e.consume();
     }
 
+    @Override
     public void mouseDragged(MouseEvent e) {
         if (pick != null) {
             int margin = (int) (fLayoutMargin * getWidth());
@@ -711,14 +750,18 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             int x = e.getX();
             int y = e.getY();
 
-            if (x < minx)
+            if (x < minx) {
                 x = minx;
-            if (y < miny)
+            }
+            if (y < miny) {
                 y = miny;
-            if (x > maxx)
+            }
+            if (x > maxx) {
                 x = maxx;
-            if (y > maxy)
+            }
+            if (y > maxy) {
                 y = maxy;
+            }
 
             pick.x = x;
             pick.y = y;
@@ -727,8 +770,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                 if (gn != null) {
                     gn.pos.setLocation(pick.x, pick.y);
                     // notify the thread that the position has changed
-                    if (layout instanceof SpringLayoutAlgorithm)
+                    if (layout instanceof SpringLayoutAlgorithm) {
                         ((SpringLayoutAlgorithm) layout).notifyRunnerThread();
+                    }
                 }
             }
             repaint();
@@ -736,21 +780,23 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         e.consume();
     }
 
+    @Override
     public void mouseMoved(MouseEvent e) {
         final int x = e.getX();
         final int y = e.getY();
         CienaNode nodeOver = null;
         for (Enumeration en = nodes.elements(); en.hasMoreElements();) {
             CienaNode n = (CienaNode) en.nextElement();
-            if (n == null || n.limits == null || (showOnlyConnectedNodes && !n.isLayoutHandled))
+            if ((n == null) || (n.limits == null) || (showOnlyConnectedNodes && !n.isLayoutHandled)) {
                 continue;
+            }
             if (n.limits.contains(x, y)) {
                 nodeOver = n;
                 break;
             }
         }
         if (nodeOver != null) {
-            if (currentSelectedNode == null || !currentSelectedNode.equals(nodeOver)) {
+            if ((currentSelectedNode == null) || !currentSelectedNode.equals(nodeOver)) {
                 currentSelectedNode = nodeOver;
                 currentSelectedLink = null;
                 linkToolTip = null;
@@ -770,11 +816,13 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                     Link l = (Link) o;
                     if (l.intersect(x, y)) {
                         linkID = l.linkID;
-                        boolean shouldRedraw = (currentSelectedLink == null) || (!currentSelectedLink.equals(l.realLink));
+                        boolean shouldRedraw = (currentSelectedLink == null)
+                                || (!currentSelectedLink.equals(l.realLink));
                         currentSelectedLink = l.realLink;
                         linkSelected = true;
-                        if (shouldRedraw)
+                        if (shouldRedraw) {
                             repaint();
+                        }
                         break;
                     }
                 }
@@ -787,14 +835,14 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                     }
                 }
             }
-            if (!linkSelected && currentSelectedLink != null) {
+            if (!linkSelected && (currentSelectedLink != null)) {
                 currentSelectedLink = null;
                 repaint();
             }
-            if (linkSelected && linkID == null) {
+            if (linkSelected && (linkID == null)) {
                 currentSelectedLink = null;
             }
-            if (linkID != null || currentSelectedPath.size() != 0) {
+            if ((linkID != null) || (currentSelectedPath.size() != 0)) {
                 linkToolTip = formLinkToolTip();
                 return;
             }
@@ -803,8 +851,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
     }
 
     public String formLinkToolTip() {
-        if (currentSelectedLink == null && currentSelectedPath.size() == 0)
+        if ((currentSelectedLink == null) && (currentSelectedPath.size() == 0)) {
             return null;
+        }
         StringBuilder buf = new StringBuilder();
         if (drawOSRP) {
             buf.append("<html><table BORDER CELLSPACING=0>");
@@ -817,17 +866,20 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             buf.append("<tr><td>prio</td><td>").append(currentSelectedLink.prio).append("</td></tr>");
             buf.append("<tr><td>helloState</td><td>").append(currentSelectedLink.hState).append("</td></tr>");
             StringBuilder b1 = new StringBuilder();
-            if (currentSelectedLink.osrpCtps != null)
+            if (currentSelectedLink.osrpCtps != null) {
                 for (int i = 0; i < currentSelectedLink.osrpCtps.length; i++) {
-                    if (i != 0)
+                    if (i != 0) {
                         b1.append("&");
+                    }
                     b1.append(currentSelectedLink.osrpCtps[i]);
                 }
+            }
             buf.append("<tr><td>CTP(s)</td><td>").append(b1.toString()).append("</td></tr>");
             buf.append("</table></html>");
         } else {
-            if (currentSelectedPath.size() == 0)
+            if (currentSelectedPath.size() == 0) {
                 return null;
+            }
             buf.append("<html><table BORDER CELLSPACING=0>");
             for (int i = 0; i < currentSelectedPath.size(); i++) {
                 CienaPath p = (CienaPath) currentSelectedPath.get(i);
@@ -839,8 +891,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
     }
 
     public String formNodeToolTip() {
-        if (currentSelectedNode == null)
+        if (currentSelectedNode == null) {
             return null;
+        }
         StringBuilder buf = new StringBuilder();
         buf.append("<html><table BORDER CELLSPACING=0>");
         buf.append("<tr><td>Param</td><td>Value</td></tr>");
@@ -854,20 +907,25 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
     /**
      * when user over a node, return node configuration for real node ignore tooltip text
      */
+    @Override
     public String getToolTipText(MouseEvent event) {
-        if (nodeToolTip != null)
+        if (nodeToolTip != null) {
             return nodeToolTip;
-        if (linkToolTip != null)
+        }
+        if (linkToolTip != null) {
             return linkToolTip;
+        }
         return null;
     }
 
+    @Override
     public int setElasticLayout() {
         // synchronized(syncRescale){
         int panelWidth = getWidth();
         int panelHeight = getHeight();
         // range.setBounds(0, 0, getWidth(), getHeight());
-        range.setBounds((int) (panelWidth * fLayoutMargin), (int) (panelHeight * fLayoutMargin), (int) (panelWidth * (1 - 2 * fLayoutMargin)), (int) (panelHeight * (1 - 2 * fLayoutMargin)));
+        range.setBounds((int) (panelWidth * fLayoutMargin), (int) (panelHeight * fLayoutMargin),
+                (int) (panelWidth * (1 - (2 * fLayoutMargin))), (int) (panelHeight * (1 - (2 * fLayoutMargin))));
         range.grow(-wunit - 2, -hunit - 2);
         // System.out.println("setting elastic layout");
         // set positions for the unhandled nodes
@@ -880,14 +938,18 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             gn.rcnode.x = (int) Math.round(gn.pos.x);
             gn.rcnode.y = (int) Math.round(gn.pos.y);
             // if(layout.handled.contains(gn)){
-            if (gn.rcnode.x < range.x)
+            if (gn.rcnode.x < range.x) {
                 gn.rcnode.x = range.x;
-            if (gn.rcnode.y < range.y)
+            }
+            if (gn.rcnode.y < range.y) {
                 gn.rcnode.y = range.y;
-            if (gn.rcnode.x > range.getMaxX())
+            }
+            if (gn.rcnode.x > range.getMaxX()) {
                 gn.rcnode.x = (int) range.getMaxX();
-            if (gn.rcnode.y > range.getMaxY())
+            }
+            if (gn.rcnode.y > range.getMaxY()) {
                 gn.rcnode.y = (int) range.getMaxY();
+            }
             gn.pos.setLocation(gn.rcnode.x, gn.rcnode.y);
             totalMovement += Math.abs(gn.rcnode.x - nx) + Math.abs(gn.rcnode.y - ny);
             // }
@@ -896,15 +958,18 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         return totalMovement;
     }
 
+    @Override
     public void computeNewLayout() {
         synchronized (syncGraphObj) {
-            if (!(layout instanceof NoLayoutLayoutAlgorithm))
+            if (!(layout instanceof NoLayoutLayoutAlgorithm)) {
                 currentLayout = "SomeLayout";
+            }
             // System.out.println("enter "+currentLayout+" class "+layout.getClass().getName());
             int panelWidth = getWidth();
             int panelHeight = getHeight();
             // range.setBounds(0, 0, getWidth(), getHeight());
-            range.setBounds((int) (panelWidth * fLayoutMargin), (int) (panelHeight * fLayoutMargin), (int) (panelWidth * (1 - 2 * fLayoutMargin)), (int) (panelHeight * (1 - 2 * fLayoutMargin)));
+            range.setBounds((int) (panelWidth * fLayoutMargin), (int) (panelHeight * fLayoutMargin),
+                    (int) (panelWidth * (1 - (2 * fLayoutMargin))), (int) (panelHeight * (1 - (2 * fLayoutMargin))));
             range.grow(-wunit, -hunit);
             layout.layOut();
 
@@ -924,13 +989,13 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             for (Iterator it = vGraph.gnodes.iterator(); it.hasNext();) {
                 GraphNode gn = (GraphNode) it.next();
                 if (!gn.rcnode.fixed) {
-                    gn.pos.x = range.x + (int) (range.width * (1.0 + gn.pos.x) / 2.0);
-                    gn.pos.y = range.y + (int) (range.height * (1.0 + gn.pos.y) / 2.0);
+                    gn.pos.x = range.x + (int) ((range.width * (1.0 + gn.pos.x)) / 2.0);
+                    gn.pos.y = range.y + (int) ((range.height * (1.0 + gn.pos.y)) / 2.0);
                 }
             }
             currentTransformCancelled = false;
             // perform transitions
-            for (int i = 0; i < nSteps && !currentTransformCancelled; i++) {
+            for (int i = 0; (i < nSteps) && !currentTransformCancelled; i++) {
                 for (Iterator it = vGraph.gnodes.iterator(); it.hasNext();) {
                     GraphNode gn = (GraphNode) it.next();
                     if (!gn.rcnode.fixed) {
@@ -968,13 +1033,15 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         }
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
     }
 
     void rescaleIfNeeded() {
         int panelWidth = getWidth();
         int panelHeight = getHeight();
-        range.setBounds((int) (panelWidth * fLayoutMargin), (int) (panelHeight * fLayoutMargin), (int) (panelWidth * (1 - 2 * fLayoutMargin)), (int) (panelHeight * (1 - 2 * fLayoutMargin)));
+        range.setBounds((int) (panelWidth * fLayoutMargin), (int) (panelHeight * fLayoutMargin),
+                (int) (panelWidth * (1 - (2 * fLayoutMargin))), (int) (panelHeight * (1 - (2 * fLayoutMargin))));
         range.grow(-wunit, -hunit);
         boolean firstNode = true;
         for (Enumeration e = nodes.elements(); e.hasMoreElements();) {
@@ -982,52 +1049,67 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
             if (firstNode) {
                 firstNode = false;
                 actualRange.setBounds(n.x, n.y, 1, 1);
-            } else
+            } else {
                 actualRange.add(n.x, n.y);
+            }
         }
-        if (firstNode)
+        if (firstNode) {
             return;
+        }
         double zx = actualRange.getWidth() / range.getWidth();
         double zy = actualRange.getHeight() / range.getHeight();
 
-        if (zx > 1)
+        if (zx > 1) {
             actualRange.width = (int) (actualRange.width / zx);
-        if (zy > 1)
+        }
+        if (zy > 1) {
             actualRange.height /= (int) (actualRange.height / zy);
+        }
 
         double dx = 0;
         double dy = 0;
 
-        if (actualRange.x < range.x)
+        if (actualRange.x < range.x) {
             dx = range.x - actualRange.x;
-        if (actualRange.getMaxX() > range.getMaxX())
+        }
+        if (actualRange.getMaxX() > range.getMaxX()) {
             dx = range.getMaxX() - actualRange.getMaxX();
-        if (actualRange.y < range.y)
+        }
+        if (actualRange.y < range.y) {
             dy = range.y - actualRange.y;
-        if (actualRange.getMaxY() > range.getMaxY())
+        }
+        if (actualRange.getMaxY() > range.getMaxY()) {
             dy = range.getMaxY() - actualRange.getMaxY();
+        }
 
         for (Enumeration e = nodes.elements(); e.hasMoreElements();) {
             CienaNode n = (CienaNode) e.nextElement();
-            if (zx > 1)
+            if (zx > 1) {
                 n.x = (int) (n.x / zx);
-            if (zy > 1)
+            }
+            if (zy > 1) {
                 n.y = (int) (n.y / zy);
-            if (n.fixed)
+            }
+            if (n.fixed) {
                 continue;
+            }
             n.x = (int) (n.x + dx);
             n.y = (int) (n.y + dy);
             if (vGraph != null) {
                 GraphNode gn = (GraphNode) vGraph.nodesMap.get(n);
-                if (gn != null)
+                if (gn != null) {
                     gn.pos.setLocation(n.x, n.y);
+                }
             }
         }
     }
 
+    @Override
     public void paintComponent(Graphics g) {
 
-        ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, gmapPan.kbMakeNice.isSelected() ? RenderingHints.VALUE_ANTIALIAS_ON : RenderingHints.VALUE_ANTIALIAS_OFF);
+        ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                gmapPan.kbMakeNice.isSelected() ? RenderingHints.VALUE_ANTIALIAS_ON
+                        : RenderingHints.VALUE_ANTIALIAS_OFF);
 
         synchronized (links) {
             links.clear();
@@ -1049,8 +1131,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         }
         ;
 
-        if (currentLayout.equals("None"))
+        if (currentLayout.equals("None")) {
             rescaleIfNeeded();
+        }
         HashMap hOrderNodes = new HashMap();
         CienaLTP link;
         int nOrder;
@@ -1101,8 +1184,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                             for (Iterator it = n.osrpLtpsMap.keySet().iterator(); it.hasNext();) {
                                 Object objkey = it.next();
                                 link = (CienaLTP) n.osrpLtpsMap.get(objkey);
-                                if (linksDrawn.contains(objkey))
+                                if (linksDrawn.contains(objkey)) {
                                     continue; // do not draw again
+                                }
                                 linksDrawn.add(objkey);
                                 rcDest = (CienaNode) nodes.get(link.rmtName);
                                 if (rcDest != null) {// check first to see if this is a valid link
@@ -1125,14 +1209,15 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                                     // }
                                     String key = link.id;
                                     Object objOrder = hOrderNodes.get(key);
-                                    if (objOrder == null)
+                                    if (objOrder == null) {
                                         nOrder = 1;
-                                    else {
+                                    } else {
                                         nOrder = ((Integer) objOrder).intValue() + 1;
                                     }
                                     hOrderNodes.put(key, Integer.valueOf(nOrder));
-                                    if (drawOSRP)
+                                    if (drawOSRP) {
                                         drawConn(g, link, n, rcDest, stateColor, nOrder);
+                                    }
                                 }
                             }
                         } catch (Exception ex) {
@@ -1146,11 +1231,13 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                     Vector linksDrawn = new Vector();
                     for (i = 0; i < nNodes; i++) {
                         CienaNode source = (CienaNode) alNodes.get(i);
-                        if (!gmapPan.swDropDown.getValueFor(source.UnitName))
+                        if (!gmapPan.swDropDown.getValueFor(source.UnitName)) {
                             continue;
+                        }
                         for (int l = 0; l < nNodes; l++) {
-                            if (l == i)
+                            if (l == i) {
                                 continue; // do not repeat...
+                            }
                             CienaNode dest = (CienaNode) alNodes.get(l);
                             // int nr = howManyPaths(source.UnitName, dest.UnitName);
                             // if (nr == 0) continue;
@@ -1165,10 +1252,10 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
                                         if (p.traverses(source.UnitName, dest.UnitName)) { // we found a path leading
                                             // from source to dest
                                             Object objOrder = hOrderNodes.get(key);
-                                            if (objOrder == null)
+                                            if (objOrder == null) {
                                                 nOrder = 1;
-                                            else {
-                                                nOrder = (((Integer) objOrder).intValue() + 1) % 20 + 1;
+                                            } else {
+                                                nOrder = ((((Integer) objOrder).intValue() + 1) % 20) + 1;
                                             }
                                             hOrderNodes.put(key, Integer.valueOf(nOrder));
                                             drawConn(g, p, source, dest, Color.red, nOrder);
@@ -1183,8 +1270,9 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         }// end if show links
         for (Enumeration e = nodes.elements(); e.hasMoreElements();) {
             CienaNode n = (CienaNode) e.nextElement();
-            if (showOnlyConnectedNodes && !n.isLayoutHandled)
+            if (showOnlyConnectedNodes && !n.isLayoutHandled) {
                 continue;
+            }
             paintNode(g, n, fm);
         }
     }
@@ -1210,21 +1298,27 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         public boolean intersect(int x, int y) {
 
             int minX = (x1 < x2) ? x1 : x2;
-            if (x < minX)
+            if (x < minX) {
                 return false;
+            }
             int maxX = (x1 < x2) ? x2 : x1;
-            if (x > maxX)
+            if (x > maxX) {
                 return false;
+            }
             int minY = (y1 < y2) ? y1 : y2;
-            if (y < minY)
+            if (y < minY) {
                 return false;
+            }
             int maxY = (y1 < y2) ? y2 : y1;
-            if (y > maxY)
+            if (y > maxY) {
                 return false;
-            int dist = (int) (Math.abs((x2 - x1) * (y1 - y) - (x1 - x) * (y2 - y1)) / Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
+            }
+            int dist = (int) (Math.abs(((x2 - x1) * (y1 - y)) - ((x1 - x) * (y2 - y1))) / Math
+                    .sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1))));
             return (dist < 2);
         }
 
+        @Override
         public String toString() {
 
             return "Link (" + x1 + ":" + y1 + ") - (" + x2 + ":" + y2 + ")" + " -> " + linkID;
@@ -1252,21 +1346,27 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         public boolean intersect(int x, int y) {
 
             int minX = (x1 < x2) ? x1 : x2;
-            if (x < minX)
+            if (x < minX) {
                 return false;
+            }
             int maxX = (x1 < x2) ? x2 : x1;
-            if (x > maxX)
+            if (x > maxX) {
                 return false;
+            }
             int minY = (y1 < y2) ? y1 : y2;
-            if (y < minY)
+            if (y < minY) {
                 return false;
+            }
             int maxY = (y1 < y2) ? y2 : y1;
-            if (y > maxY)
+            if (y > maxY) {
                 return false;
-            int dist = (int) (Math.abs((x2 - x1) * (y1 - y) - (x1 - x) * (y2 - y1)) / Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
+            }
+            int dist = (int) (Math.abs(((x2 - x1) * (y1 - y)) - ((x1 - x) * (y2 - y1))) / Math
+                    .sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1))));
             return (dist < 2);
         }
 
+        @Override
         public String toString() {
 
             return "Link (" + x1 + ":" + y1 + ") - (" + x2 + ":" + y2 + ")" + " -> " + linkID;
@@ -1282,16 +1382,17 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
 
         final int DD = 6;
         int dd;
-        if (nOrder == 0)
+        if (nOrder == 0) {
             dd = DD;
-        else
+        } else {
             dd = 4 * nOrder;
+        }
 
         gg.setColor(col);
 
         int dx = xDst - xSrc;
         int dy = yDst - ySrc;
-        float l = (float) Math.sqrt(dx * dx + dy * dy);
+        float l = (float) Math.sqrt((dx * dx) + (dy * dy));
         float dir_x = dx / l;
         float dir_y = dy / l;
         int dd1 = dd;
@@ -1310,13 +1411,12 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         // compute the new stroke...
         if (drawOSRP) {
             BasicStroke stroke = null;
-            if (link.avlBW < link.maxBW * 0.05) {
+            if (link.avlBW < (link.maxBW * 0.05)) {
                 stroke = new BasicStroke(b.getLineWidth() + 1.0f);
             } else {
-                float val = 4.0f * link.avlBW / link.maxBW;
-                stroke = new BasicStroke(2.0f, b.getEndCap(), b.getLineJoin(), b.getMiterLimit(), new float[] {
-                        16.0f, val
-                }, b.getDashPhase());
+                float val = (4.0f * link.avlBW) / link.maxBW;
+                stroke = new BasicStroke(2.0f, b.getEndCap(), b.getLineJoin(), b.getMiterLimit(), new float[] { 16.0f,
+                        val }, b.getDashPhase());
             }
             g2.setStroke(stroke);
             gg.drawLine(x1p, y1p, x2p, y2p);
@@ -1332,22 +1432,21 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         // gg.drawLine(x1p, y1p, x2p, y2p);
         // }
 
-        int xv = (int) ((x1p + x2p + (x1p - x2p) * (float) nOrder / 20.0f) / 2.0f);
-        int yv = (int) ((y1p + y2p + (y1p - y2p) * (float) nOrder / 20.0f) / 2.0f);
+        int xv = (int) ((x1p + x2p + (((x1p - x2p) * (float) nOrder) / 20.0f)) / 2.0f);
+        int yv = (int) ((y1p + y2p + (((y1p - y2p) * (float) nOrder) / 20.0f)) / 2.0f);
 
         float aa;// (float) (dd) / (float) 2.0;
-        if (nOrder == 0)
+        if (nOrder == 0) {
             aa = dd / 2.0f;
-        else
+        } else {
             aa = 2.0f;
+        }
 
-        int[] axv = {
-                (int) (xv - aa * dir_x + 2 * aa * dir_y), (int) (xv - aa * dir_x - 2 * aa * dir_y), (int) (xv + 2 * aa * dir_x), (int) (xv - aa * dir_x + 2 * aa * dir_y)
-        };
+        int[] axv = { (int) ((xv - (aa * dir_x)) + (2 * aa * dir_y)), (int) (xv - (aa * dir_x) - (2 * aa * dir_y)),
+                (int) (xv + (2 * aa * dir_x)), (int) ((xv - (aa * dir_x)) + (2 * aa * dir_y)) };
 
-        int[] ayv = {
-                (int) (yv - aa * dir_y - 2 * aa * dir_x), (int) (yv - aa * dir_y + 2 * aa * dir_x), (int) (yv + 2 * aa * dir_y), (int) (yv - aa * dir_y - 2 * aa * dir_x)
-        };
+        int[] ayv = { (int) (yv - (aa * dir_y) - (2 * aa * dir_x)), (int) ((yv - (aa * dir_y)) + (2 * aa * dir_x)),
+                (int) (yv + (2 * aa * dir_y)), (int) (yv - (aa * dir_y) - (2 * aa * dir_x)) };
 
         gg.fillPolygon(axv, ayv, 4);
         gg.setColor(Color.black);
@@ -1362,16 +1461,17 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
 
         final int DD = 6;
         int dd;
-        if (nOrder == 0)
+        if (nOrder == 0) {
             dd = DD;
-        else
+        } else {
             dd = 3 * nOrder;
+        }
 
         gg.setColor(col);
 
         int dx = xDst - xSrc;
         int dy = yDst - ySrc;
-        float l = (float) Math.sqrt(dx * dx + dy * dy);
+        float l = (float) Math.sqrt((dx * dx) + (dy * dy));
         float dir_x = dx / l;
         float dir_y = dy / l;
         int dd1 = dd;
@@ -1402,26 +1502,34 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         int g = col.getGreen();
         int b = col.getBlue();
 
-        r = (int) (r * (double) path.rate / 5.0);
-        if (r < 0)
+        r = (int) ((r * (double) path.rate) / 5.0);
+        if (r < 0) {
             r = 0;
-        if (r > 255)
+        }
+        if (r > 255) {
             r = 255;
-        g = (int) (g * (double) path.rate / 5.0);
-        if (g < 0)
+        }
+        g = (int) ((g * (double) path.rate) / 5.0);
+        if (g < 0) {
             g = 0;
-        if (g > 255)
+        }
+        if (g > 255) {
             g = 255;
-        b = (int) (b * (double) path.rate / 5.0);
-        if (b < 0)
+        }
+        b = (int) ((b * (double) path.rate) / 5.0);
+        if (b < 0) {
             b = 0;
-        if (b > 255)
+        }
+        if (b > 255) {
             b = 255;
-        int alpha = (int) (10 + 255 * (double) path.rate / 5.0);
-        if (alpha < 10)
+        }
+        int alpha = (int) (10 + ((255 * (double) path.rate) / 5.0));
+        if (alpha < 10) {
             alpha = 10;
-        if (alpha > 255)
+        }
+        if (alpha > 255) {
             alpha = 255;
+        }
         Color col2 = new Color(r, g, b, alpha);
         gg.setColor(col2);
         // gg.setColor(col);
@@ -1435,25 +1543,24 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         gg.drawLine(x1p, y1p, x2p, y2p);
         g2.setStroke(bb);
 
-        int xv = (int) ((x1p + x2p + (x1p - x2p) * (float) nOrder / 35.0f) / 2.0f);
-        int yv = (int) ((y1p + y2p + (y1p - y2p) * (float) nOrder / 35.0f) / 2.0f);
+        int xv = (int) ((x1p + x2p + (((x1p - x2p) * (float) nOrder) / 35.0f)) / 2.0f);
+        int yv = (int) ((y1p + y2p + (((y1p - y2p) * (float) nOrder) / 35.0f)) / 2.0f);
 
         // int xv = (int)((x1p + x2p) / 2.0f);
         // int yv = (int)((y1p + y2p) / 2.0f);
 
         float aa;// (float) (dd) / (float) 2.0;
-        if (nOrder == 0)
+        if (nOrder == 0) {
             aa = dd / 2.0f;
-        else
+        } else {
             aa = 2.0f;
+        }
 
-        int[] axv = {
-                (int) (xv - aa * dir_x + 2 * aa * dir_y), (int) (xv - aa * dir_x - 2 * aa * dir_y), (int) (xv + 2 * aa * dir_x), (int) (xv - aa * dir_x + 2 * aa * dir_y)
-        };
+        int[] axv = { (int) ((xv - (aa * dir_x)) + (2 * aa * dir_y)), (int) (xv - (aa * dir_x) - (2 * aa * dir_y)),
+                (int) (xv + (2 * aa * dir_x)), (int) ((xv - (aa * dir_x)) + (2 * aa * dir_y)) };
 
-        int[] ayv = {
-                (int) (yv - aa * dir_y - 2 * aa * dir_x), (int) (yv - aa * dir_y + 2 * aa * dir_x), (int) (yv + 2 * aa * dir_y), (int) (yv - aa * dir_y - 2 * aa * dir_x)
-        };
+        int[] ayv = { (int) (yv - (aa * dir_y) - (2 * aa * dir_x)), (int) ((yv - (aa * dir_y)) + (2 * aa * dir_x)),
+                (int) (yv + (2 * aa * dir_y)), (int) (yv - (aa * dir_y) - (2 * aa * dir_x)) };
 
         gg.fillPolygon(axv, ayv, 4);
         gg.setColor(Color.black);
@@ -1467,25 +1574,31 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
 
         int w2, h2;
         w2 = osImgWidth / 2;
-        if (w2 > wunit)
+        if (w2 > wunit) {
             wunit = w2;
+        }
         h2 = osImgHeight / 2;
-        if (h2 > hunit)
+        if (h2 > hunit) {
             hunit = h2;
+        }
         w2 = (fm.stringWidth(nodeName) + 15) / 2;
         h2 = (fm.getHeight() + 10) / 2;
-        if (w2 > wunit)
+        if (w2 > wunit) {
             wunit = w2;
-        if (h2 > hunit)
+        }
+        if (h2 > hunit) {
             hunit = h2;
-        if (n.limits == null)
+        }
+        if (n.limits == null) {
             n.limits = new Rectangle(x - wunit, y - hunit, wunit * 2, hunit * 2);
-        else
+        } else {
             n.limits.setBounds(x - wunit, y - hunit, wunit * 2, hunit * 2);
+        }
         // draw new OS
-        if (gmapPan.kbShowShadow.isSelected())
-            ((Graphics2D) g).drawImage(nodeShadow, blurOp, x - osImgWidth / 2, y - osImgHeight / 2);
-        g.drawImage(osImage, x - osImgWidth / 2, y - osImgHeight / 2, null);
+        if (gmapPan.kbShowShadow.isSelected()) {
+            ((Graphics2D) g).drawImage(nodeShadow, blurOp, x - (osImgWidth / 2), y - (osImgHeight / 2));
+        }
+        g.drawImage(osImage, x - (osImgWidth / 2), y - (osImgHeight / 2), null);
 
         // g.setColor(Color.white);
         // g.drawString(nodeName, n.limits.x + 7 + wunit - w2 -1,
@@ -1493,11 +1606,12 @@ public class CienaGraphPan extends JPanel implements MouseListener, MouseMotionL
         // g.drawString(nodeName, n.limits.x + 7 + wunit - w2 +1,
         // n.limits.y - fm.getAscent() - 28/*+ hunit - h2 + fm.getAscent()*/);
         g.setColor(new Color(0, 0, 77));
-        if (n.equals(pick))
+        if (n.equals(pick)) {
             g.setColor(new Color(30, 30, 150));
-        g.drawString(nodeName, n.limits.x + 7 + wunit - w2, n.limits.y + h2 - fm.getAscent() / 2 + 5 /*
-                                                                                                      * + hunit - h2 +
-                                                                                                      * fm.getAscent()
-                                                                                                      */);
+        }
+        g.drawString(nodeName, (n.limits.x + 7 + wunit) - w2, ((n.limits.y + h2) - (fm.getAscent() / 2)) + 5 /*
+                                                                                                             * + hunit - h2 +
+                                                                                                             * fm.getAscent()
+                                                                                                             */);
     }
 }

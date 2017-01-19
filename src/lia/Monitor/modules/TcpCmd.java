@@ -11,8 +11,8 @@ import java.util.logging.Logger;
 
 public final class TcpCmd {
 
-    /** The Logger */ 
-    private static final Logger logger = Logger.getLogger("lia.Monitor.modules.TcpCmd");
+    /** The Logger */
+    private static final Logger logger = Logger.getLogger(TcpCmd.class.getName());
 
     private Socket socket = null;
     private OutputStreamWriter out = null;
@@ -21,8 +21,8 @@ public final class TcpCmd {
     private int port = 0;
     private int localPort = -1;
     private String cmd = null;
-    private AtomicBoolean cleaned;
-    
+    private final AtomicBoolean cleaned;
+
     public TcpCmd(String host, int port, String cmd) {
         this.cleaned = new AtomicBoolean(false);
         this.host = host;
@@ -34,7 +34,7 @@ public final class TcpCmd {
         //Create the sock
         try {
             socket = new Socket();
-            socket.connect(new InetSocketAddress(host,port), timeout);
+            socket.connect(new InetSocketAddress(host, port), timeout);
             socket.setSoTimeout(timeout);
             socket.setSoLinger(true, 1);
             socket.setTcpNoDelay(true);
@@ -56,16 +56,17 @@ public final class TcpCmd {
             return null;
         }
 
-        if(logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, " [ TcpCmd ] Sending remote CMD [ " + host + ":" + port + ":-" + localPort + " Cmd = " + cmd + " ]");
+        if (logger.isLoggable(Level.FINER)) {
+            logger.log(Level.FINER, " [ TcpCmd ] Sending remote CMD [ " + host + ":" + port + ":-" + localPort
+                    + " Cmd = " + cmd + " ]");
         }
 
         try {
             out.write(cmd);
             out.flush();
             return buffer;
-        } catch ( Throwable t ) {
-            logger.log( Level.WARNING, "FAILED to execute cmd = " + cmd, t);
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "FAILED to execute cmd = " + cmd, t);
             cleanup();
             return null;
         }
@@ -74,27 +75,33 @@ public final class TcpCmd {
     public BufferedReader execute() {
         return execute(10000);
     }
-    
+
     public void cleanup() {
-        
+
         //allow multiple calls
-        if(!cleaned.getAndSet(true)) {
-            if(logger.isLoggable(Level.FINER)) {
-                logger.log(Level.FINER, " [ TcpCmd ] cleanup() for [ " + host + ":" + port + ":-" + localPort + " Cmd = " + cmd + " ]");
+        if (!cleaned.getAndSet(true)) {
+            if (logger.isLoggable(Level.FINER)) {
+                logger.log(Level.FINER, " [ TcpCmd ] cleanup() for [ " + host + ":" + port + ":-" + localPort
+                        + " Cmd = " + cmd + " ]");
             }
-            
+
             try {
-                if (out != null)
+                if (out != null) {
                     out.close();
-                if (buffer != null)
+                }
+                if (buffer != null) {
                     buffer.close();
+                }
 
-            } catch (Throwable ignore) {}
+            } catch (Throwable ignore) {
+            }
 
             try {
-                if (socket != null)
+                if (socket != null) {
                     socket.close();
-            } catch (Throwable ignore) {}
+                }
+            } catch (Throwable ignore) {
+            }
         }
 
     }

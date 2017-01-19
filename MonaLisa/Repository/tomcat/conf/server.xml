@@ -34,6 +34,7 @@
         connectionTimeout="10000"
         disableUploadTimeout="true"
         allowLinking="true"
+        maxHttpHeaderSize="65536"
     />
     
     <!--
@@ -55,6 +56,7 @@
         compression="force"
         compressionMinSize="2048"
         compressableMimeType="text/html,text/xml,text/plain,text/css,text/cmd,text/csv,text/javascript,application/json,application/javascript,application/soap+xml,application/xhtml+xml,application/atom+xml"
+        maxHttpHeaderSize="65536"
     />
     -->
 

@@ -22,7 +22,7 @@ import lia.util.logging.MLLogEvent;
  */
 public class VO_CondorAccounting {
 
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.modules.VO_CondorAccounting");
+    private static final Logger logger = Logger.getLogger(VO_CondorAccounting.class.getName());
 
     /**
      * Array with the names we use for the ClassAd parameters; a character
@@ -57,9 +57,7 @@ public class VO_CondorAccounting {
     // 4 - C (completed),
     // ? - U (unexpanded - never been run),
     // 3 - R (removed).
-    protected String[] jobStatusNames = {
-            "X", "I", "R", "R", "C", "H"
-    };
+    protected String[] jobStatusNames = { "X", "I", "R", "R", "C", "H" };
 
     /*
      * Buffer used to keep the lines from the history file that contain
@@ -181,15 +179,14 @@ public class VO_CondorAccounting {
         logger.log(Level.INFO, "[VO_CondorAccounting] Initalizing...");
         if (histFiles != null) {
             watchers = new LogWatcher[histFiles.size()];
-            for (int i = 0; i < histFiles.size(); i++)
+            for (int i = 0; i < histFiles.size(); i++) {
                 watchers[i] = new LogWatcher((histFiles.get(i)));
+            }
         } else {
             final Integer errCode = Integer.valueOf(VO_Utils.CONDOR_NO_HIST);
             final MLLogEvent<String, Integer> mlle = new MLLogEvent<String, Integer>();
             mlle.logParameters.put("Error Code", errCode);
-            logger.log(Level.INFO, VO_Utils.voJobsErrCodes.get(errCode), new Object[] {
-                mlle
-            });
+            logger.log(Level.INFO, VO_Utils.voJobsErrCodes.get(errCode), new Object[] { mlle });
             watchers = null;
         }
         // htJobInfo = new Hashtable();
@@ -214,15 +211,13 @@ public class VO_CondorAccounting {
         }
 
         try {
-            for (int i = 0; i < watchers.length; i++) {
-                final BufferedReader br = watchers[i].getNewChunk();
+            for (LogWatcher watcher : watchers) {
+                final BufferedReader br = watcher.getNewChunk();
 
                 if (br == null) {
                     MLLogEvent<String, Integer> mlle = new MLLogEvent<String, Integer>();
                     mlle.logParameters.put("Error Code", errCode);
-                    logger.log(Level.WARNING, VO_Utils.voJobsErrCodes.get(errCode), new Object[] {
-                        mlle
-                    });
+                    logger.log(Level.WARNING, VO_Utils.voJobsErrCodes.get(errCode), new Object[] { mlle });
                     return null;
                 }
 
@@ -240,9 +235,7 @@ public class VO_CondorAccounting {
         } catch (Throwable t) {
             MLLogEvent<String, Integer> mlle = new MLLogEvent<String, Integer>();
             mlle.logParameters.put("Error Code", errCode);
-            logger.log(Level.WARNING, "Error reading Condor history log", new Object[] {
-                    mlle, t
-            });
+            logger.log(Level.WARNING, "Error reading Condor history log", new Object[] { mlle, t });
             return null;
         }
 
@@ -270,55 +263,61 @@ public class VO_CondorAccounting {
             String paramValue = lst.nextToken();
 
             String modParamName = htParamNames.get(adParamName);
-            if (modParamName == null)
+            if (modParamName == null) {
                 return;
+            }
 
             final char c = modParamName.charAt(0);
 
             switch (c) {
-                case 'l': {
-                    // for not overwriting the global IDs, if they exist
-                    if ((modParamName.equals("lClusterId") || modParamName.equals("lProcId")) && htInfo.get(modParamName) != null)
-                        break;
-                    lVal = Long.parseLong(paramValue);
-                    Long lMult = (Long) valMultipliers.get(modParamName);
-                    if (lMult != null)
-                        lVal *= lMult.longValue();
-                    htInfo.put(modParamName, Long.valueOf(lVal));
+            case 'l': {
+                // for not overwriting the global IDs, if they exist
+                if ((modParamName.equals("lClusterId") || modParamName.equals("lProcId"))
+                        && (htInfo.get(modParamName) != null)) {
                     break;
                 }
-                case 'd': {
-                    dVal = Double.parseDouble(paramValue);
-                    Double dMult = (Double) valMultipliers.get(modParamName);
-                    if (dMult != null)
-                        dVal *= dMult.doubleValue();
-                    htInfo.put(modParamName, Double.valueOf(dVal));
-                    break;
+                lVal = Long.parseLong(paramValue);
+                Long lMult = (Long) valMultipliers.get(modParamName);
+                if (lMult != null) {
+                    lVal *= lMult.longValue();
                 }
-                case 's': {
-                    nameWithoutQuotes = paramValue.replaceAll("\"", "");
-                    htInfo.put(modParamName, nameWithoutQuotes);
-                    break;
+                htInfo.put(modParamName, Long.valueOf(lVal));
+                break;
+            }
+            case 'd': {
+                dVal = Double.parseDouble(paramValue);
+                Double dMult = (Double) valMultipliers.get(modParamName);
+                if (dMult != null) {
+                    dVal *= dMult.doubleValue();
                 }
-                case 'b': {
-                    htInfo.put(modParamName, Boolean.valueOf(paramValue));
-                    break;
+                htInfo.put(modParamName, Double.valueOf(dVal));
+                break;
+            }
+            case 's': {
+                nameWithoutQuotes = paramValue.replaceAll("\"", "");
+                htInfo.put(modParamName, nameWithoutQuotes);
+                break;
+            }
+            case 'b': {
+                htInfo.put(modParamName, Boolean.valueOf(paramValue));
+                break;
+            }
+            default: {
+                if (logger.isLoggable(Level.FINE)) {
+                    logger.log(Level.FINE, "VO_CondorAccounting - parseClassAdLine - ignoring ... classAddParam: '" + c
+                            + "' for param: " + modParamName);
                 }
-                default: {
-                    if (logger.isLoggable(Level.FINE)) {
-                        logger.log(Level.FINE, "VO_CondorAccounting - parseClassAdLine - ignoring ... classAddParam: '" + c
-                                + "' for param: " + modParamName);
-                    }
-                }
+            }
             }
 
             /* for some parameters we need further processing */
             if (adParamName.equals("JobStatus")) {
                 lVal = Long.parseLong(paramValue);
-                if (lVal >= 0 && lVal <= 5)
+                if ((lVal >= 0) && (lVal <= 5)) {
                     htInfo.put("sJobStatus", jobStatusNames[(int) lVal]);
-                else
+                } else {
                     htInfo.put("sJobStatus", "X"); // unknown status
+                }
             }
 
             if (adParamName.equals("GlobalJobId")) {
@@ -331,9 +330,7 @@ public class VO_CondorAccounting {
             Integer errCode = VO_Utils.jobMgrRecordErrors.get(VO_Utils.CONDOR);
             MLLogEvent<String, Integer> mlle = new MLLogEvent<String, Integer>();
             mlle.logParameters.put("Error Code", errCode);
-            logger.log(Level.INFO, "Error parsing Condor ClassAd parameter: " + lin + "\n", new Object[] {
-                    mlle, t
-            });
+            logger.log(Level.INFO, "Error parsing Condor ClassAd parameter: " + lin + "\n", new Object[] { mlle, t });
         }
 
         /*
@@ -372,7 +369,8 @@ public class VO_CondorAccounting {
      * @return A Vector with JobInfoExt objects correspunding to the current jobs
      * @throws Exception
      */
-    final Vector<JobInfoExt> parseCondorQLongOutput(BufferedReader buff, int nCommandsToCheck, boolean checkExitStatus) throws Exception {
+    final Vector<JobInfoExt> parseCondorQLongOutput(BufferedReader buff, int nCommandsToCheck, boolean checkExitStatus)
+            throws Exception {
 
         final boolean isFine = logger.isLoggable(Level.FINE);
         final boolean isFiner = isFine || logger.isLoggable(Level.FINER);
@@ -413,8 +411,9 @@ public class VO_CondorAccounting {
                     break;
                 }
 
-                if (lineCnt < 10)
+                if (lineCnt < 10) {
                     firstLines.append(lin).append(EOL);
+                }
                 lineCnt++;
 
                 if (isFiner) {
@@ -425,8 +424,9 @@ public class VO_CondorAccounting {
                 }
 
                 // skip the empty lines (except the ones that separate the ClassAds)
-                if (lin.length() == 0 && !haveNewRecord)
+                if ((lin.length() == 0) && !haveNewRecord) {
                     continue;
+                }
 
                 if (lin.startsWith(VO_Utils.okString)) {
                     okCnt++;
@@ -438,8 +438,9 @@ public class VO_CondorAccounting {
                     continue;
                 }
 
-                if (lin.length() > 0)
+                if (lin.length() > 0) {
                     haveEmptyOutput = false;
+                }
 
                 if (lin.indexOf("-- Schedd") >= 0) {
                     StringTokenizer st = new StringTokenizer(lin, ": ");
@@ -468,7 +469,7 @@ public class VO_CondorAccounting {
                         haveNewRecord = true;
                     }
 
-                } else if (lin.length() == 0 && haveNewRecord && !haveErrorOutput) {
+                } else if ((lin.length() == 0) && haveNewRecord && !haveErrorOutput) {
                     // the record for a job is finished, parse it
                     haveNewRecord = false;
                     JobInfoExt jobInfo = extractJobInfo(qInfo, scheddName);
@@ -489,45 +490,46 @@ public class VO_CondorAccounting {
             } // end of for
 
             if (logWarning) {
-                if (haveErrorOutput && !haveEmptyOutput)
+                if (haveErrorOutput && !haveEmptyOutput) {
                     logger.log(Level.INFO, "The condor_q -l command output has an unrecognized format.");
+                }
 
-                if (haveEmptyOutput)
+                if (haveEmptyOutput) {
                     logger.log(Level.FINE, "The condor_q -l command has an empty output.");
+                }
                 logWarning = false;
             }
 
-            if (!haveErrorOutput && !haveEmptyOutput)
+            if (!haveErrorOutput && !haveEmptyOutput) {
                 logWarning = true;
+            }
 
             if (haveErrorOutput && !haveEmptyOutput) {
                 // logger.warning("Error output from condor_q -l: " + firstLines.toString());
-                throw new ModuleException(VO_Utils.voJobsErrCodes.get(parseErrCode) + "\n Command output:\n" + firstLines.toString(),
-                                          parseErrCode.intValue());
+                throw new ModuleException(VO_Utils.voJobsErrCodes.get(parseErrCode) + "\n Command output:\n"
+                        + firstLines.toString(), parseErrCode.intValue());
             }
 
-            if (okCnt < nCommandsToCheck && checkExitStatus) {
+            if ((okCnt < nCommandsToCheck) && checkExitStatus) {
                 // logger.warning("Error output from condor_q -l: " + firstLines.toString());
-                throw new ModuleException(VO_Utils.voJobsErrCodes.get(retErrCode) + "\n Command output:\n" + firstLines.toString(),
-                                          retErrCode.intValue());
+                throw new ModuleException(VO_Utils.voJobsErrCodes.get(retErrCode) + "\n Command output:\n"
+                        + firstLines.toString(), retErrCode.intValue());
             }
         } catch (Throwable t) {
-            logger.log(Level.WARNING, "parseCondorQLongOutput got exception - command output: First lines:\n " + firstLines.toString()
-                    + "\n. Cause:", t);
+            logger.log(Level.WARNING, "parseCondorQLongOutput got exception - command output: First lines:\n "
+                    + firstLines.toString() + "\n. Cause:", t);
             throw new Exception(t);
         } finally {
             if (isFine) {
                 if (isFiner) {
                     final StringBuilder finMsg = new StringBuilder(fullOutput.length() + 512);
-                    finMsg.append("\n\n Full parseCondorQLongOutput: \n\n")
-                          .append(fullOutput.toString())
-                          .append("\n - parseCondorQLongOutput returning: ")
-                          .append(ret.size())
-                          .append(" results. Parsed: " + lineCnt + " lines. okCnt=" + okCnt);
+                    finMsg.append("\n\n Full parseCondorQLongOutput: \n\n").append(fullOutput.toString())
+                            .append("\n - parseCondorQLongOutput returning: ").append(ret.size())
+                            .append(" results. Parsed: " + lineCnt + " lines. okCnt=" + okCnt);
                     logger.log(Level.FINER, finMsg.toString());
                 } else {
-                    logger.log(Level.FINE, "\n - parseCondorQLongOutput returning: " + ret.size() + " results. Parsed: " + lineCnt
-                            + " lines. okCnt=" + okCnt);
+                    logger.log(Level.FINE, "\n - parseCondorQLongOutput returning: " + ret.size()
+                            + " results. Parsed: " + lineCnt + " lines. okCnt=" + okCnt);
                 }
             }
         }
@@ -548,7 +550,8 @@ public class VO_CondorAccounting {
      * @return A Vector with JobInfoExt objects correspunding to the current jobs
      * @throws Exception
      */
-    final Vector<JobInfoExt> parseCondorQFormatOutput(BufferedReader buff, int nCommandsToCheck, boolean checkExitStatus) throws Exception {
+    final Vector<JobInfoExt> parseCondorQFormatOutput(BufferedReader buff, int nCommandsToCheck, boolean checkExitStatus)
+            throws Exception {
         int lineCnt = 0;
 
         final boolean isFine = logger.isLoggable(Level.FINE);
@@ -583,8 +586,9 @@ public class VO_CondorAccounting {
                     break;
                 }
 
-                if (lineCnt < 10)
+                if (lineCnt < 10) {
                     firstLines.append(lin).append(EOL);
+                }
                 lineCnt++;
 
                 if (isFiner) {
@@ -595,8 +599,9 @@ public class VO_CondorAccounting {
                 }
 
                 // skip the empty lines (except the ones that separate the ClassAds)
-                if (lin.length() == 0 && !haveNewRecord)
+                if ((lin.length() == 0) && !haveNewRecord) {
                     continue;
+                }
 
                 if (lin.startsWith(VO_Utils.okString)) {
                     okCnt++;
@@ -608,8 +613,9 @@ public class VO_CondorAccounting {
                     continue;
                 }
 
-                if (lin.length() > 0)
+                if (lin.length() > 0) {
                     haveEmptyOutput = false;
+                }
 
                 // normally a "-- Schedd" line shouldn't be here...
                 // but check this just in case
@@ -643,9 +649,9 @@ public class VO_CondorAccounting {
                     // the record for a job is finished, parse it
                     haveNewRecord = false;
                     JobInfoExt jobInfo = extractJobInfo(qInfo, scheddName);
-                    if (jobInfo != null)
+                    if (jobInfo != null) {
                         ret.add(jobInfo);
-                    else {
+                    } else {
                         haveErrorOutput = true;
                         break;
                     }
@@ -653,51 +659,53 @@ public class VO_CondorAccounting {
                 } // end of if
             } // end of for
 
-            if (haveNewRecord) // an unfinished job record
+            if (haveNewRecord) {
                 haveErrorOutput = true;
+            }
 
             if (logWarning) {
-                if (haveErrorOutput && !haveEmptyOutput)
+                if (haveErrorOutput && !haveEmptyOutput) {
                     logger.log(Level.INFO, "The condor_q -format command output has an unrecognized format.");
+                }
 
-                if (haveEmptyOutput)
+                if (haveEmptyOutput) {
                     logger.log(Level.INFO, "The condor_q -format command has an empty output.");
+                }
                 logWarning = false;
             }
 
-            if (!haveErrorOutput && !haveEmptyOutput)
+            if (!haveErrorOutput && !haveEmptyOutput) {
                 logWarning = true;
+            }
 
             if (haveErrorOutput && !haveEmptyOutput) {
                 // logger.warning("Error output from condor_q -format: " + firstLines.toString());
-                throw new ModuleException(VO_Utils.voJobsErrCodes.get(parseErrCode) + "\n Command output:\n" + firstLines.toString(),
-                                          parseErrCode.intValue());
+                throw new ModuleException(VO_Utils.voJobsErrCodes.get(parseErrCode) + "\n Command output:\n"
+                        + firstLines.toString(), parseErrCode.intValue());
             }
 
-            if (okCnt < nCommandsToCheck && checkExitStatus) {
+            if ((okCnt < nCommandsToCheck) && checkExitStatus) {
                 // logger.warning("Error output from condor_q -format: " + firstLines.toString());
-                throw new ModuleException(VO_Utils.voJobsErrCodes.get(retErrCode) + "\n Command output:\n" + firstLines.toString(),
-                                          retErrCode.intValue());
+                throw new ModuleException(VO_Utils.voJobsErrCodes.get(retErrCode) + "\n Command output:\n"
+                        + firstLines.toString(), retErrCode.intValue());
             }
 
         } catch (Throwable t) {
             logger.log(Level.WARNING,
-                       "parseCondorQFormatOutput got exception - command output:\n" + firstLines.toString() + "\n\n Cause:",
-                       t);
+                    "parseCondorQFormatOutput got exception - command output:\n" + firstLines.toString()
+                            + "\n\n Cause:", t);
             throw new Exception(t);
         } finally {
             if (isFine) {
                 if (isFiner) {
                     final StringBuilder finMsg = new StringBuilder(fullOutput.length() + 512);
-                    finMsg.append("\n\n Full parseCondorQFormatOutput: \n\n")
-                          .append(fullOutput.toString())
-                          .append("\n - parseCondorQFormatOutput returning: ")
-                          .append(ret.size())
-                          .append(" results. Parsed: " + lineCnt + " lines. okCnt=" + okCnt);
+                    finMsg.append("\n\n Full parseCondorQFormatOutput: \n\n").append(fullOutput.toString())
+                            .append("\n - parseCondorQFormatOutput returning: ").append(ret.size())
+                            .append(" results. Parsed: " + lineCnt + " lines. okCnt=" + okCnt);
                     logger.log(Level.FINER, finMsg.toString());
                 } else {
-                    logger.log(Level.FINE, "\n - parseCondorQFormatOutput returning: " + ret.size() + " results. Parsed: " + lineCnt
-                            + " lines. okCnt=" + okCnt);
+                    logger.log(Level.FINE, "\n - parseCondorQFormatOutput returning: " + ret.size()
+                            + " results. Parsed: " + lineCnt + " lines. okCnt=" + okCnt);
                 }
             }
         }
@@ -719,8 +727,8 @@ public class VO_CondorAccounting {
      * @throws Exception
      */
 
-    final Hashtable<String, JobInfoExt> parseCondorQOutput(BufferedReader buff, int nCommandsToCheck, boolean checkExitStatus)
-            throws Exception {
+    final Hashtable<String, JobInfoExt> parseCondorQOutput(BufferedReader buff, int nCommandsToCheck,
+            boolean checkExitStatus) throws Exception {
 
         final boolean isFine = logger.isLoggable(Level.FINE);
         final boolean isFiner = isFine || logger.isLoggable(Level.FINER);
@@ -762,8 +770,9 @@ public class VO_CondorAccounting {
                     break;
                 }
 
-                if (lineCnt < 10)
+                if (lineCnt < 10) {
                     firstLines.append(lin).append(EOL);
+                }
                 lineCnt++;
 
                 if (isFiner) {
@@ -773,8 +782,9 @@ public class VO_CondorAccounting {
                     }
                 }
 
-                if (lin.equals(""))
+                if (lin.equals("")) {
                     continue;
+                }
 
                 if (lin.indexOf("All queues are empty") >= 0) {
                     haveErrorOutput = false;
@@ -786,14 +796,15 @@ public class VO_CondorAccounting {
                     continue;
                 }
 
-                if (lin.length() > 0)
+                if (lin.length() > 0) {
                     haveEmptyOutput = false;
+                }
 
                 // Find the specific fields so we can substring the line
                 // ID OWNER SUBMITTED RUN_TIME ST PRI SIZE CMD
                 // 185.0 sdss 10/8 20:09 0+00:00:00 R 0 0.0 data
                 //
-                if (!canProcess && lin.indexOf("ID") != -1 && lin.indexOf("OWNER") != -1) {
+                if (!canProcess && (lin.indexOf("ID") != -1) && (lin.indexOf("OWNER") != -1)) {
                     canProcess = true;
                     haveErrorOutput = false;
                     continue;
@@ -835,8 +846,9 @@ public class VO_CondorAccounting {
 
                         String condorid = columns[0]; // .replaceFirst(".0", "");
                         jobInfo.id = jobInfo.jobManager + "_" + condorid;
-                        if (scheddName != null)
+                        if (scheddName != null) {
                             jobInfo.id += ("_" + scheddName);
+                        }
 
                         try {
                             jobInfo.user = columns[1];
@@ -850,9 +862,8 @@ public class VO_CondorAccounting {
                             Integer errCode = VO_Utils.jobMgrRecordErrors.get(VO_Utils.CONDOR);
                             MLLogEvent<String, Integer> mlle = new MLLogEvent<String, Integer>();
                             mlle.logParameters.put("Error Code", errCode);
-                            logger.log(Level.INFO, "Error parsing condor_q line: " + lin + "\n", new Object[] {
-                                    mlle, e
-                            });
+                            logger.log(Level.INFO, "Error parsing condor_q line: " + lin + "\n",
+                                    new Object[] { mlle, e });
                             continue;
                         }
                         htRet.put(jobInfo.id, jobInfo);
@@ -865,29 +876,30 @@ public class VO_CondorAccounting {
             String errMsg = "Error output from condor_q: " + firstLines.toString();
             if (haveErrorOutput && !haveEmptyOutput) {
                 // logger.warning(errMsg);
-                throw new ModuleException(VO_Utils.voJobsErrCodes.get(parseErrCode) + "\n" + errMsg, parseErrCode.intValue());
+                throw new ModuleException(VO_Utils.voJobsErrCodes.get(parseErrCode) + "\n" + errMsg,
+                        parseErrCode.intValue());
             }
 
-            if (okCnt < nCommandsToCheck && checkExitStatus) {
+            if ((okCnt < nCommandsToCheck) && checkExitStatus) {
                 // logger.warning(errMsg);
-                throw new ModuleException(VO_Utils.voJobsErrCodes.get(retErrCode) + "\n" + errMsg, retErrCode.intValue());
+                throw new ModuleException(VO_Utils.voJobsErrCodes.get(retErrCode) + "\n" + errMsg,
+                        retErrCode.intValue());
             }
         } catch (Throwable t) {
-            logger.log(Level.WARNING, "parseCondorQOutput got exception - command output\n" + firstLines.toString() + "\n Cause:", t);
+            logger.log(Level.WARNING, "parseCondorQOutput got exception - command output\n" + firstLines.toString()
+                    + "\n Cause:", t);
             throw new Exception(t);
         } finally {
             if (isFine) {
                 if (isFiner) {
                     final StringBuilder finMsg = new StringBuilder(fullOutput.length() + 512);
-                    finMsg.append("\n\n Full parseCondorQOutput: \n\n")
-                          .append(fullOutput.toString())
-                          .append("\n - parseCondorQOutput returning: ")
-                          .append(htRet.size())
-                          .append(" results. Parsed: " + lineCnt + " lines. okCnt=" + okCnt);
+                    finMsg.append("\n\n Full parseCondorQOutput: \n\n").append(fullOutput.toString())
+                            .append("\n - parseCondorQOutput returning: ").append(htRet.size())
+                            .append(" results. Parsed: " + lineCnt + " lines. okCnt=" + okCnt);
                     logger.log(Level.FINER, finMsg.toString());
                 } else {
-                    logger.log(Level.FINE, "\n - parseCondorQOutput returning: " + htRet.size() + " results. Parsed: " + lineCnt
-                            + " lines. okCnt=" + okCnt);
+                    logger.log(Level.FINE, "\n - parseCondorQOutput returning: " + htRet.size() + " results. Parsed: "
+                            + lineCnt + " lines. okCnt=" + okCnt);
                 }
             }
         }
@@ -908,10 +920,11 @@ public class VO_CondorAccounting {
     protected JobInfoExt extractJobInfo(Map<String, Object> jmParams, String scheddName) {
         JobInfoExt jobInfo = new JobInfoExt();
         String paramsScheddName = (String) jmParams.get("sScheddName");
-        if (paramsScheddName != null)
+        if (paramsScheddName != null) {
             jobInfo.serverName = paramsScheddName;
-        else
+        } else {
             jobInfo.serverName = scheddName;
+        }
 
         jobInfo.jobManager = "CONDOR";
 
@@ -919,16 +932,15 @@ public class VO_CondorAccounting {
         String clusterId = ((Long) jmParams.get("lClusterId")).toString();
         String procId = ((Long) jmParams.get("lProcId")).toString();
         jobInfo.id = jobInfo.jobManager + "_" + clusterId + "." + procId;
-        if (scheddName != null)
+        if (scheddName != null) {
             jobInfo.id += ("_" + jobInfo.serverName);
+        }
 
         // if some essential job parameters are missing
-        if (jobInfo.user == null || clusterId == null || procId == null) {
+        if ((jobInfo.user == null) || (clusterId == null) || (procId == null)) {
             MLLogEvent<String, Integer> mlle = new MLLogEvent<String, Integer>();
             mlle.logParameters.put("Error Code", VO_Utils.jobMgrRecordErrors.get(VO_Utils.CONDOR));
-            logger.log(Level.INFO, "Incompletely specified Condor job", new Object[] {
-                mlle
-            });
+            logger.log(Level.INFO, "Incompletely specified Condor job", new Object[] { mlle });
             return null;
         }
 
@@ -939,22 +951,26 @@ public class VO_CondorAccounting {
 
         jobInfo.status = (String) jmParams.get("sJobStatus");
         Double imsize = (Double) jmParams.get("dImageSize");
-        if (imsize != null)
+        if (imsize != null) {
             jobInfo.size = imsize.doubleValue();
+        }
 
         Double dusage = (Double) jmParams.get("dDiskUsage");
-        if (dusage != null)
+        if (dusage != null) {
             jobInfo.disk_usage = dusage.doubleValue();
-        else
+        } else {
             logger.info("Disk usage not defined for Condor job");
+        }
 
         Double remoteCpuUsr = (Double) jmParams.get("dRemoteUserCpu");
         Double localCpuUsr = (Double) jmParams.get("dLocalUserCpu");
         Double remoteCpuSys = (Double) jmParams.get("dRemoteSysCpu");
         Double localCpuSys = (Double) jmParams.get("dLocalSysCpu");
 
-        if (localCpuUsr != null && remoteCpuUsr != null && localCpuSys != null && remoteCpuSys != null)
-            jobInfo.cpu_time = localCpuUsr.longValue() + remoteCpuUsr.longValue() + localCpuSys.longValue() + remoteCpuSys.longValue();
+        if ((localCpuUsr != null) && (remoteCpuUsr != null) && (localCpuSys != null) && (remoteCpuSys != null)) {
+            jobInfo.cpu_time = localCpuUsr.longValue() + remoteCpuUsr.longValue() + localCpuSys.longValue()
+                    + remoteCpuSys.longValue();
+        }
 
         return jobInfo;
     }
@@ -995,8 +1011,9 @@ public class VO_CondorAccounting {
     public static void updateCondorCommands(StringBuilder buff[], StringBuilder crtCmd[]) {
         int i;
         for (i = 0; i < 3; i++) {
-            if (buff[i].length() > 0)
+            if (buff[i].length() > 0) {
                 buff[i].append(" ; ");
+            }
             buff[i].append(crtCmd[i]);
         }
 
@@ -1007,11 +1024,13 @@ public class VO_CondorAccounting {
             String paramPlainName = classAdParams[i].substring(1);
             // TODO internal error here
             String option = " -format \\\"";
-            if (i == 0)
+            if (i == 0) {
                 option += "MLFORMAT_OK_START\\\\n";
+            }
             option += (paramPlainName + " = %" + formatSpecifiers.get(paramType) + "\\\\n");
-            if (i == classAdParams.length - 1)
+            if (i == (classAdParams.length - 1)) {
                 option += "MLFORMAT_OK_STOP\\\\n";
+            }
             option += ("\\\" " + paramPlainName);
             buff[2].append(option);
         }

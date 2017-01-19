@@ -1,5 +1,5 @@
 /*
- * $Id: MLLUSHelper.java 7273 2012-06-26 15:47:08Z ramiro $
+ * $Id: MLLUSHelper.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.JiniSerFarmMon;
 
@@ -52,35 +52,27 @@ import net.jini.lookup.ServiceDiscoveryManager;
 public class MLLUSHelper implements Runnable {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.JiniSerFarmMon.MLLUSHelper");
+    private static final Logger logger = Logger.getLogger("lia.Monitor.JiniSerFarmMon.MLLUSHelper");
 
-    private static final ServiceTemplate proxyTemplate = new ServiceTemplate(null, new Class[] {
-        ProxyServiceI.class
-    }, null);
+    private static final ServiceTemplate proxyTemplate = new ServiceTemplate(null, new Class[] { ProxyServiceI.class },
+            null);
 
-    private static final ServiceTemplate MLServiceTemplate = new ServiceTemplate(null, new Class[] {
-        DataStore.class
-    }, null);
+    private static final ServiceTemplate MLServiceTemplate = new ServiceTemplate(null, new Class[] { DataStore.class },
+            null);
 
-    private static final ServiceTemplate topologyTemplate = new ServiceTemplate(null, new Class[] {
-        TopologySI.class
-    }, null);
+    private static final ServiceTemplate topologyTemplate = new ServiceTemplate(null, new Class[] { TopologySI.class },
+            null);
 
-    private static final ServiceTemplate authzTemplate = new ServiceTemplate(null, new Class[] {
-        AuthZSI.class
-    }, null);
+    private static final ServiceTemplate authzTemplate = new ServiceTemplate(null, new Class[] { AuthZSI.class }, null);
 
-    private static final ServiceTemplate pathloadTemplate = new ServiceTemplate(null, new Class[] {
-        PathloadDiscoverySI.class
-    }, null);
+    private static final ServiceTemplate pathloadTemplate = new ServiceTemplate(null,
+            new Class[] { PathloadDiscoverySI.class }, null);
 
-    private static final ServiceTemplate loggerTemplate = new ServiceTemplate(null, new Class[] {
-        MLLoggerSI.class
-    }, null);
+    private static final ServiceTemplate loggerTemplate = new ServiceTemplate(null, new Class[] { MLLoggerSI.class },
+            null);
 
-    private static final ServiceTemplate reflRouterTemplate = new ServiceTemplate(null, new Class[] {
-        ReflRouterSI.class
-    }, null);
+    private static final ServiceTemplate reflRouterTemplate = new ServiceTemplate(null,
+            new Class[] { ReflRouterSI.class }, null);
 
     private final AtomicReference<ServiceItem[]> serviceSIReference = new AtomicReference<ServiceItem[]>();
 
@@ -104,19 +96,19 @@ public class MLLUSHelper implements Runnable {
     // singleton
     private static final MLLUSHelper _thisInstance = new MLLUSHelper();
 
-    private AtomicBoolean shouldGetMLSer = new AtomicBoolean(false);
+    private final AtomicBoolean shouldGetMLSer = new AtomicBoolean(false);
 
-    private AtomicBoolean shouldGetProxySer = new AtomicBoolean(false);
+    private final AtomicBoolean shouldGetProxySer = new AtomicBoolean(false);
 
-    private AtomicBoolean shouldGetTopoSer = new AtomicBoolean(false);
+    private final AtomicBoolean shouldGetTopoSer = new AtomicBoolean(false);
 
-    private AtomicBoolean shouldGetAuthzSer = new AtomicBoolean(false);
+    private final AtomicBoolean shouldGetAuthzSer = new AtomicBoolean(false);
 
-    private AtomicBoolean shouldGetPathloadSer = new AtomicBoolean(false);
+    private final AtomicBoolean shouldGetPathloadSer = new AtomicBoolean(false);
 
-    private AtomicBoolean shouldGetLoggerSer = new AtomicBoolean(false);
+    private final AtomicBoolean shouldGetLoggerSer = new AtomicBoolean(false);
 
-    private AtomicBoolean shouldGetReflRouterSer = new AtomicBoolean(false);
+    private final AtomicBoolean shouldGetReflRouterSer = new AtomicBoolean(false);
 
     /** Delay between checking; by default 2 minutes */
     private static final AtomicLong checkDelay = new AtomicLong(2 * 60);
@@ -135,12 +127,13 @@ public class MLLUSHelper implements Runnable {
     private static final Object stateLock = new Object();
 
     private final AtomicLong runCount = new AtomicLong(0);
-    
+
     static {
         reloadConf();
 
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
                 reloadConf();
             }
@@ -215,7 +208,7 @@ public class MLLUSHelper implements Runnable {
         try {
             si = getServicesForTemplate(MLServiceTemplate);
 
-            if (si == null || si.length == 0) {
+            if ((si == null) || (si.length == 0)) {
                 return;
             }
 
@@ -225,7 +218,8 @@ public class MLLUSHelper implements Runnable {
                 if (abpe != null) {
                     ABPingEntriesList.add(abpe);
                     if (logger.isLoggable(Level.FINEST)) {
-                        logger.log(Level.FINEST, "\n\n Host = " + abpe.HostName + "/" + abpe.FullHostName + " PORT = " + abpe.PORT);
+                        logger.log(Level.FINEST, "\n\n Host = " + abpe.HostName + "/" + abpe.FullHostName + " PORT = "
+                                + abpe.PORT);
                     }
                 }
             }// for
@@ -293,6 +287,7 @@ public class MLLUSHelper implements Runnable {
                 // spawn a new publish task right now!
                 MonALISAExecutors.getMLHelperExecutor().submit(new Runnable() {
 
+                    @Override
                     public void run() {
                         recheckAndResched(false);
                     }
@@ -314,11 +309,11 @@ public class MLLUSHelper implements Runnable {
         final boolean isFinest = logger.isLoggable(Level.FINEST);
         final boolean isFiner = isFinest || logger.isLoggable(Level.FINER);
         final boolean isFine = isFiner || logger.isLoggable(Level.FINE);
-        
-        if(isFine) {
+
+        if (isFine) {
             sb = new StringBuilder(8192);
         }
-        
+
         // to be sure that the Thread.sleep executes in case of exceptions
         if (isFiner) {
             sb.append(" shouldGetProxySer [ ").append(shouldGetProxySer).append(" ] ");
@@ -396,7 +391,8 @@ public class MLLUSHelper implements Runnable {
             }
         } finally {
             if (isFine) {
-                sb.append("\n [ MLLUSHelperTask ] Quering the LUSs took [ ").append(TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - sTime)).append(" ] ms \n");
+                sb.append("\n [ MLLUSHelperTask ] Quering the LUSs took [ ")
+                        .append(TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - sTime)).append(" ] ms \n");
                 logger.log(Level.FINE, sb.toString());
             }
         }
@@ -405,7 +401,8 @@ public class MLLUSHelper implements Runnable {
     private void recheckAndResched(final boolean shouldResched) {
 
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, "[ MLLUSHelperTask ] [ recheckAndResched ] started. shouldResched = " + shouldResched);
+            logger.log(Level.FINER, "[ MLLUSHelperTask ] [ recheckAndResched ] started. shouldResched = "
+                    + shouldResched);
         }
 
         synchronized (stateLock) {
@@ -446,7 +443,9 @@ public class MLLUSHelper implements Runnable {
             }
 
             if (logger.isLoggable(Level.FINEST)) {
-                logger.log(Level.FINEST, "[ MLLUSHelperTask ] ... exits main loop. isAlreadyRunning=" + isAlreadyRunning + ", shouldForceRecheck=" + shouldForceRecheck + ", shouldResched=" + shouldResched);
+                logger.log(Level.FINEST, "[ MLLUSHelperTask ] ... exits main loop. isAlreadyRunning="
+                        + isAlreadyRunning + ", shouldForceRecheck=" + shouldForceRecheck + ", shouldResched="
+                        + shouldResched);
             }
 
             if (shouldResched) {
@@ -479,7 +478,8 @@ public class MLLUSHelper implements Runnable {
         }
 
         if (logger.isLoggable(Level.FINEST)) {
-            logger.log(Level.FINEST, " [ MLLusHelper ] getServiceItemBySID(" + sid + ") returning " + Arrays.toString(si));
+            logger.log(Level.FINEST,
+                    " [ MLLusHelper ] getServiceItemBySID(" + sid + ") returning " + Arrays.toString(si));
         }
         return si;
     }
@@ -487,9 +487,7 @@ public class MLLUSHelper implements Runnable {
     // only used from main() - for testing
     private static Configuration getBasicExportConfig() {
         StringBuilder config = new StringBuilder();
-        String[] options = new String[] {
-            "-"
-        };
+        String[] options = new String[] { "-" };
 
         config.append("import java.net.NetworkInterface;\n");
         config.append("net.jini.discovery.LookupDiscovery {\n");
@@ -511,66 +509,65 @@ public class MLLUSHelper implements Runnable {
     }
 
     private static int getAttrCount(ServiceItem[] sis) {
-        if (sis == null || sis.length == 0) {
+        if ((sis == null) || (sis.length == 0)) {
             return 0;
         }
 
         int attrCount = 0;
-        for (int i = 0; i < sis.length; i++) {
-            ServiceItem si = sis[i];
+        for (ServiceItem si : sis) {
             attrCount += si.attributeSets.length;
         }
         return attrCount;
     }
-    
+
     /**
      * 
      * @return - a Map with key (String) the name of the parameter; Value an Integer representing the number of Services
      */
     public Map<String, Double> getMonitoringParams() {
         Map<String, Double> m = new HashMap<String, Double>();
-        
+
         m.put("MLH_RCount", Double.valueOf(runCount.get()));
-        
-        if(shouldGetProxySer.get()) {
+
+        if (shouldGetProxySer.get()) {
             ServiceItem[] sis = proxySIReference.get();
-            m.put("MLH_ProxySerCount", Double.valueOf((sis == null)?0:sis.length) );
+            m.put("MLH_ProxySerCount", Double.valueOf((sis == null) ? 0 : sis.length));
         }
-        
-        if(shouldGetMLSer.get()) {
+
+        if (shouldGetMLSer.get()) {
             ServiceItem[] sis = serviceSIReference.get();
-            m.put("MLH_MLSerCount", Double.valueOf((sis == null)?0:sis.length) );
+            m.put("MLH_MLSerCount", Double.valueOf((sis == null) ? 0 : sis.length));
         }
-        
-        if(shouldGetTopoSer.get()) {
+
+        if (shouldGetTopoSer.get()) {
             ServiceItem[] sis = topologySIReference.get();
-            m.put("MLH_TopoSerCount", Double.valueOf((sis == null)?0:sis.length) );
+            m.put("MLH_TopoSerCount", Double.valueOf((sis == null) ? 0 : sis.length));
         }
-        
-        if(shouldGetAuthzSer.get()) {
+
+        if (shouldGetAuthzSer.get()) {
             ServiceItem[] sis = authzSIReference.get();
-            m.put("MLH_AuthzSerCount", Double.valueOf((sis == null)?0:sis.length) );
+            m.put("MLH_AuthzSerCount", Double.valueOf((sis == null) ? 0 : sis.length));
         }
-        
-        if(shouldGetPathloadSer.get()) {
+
+        if (shouldGetPathloadSer.get()) {
             ServiceItem[] sis = pathloadSIReference.get();
-            m.put("MLH_PathLoadSerCount", Double.valueOf((sis == null)?0:sis.length) );
+            m.put("MLH_PathLoadSerCount", Double.valueOf((sis == null) ? 0 : sis.length));
         }
-        
-        if(shouldGetLoggerSer.get()) {
+
+        if (shouldGetLoggerSer.get()) {
             ServiceItem[] sis = loggerSIReference.get();
-            m.put("MLH_LoggerSerCount", Double.valueOf((sis == null)?0:sis.length) );
+            m.put("MLH_LoggerSerCount", Double.valueOf((sis == null) ? 0 : sis.length));
         }
-        
-        if(shouldGetReflRouterSer.get()) {
+
+        if (shouldGetReflRouterSer.get()) {
             ServiceItem[] sis = reflRouterSIReference.get();
-            m.put("MLH_ReflRouterSerCount", Double.valueOf((sis == null)?0:sis.length));
+            m.put("MLH_ReflRouterSerCount", Double.valueOf((sis == null) ? 0 : sis.length));
         }
-        
-        if(logger.isLoggable(Level.FINER)) {
+
+        if (logger.isLoggable(Level.FINER)) {
             logger.log(Level.FINER, " [ MLLUSHelper ] getMonitoringParam returns: " + m);
         }
-        
+
         return m;
     }
 
@@ -631,14 +628,16 @@ public class MLLUSHelper implements Runnable {
                 if (sis != null) {
                     int serviceCount = sis.length;
                     int attrCount = getAttrCount(sis);
-                    System.out.println(" There are " + serviceCount + " AuthzServices and " + attrCount + " Attibutes ");
+                    System.out
+                            .println(" There are " + serviceCount + " AuthzServices and " + attrCount + " Attibutes ");
                 }
 
                 sis = mllsh.getTopologyServices();
                 if (sis != null) {
                     int serviceCount = sis.length;
                     int attrCount = getAttrCount(sis);
-                    System.out.println(" There are " + serviceCount + " TopologyServices and " + attrCount + " Attibutes ");
+                    System.out.println(" There are " + serviceCount + " TopologyServices and " + attrCount
+                            + " Attibutes ");
                 }
 
             } catch (Throwable t) {
@@ -650,9 +649,9 @@ public class MLLUSHelper implements Runnable {
                 int attrCount = getAttrCount(sis);
                 System.out.println(" There are " + serviceCount + " MLServices and " + attrCount + " Attibutes ");
             }
-            
+
             System.out.println("\n Monitoring param: \n" + getInstance().getMonitoringParams());
-            
+
             try {
                 Thread.sleep(20000);
             } catch (Throwable t) {
@@ -661,6 +660,7 @@ public class MLLUSHelper implements Runnable {
         }
     }
 
+    @Override
     public void run() {
         recheckAndResched(true);
     }

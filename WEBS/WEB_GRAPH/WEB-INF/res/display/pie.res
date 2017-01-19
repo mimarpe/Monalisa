@@ -8,7 +8,7 @@
 <td align=center>
 <form action="display" method="post" name="form1">
     <<:extra_fields:>>
-    <table width="790" cellspacing="0" cellpadding="0" border="0" class="text">
+    <table width="100%" cellspacing="0" cellpadding="0" border="0" class="text">
 	<tr>
 		<td height="13" background="/img/dynamic/header.jpg"><img width=1 height=1></td>
 	</tr>
@@ -45,12 +45,13 @@
 				<table border=0 cellspacing=0 cellpadding=3 width=100% style="border-bottom: 2px solid #FFFFFF;">
 				    <tr>
 					<td align=right style="padding:0px">
-					    (<a class="link" href="JavaScript:checkall();" class="link">check all</a> | <a class="link" href="JavaScript:uncheckall();" class="link">uncheck all</a>)
+					    (<a class="link" href="JavaScript:checkall();" class="link">select all</a> | <a class="link" href="JavaScript:uncheckall();" class="link">unselect all</a>)
 					</td>
 				    </tr>
 				    <tr>
 					<td align=left class="text">
     					    <<:continut:>>
+    					    <<:separate_groups:>>
 					    <<:com_separate_start:>><hr size=2 color=white noshade><<:separate:>><<:com_separate_end:>>
 					</td>
 				    </tr>
@@ -174,6 +175,7 @@
 				<<:com_interval_end:>>
 			    </td>
 			    <<:com_history_end:>>
+			    
 			    <td align=right valign=bottom width=100%>
 				<input type=submit name="submit_plot" value="Plot" class="input_submit">
 			    </td>

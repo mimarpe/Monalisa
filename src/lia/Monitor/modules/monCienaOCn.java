@@ -1,5 +1,5 @@
 /*
- * $Id: monCienaOCn.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: monCienaOCn.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.modules;
 
@@ -12,7 +12,6 @@ import java.io.StringReader;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
@@ -47,7 +46,7 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
     private static final long serialVersionUID = 7792514221235348247L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(monCienaOCn.class.getName());
+    private static final Logger logger = Logger.getLogger(monCienaOCn.class.getName());
 
     private static final String TL1_CTAG = "rocn";
 
@@ -65,9 +64,7 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
 
     private static final AtomicReference clusterNameOC192Alm = new AtomicReference();
 
-    static String[] ResTypes = {
-        "Port-Conn"
-    };
+    static String[] ResTypes = { "Port-Conn" };
 
     public static final String OC192_TAG = "OC192";
 
@@ -78,9 +75,11 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
         isRepetitive = true;
     }
 
+    @Override
     public MonModuleInfo init(MNode Node, String arg) {
         this.Node = Node;
-        logger.log(Level.INFO, "monCienaAlm: farmName=" + Node.getFarmName() + " clusterName= " + Node.getClusterName() + " nodeName=" + Node.getName() + " arg = " + arg);
+        logger.log(Level.INFO, "monCienaAlm: farmName=" + Node.getFarmName() + " clusterName= " + Node.getClusterName()
+                + " nodeName=" + Node.getName() + " arg = " + arg);
 
         if (arg.startsWith("\"")) {
             arg = arg.substring(1);
@@ -92,13 +91,14 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
 
         String[] args = arg.split("(\\s)*;(\\s)*");
         if (args != null) {
-            for (int i = 0; i < args.length; i++) {
+            for (String arg2 : args) {
                 try {
-                    final String argT = args[i].trim();
+                    final String argT = arg2.trim();
                     if (argT.startsWith("OC192ConfFile")) {
                         String[] fileTks = argT.split("(\\s)*=(\\s)*");
-                        if (fileTks == null || fileTks.length != 2) {
-                            logger.log(Level.WARNING, "monCienaAlm cannot parse OC192ConfFile param [ " + argT + " ]  ... ");
+                        if ((fileTks == null) || (fileTks.length != 2)) {
+                            logger.log(Level.WARNING, "monCienaAlm cannot parse OC192ConfFile param [ " + argT
+                                    + " ]  ... ");
                             continue;
                         }
                         oc192ConfFile = new File(fileTks[1]);
@@ -107,10 +107,15 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
                             try {
                                 DateFileWatchdog.getInstance(oc192ConfFile, 5 * 1000).addObserver(this);
                             } catch (Throwable t) {
-                                logger.log(Level.WARNING, " monCienaAlm - Unable to instantiate watchdog for " + oc192ConfFile + ". Cause: ", t);
+                                logger.log(Level.WARNING, " monCienaAlm - Unable to instantiate watchdog for "
+                                        + oc192ConfFile + ". Cause: ", t);
                             }
                         } else {
-                            logger.log(Level.WARNING, "\n\n monCienaAlm - No OC192ConfFile defined or the file " + oc192ConfFile + " cannot be accessed. The module WILL NOT REPORT status on Sonet Intetrfaces!\n\n");
+                            logger.log(
+                                    Level.WARNING,
+                                    "\n\n monCienaAlm - No OC192ConfFile defined or the file "
+                                            + oc192ConfFile
+                                            + " cannot be accessed. The module WILL NOT REPORT status on Sonet Intetrfaces!\n\n");
                             oc192ConfFile = null;
                         }
                     }
@@ -141,6 +146,7 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
      *
      *
      */
+    @Override
     public Object doProcess() throws Exception {
 
         final long perfStartTime = Utils.nanoNow();
@@ -201,19 +207,19 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
                     logger.log(Level.FINEST, " [ monCienaAlm ] Processing line: [" + line + "]");
                 }
 
-                if (line.startsWith("\"") && line.endsWith("\"") && line.length() >= 2) {
+                if (line.startsWith("\"") && line.endsWith("\"") && (line.length() >= 2)) {
                     try {
                         final TL1Response tl1Response = TL1Response.parseLine(line);
 
-                        final String aid = (String) tl1Response.singleParams.get(0);
+                        final String aid = tl1Response.singleParams.get(0);
                         if (aid != null) {
                             final String intfPortName = (String) oc192InterfacesMap.get(aid);
 
                             if (intfPortName != null) {
-                                final String pst = (String)tl1Response.paramsMap.get("PST");
-                                final String sState = (String)tl1Response.paramsMap.get("SIGNALST");
-                                
-                                final int status = (pst != null && pst.equals("IS-NR"))?1:2;
+                                final String pst = tl1Response.paramsMap.get("PST");
+                                final String sState = tl1Response.paramsMap.get("SIGNALST");
+
+                                final int status = ((pst != null) && pst.equals("IS-NR")) ? 1 : 2;
                                 Result r = new Result();
                                 r.time = now;
                                 r.FarmName = getFarmName();
@@ -265,38 +271,47 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
         return v;
     }
 
+    @Override
     public MonModuleInfo getInfo() {
         return info;
     }
 
+    @Override
     public String[] ResTypes() {
         return ResTypes;
     }
 
+    @Override
     public String getOsName() {
         return "linux";
     }
 
+    @Override
     public MNode getNode() {
         return Node;
     }
 
+    @Override
     public String getClusterName() {
         return Node.getClusterName();
     }
 
+    @Override
     public String getFarmName() {
         return Node.getFarmName();
     }
 
+    @Override
     public String getTaskName() {
         return moduleName;
     }
 
+    @Override
     public boolean isRepetitive() {
         return isRepetitive;
     }
 
+    @Override
     public boolean stop() {
         logger.log(Level.INFO, " monCienaAlm stop() Request . SHOULD NOT!!!");
         return true;
@@ -327,12 +342,12 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
             }
 
             final String intLine = p.getProperty("SonetInterfaces");
-            if (intLine == null || intLine.trim().length() < 1) {
+            if ((intLine == null) || (intLine.trim().length() < 1)) {
                 throw new Exception(" [ OC192ConfFile ]  No SonetInterfaces defined");
             }
 
             final String clusterName = p.getProperty("MLClusterName_SonetStatus", "SonetIntf_Status");
-            if (clusterName == null || clusterName.length() < 1) {
+            if ((clusterName == null) || (clusterName.length() < 1)) {
                 throw new Exception(" [ OC192ConfFile ]  No MLClusterName_SonetStatus defined");
             }
 
@@ -340,12 +355,12 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
 
             final String intf[] = intLine.trim().split(splitter);
 
-            if (intf == null || intf.length < 1) {
+            if ((intf == null) || (intf.length < 1)) {
                 throw new Exception(" [ OC192ConfFile ]  No interfaces defined");
             }
 
-            for (final Iterator it = p.entrySet().iterator(); it.hasNext();) {
-                final Map.Entry entry = (Map.Entry) it.next();
+            for (Object element : p.entrySet()) {
+                final Map.Entry entry = (Map.Entry) element;
 
                 final String key = (String) entry.getKey();
 
@@ -368,8 +383,7 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
 
             Arrays.sort(intf);
             Set newPorts = new TreeSet();
-            for (int i = 0; i < intf.length; i++) {
-                final String oc192Entry = intf[i];
+            for (final String oc192Entry : intf) {
                 if (oc192Entry.indexOf("=") > 1) {
                     String[] tks = oc192Entry.split("(\\s)*=(\\s)*");
                     oc192InterfacesMap.put(tks[0], tks[1]);
@@ -383,15 +397,18 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
             oc192InterfacesMap.keySet().retainAll(newPorts);
 
             StringBuilder sb = new StringBuilder();
-            sb.append("\n\n [ monCienaAlm ] (re)Loaded config from oc192ConfFile: ").append(oc192ConfFile).append(".\n ");
+            sb.append("\n\n [ monCienaAlm ] (re)Loaded config from oc192ConfFile: ").append(oc192ConfFile)
+                    .append(".\n ");
             sb.append("\n\nOC192Interfaces: ").append(oc192InterfacesMap.toString()).append("\n\n");
             if (logger.isLoggable(Level.FINER)) {
-                sb.append("\n MLClusterName_SonetStatus: ").append(clusterName).append("\n used splitter: ").append(splitter);
+                sb.append("\n MLClusterName_SonetStatus: ").append(clusterName).append("\n used splitter: ")
+                        .append(splitter);
             }
             logger.log(Level.INFO, sb.toString());
 
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ monCienaAlm ] Exception (re)loading config from oc192ConfFile:" + oc192ConfFile + ". Cause: ", t);
+            logger.log(Level.WARNING, " [ monCienaAlm ] Exception (re)loading config from oc192ConfFile:"
+                    + oc192ConfFile + ". Cause: ", t);
         } finally {
             // do not leak FDs
             try {
@@ -415,6 +432,7 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
      * @param o
      * @param arg
      */
+    @Override
     public void update(Observable o, Object arg) {
         try {
             reloadConf();
@@ -436,12 +454,13 @@ public class monCienaOCn extends cmdExec implements MonitoringModule, Observer {
             System.exit(-1);
         }
         System.out.println("Using hostname= " + host + " IPaddress=" + ad);
-        aa.init(new MNode(host, ad, new MCluster("CMap", null), null), "OC192ConfFile=/export/home/ramiro/OC192ConfFile");
+        aa.init(new MNode(host, ad, new MCluster("CMap", null), null),
+                "OC192ConfFile=/export/home/ramiro/OC192ConfFile");
 
         try {
             for (int k = 0; k < 10000; k++) {
                 Vector bb = (Vector) aa.doProcess();
-                for (int q = 0; bb != null && q < bb.size(); q++) {
+                for (int q = 0; (bb != null) && (q < bb.size()); q++) {
                     System.out.println(bb.get(q));
                 }
                 System.out.println("-------- sleeeping ----------");

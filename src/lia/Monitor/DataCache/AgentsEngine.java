@@ -14,7 +14,7 @@ import lia.Monitor.monitor.monMessage;
 // context for running agents
 public class AgentsEngine implements AgentsCommunication {
 
-    private static final transient Logger logger = Logger.getLogger("lia.Monitor.DataCache.AgentsEngine");
+    private static final Logger logger = Logger.getLogger(AgentsEngine.class.getName());
 
     private final Map<String, AgentI> agents;
 
@@ -46,7 +46,7 @@ public class AgentsEngine implements AgentsCommunication {
                 a.processErrorMsg(am);
                 return;
             } // if error
-            if (am.message != null && am.message instanceof byte[]) {
+            if ((am.message != null) && (am.message instanceof byte[])) {
                 try {
                     ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream((byte[]) am.message));
                     am.message = ois.readObject();
@@ -63,7 +63,7 @@ public class AgentsEngine implements AgentsCommunication {
 
     public synchronized void addAgent(AgentI agent) {
 
-        if (agent != null && agent.getName() != null) {
+        if ((agent != null) && (agent.getName() != null)) {
             logger.log(Level.INFO, "\n\n added agent with name : " + agent.getName() + " \n\n");
             agents.put(agent.getName(), agent);
             runAgent(agent);
@@ -81,6 +81,7 @@ public class AgentsEngine implements AgentsCommunication {
         } // try - catch
     } // removeAgent
 
+    @Override
     public void sendMsg(Object msg) {
         monMessage mm = new monMessage(monMessage.ML_AGENT_TAG, null, msg);
         if (logger.isLoggable(Level.FINEST)) {
@@ -93,6 +94,7 @@ public class AgentsEngine implements AgentsCommunication {
         proxyWorker.rezToOneProxy(mm);
     } // sendMsg
 
+    @Override
     public void sendToAllMsg(Object msg) {
         monMessage mm = new monMessage(monMessage.ML_AGENT_TAG, null, msg);
         if (msg != null) {
@@ -107,8 +109,11 @@ public class AgentsEngine implements AgentsCommunication {
 
     } // sendBcastMsg
 
+    @Override
     public void sendCtrlMsg(Object msg, String ctrl) {
-        if (ctrl == null) return;
+        if (ctrl == null) {
+            return;
+        }
 
         if (logger.isLoggable(Level.FINEST)) {
             if (msg != null) {
@@ -124,7 +129,9 @@ public class AgentsEngine implements AgentsCommunication {
     } // sendMsg
 
     private void runAgent(AgentI agent) {
-        if (agent == null) return;
+        if (agent == null) {
+            return;
+        }
 
         AgentThread aThread = new AgentThread(agent, this);
         aThread.start();
@@ -136,7 +143,8 @@ public class AgentsEngine implements AgentsCommunication {
             try {
                 a.newProxyConnection();
             } catch (Throwable t) {
-                logger.log(Level.WARNING, " [ AgentsEngine ] got exception notifying a new proxy connection [ agent " + a + " ]", t);
+                logger.log(Level.WARNING, " [ AgentsEngine ] got exception notifying a new proxy connection [ agent "
+                        + a + " ]", t);
             } // try - catch
         } // for
     } // newProxyConns
@@ -153,8 +161,9 @@ public class AgentsEngine implements AgentsCommunication {
 
         } // AgentThread
 
+        @Override
         public void run() {
-            final String key = agent.getName(); 
+            final String key = agent.getName();
             agentsThread.put(key, this);
 
             try {

@@ -14,52 +14,55 @@ import java.util.Map;
  * Sep 13, 2005 - 2:03:29 PM
  */
 public class NFLink {
-    public  Map<String, String>  from;
-    public  Map<String, String> to;
+    public Map<String, String> from;
+    public Map<String, String> to;
     public String fromIP;
     public String toIP;
-    public String name ;
-    public Object data;
+    public String name;
+    public volatile Object data;
     public double fromLAT;
     public double toLAT;
     public double fromLONG;
     public double toLONG;
-    public double speed; 
-    public long time;
-    
-    public NFLink ( String name ) {
+    public volatile double speed;
+    public volatile long time;
+
+    public NFLink(String name) {
         this.name = name;
     }
 
     /**
      *      ILINK=sidFrom->sidTo from [longFrom,latFrom] to [longTo,latTo]
      */
-    public String toString() { 
-        return " NFLink="+name + " from [" + fromLONG+ "," + fromLAT + "] to ["+ toLONG+ ","+ toLAT +"]";
+    @Override
+    public String toString() {
+        return " NFLink=" + name + " from [" + fromLONG + "," + fromLAT + "] to [" + toLONG + "," + toLAT + "]";
     }
-    
+
     /**
      * compares two ilinks based on name field.<br>
      * the strings that are compared should look like this:
      *      sidFrom->sidTo 
      */
-    public boolean equals(Object obj)
-    {
-    	if ( this == obj )
-    		return true;
-    	if ( ! ( obj instanceof NFLink ) )
-    		return false;
-    	NFLink link = (NFLink)obj;
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof NFLink)) {
+            return false;
+        }
+        NFLink link = (NFLink) obj;
         return link.name.equals(name) && link.toIP.equals(toIP) && link.fromIP.equals(fromIP)
-        	&& Math.abs(link.fromLAT-fromLAT)<0.0001 && Math.abs(link.toLAT-toLAT)<0.0001
-        	&& Math.abs(link.fromLONG-fromLONG)<0.0001 && Math.abs(link.toLONG-toLONG)<0.0001;
+                && (Math.abs(link.fromLAT - fromLAT) < 0.0001) && (Math.abs(link.toLAT - toLAT) < 0.0001)
+                && (Math.abs(link.fromLONG - fromLONG) < 0.0001) && (Math.abs(link.toLONG - toLONG) < 0.0001);
     }
-    
-    public int hashCode()
-    {
+
+    @Override
+    public int hashCode() {
         return name.hashCode();
     }
-    
+
     /**
      * Sep 13, 2005 3:29:21 PM - mluc<br>
      * converts from ILink to NFLink copying main/general informations
@@ -67,10 +70,10 @@ public class NFLink {
      * @param src source link, should be ILink
      * @return new NFLink node
      */
-    public static NFLink convert(ILink src)
-    {
-        if ( src==null )
+    public static NFLink convert(ILink src) {
+        if (src == null) {
             return null;
+        }
         NFLink link = new NFLink(src.name);
         link.from = src.from;
         link.to = src.to;
@@ -94,15 +97,15 @@ public class NFLink {
      * @since Nov 15, 2006
      * @param src
      */
-    public static ArrayList<NFLink> convert(ArrayList<ILink> src)
-    {
-        if ( src==null )
+    public static ArrayList<NFLink> convert(ArrayList<ILink> src) {
+        if (src == null) {
             return null;
+        }
         ArrayList<NFLink> dst = new ArrayList<NFLink>();
-        for ( int i=0; i<src.size(); i++) {
-        	ILink srcLink = src.get(i);
-        	//link IN is from "TO" to "FROM"
-            NFLink linkIN = new NFLink(srcLink.name+"_IN");
+        for (int i = 0; i < src.size(); i++) {
+            ILink srcLink = src.get(i);
+            //link IN is from "TO" to "FROM"
+            NFLink linkIN = new NFLink(srcLink.name + "_IN");
             linkIN.from = srcLink.to;
             linkIN.fromIP = srcLink.toIP;
             linkIN.fromLAT = srcLink.toLAT;
@@ -117,7 +120,65 @@ public class NFLink {
             dst.add(linkIN);
 
             //link OUT = FROM -> TO
-            NFLink linkOUT = new NFLink(srcLink.name+"_OUT");
+            NFLink linkOUT = new NFLink(srcLink.name + "_OUT");
+            linkOUT.from = srcLink.from;
+            linkOUT.to = srcLink.to;
+            linkOUT.fromIP = srcLink.fromIP;
+            linkOUT.toIP = srcLink.toIP;
+            linkOUT.fromLAT = srcLink.fromLAT;
+            linkOUT.fromLONG = srcLink.fromLONG;
+            linkOUT.toLAT = srcLink.toLAT;
+            linkOUT.toLONG = srcLink.toLONG;
+            linkOUT.speed = srcLink.speed;
+            linkOUT.data = srcLink.data;
+            linkOUT.time = srcLink.time;
+            dst.add(linkOUT);
+        }
+        return dst;
+    }
+
+    public static ArrayList<NFLink> convert(ArrayList<ILink> src, String customName, boolean onlyOut) {
+        if (src == null) {
+            return null;
+        }
+        ArrayList<NFLink> dst = new ArrayList<NFLink>();
+        for (int i = 0; i < src.size(); i++) {
+            ILink srcLink = src.get(i);
+            if ((customName != null) && (customName.indexOf("NetLink") >= 0)) {
+                //link OUT = FROM -> TO
+                NFLink linkOUT = new NFLink(customName);
+                linkOUT.from = srcLink.from;
+                linkOUT.to = srcLink.to;
+                linkOUT.fromIP = srcLink.fromIP;
+                linkOUT.toIP = srcLink.toIP;
+                linkOUT.fromLAT = srcLink.fromLAT;
+                linkOUT.fromLONG = srcLink.fromLONG;
+                linkOUT.toLAT = srcLink.toLAT;
+                linkOUT.toLONG = srcLink.toLONG;
+                linkOUT.speed = srcLink.speed;
+                linkOUT.data = srcLink.data;
+                linkOUT.time = srcLink.time;
+                dst.add(linkOUT);
+                continue;
+            }
+            if (!onlyOut) {
+                //link IN is from "TO" to "FROM"
+                NFLink linkIN = new NFLink(srcLink.name + "_IN");
+                linkIN.from = srcLink.to;
+                linkIN.fromIP = srcLink.toIP;
+                linkIN.fromLAT = srcLink.toLAT;
+                linkIN.fromLONG = srcLink.toLONG;
+                linkIN.to = srcLink.from;
+                linkIN.toIP = srcLink.fromIP;
+                linkIN.toLAT = srcLink.fromLAT;
+                linkIN.toLONG = srcLink.fromLONG;
+                linkIN.speed = srcLink.speed;
+                linkIN.data = srcLink.data;
+                linkIN.time = srcLink.time;
+                dst.add(linkIN);
+            }
+            //link OUT = FROM -> TO
+            NFLink linkOUT = new NFLink(((customName != null) ? customName : srcLink.name) + "_OUT");
             linkOUT.from = srcLink.from;
             linkOUT.to = srcLink.to;
             linkOUT.fromIP = srcLink.fromIP;

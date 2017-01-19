@@ -1,8 +1,9 @@
 package lia.Monitor.Store.Fast;
 
+import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,21 +18,31 @@ import lia.Monitor.Store.Fast.Replication.ReplicationManager;
  */
 public final class DB {
 
-	/**
-	 * The logger
-	 */
-	private static final Logger	logger = Logger.getLogger("lia.Monitor.Store.Fast.DB");
+    /**
+     * The logger
+     */
+    private static final Logger logger = Logger.getLogger(DB.class.getName());
+
+    /**
+     * Database wrapper in use
+     */
+    private DBConnectionWrapper db = null;
 	
 	/**
-	 * Database wrapper in use
+	 * Set to <code>true</code> to signal that the following query is read-only and, if available, a slave could be used to execute it
 	 */
-	private DBConnectionWrapper db = null;
+	private boolean													readOnlyQuery = false;
 	
+	/**
+	 * Cursor type, defaulting to FORWARD_ONLY.
+	 */
+	private int														cursorType = ResultSet.TYPE_FORWARD_ONLY;
+    
     /**
      * Simple constructor
      */
     public DB() {
-    	// nothing to do 
+        // nothing to do 
     }
 
     /**
@@ -43,19 +54,64 @@ public final class DB {
         query(s);
     }
 
+
+	/**
+	 * Signal that the following query is read-only and, if available, a database slave could be used to execute it. 
+	 * 
+	 * @param readOnly if <code>true</code> then the query can potentially go to a slave, if <code>false</code> then only the master can execute it 
+	 * @return previous value of the read-only flag
+	 */
+	public boolean setReadOnly(final boolean readOnly){
+		final boolean previousValue = this.readOnlyQuery;
+		
+		this.readOnlyQuery = readOnly;
+		
+		return previousValue;
+	}
+
+	/**
+	 * Get the current value of the read-only flag
+	 * 
+	 * @return read-only flag
+	 */
+	public boolean isReadOnly(){
+		return this.readOnlyQuery;
+	}
+	
+	/**
+	 * Set the cursor type to one of the ResultSet.TYPE_FORWARD_ONLY (default), ResultSet.TYPE_SCROLL_INSENSITIVE (when you need {@link #count()} or such) and so on.
+	 * 
+	 * @param type new cursor type
+	 * @return previous cursor type
+	 */
+	public int setCursorType(final int type){
+		final int previousType = this.cursorType;
+		
+		this.cursorType = type;
+		
+		return previousType;
+	}
+	
+	/**
+	 * @return cursor type
+	 */
+	public int getCursorType(){
+		return this.cursorType;
+	}
+    
     /**
      * Get the backend that executed the last query
      * 
      * @return the backend
      */
-    public DatabaseBackend getBackend(){
-    	return this.db != null ? this.db.getBackend() : null;
+    public DatabaseBackend getBackend() {
+        return this.db != null ? this.db.getBackend() : null;
     }
-    
+
     /**
      * Total number of erros
      */
-    private static long	lErrorCount	= 0;
+    private static long lErrorCount = 0;
 
     /**
      * error counter
@@ -82,10 +138,11 @@ public final class DB {
      * @return number of affected queries
      */
     public final int getUpdateCount() {
-    	if (this.db!=null)
-    		return this.db.getUpdateCount();
-    	
-    	return -1;
+        if (this.db != null) {
+            return this.db.getUpdateCount();
+        }
+
+        return -1;
     }
 
     /**
@@ -94,24 +151,26 @@ public final class DB {
      * @return number of rows, or -1 if the query was not a select one or there was an error
      */
     public final int count() {
-        if (this.db!=null)
-        	return this.db.count();
-        
+        if (this.db != null) {
+            return this.db.count();
+        }
+
         return -1;
     }
-    
-	/**
-	 * Get the error from the last operation
-	 * 
-	 * @return error message returned by the engine, or <code>null</code> if none (the operation was successful / no last op)
-	 */
-	public String getLastError(){
-        if (this.db!=null)
-        	return this.db.getLastError();
-        
+
+    /**
+     * Get the error from the last operation
+     * 
+     * @return error message returned by the engine, or <code>null</code> if none (the operation was successful / no last op)
+     */
+    public String getLastError() {
+        if (this.db != null) {
+            return this.db.getLastError();
+        }
+
         return null;
-	}
-    
+    }
+
     /**
      * Execute an update query in sync on all backends.
      * 
@@ -120,10 +179,10 @@ public final class DB {
      * @see ReplicationManager#syncUpdateQuery(String)
      * @see #syncUpdateQuery(String, boolean)
      */
-    public boolean syncUpdateQuery(final String sSQLQuery){
-    	this.db = ReplicationManager.getInstance().syncUpdateQuery(sSQLQuery);
-    	
-    	return this.db!=null;
+    public boolean syncUpdateQuery(final String sSQLQuery) {
+        this.db = ReplicationManager.getInstance().syncUpdateQuery(sSQLQuery);
+
+        return this.db != null;
     }
 
     /**
@@ -134,10 +193,10 @@ public final class DB {
      * @return true if the query was successful on at least one backend
      * @see ReplicationManager#syncUpdateQuery(String, boolean)
      */
-    public boolean syncUpdateQuery(final String sSQLQuery, final boolean ignoreErrors){
-    	this.db = ReplicationManager.getInstance().syncUpdateQuery(sSQLQuery, ignoreErrors);
-    	
-    	return this.db!=null;
+    public boolean syncUpdateQuery(final String sSQLQuery, final boolean ignoreErrors) {
+        this.db = ReplicationManager.getInstance().syncUpdateQuery(sSQLQuery, ignoreErrors);
+
+        return this.db != null;
     }
 
     /**
@@ -145,10 +204,10 @@ public final class DB {
      * 
      * @param sSQLQuery query to execute in background
      */
-    public void asyncUpdate(final String sSQLQuery){
-    	ReplicationManager.getInstance().asyncUpdate(sSQLQuery);
+    public void asyncUpdate(final String sSQLQuery) {
+        ReplicationManager.getInstance().asyncUpdate(sSQLQuery);
     }
-    
+
     /**
      * Execute a query
      * 
@@ -157,7 +216,7 @@ public final class DB {
      * @return true if query was successful
      */
     public boolean query(final String sSQLQuery, final boolean bIgnoreErrors) {
-    	return query(sSQLQuery, bIgnoreErrors, false);
+        return query(sSQLQuery, bIgnoreErrors, false);
     }
 
     /**
@@ -168,26 +227,36 @@ public final class DB {
      * @param broadcastAlways broadcast the query to all backends, even if it's not an update query
      * @return true if query was successfully executed
      */
-    public boolean query(final String sSQLQuery, final boolean ignoreErrors, final boolean broadcastAlways){
-    	this.db = ReplicationManager.getInstance().query(sSQLQuery, ignoreErrors, broadcastAlways, this.db);
-        
-        final boolean bResult = this.db!=null && this.db.isLastQueryOK();
-        
-        if (logger.isLoggable(Level.FINEST))
-        	logger.log(Level.FINEST, "Query result was "+bResult+" (ignoreErrors="+ignoreErrors+", broadcastAlways="+broadcastAlways+":\n"+sSQLQuery);
-        
+    public boolean query(final String sSQLQuery, final boolean ignoreErrors, final boolean broadcastAlways) {
+        this.db = ReplicationManager.getInstance().query(sSQLQuery, ignoreErrors, broadcastAlways, this.db, cursorType, readOnlyQuery);
+
+        final boolean bResult = (this.db != null) && this.db.isLastQueryOK();
+
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.log(Level.FINEST, "Query result was " + bResult + " (ignoreErrors=" + ignoreErrors
+                    + ", broadcastAlways=" + broadcastAlways + ":\n" + sSQLQuery);
+        }
+
         return bResult;
     }
-    
+
+    public void close() {
+        if (this.db != null) {
+            this.db.close();
+            this.db = null;
+        }
+    }
+
     /**
      * Try to go to the next row
      * 
      * @return true if possible
      */
     public boolean moveNext() {
-        if (this.db!=null)
-        	return this.db.moveNext();
-        
+        if (this.db != null) {
+            return this.db.moveNext();
+        }
+
         return false;
     }
 
@@ -198,9 +267,8 @@ public final class DB {
      * @return raw string value
      */
     public String getns(final String sColumnName) {
-    	return this.db!=null ? this.db.gets(sColumnName, null) : null;
+        return this.db != null ? this.db.gets(sColumnName, null) : null;
     }
-
 
     /**
      * Get raw string value, possibly null
@@ -209,9 +277,9 @@ public final class DB {
      * @return raw string value
      */
     public String getns(final int iColCount) {
-    	return this.db!=null ? this.db.gets(iColCount, null) : null;
+        return this.db != null ? this.db.gets(iColCount, null) : null;
     }
-    
+
     /**
      * Get the string value, with default "" if the value is null in the db
      * 
@@ -219,7 +287,7 @@ public final class DB {
      * @return string value
      */
     public String gets(final String sColumnName) {
-    	return this.db!=null ? this.db.gets(sColumnName) : "";
+        return this.db != null ? this.db.gets(sColumnName) : "";
     }
 
     /**
@@ -230,7 +298,7 @@ public final class DB {
      * @return string value
      */
     public String gets(final String sColumnName, final String sDefault) {
-    	return this.db!=null ? this.db.gets(sColumnName, sDefault) : sDefault;
+        return this.db != null ? this.db.gets(sColumnName, sDefault) : sDefault;
     }
 
     /**
@@ -240,7 +308,7 @@ public final class DB {
      * @return string value
      */
     public String gets(final int iColCount) {
-    	return this.db!=null ? this.db.gets(iColCount, "") : "";
+        return this.db != null ? this.db.gets(iColCount, "") : "";
     }
 
     /**
@@ -251,7 +319,7 @@ public final class DB {
      * @return string value
      */
     public String gets(final int iColCount, final String sDefault) {
-    	return this.db!=null ? this.db.gets(iColCount, sDefault) : sDefault;
+        return this.db != null ? this.db.gets(iColCount, sDefault) : sDefault;
     }
 
     /**
@@ -261,7 +329,7 @@ public final class DB {
      * @return byte[] value of the column
      */
     public byte[] getBytes(final String sColumnName) {
-    	return this.db!=null ? this.db.getBytes(sColumnName) : null;
+        return this.db != null ? this.db.getBytes(sColumnName) : null;
     }
 
     /**
@@ -271,7 +339,7 @@ public final class DB {
      * @return content
      */
     public byte[] getBytes(final int iColIndex) {
-    	return this.db!=null ? this.db.getBytes(iColIndex) : null;
+        return this.db != null ? this.db.getBytes(iColIndex) : null;
     }
 
     /**
@@ -292,7 +360,7 @@ public final class DB {
      * @return int value
      */
     public int geti(final String sColumnName, final int iDefault) {
-    	return this.db!=null ? this.db.geti(sColumnName, iDefault) : iDefault;
+        return this.db != null ? this.db.geti(sColumnName, iDefault) : iDefault;
     }
 
     /**
@@ -313,7 +381,7 @@ public final class DB {
      * @return int value
      */
     public int geti(final int iColIndex, final int iDefault) {
-    	return this.db!=null ? this.db.geti(iColIndex, iDefault) : iDefault;
+        return this.db != null ? this.db.geti(iColIndex, iDefault) : iDefault;
     }
 
     /**
@@ -334,7 +402,7 @@ public final class DB {
      * @return long value
      */
     public long getl(final int colIndex, final long lDefault) {
-    	return this.db!=null ? this.db.getl(colIndex, lDefault) : lDefault;
+        return this.db != null ? this.db.getl(colIndex, lDefault) : lDefault;
     }
 
     /**
@@ -355,7 +423,7 @@ public final class DB {
      * @return long value
      */
     public long getl(final String sColumnName, final long lDefault) {
-    	return this.db!=null ? this.db.getl(sColumnName, lDefault) : lDefault;
+        return this.db != null ? this.db.getl(sColumnName, lDefault) : lDefault;
     }
 
     /**
@@ -376,7 +444,7 @@ public final class DB {
      * @return double value
      */
     public double getd(final String sColumnName, final double dDefault) {
-    	return this.db!=null ? this.db.getd(sColumnName, dDefault) : dDefault;
+        return this.db != null ? this.db.getd(sColumnName, dDefault) : dDefault;
     }
 
     /**
@@ -397,7 +465,7 @@ public final class DB {
      * @return double value
      */
     public double getd(final int iColIndex, final double dDefault) {
-    	return this.db!=null ? this.db.getd(iColIndex, dDefault) : dDefault;
+        return this.db != null ? this.db.getd(iColIndex, dDefault) : dDefault;
     }
 
     /**
@@ -406,10 +474,10 @@ public final class DB {
      * @param sColumn column name
      * @return boolean
      */
-    public boolean getb(final String sColumn){
-    	return getb(sColumn, false);
+    public boolean getb(final String sColumn) {
+        return getb(sColumn, false);
     }
-    
+
     /**
      * Get the boolean value of a column
      * 
@@ -417,8 +485,8 @@ public final class DB {
      * @param bDefault default value
      * @return boolean
      */
-    public boolean getb(final String sColumn, final boolean bDefault){
-    	return this.db!=null ? this.db.getb(sColumn, bDefault) : bDefault;
+    public boolean getb(final String sColumn, final boolean bDefault) {
+        return this.db != null ? this.db.getb(sColumn, bDefault) : bDefault;
     }
 
     /**
@@ -427,10 +495,10 @@ public final class DB {
      * @param iColumn column index
      * @return boolean
      */
-    public boolean getb(final int iColumn){
-    	return getb(iColumn, false);
+    public boolean getb(final int iColumn) {
+        return getb(iColumn, false);
     }
-    
+
     /**
      * Get the boolean value of a column
      * 
@@ -438,8 +506,8 @@ public final class DB {
      * @param bDefault default value
      * @return boolean
      */
-    public boolean getb(final int iColumn, final boolean bDefault){
-    	return this.db!=null ? this.db.getb(iColumn, bDefault) : bDefault;
+    public boolean getb(final int iColumn, final boolean bDefault) {
+        return this.db != null ? this.db.getb(iColumn, bDefault) : bDefault;
     }
 
     /**
@@ -447,16 +515,15 @@ public final class DB {
      * 
      * @return meta data information, or null if the current query is not a SELECT one
      */
-    public ResultSetMetaData getMetaData(){
-    	return this.db!=null ? this.db.getMetaData() : null;
+    public ResultSetMetaData getMetaData() {
+        return this.db != null ? this.db.getMetaData() : null;
     }
-    
+
     /**
      * Is Autovacuum enabled in PostgreSQL ?
      */
     private static boolean bAutovacuumEnabled = false;
-    
-    
+
     /**
      * True if the autovacuum status was determined
      */
@@ -469,30 +536,31 @@ public final class DB {
      * 
      * @return true if the database is PG and autovacuum is enabled, false otherwise
      */
-    public static final boolean isAutovacuumEnabled(){
+    public static final boolean isAutovacuumEnabled() {
         // look only once for this parameter, it cannot be changed dynamically in the DB backend
-        if (!bAutovacuumStatusDetermined){
-            DBConnectionWrapper db = ReplicationManager.getInstance().query("select setting from pg_settings where name='autovacuum';", true);
-        	
-            if (db!=null && db.isLastQueryOK() && db.isPostgreSQL() && db.moveNext()){
-            	String sStatus = db.gets(1).trim().toLowerCase();
+        if (!bAutovacuumStatusDetermined) {
+            DBConnectionWrapper db = ReplicationManager.getInstance().query(
+                    "select setting from pg_settings where name='autovacuum';", true);
 
-                if (sStatus.equals("on") || sStatus.startsWith("y") || sStatus.startsWith("e") ||
-                    sStatus.startsWith("1") || sStatus.startsWith("t"))
-                        bAutovacuumEnabled = true;
-            }
-            else{
+            if ((db != null) && db.isLastQueryOK() && db.isPostgreSQL() && db.moveNext()) {
+                String sStatus = db.gets(1).trim().toLowerCase();
+
+                if (sStatus.equals("on") || sStatus.startsWith("y") || sStatus.startsWith("e")
+                        || sStatus.startsWith("1") || sStatus.startsWith("t")) {
+                    bAutovacuumEnabled = true;
+                }
+            } else {
                 bAutovacuumEnabled = false;
             }
 
-			bAutovacuumStatusDetermined = true;
-			
-            logger.log(Level.INFO, "Autovacuum enabled: "+bAutovacuumEnabled);
+            bAutovacuumStatusDetermined = true;
+
+            logger.log(Level.INFO, "Autovacuum enabled: " + bAutovacuumEnabled);
         }
 
         return bAutovacuumEnabled;
     }
-    
+
     /**
      * Optional execution of maintenance operations. If autovacuum is enabled the
      * operation is not executed, since the database will take care of this automatically.
@@ -502,10 +570,10 @@ public final class DB {
      * @see #maintenance(String, boolean)
      * @return true if the operation was scheduled for execution, false if not
      */
-    public final boolean maintenance(final String query){
-    	return maintenance(query, false);
+    public final boolean maintenance(final String query) {
+        return maintenance(query, false);
     }
-    
+
     /**
      * Optional execution of maintenance operations. If autovacuum is enabled the
      * operation is not executed, since the database will take care of this automatically.
@@ -514,44 +582,45 @@ public final class DB {
      * @param sync whether to execute the operation synchronously (true) or async (false)
      * @return true if the operation was executed successfully (or was scheduled asynchronously)
      */
-    public final boolean maintenance(final String query, final boolean sync){
-    	if (!isAutovacuumEnabled()){
-    		if (sync)
-    			return syncUpdateQuery(query, true);
-    		
-    		asyncUpdate(query);
-    		return true;
-    	}
-    	
-    	return false;
+    public final boolean maintenance(final String query, final boolean sync) {
+        if (!isAutovacuumEnabled()) {
+            if (sync) {
+                return syncUpdateQuery(query, true);
+            }
+
+            asyncUpdate(query);
+            return true;
+        }
+
+        return false;
     }
 
-	/**
-	 * Convert the result set in a column name -> value mapping
-	 * 
-	 * @return the column name -> value mapping
-	 */
-	public final Map<String, Object> getValuesMap(){
-		final ResultSetMetaData meta = getMetaData();
-		
-		if (meta==null)
-			return null;
-		
-		try{
-			final int count = meta.getColumnCount();
-			
-			final Map<String, Object> ret = new HashMap<String, Object>(count);
-			
-			for (int i = 1; i <= count; i++){
-				final String columnName = meta.getColumnName(i);
-				
-				ret.put(columnName, this.db.getObject(i));
-			}
-			
-			return ret;
-		}
-		catch (SQLException e){
-			return null;
-		}
-	}
+    /**
+     * Convert the result set in a column name -> value mapping
+     * 
+     * @return the column name -> value mapping
+     */
+    public final Map<String, Object> getValuesMap() {
+        final ResultSetMetaData meta = getMetaData();
+
+        if (meta == null) {
+            return null;
+        }
+
+        try {
+            final int count = meta.getColumnCount();
+
+            final Map<String, Object> ret = new LinkedHashMap<String, Object>(count);
+
+            for (int i = 1; i <= count; i++) {
+                final String columnName = meta.getColumnName(i);
+
+                ret.put(columnName, this.db.getObject(i));
+            }
+
+            return ret;
+        } catch (SQLException e) {
+            return null;
+        }
+    }
 }

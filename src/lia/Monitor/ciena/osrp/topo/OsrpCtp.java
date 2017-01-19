@@ -1,5 +1,5 @@
 /*
- * $Id: OsrpCtp.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: OsrpCtp.java 7419 2013-10-16 12:56:15Z ramiro $
  * 
  * Created on Oct 26, 2007
  */
@@ -63,7 +63,7 @@ M  1 COMPLD
  */
 public class OsrpCtp {
 
-    private static final transient Logger logger = Logger.getLogger(OsrpCtp.class.getName());
+    private static final Logger logger = Logger.getLogger(OsrpCtp.class.getName());
 
     /**
      * The OSRP CAC termination point parameter specifies the AID of the
@@ -71,19 +71,19 @@ public class OsrpCtp {
      * retrieved in [&lt;bay&gt;]-&lt;shelf&gt;-&lt;slot&gt;-&lt;subslot&gt; format
      */
     public final String tp;
-    
+
     /**
      * The alias parameter indicates the user-defined label for the OSRP CAC
      * termination point being retrieved
      */
     public final String alias;
-    
+
     /**
      * The delay parameter indicates the physical delay of signals in milliseconds for
      * the OSRP CAC termination point
      */
     public final long delay;
-    
+
     /**
      * The OSRP CAC termination point identifier parameter is the ID of the local
      * OSRP CTP within the associated OSRP LTP
@@ -133,7 +133,7 @@ public class OsrpCtp {
      * this parameter indicates that the remote OSRP CTP is not part of a OSRP LTP
      */
     public final int rmtOsrpLtpId;
-    
+
     /**
      * The remote primary state parameter is the administrative state of the remote
      * OSRP CAC termination point
@@ -141,13 +141,13 @@ public class OsrpCtp {
      * @see PST
      */
     public final short rmtPst;
-    
+
     /**
      * The remote supporting termination point indicates the physical port of the
      * termination point of the line
      */
     public final String rmtTp;
-    
+
     /**
      * 
      * Creates a new instance of Osrp Call Admission Control (CAC) Terminal Point
@@ -171,7 +171,7 @@ public class OsrpCtp {
     OsrpCtp(final String tp, final String alias, final long delay, final int osrpCtpId, final int osrpLtpId,
             final int osrpOOBCtpCommonId, final short pst, final String rmtAlias, final String remoteOsrpNodeName,
             final int rmtOsrpCtpId, final int rmtOsrpLtpId, final short rmtPst, final String rmtTp) {
-        
+
         this.tp = tp;
         this.alias = alias;
         this.delay = delay;
@@ -186,29 +186,31 @@ public class OsrpCtp {
         this.rmtPst = rmtPst;
         this.rmtTp = rmtTp;
     }
-    
+
     public static final OsrpCtp fromOsrpTL1Response(final OsrpTL1Response osrpTL1Response) throws Exception {
-        final String tp = (String)osrpTL1Response.singleParams.get(0);
-        if(tp == null) {
-            throw new Exception("[ OsrpCtp ] Unable to parse the OSRP CAC Termination Point from OsrpTL1Response: " + osrpTL1Response);
+        final String tp = (String) osrpTL1Response.singleParams.get(0);
+        if (tp == null) {
+            throw new Exception("[ OsrpCtp ] Unable to parse the OSRP CAC Termination Point from OsrpTL1Response: "
+                    + osrpTL1Response);
         }
-        
+
         final Map map = osrpTL1Response.paramsMap;
-        
-        final String alias = (String)map.get("ALIAS");
-        
+
+        final String alias = (String) map.get("ALIAS");
+
         final long delay = TL1Util.getLongVal("DELAY", osrpTL1Response);
         final int osrpCtpId = TL1Util.getIntVal("OSRPCTPID", osrpTL1Response);
         final int osrpLtpId = TL1Util.getIntVal("OSRPLTP", osrpTL1Response);
         final int osrpOOBCtpCommonId = TL1Util.getIntVal("OSRPOOBCTPID", osrpTL1Response);
-        final short pst = PST.pstFromString((String)map.get("PST"));
-        final String rmtAlias = (String)map.get("RMTALIAS");
-        final String remoteOsrpNodeName = (String)map.get("RMTNM");
+        final short pst = PST.pstFromString((String) map.get("PST"));
+        final String rmtAlias = (String) map.get("RMTALIAS");
+        final String remoteOsrpNodeName = (String) map.get("RMTNM");
         final int rmtOsrpCtpId = TL1Util.getIntVal("RMTOSRPCTPID", osrpTL1Response);
         final int rmtOsrpLtpId = TL1Util.getIntVal("RMTOSRPLTP", osrpTL1Response);
-        final short rmtPst = PST.pstFromString((String)map.get("RMTPST"));
-        final String rmtTp = (String)map.get("RMTSUPTP");
-        
-        return new OsrpCtp(tp, alias, delay, osrpCtpId, osrpLtpId, osrpOOBCtpCommonId, pst, rmtAlias, remoteOsrpNodeName, rmtOsrpCtpId, rmtOsrpLtpId, rmtPst, rmtTp);
+        final short rmtPst = PST.pstFromString((String) map.get("RMTPST"));
+        final String rmtTp = (String) map.get("RMTSUPTP");
+
+        return new OsrpCtp(tp, alias, delay, osrpCtpId, osrpLtpId, osrpOOBCtpCommonId, pst, rmtAlias,
+                remoteOsrpNodeName, rmtOsrpCtpId, rmtOsrpLtpId, rmtPst, rmtTp);
     }
 }

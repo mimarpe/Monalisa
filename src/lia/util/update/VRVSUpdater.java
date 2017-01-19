@@ -30,10 +30,10 @@ import netx.jnlp.services.ServiceUtil;
 public class VRVSUpdater {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger("lia.util.update.VRVSUpdater");
+    private static final Logger logger = Logger.getLogger(VRVSUpdater.class.getName());
 
     /** loads the resources */
-    private ResourceTracker tracker;
+    private final ResourceTracker tracker;
 
     private static String cacheDIR;
 
@@ -51,7 +51,7 @@ public class VRVSUpdater {
 
     private static String realFromAddress = username + "@" + hostname;
 
-    private static String[] defaultMailAddresses = new String[] { "ramiro@roedu.net"};
+    private static String[] defaultMailAddresses = new String[] { "ramiro@roedu.net" };
 
     private static StringBuilder statusBuffer;
 
@@ -99,7 +99,9 @@ public class VRVSUpdater {
     private static String getOption(String[] args, String option) {
 
         for (int i = 0; i < args.length; i++) {
-            if (option.equals(args[i]) && args.length > i + 1) { return args[i + 1]; }
+            if (option.equals(args[i]) && (args.length > (i + 1))) {
+                return args[i + 1];
+            }
         }
 
         return null;
@@ -110,7 +112,8 @@ public class VRVSUpdater {
         boolean shouldUseVRVS_MAIL = false;
 
         try {
-            shouldUseVRVS_MAIL = Boolean.valueOf(AppConfig.getProperty("lia.Monitor.vrvs.SHOULD_USE_VRVS_MAIL", "false")).booleanValue();
+            shouldUseVRVS_MAIL = Boolean.valueOf(
+                    AppConfig.getProperty("lia.Monitor.vrvs.SHOULD_USE_VRVS_MAIL", "false")).booleanValue();
         } catch (Throwable t) {
             shouldUseVRVS_MAIL = false;
         }
@@ -120,7 +123,9 @@ public class VRVSUpdater {
             try {
                 if (mailaddress != null) {
                     final String[] splittedMailAddresses = Utils.getSplittedListFields(mailaddress);
-                    if (splittedMailAddresses != null && splittedMailAddresses.length > 0) { return splittedMailAddresses; }
+                    if ((splittedMailAddresses != null) && (splittedMailAddresses.length > 0)) {
+                        return splittedMailAddresses;
+                    }
                 }
             } catch (Throwable t) {
                 if (logger.isLoggable(Level.FINER)) {
@@ -151,14 +156,19 @@ public class VRVSUpdater {
         File fdir = new File(dir);
         if (!fdir.exists()) {
             if (create) {
-                if (!fdir.mkdirs()) { throw new Exception(" Cannot create one or more directories from the specified path:  " + dir); }
+                if (!fdir.mkdirs()) {
+                    throw new Exception(" Cannot create one or more directories from the specified path:  " + dir);
+                }
                 logger.log(Level.CONFIG, " Dir " + dir + " was successfully created");
             } else {
                 throw new Exception(" The directory " + dir + " does not exists");
             }
         }
 
-        if (!fdir.isDirectory() || !fdir.canWrite()) { throw new Exception(" The specified path " + dir + " is not a directory or there are no write permissions in it!"); }
+        if (!fdir.isDirectory() || !fdir.canWrite()) {
+            throw new Exception(" The specified path " + dir
+                    + " is not a directory or there are no write permissions in it!");
+        }
 
         return fdir;
     }
@@ -166,10 +176,11 @@ public class VRVSUpdater {
     private static JNLPFile getJNLPFile(String location) throws Exception {
 
         URL url = null;
-        if (new File(location).exists())
+        if (new File(location).exists()) {
             url = new File(location).toURL();
-        else
+        } else {
             url = new URL(ServiceUtil.getBasicService().getCodeBase(), location);
+        }
 
         JNLPFile file = new JNLPFile(url, false);
 
@@ -215,16 +226,18 @@ public class VRVSUpdater {
     private void updateVRVSFromJar() throws Exception {
         StringBuilder sb = new StringBuilder();
         String MonaLisa_HOME = AppConfig.getProperty("MonaLisa_HOME", null);
-        if (MonaLisa_HOME == null) throw new Exception("MonaLisa_HOME == null ");
+        if (MonaLisa_HOME == null) {
+            throw new Exception("MonaLisa_HOME == null ");
+        }
         String whereToUnjar = AppConfig.getProperty("user.home", "MonaLisa_HOME/../../");
         String cmd = "cd " + whereToUnjar + "; jar -xvf " + vrvsJar + "; tar -xvf VRVS.tar";
-        Process pro = MLProcess.exec(new String[] { "/bin/sh", "-c", cmd});
+        Process pro = MLProcess.exec(new String[] { "/bin/sh", "-c", cmd });
 
         InputStream is = pro.getInputStream();
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
 
         String line = null;
-        while (br != null && (line = br.readLine()) != null) {
+        while ((br != null) && ((line = br.readLine()) != null)) {
             sb.append(line).append("\n");
         }
 
@@ -238,14 +251,19 @@ public class VRVSUpdater {
         ResourcesDesc rd = jnlpf.getResources();
 
         JARDesc[] jars = rd.getJARs();
-        for (int i = 0; i < jars.length; i++) {
-            File s = tracker.getCacheFile(jars[i].getLocation());
+        for (JARDesc jar : jars) {
+            File s = tracker.getCacheFile(jar.getLocation());
             //          File d = new File(checkForDir(getOption(args, "-destdir")).getAbsolutePath()  + "/" + s.getName());
 
-            File d = new File(checkForDir(destDIR).getAbsolutePath() + "/" + jars[i].getLocation().toString().substring(jnlpf.getCodeBase().toString().length(), jars[i].getLocation().toString().length()));
+            File d = new File(checkForDir(destDIR).getAbsolutePath()
+                    + "/"
+                    + jar.getLocation().toString()
+                            .substring(jnlpf.getCodeBase().toString().length(), jar.getLocation().toString().length()));
             String dir = d.getParent();
             File fdir = new File(dir);
-            if (!fdir.exists() && !fdir.mkdirs()) { throw new Exception(Updater.class + " Cannot create dirs to file: " + d); }
+            if (!fdir.exists() && !fdir.mkdirs()) {
+                throw new Exception(Updater.class + " Cannot create dirs to file: " + d);
+            }
 
             copyFile2File(s, d);
             if (d != null) {
@@ -257,11 +275,15 @@ public class VRVSUpdater {
 
     private static String[] getURLs(String URLList) {
         String[] ret = null;
-        if (URLList == null || URLList.length() == 0) return null;
+        if ((URLList == null) || (URLList.length() == 0)) {
+            return null;
+        }
 
         StringTokenizer st = new StringTokenizer(URLList, ",");
         logger.log(Level.CONFIG, "URLList " + URLList + " url no : " + st.countTokens());
-        if (st == null || st.countTokens() == 0) return null;
+        if ((st == null) || (st.countTokens() == 0)) {
+            return null;
+        }
         ret = new String[st.countTokens()];
         for (int i = 0; i <= st.countTokens(); i++) {
             ret[i] = st.nextToken() + "/ML.jnlp";
@@ -271,9 +293,10 @@ public class VRVSUpdater {
 
     private static void sendMail(String subj, String body) {
 
-        if (defaultMailAddresses != null && defaultMailAddresses.length > 0) {
+        if ((defaultMailAddresses != null) && (defaultMailAddresses.length > 0)) {
             try {
-                MailFactory.getMailSender().sendMessage(realFromAddress, "mlvrvs@monalisa-chi.uslhcnet.org", defaultMailAddresses, subj, body);
+                MailFactory.getMailSender().sendMessage(realFromAddress, "mlvrvs@monalisa-chi.uslhcnet.org",
+                        defaultMailAddresses, subj, body);
             } catch (Throwable t) {
                 if (logger.isLoggable(Level.FINER)) {
                     logger.log(Level.FINER, "Got Exception", t);
@@ -282,9 +305,10 @@ public class VRVSUpdater {
         }
 
         final String[] sendAlsoTo = getMailAddresses();
-        if (sendAlsoTo != null && sendAlsoTo.length > 0) {
+        if ((sendAlsoTo != null) && (sendAlsoTo.length > 0)) {
             try {
-                MailFactory.getMailSender().sendMessage(realFromAddress, "mlvrvs@monalisa-chi.uslhcnet.org", sendAlsoTo, subj, body);
+                MailFactory.getMailSender().sendMessage(realFromAddress, "mlvrvs@monalisa-chi.uslhcnet.org",
+                        sendAlsoTo, subj, body);
             } catch (Throwable t) {
                 if (logger.isLoggable(Level.FINER)) {
                     logger.log(Level.FINER, "Got Exception", t);
@@ -298,41 +322,50 @@ public class VRVSUpdater {
         String vrvsHome = "~/VRVS";
         try {
             vrvsHome = AppConfig.getProperty("VRVS_HOME", "~/VRVS");
-        }catch(Throwable t) {
+        } catch (Throwable t) {
             vrvsHome = "~/VRVS";
         }
         statusBuffer.append("\n Content for VRVS_HOME [ ").append(vrvsHome).append(" ]");
         BufferedReader br = null;
         try {
-            Process p = MLProcess.exec(new String[]{"ls", "-ltR", vrvsHome});
+            Process p = MLProcess.exec(new String[] { "ls", "-ltR", vrvsHome });
             br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = null;
             while ((line = br.readLine()) != null) {
                 statusBuffer.append(line).append("\n");
             }
             p.waitFor();
-        }catch(Throwable t) {
+        } catch (Throwable t) {
             statusBuffer.append("\n Got exc looking for content ").append(Utils.getStackTrace(t));
-        }finally {
-            if(br != null) {
+        } finally {
+            if (br != null) {
                 try {
                     br.close();
-                }catch(Throwable ignore){};
+                } catch (Throwable ignore) {
+                }
+                ;
             }
         }
         statusBuffer.append("\n END Content for VRVS_HOME [ ").append(vrvsHome).append(" ]");
     }
-    
+
     public static String updateVRVS(String args[]) {
         statusBuffer = new StringBuilder(8192);
-        
+
         long initialStartTime = System.currentTimeMillis();
-        
-        statusBuffer.append("Reflector update for ").append(FarmMonitor.FarmName).append(" started at localtime: ").append(new Date());
-        if (getOption(args, "-jnlps") == null || getOption(args, "-cachedir") == null || getOption(args, "-destdir") == null) { return "Error: \nUsage: " + args[0] + " -cachedir <path_to_your_cache_dir> " + " -destdir <path_to_your_cache_dir>" + " -jnlps <URL_to_jnlp_file>"; }
+
+        statusBuffer.append("Reflector update for ").append(FarmMonitor.FarmName).append(" started at localtime: ")
+                .append(new Date());
+        if ((getOption(args, "-jnlps") == null) || (getOption(args, "-cachedir") == null)
+                || (getOption(args, "-destdir") == null)) {
+            return "Error: \nUsage: " + args[0] + " -cachedir <path_to_your_cache_dir> "
+                    + " -destdir <path_to_your_cache_dir>" + " -jnlps <URL_to_jnlp_file>";
+        }
 
         URLs = getURLs(getOption(args, "-jnlps"));
-        if (URLs == null) return " Error: URLs cannot be null!";
+        if (URLs == null) {
+            return " Error: URLs cannot be null!";
+        }
 
         try {
 
@@ -341,7 +374,7 @@ public class VRVSUpdater {
             //
 
             boolean statusOK = false;
-            for (int i = 0; i < URLs.length; i++) {
+            for (String url : URLs) {
 
                 InputStream is = null;
                 InputStreamReader isr = null;
@@ -350,8 +383,8 @@ public class VRVSUpdater {
 
                 try {
                     long sTime = System.currentTimeMillis();
-                    statusBuffer.append("\nChecking ").append(URLs[i]).append(" for firewall or network problems ... ");
-                    conn = new URL(URLs[i]).openConnection();
+                    statusBuffer.append("\nChecking ").append(url).append(" for firewall or network problems ... ");
+                    conn = new URL(url).openConnection();
                     conn.setDefaultUseCaches(false);
                     conn.setUseCaches(false);
 
@@ -359,12 +392,14 @@ public class VRVSUpdater {
                     isr = new InputStreamReader(is);
                     br = new BufferedReader(isr);
 
-                    while (br.readLine() != null)
+                    while (br.readLine() != null) {
                         ;
+                    }
                     statusBuffer.append(" OK [ ").append((System.currentTimeMillis() - sTime)).append(" ] ms");
                     statusOK = true;
                 } catch (Throwable t) {
-                    statusBuffer.append(" NOT OK!\nGot exc reading URL \n").append(URLs[i]).append("\n The Exc: \n").append(Utils.getStackTrace(t));
+                    statusBuffer.append(" NOT OK!\nGot exc reading URL \n").append(url).append("\n The Exc: \n")
+                            .append(Utils.getStackTrace(t));
                 } finally {
                     if (is != null) {
                         try {
@@ -388,32 +423,35 @@ public class VRVSUpdater {
                     }
                 }
 
-                if (statusOK) break;
+                if (statusOK) {
+                    break;
+                }
             }
 
             if (!statusOK) {
-                logger.log(Level.WARNING, " Cannot reach none of the URLs ... maybe a firewall issue ?!?!\n" + statusBuffer.toString());
+                logger.log(Level.WARNING, " Cannot reach none of the URLs ... maybe a firewall issue ?!?!\n"
+                        + statusBuffer.toString());
                 sendMail(" Reflector UPDATE [ ERROR ] @ " + FarmMonitor.FarmName, statusBuffer.toString());
                 return statusBuffer.toString();
             }
-            
+
             appendVRVSHOMEContentToStatusBuffer();
-            
+
             VRVSUpdater updater = new VRVSUpdater(args);
             boolean error = true;
             int idx = 0;
 
-            for (int i = 0; i < URLs.length && error; i++) {
-                if (URLs[i] != null && URLs[i].length() > 0) {
+            for (int i = 0; (i < URLs.length) && error; i++) {
+                if ((URLs[i] != null) && (URLs[i].length() > 0)) {
                     try {
                         jnlpf = getJNLPFile(URLs[i]);
                         statusBuffer.append("\n Real update started @ localTime ").append(new Date());
-                        
+
                         statusBuffer.append("\n Waiting dor download [ ").append(URLs[i]).append(" ] to finish ... ");
                         long dsTime = System.currentTimeMillis();
                         updater.waitForJars();
                         statusBuffer.append(" [ ").append((System.currentTimeMillis() - dsTime)).append(" ] ms");
-                        
+
                         statusBuffer.append("\n Updating local cache ... ");
                         dsTime = System.currentTimeMillis();
                         updater.copyLocal();
@@ -423,20 +461,22 @@ public class VRVSUpdater {
                         dsTime = System.currentTimeMillis();
                         updater.updateVRVSFromJar();
                         statusBuffer.append(" [ ").append((System.currentTimeMillis() - dsTime)).append(" ] ms");
-                        
+
                         statusBuffer.append("\n Real update FINISHED @ localTime ").append(new Date());
                         error = false;
                         idx = i;
                         break;
                     } catch (Throwable t) {
-                        statusBuffer.append("\nUPDATE at ").append(FarmMonitor.FarmName).append(" failed for URL: ").append(URLs[i]).append(" Exc: \n").append(Utils.getStackTrace(t));
+                        statusBuffer.append("\nUPDATE at ").append(FarmMonitor.FarmName).append(" failed for URL: ")
+                                .append(URLs[i]).append(" Exc: \n").append(Utils.getStackTrace(t));
                         logger.log(Level.WARNING, " Error got for URL " + URLs[i], t);
                     }
                 }
             }//for
 
             appendVRVSHOMEContentToStatusBuffer();
-            statusBuffer.append("\n Entire update took [ ").append((System.currentTimeMillis() - initialStartTime)).append(" ] ms");
+            statusBuffer.append("\n Entire update took [ ").append((System.currentTimeMillis() - initialStartTime))
+                    .append(" ] ms");
             if (error) {
                 sendMail("Reflector UPDATE [ ERROR ] @ " + FarmMonitor.FarmName, statusBuffer.toString());
                 return " Error updateing reflector ... Update Log: \n" + statusBuffer.toString();

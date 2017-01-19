@@ -4,7 +4,6 @@ package lia.Monitor.JiniClient.CommonGUI;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -13,9 +12,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import lia.Monitor.monitor.AppConfig;
+import lia.util.IPUtils;
 import lia.util.Utils;
 
 /**
+ * Changed a lot on 04/May/2013 to support IPv6. 
+ * Added a lot of stuff from GUAVA
+ * 
  * @author mluc
  * @author ramiro
  *         TODO: make it IPv6-friendly
@@ -23,7 +26,7 @@ import lia.util.Utils;
 public final class IpAddrCache {
 
     /** The Logger */
-    private static final transient Logger logger = Logger.getLogger(IpAddrCache.class.getName());
+    private static final Logger logger = Logger.getLogger(IpAddrCache.class.getName());
 
     public static final int hostIgnoreTime = AppConfig.geti("lia.Monitor.IpAddrCache.hostIgnoreTime", 15); // in minutes
 
@@ -53,7 +56,7 @@ public final class IpAddrCache {
 
     /** put into ALL the caches data based on the given InetAddress */
     private static void putInetAddress(InetAddress ina, String hostOrIP) {
-        final String host = (isIPaddress(hostOrIP) ? ina.getCanonicalHostName() : hostOrIP);
+        final String host = (isInetAddress(hostOrIP) ? ina.getCanonicalHostName() : hostOrIP);
         putIPandHostInCache(ina.getHostAddress(), host);
         inetAddrCache.put(ina.getHostAddress(), ina);
     }
@@ -66,22 +69,26 @@ public final class IpAddrCache {
         hostOrIP = hostOrIP.toLowerCase();
         String ip = null;
         InetAddress ia = null;
-        if (isIPaddress(hostOrIP))
+        if (isInetAddress(hostOrIP)) {
             ip = hostOrIP; // it's already an IP
-        else
+        } else {
             ip = addrIPCache.get(hostOrIP); // try to convert a known hostName to the corresponding IP
-        if (ip != null)
+        }
+        if (ip != null) {
             ia = inetAddrCache.get(ip); // get the IP's inet Address
-        else
+        } else {
             ip = hostOrIP; // in fact it's an unresolved hostName... will resolve it
-        if (ia != null)
+        }
+        if (ia != null) {
             return ia;
+        }
         try {
             final long lStartResolving = Utils.nanoNow();
             ia = InetAddress.getByName(ip);
             if (logger.isLoggable(Level.FINEST)) {
                 final long dt = Utils.nanoNow() - lStartResolving;
-                logger.finest(ip + " resolved to " + ia.getHostName() + " " + ia.getHostAddress() + " in " + TimeUnit.NANOSECONDS.toMillis(dt) + " millis");
+                logger.finest(ip + " resolved to " + ia.getHostName() + " " + ia.getHostAddress() + " in "
+                        + TimeUnit.NANOSECONDS.toMillis(dt) + " millis");
             }
             // System.out.println("result = "+ia);
             putInetAddress(ia, hostOrIP);
@@ -101,8 +108,9 @@ public final class IpAddrCache {
      */
     public static String getHostName(String hostOrIP, boolean mayFail) {
         hostOrIP = hostOrIP.toLowerCase();
-        if (!isIPaddress(hostOrIP))
+        if (!isInetAddress(hostOrIP)) {
             return hostOrIP;
+        }
         // hostOrIP is a IP
         String name = hostCache.get(hostOrIP);
         if (name == null) {
@@ -111,10 +119,12 @@ public final class IpAddrCache {
                 return null;
             }
             InetAddress ina = getInetAddressHelper(hostOrIP);
-            if (ina != null)
+            if (ina != null) {
                 name = hostCache.get(hostOrIP);
-            if (name == null)
+            }
+            if (name == null) {
                 logger.log(Level.FINE, "Name NULL after resolving");
+            }
         }
         return name;
     }
@@ -131,8 +141,9 @@ public final class IpAddrCache {
     public static String getIPaddr(String hostOrIP, boolean mayFail) {
         // first test if hostName is in fact an IP and return it like that
         hostOrIP = hostOrIP.toLowerCase();
-        if (isIPaddress(hostOrIP))
+        if (isInetAddress(hostOrIP)) {
             return hostOrIP;
+        }
         // hostOrIP is a hostName
         String ip = addrIPCache.get(hostOrIP);
         // this hostName was not found; try resolving it
@@ -154,44 +165,49 @@ public final class IpAddrCache {
     }
 
     /** return true if hostOrIP is IP and not hostname */
-    private static boolean isIPaddress(String hostOrIP) {
-        StringTokenizer stk = new StringTokenizer(hostOrIP, ".");
-        if (stk.countTokens() != 4)
-            return false;
-        try {
-            while (stk.hasMoreTokens()) {
-                String group = stk.nextToken();
-                int gval = Integer.parseInt(group);
-                if (gval < 0 || gval > 255)
-                    return false;
-            }
-        } catch (NumberFormatException ex) {
-            return false;
-        }
-        return true;
+
+    //
+    // Replaced with isInetAddress() - from GUAVA!!!
+    //
+
+    //    private static boolean isIPaddress(String hostOrIP) {
+    //        StringTokenizer stk = new StringTokenizer(hostOrIP, ".");
+    //        if (stk.countTokens() != 4)
+    //            return false;
+    //        try {
+    //            while (stk.hasMoreTokens()) {
+    //                String group = stk.nextToken();
+    //                int gval = Integer.parseInt(group);
+    //                if (gval < 0 || gval > 255)
+    //                    return false;
+    //            }
+    //        } catch (NumberFormatException ex) {
+    //            return false;
+    //        }
+    //        return true;
+    //    }
+
+    /**
+     * Returns {@code true} if the supplied string is a valid IP string
+     * literal, {@code false} otherwise.
+     *
+     * @param ipString {@code String} to evaluated as an IP string literal
+     * @return {@code true} if the argument is a valid IP string literal
+     */
+    public static boolean isInetAddress(String ipString) {
+        return IPUtils.ipStringToBytes(ipString) != null;
     }
 
     /** get a byte [] address for a hostName or an IP address */
     private static byte[] getByteAddr(String hostOrIP) {
-        if (!isIPaddress(hostOrIP))
+        if (!isInetAddress(hostOrIP)) {
             hostOrIP = getIPaddr(hostOrIP, false);
-        if (hostOrIP == null)
-            return null;
-        byte[] rez = new byte[4];
-        StringTokenizer stk = new StringTokenizer(hostOrIP, ".");
-        if (stk.countTokens() != 4)
-            return null;
-        try {
-            int i = 0;
-            while (stk.hasMoreTokens()) {
-                String group = stk.nextToken();
-                int gval = Integer.parseInt(group);
-                rez[i++] = (byte) gval;
-            }
-        } catch (NumberFormatException ex) {
+        }
+        if (hostOrIP == null) {
             return null;
         }
-        return rez;
+
+        return IPUtils.ipStringToBytes(hostOrIP);
     }
 
     /**
@@ -214,10 +230,10 @@ public final class IpAddrCache {
     private static class IPResolver extends Thread {
 
         // filled by outer class with hostnames or IPs to be resolved
-        private BlockingQueue<String> toResolve = new LinkedBlockingQueue<String>();
+        private final BlockingQueue<String> toResolve = new LinkedBlockingQueue<String>();
 
         // hostOrIp -> timeOfFailure
-        private Map<String, Long> failed = new ConcurrentHashMap<String, Long>();
+        private final Map<String, Long> failed = new ConcurrentHashMap<String, Long>();
 
         public IPResolver() {
             setName("(ML) IPResolver");
@@ -228,10 +244,11 @@ public final class IpAddrCache {
             final Long time = failed.get(hostOrIP);
             if (time != null) {
                 final long nanoNow = Utils.nanoNow();
-                if (TimeUnit.NANOSECONDS.toMinutes(nanoNow - time.longValue()) > hostIgnoreTime)
+                if (TimeUnit.NANOSECONDS.toMinutes(nanoNow - time.longValue()) > hostIgnoreTime) {
                     failed.remove(hostOrIP);
-                else
+                } else {
                     return;
+                }
             }
             if (!toResolve.contains(hostOrIP)) {
                 // logger.log(Level.INFO, "Going to resolve later "+hostOrIP);
@@ -248,6 +265,7 @@ public final class IpAddrCache {
             return toResolve.take();
         }
 
+        @Override
         public void run() {
             while (true) {
                 String hostOrIP = null;
@@ -256,7 +274,8 @@ public final class IpAddrCache {
                     while ((hostOrIP = getNextToResolve()) != null) {
                         InetAddress ina = getInetAddressHelper(hostOrIP);
                         if (ina == null) {
-                            logger.log(Level.FINE, "FAILED resolving " + hostOrIP + "; will retry after " + hostIgnoreTime + " min.");
+                            logger.log(Level.FINE, "FAILED resolving " + hostOrIP + "; will retry after "
+                                    + hostIgnoreTime + " min.");
                             failed.put(hostOrIP, Long.valueOf(Utils.nanoNow()));
                         }
                         // remove the analyzed element

@@ -11,7 +11,6 @@ import java.rmi.RMISecurityManager;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Hashtable;
 import java.util.StringTokenizer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -43,14 +42,15 @@ import net.jini.lookup.ServiceDiscoveryManager;
 import net.jini.lookup.ServiceIDListener;
 import net.jini.lookup.entry.Name;
 
-public class MLLoggerJiniService extends Thread implements ServiceIDListener, ServiceDiscoveryListener, DiscoveryListener {
+public class MLLoggerJiniService extends Thread implements ServiceIDListener, ServiceDiscoveryListener,
+        DiscoveryListener {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(MLLoggerJiniService.class.getName());
+    private static final Logger logger = Logger.getLogger(MLLoggerJiniService.class.getName());
 
     private static MLLoggerJiniService _thisInstance;
 
-    private AtomicBoolean active;
+    private final AtomicBoolean active;
 
     public volatile ServiceID loggerID = null;
     private transient ServiceID loggerOldID = null;
@@ -65,8 +65,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
 
     private transient Subject subject;
 
-    private static transient String urlFS = AppConfig.getProperty(
-            "lia.Monitor.serviceidfile",
+    private static transient String urlFS = AppConfig.getProperty("lia.Monitor.serviceidfile",
             "${lia.Monitor.monitor.logger_home}/.logger.sid").trim();
     // in seconds
     private static transient long errorTime = AppConfig.getl("lia.Monitor.serviceid.errortime", 10 * 1000);
@@ -89,15 +88,15 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
         return _thisInstance;
     }
 
-
     /** return the codebase for this service, based on user properties */
     private String getCodebase() {
         String codebase = "";
-        String dlURLs = AppConfig.getProperty("lia.util.logging.service.dlURLs", "http://monalisa.cacr.caltech.edu/LOGGER_ML,http://monalisa.cern.ch/MONALISA/LOGGER_ML");
+        String dlURLs = AppConfig.getProperty("lia.util.logging.service.dlURLs",
+                "http://monalisa.cacr.caltech.edu/LOGGER_ML,http://monalisa.cern.ch/MONALISA/LOGGER_ML");
 
         StringTokenizer st = new StringTokenizer(dlURLs, ",");
-        if (st != null && st.countTokens() > 0) {
-            while (st != null && st.hasMoreTokens()) {
+        if ((st != null) && (st.countTokens() > 0)) {
+            while ((st != null) && st.hasMoreTokens()) {
                 codebase += (st.nextToken() + "/dl/MLLogger-dl.jar" + (st.hasMoreTokens() ? " " : ""));
             }
         }
@@ -108,7 +107,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
         LookupLocator[] luss = getLUDSs();
         StringBuilder sb = new StringBuilder();
         sb.append("\n\nUsing LUSs: ");
-        if (luss == null || luss.length == 0) {// normaly we should have DEFAULT_LUDs
+        if ((luss == null) || (luss.length == 0)) {// normaly we should have DEFAULT_LUDs
             logger.log(Level.SEVERE, "luss == null!?!??!?!");
         } else {
             for (int i = 0; i < luss.length; i++) {
@@ -118,7 +117,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
         }
 
         logger.log(Level.INFO, sb.toString());
-        
+
         try {
 
             String codebase = getCodebase(); // startWeb (topoPath + "/dl");
@@ -132,7 +131,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
             if (cfg_file == null) {
                 config = EmptyConfiguration.INSTANCE;
             } else {
-                String[] configArgs = new String[] { cfg_file};
+                String[] configArgs = new String[] { cfg_file };
                 config = ConfigurationProvider.getInstance(configArgs);
             }
 
@@ -149,7 +148,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
 
             Entry[] attrSet = getAttributes();
             this.lrm = new LeaseRenewalManager(config);
-            
+
             if (urlFS != null) {
                 try {
                     loggerOldID = read();
@@ -159,8 +158,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
             }
 
             if (loggerOldID != null) {
-                logger.log(Level.INFO,
-                        " Service registering with a previous known SID: " + loggerOldID);
+                logger.log(Level.INFO, " Service registering with a previous known SID: " + loggerOldID);
                 this.jmngr = new JoinManager(ps, attrSet, loggerOldID, ldm, lrm, config);
             } else {
                 logger.log(Level.INFO, " Service registering for a new SID !!! ");
@@ -172,8 +170,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
             System.exit(1);
         }
 
-        sdm = new ServiceDiscoveryManager(ldm,
-                new LeaseRenewalManager());
+        sdm = new ServiceDiscoveryManager(ldm, new LeaseRenewalManager());
         try {
             Thread.sleep(1000);
         } catch (Exception e) {
@@ -182,11 +179,12 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
         MLJiniManagersProvider.setManagers(ldm, sdm, this.jmngr);
 
         for (int i = 0; i < 100; i++) {
-            if (loggerID != null)
+            if (loggerID != null) {
                 break;
+            }
             if (loggerOldID != null) {
                 ServiceItem[] sis = MLLUSHelper.getInstance().getServiceItemBySID(loggerOldID);
-                if (sis != null && sis.length > 0) {
+                if ((sis != null) && (sis.length > 0)) {
                     if (sis[0].serviceID.equals(loggerOldID)) {
                         loggerID = loggerOldID;
                         break;
@@ -217,7 +215,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
 
     private Entry[] getAttributes() {
         GenericMLEntry gmle = new GenericMLEntry();
-        
+
         String port = AppConfig.getProperty("lia.util.logging.service.port");
         String host = AppConfig.getProperty("lia.util.logging.service.useAddress");
 
@@ -225,11 +223,12 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
             gmle.hash.put("hostname", host);
             gmle.hash.put("port", port);
         }
-        
+
         Name name = new Name("MLLogger Service [ " + host + ":" + port + " ] ");
         return new Entry[] { gmle, name };
     }
 
+    @Override
     public void run() {
         try {
             // set security manager
@@ -262,12 +261,13 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
 
     private LookupLocator[] getLUDSs() {
         String[] luslist = AppConfig.getVectorProperty("lia.Monitor.LUSs", "");
-        if (luslist == null || luslist.length == 0) return null;
+        if ((luslist == null) || (luslist.length == 0)) {
+            return null;
+        }
 
         ArrayList<LookupLocator> locators = new ArrayList<LookupLocator>();
 
-        for (int i=0; i<luslist.length; i++) {
-            String host = luslist[i];
+        for (String host : luslist) {
             try {
                 locators.add(new LookupLocator("jini://" + host));
             } catch (java.net.MalformedURLException e) {
@@ -277,8 +277,8 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
             }
         }
 
-        if (locators.size() > 0) { 
-            return locators.toArray(new LookupLocator[locators.size()]); 
+        if (locators.size() > 0) {
+            return locators.toArray(new LookupLocator[locators.size()]);
         }
 
         return null;
@@ -291,6 +291,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
     /**
      * @see net.jini.lookup.ServiceIDListener#serviceIDNotify(net.jini.core.lookup.ServiceID)
      */
+    @Override
     public void serviceIDNotify(ServiceID serviceID) {
         loggerID = serviceID;
         if (urlFS != null) {
@@ -306,12 +307,14 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
     /**
      * @see net.jini.lookup.ServiceDiscoveryListener#serviceAdded(net.jini.lookup.ServiceDiscoveryEvent)
      */
+    @Override
     public void serviceAdded(ServiceDiscoveryEvent event) {
     }
 
     /**
      * @see net.jini.lookup.ServiceDiscoveryListener#serviceRemoved(net.jini.lookup.ServiceDiscoveryEvent)
      */
+    @Override
     public void serviceRemoved(ServiceDiscoveryEvent event) {
         logger.log(Level.INFO, " Service removed " + event.getSource());
     }
@@ -319,6 +322,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
     /**
      * @see net.jini.lookup.ServiceDiscoveryListener#serviceChanged(net.jini.lookup.ServiceDiscoveryEvent)
      */
+    @Override
     public void serviceChanged(ServiceDiscoveryEvent event) {
         logger.log(Level.INFO, " Service changed " + event.getSource());
     }
@@ -326,6 +330,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
     /**
      * @see net.jini.discovery.DiscoveryListener#discovered(net.jini.discovery.DiscoveryEvent)
      */
+    @Override
     public void discovered(DiscoveryEvent e) {
         logger.log(Level.INFO, " LUS Service discovered " + e.getSource());
     }
@@ -333,6 +338,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
     /**
      * @see net.jini.discovery.DiscoveryListener#discarded(net.jini.discovery.DiscoveryEvent)
      */
+    @Override
     public void discarded(DiscoveryEvent e) {
         logger.log(Level.WARNING, " LUS Service discared " + e.getSource());
     }
@@ -351,28 +357,23 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
     public void setSubject(Subject subject) {
         this.subject = subject;
     }
-    
+
     private ServiceID read() throws Exception {
 
-        if (urlFS == null)
+        if (urlFS == null) {
             return null;
+        }
         File SIDFile = null;
         try {
             SIDFile = new File(urlFS);
-            if (!SIDFile.exists() || !SIDFile.canRead() || !SIDFile.canWrite()
-                    || !SIDFile.isFile()) {
-                logger.log(Level.INFO,
-                        "[BasicService] [HANDLED] Cannot read SIDFile [ "
-                                + urlFS + "] [" + "[ Exists: "
-                                + SIDFile.exists() + " isFile: "
-                                + SIDFile.isFile() + " canRead: "
-                                + SIDFile.canRead() + " canWrite: "
-                                + SIDFile.canWrite() + " ]");
+            if (!SIDFile.exists() || !SIDFile.canRead() || !SIDFile.canWrite() || !SIDFile.isFile()) {
+                logger.log(Level.INFO, "[BasicService] [HANDLED] Cannot read SIDFile [ " + urlFS + "] [" + "[ Exists: "
+                        + SIDFile.exists() + " isFile: " + SIDFile.isFile() + " canRead: " + SIDFile.canRead()
+                        + " canWrite: " + SIDFile.canWrite() + " ]");
                 return null;
             }
         } catch (Throwable t) {
-            logger.log(Level.INFO, "Got exception while probing for SID File",
-                    t);
+            logger.log(Level.INFO, "Got exception while probing for SID File", t);
             return null;
         }
 
@@ -392,8 +393,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
 
             // Write i-node info
             Process p = MLProcess.exec(new String[] { "ls", "-i", urlFS });
-            BufferedReader br = new BufferedReader(new InputStreamReader(p
-                    .getInputStream()));
+            BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = null;
             String iNode = null;
             while ((line = br.readLine()) != null) {
@@ -405,24 +405,21 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
             p.waitFor();
 
             long lastSIDWrite = lastWrite.getTime();
-            if (lastSIDWrite == lastModified
-                    || (lastSIDWrite < lastModified && lastSIDWrite + errorTime > lastModified)
-                    || (lastSIDWrite > lastModified && lastSIDWrite - errorTime < lastModified)) {// it's
-                                                                                                    // OK
-                if (iNodeF != null && iNode != null && iNode.equals(iNodeF)) {
+            if ((lastSIDWrite == lastModified)
+                    || ((lastSIDWrite < lastModified) && ((lastSIDWrite + errorTime) > lastModified))
+                    || ((lastSIDWrite > lastModified) && ((lastSIDWrite - errorTime) < lastModified))) {// it's
+                // OK
+                if ((iNodeF != null) && (iNode != null) && iNode.equals(iNodeF)) {
                     if (logger.isLoggable(Level.FINE)) {
-                        logger.log(Level.FINE, "Got SID [ " + sid + " ] "
-                                + "from file [ " + urlFS + " ] \n"
-                                + "[ fTime = " + new Date(lastModified)
-                                + " SIDTime = " + new Date(lastSIDWrite)
+                        logger.log(Level.FINE, "Got SID [ " + sid + " ] " + "from file [ " + urlFS + " ] \n"
+                                + "[ fTime = " + new Date(lastModified) + " SIDTime = " + new Date(lastSIDWrite)
                                 + " iNode = " + iNode + " ]");
                     }
                 } else {
                     sid = null;
                 }
             } else {
-                logger.log(Level.INFO, "Different SID time. [ fTime = "
-                        + new Date(lastModified) + " SIDTime = "
+                logger.log(Level.INFO, "Different SID time. [ fTime = " + new Date(lastModified) + " SIDTime = "
                         + new Date(lastSIDWrite) + " ]");
                 sid = null;
             }
@@ -463,11 +460,13 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
         if (logger.isLoggable(Level.FINE)) {
             logger.log(Level.FINE, "Trying to save() [ " + loggerID + " to " + urlFS + " ] ");
         }
-        if (urlFS == null)
+        if (urlFS == null) {
             return;
+        }
 
-        if (loggerID == null)
+        if (loggerID == null) {
             throw new Exception(" mysid == null ");
+        }
 
         FileOutputStream fos = null;
         ObjectOutputStream oos = null;
@@ -479,10 +478,8 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
             oos.writeObject(loggerID);
             oos.flush();
 
-            Process p = MLProcess.exec(new String[] { "/bin/sh", "-c",
-                    "ls -i " + urlFS });
-            BufferedReader br = new BufferedReader(new InputStreamReader(p
-                    .getInputStream()));
+            Process p = MLProcess.exec(new String[] { "/bin/sh", "-c", "ls -i " + urlFS });
+            BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = null;
             String iNode = null;
             while ((line = br.readLine()) != null) {
@@ -525,17 +522,16 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
         File SIDFile = null;
         try {
             SIDFile = new File(urlFS);
-            if (!SIDFile.exists() || !SIDFile.canRead() || !SIDFile.canWrite()
-                    || !SIDFile.isFile()) {
-                logger.log(Level.INFO, "Problems writing SIDFile [ " + urlFS
-                        + "] [" + "[ Exists: " + SIDFile.exists() + " isFile: "
-                        + SIDFile.isFile() + " canRead: " + SIDFile.canRead()
-                        + " canWrite: " + SIDFile.canWrite() + " ]");
+            if (!SIDFile.exists() || !SIDFile.canRead() || !SIDFile.canWrite() || !SIDFile.isFile()) {
+                logger.log(
+                        Level.INFO,
+                        "Problems writing SIDFile [ " + urlFS + "] [" + "[ Exists: " + SIDFile.exists() + " isFile: "
+                                + SIDFile.isFile() + " canRead: " + SIDFile.canRead() + " canWrite: "
+                                + SIDFile.canWrite() + " ]");
                 return;
             }
         } catch (Throwable t) {
-            logger.log(Level.INFO, "Got exception while probing for SID File",
-                    t);
+            logger.log(Level.INFO, "Got exception while probing for SID File", t);
             return;
         }
 
@@ -545,9 +541,8 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
                 status = SIDFile.delete();
             } catch (Throwable t) {
             }
-            logger.log(Level.FINE,
-                    "WRStatus == false ...trying to invalidate SIDFile [ "
-                            + urlFS + " ] DLT_STATUS = " + status);
+            logger.log(Level.FINE, "WRStatus == false ...trying to invalidate SIDFile [ " + urlFS + " ] DLT_STATUS = "
+                    + status);
         } else {
             if (logger.isLoggable(Level.FINE)) {
                 logger.log(Level.FINE, "Write SID ... ok!!");
@@ -557,7 +552,8 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
 
     public static void main(String args[]) {
         System.out.println("Starting MLLogger jini service...");
-        boolean useSecLUSs = Boolean.valueOf(AppConfig.getProperty("lia.util.logging.service.useSecureLUSs", "false")).booleanValue();
+        boolean useSecLUSs = Boolean.valueOf(AppConfig.getProperty("lia.util.logging.service.useSecureLUSs", "false"))
+                .booleanValue();
         if (useSecLUSs) {
             logger.log(Level.INFO, "Use Secure LUSs");
             try {
@@ -570,8 +566,10 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
                 /*
                  * gather private key and certificate chain from files
                  */
-                String privateKeyPath = AppConfig.getProperty("lia.util.logging.service.privateKeyFile", "/etc/grid-security/hostkey.pem");
-                String certChainPath = AppConfig.getProperty("lia.util.logging.service.certChainFile", "/etc/grid-security/hostcert.pem");
+                String privateKeyPath = AppConfig.getProperty("lia.util.logging.service.privateKeyFile",
+                        "/etc/grid-security/hostkey.pem");
+                String certChainPath = AppConfig.getProperty("lia.util.logging.service.certChainFile",
+                        "/etc/grid-security/hostcert.pem");
 
                 logger.log(Level.FINEST, "Loading credentials from files\n" + privateKeyPath + "\n" + certChainPath);
                 /*
@@ -588,6 +586,7 @@ public class MLLoggerJiniService extends Thread implements ServiceIDListener, Se
 
                 Subject.doAsPrivileged(ctxSubject, new PrivilegedAction<Object>() {
 
+                    @Override
                     public Object run() {
                         MLLoggerJiniService tjs = MLLoggerJiniService.getInstance();
                         tjs.setDaemon(false);

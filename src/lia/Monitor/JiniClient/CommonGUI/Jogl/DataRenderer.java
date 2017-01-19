@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.media.opengl.GL;
+import javax.media.opengl.GL2;
 import javax.media.opengl.GLAutoDrawable;
 import javax.swing.ButtonGroup;
 import javax.swing.JPanel;
@@ -39,11 +40,8 @@ import net.jini.core.lookup.ServiceID;
  */
 public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
 
-    /** Logger name */
-    private static final transient String COMPONENT = "lia.Monitor.JiniClient.CommonGUI.Jogl";
-
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(DataRenderer.class.getName());
 
     /**
      * hashmap that contains for each node some relevant graphical attributes, some are put by DataRenderer, some by
@@ -57,12 +55,12 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
      * hashmap - second contains a list of renderable nodes, each one with its properties - third contains a list of
      * renderable links, each one with its own list of +properties
      */
-    private Object[] graphicalAttributes = new Object[3];
+    private final Object[] graphicalAttributes = new Object[3];
 
     // list of available nodes renderer objects that implement NodesRendererInterface
-    private ArrayList NodesRendererList = new ArrayList();
+    private final ArrayList NodesRendererList = new ArrayList();
 
-    private ArrayList NRNameList = new ArrayList();
+    private final ArrayList NRNameList = new ArrayList();
 
     // TODO: remove the two arrays, make a hashtable
     // current active nodesrenderer
@@ -122,9 +120,9 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         Globals.doUpdateShadowTimer();
 
         if (JoglPanel.globals.mainPanel instanceof FarmsJoglPanel /*
-                                                                   * &&
-                                                                   * JoglPanel.globals.mainPanel.monitor.main.bGridsClient
-                                                                   */) {
+                                                                  * &&
+                                                                  * JoglPanel.globals.mainPanel.monitor.main.bGridsClient
+                                                                  */) {
             // init list of vcf's
             vcf.readVcfList("lia/images/joglpanel/monalisa_team.vcf");
             logger.log(Level.INFO, "Reading vcf file monalisa_team.vcf, " + vcf.vcfList.size() + " entries found.");
@@ -133,10 +131,12 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
 
     // sets the active nodes renderer
     public synchronized boolean setActiveNodesRenderer(int index) {
-        if (index < 0 || index >= NodesRendererList.size())
+        if ((index < 0) || (index >= NodesRendererList.size())) {
             return false;
-        if (activeNodesRenderer == index)
+        }
+        if (activeNodesRenderer == index) {
             return false;
+        }
         activeNodesRenderer = index;
         // Globals.sendGlobeEvent( Globals.GLOBE_OPTION_PANEL_CHANGE, new
         // Integer(Globals.GLOBE_EVENT_PARAM_NODES_CHANGED));
@@ -149,11 +149,12 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
             Object nr = NodesRendererList.get(i);
             if (nr instanceof AbstractNodesRenderer) {
                 AbstractNodesRenderer fnr = (AbstractNodesRenderer) nr;
-                for (int j = 0; j < fnr.subViewCapabilities.length; j++)
+                for (int j = 0; j < fnr.subViewCapabilities.length; j++) {
                     if (fnr.subViewCapabilities[j].equals(name)) {
                         fnr.changeSubView(j);
                         return true;
                     }
+                }
             } else if (((String) NRNameList.get(i)).compareTo(name) == 0) {
                 activeNodesRenderer = i;
                 // Globals.sendGlobeEvent( Globals.GLOBE_OPTION_PANEL_CHANGE, new
@@ -167,16 +168,19 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
 
     // gets the active nodes renderer
     public synchronized NodesRendererInterface getActiveNodesRenderer() {
-        if (activeNodesRenderer != -1)
+        if (activeNodesRenderer != -1) {
             return (NodesRendererInterface) NodesRendererList.get(activeNodesRenderer);
+        }
         return null;
     }
 
     // adds a nodes renderer object to the list
     public synchronized void addNodesRenderer( /* NodesRendererInterface */Object nr, String name) {
-        for (int i = 0; i < NodesRendererList.size(); i++)
-            if (NodesRendererList.get(i) == nr)
+        for (int i = 0; i < NodesRendererList.size(); i++) {
+            if (NodesRendererList.get(i) == nr) {
                 return;// already added
+            }
+        }
         // else add this new nodes renderer
         NodesRendererList.add(nr);
         NRNameList.add(name);
@@ -194,9 +198,11 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
     }
 
     public synchronized int getNodesRendererByName(String name) {
-        for (int i = 0; i < NRNameList.size(); i++)
-            if (((String) NRNameList.get(i)).compareTo(name) == 0)
+        for (int i = 0; i < NRNameList.size(); i++) {
+            if (((String) NRNameList.get(i)).compareTo(name) == 0) {
                 return i;
+            }
+        }
         return -1;
     }
 
@@ -206,15 +212,16 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
 
     /**
      * inits all nodes renderers from list it must be called after all renderers have been added to list
-     * 
+     *
      * @param gl
      */
-    public synchronized void initNodesRenderers(GL gl) {
+    public synchronized void initNodesRenderers(GL2 gl) {
         // System.out.println("init nodes renderers");
         for (int i = 0; i < NodesRendererList.size(); i++) {
             Object nri = NodesRendererList.get(i);
-            if (nri instanceof NodesRendererInterface)
+            if (nri instanceof NodesRendererInterface) {
                 ((NodesRendererInterface) nri).initNodes(gl, graphicalAttributes);
+            }
         }
         ;
     }
@@ -236,8 +243,9 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                 radioBut.setMinimumSize(dim);
                 radioBut.setActionCommand("changeNodesRenderer");
                 radioBut.addActionListener(uil);
-                if (id == 0 && i == 0)
+                if ((id == 0) && (i == 0)) {
                     radioBut.setSelected(true);
+                }
                 bg.add(radioBut);
                 jp.add(radioBut);
             }
@@ -250,8 +258,9 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
             radioBut.setMinimumSize(dim);
             radioBut.setActionCommand("changeNodesRenderer");
             radioBut.addActionListener(uil);
-            if (id == 0)
+            if (id == 0) {
                 radioBut.setSelected(true);
+            }
             bg.add(radioBut);
             jp.add(radioBut);
         }
@@ -271,7 +280,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
             for (final rcNode node : hNodes.values()) {
                 // test to see if nodes in local hash
                 obj = ((HashMap) graphicalAttributes[1]).get(node);
-                if (obj == null && !node.bHiddenOnMap) {// if not, add it
+                if ((obj == null) && !node.bHiddenOnMap) {// if not, add it
                     HashMap hMap = new HashMap();
                     ((HashMap) graphicalAttributes[1]).put(node, hMap);
                     hMap.put("LAT", node.LAT);
@@ -279,12 +288,13 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                     computeVector(node);
                 } else {// else check to see only if its position changed
                     HashMap hAttrs = (HashMap) obj;
-                    if (hAttrs != null)
+                    if (hAttrs != null) {
                         if (!hAttrs.get("LAT").equals(node.LAT) || !hAttrs.get("LONG").equals(node.LONG)) {
                             hAttrs.put("LAT", node.LAT);
                             hAttrs.put("LONG", node.LONG);
                             computeVector(node);
                         }
+                    }
                 }
             }
             ;
@@ -298,14 +308,15 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                 obj = it.next();
                 rcNode node = (rcNode) obj;
                 boolean exists = true;
-                if (!hNodes.containsKey(node.sid))
+                if (!hNodes.containsKey(node.sid)) {
                     exists = false;
-                else {
+                } else {
                     rcNode n1 = hNodes.get(node.sid);
                     exists = n1.equals(node);
                 }
-                if ( /* JoglPanel.dglobals.snodes.contains(node) */exists == false || node.bHiddenOnMap)
+                if ( /* JoglPanel.dglobals.snodes.contains(node) */(exists == false) || node.bHiddenOnMap) {
                     it.remove();// graphicalAttributes[1].remove(node);
+                }
             }
             // if ( bNewNode )
             // computeVectors( false);//new nodes, so compute for them their vectors
@@ -340,8 +351,9 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                         objKey = it2.next();
                         objVal = hLinks.get(objKey);
                         link = null;
-                        if (objVal != null && (objVal instanceof ILink))
+                        if ((objVal != null) && (objVal instanceof ILink)) {
                             link = (ILink) objVal;
+                        }
                         node2 = null;
                         sidTo = null;
                         if (objKey instanceof ServiceID) {
@@ -390,7 +402,8 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                             srcLong = DataGlobals.failsafeParseFloat(node.LONG, -111.15f);
                             dstLat = DataGlobals.failsafeParseFloat(node2.LAT, -21.22f);
                             dstLong = DataGlobals.failsafeParseFloat(node2.LONG, -111.15f);
-                            if (srcLat != link.fromLAT || srcLong != link.fromLONG || dstLat != link.toLAT || dstLong != link.toLONG) {
+                            if ((srcLat != link.fromLAT) || (srcLong != link.fromLONG) || (dstLat != link.toLAT)
+                                    || (dstLong != link.toLONG)) {
                                 // update link's start and end coordinates
                                 link.fromLAT = srcLat;
                                 link.fromLONG = srcLong;
@@ -408,7 +421,8 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                 }
                 ;
             } catch (Exception ex) {
-                logger.log(Level.INFO, "Exception checking link for node " + (node != null ? node.UnitName : "unknown") + ": " + ex.getMessage());
+                logger.log(Level.INFO, "Exception checking link for node " + (node != null ? node.UnitName : "unknown")
+                        + ": " + ex.getMessage());
                 ex.printStackTrace();
             }
         }
@@ -418,8 +432,9 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
             for (Iterator it = ((HashMap) graphicalAttributes[2]).keySet().iterator(); it.hasNext();) {
                 Object objLink = it.next();
                 hLinkAttrs = (HashMap) ((HashMap) graphicalAttributes[2]).get(objLink);
-                if (getActiveNodesRenderer().isDeadLink(objLink, hLinkAttrs, ((HashMap) graphicalAttributes[1])))
+                if (getActiveNodesRenderer().isDeadLink(objLink, hLinkAttrs, ((HashMap) graphicalAttributes[1]))) {
                     it.remove();
+                }
             }
         } catch (Exception ex) {
             logger.log(Level.INFO, "Exception checking links removal: " + ex.getMessage());
@@ -431,7 +446,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
 
     /**
      * computes for one node its graphical properties like: position and direction vectors
-     * 
+     *
      * @param node
      *            the node for which to recompute
      */
@@ -441,13 +456,15 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         Object obj;// testing object
         HashMap hAttrs = (HashMap) ((HashMap) graphicalAttributes[1]).get(node);
         obj = hAttrs.get("PositioningVectors");
-        if (obj == null)
+        if (obj == null) {
             vDandP = new VectorO[2];
-        else
+        } else {
             vDandP = (VectorO[]) obj;
+        }
 
         // System.out.println("node "+node.UnitName+" LAT="+node.LAT+" LONG="+node.LONG);
-        Globals.point2Dto3D(DataGlobals.failsafeParseLAT(node.LAT, -21.22f), DataGlobals.failsafeParseLONG(node.LONG, -111.15f), coords);
+        Globals.point2Dto3D(DataGlobals.failsafeParseLAT(node.LAT, -21.22f),
+                DataGlobals.failsafeParseLONG(node.LONG, -111.15f), coords);
         // System.out.println("node "+node.UnitName+" parsed LAT="+DataGlobals.failsafeParseFloat(node.LAT,
         // -21.22f)+" parse LONG="+DataGlobals.failsafeParseFloat(node.LONG, -111.15f));
         // position vector initialised with transformed coordinates from lat and long to world x,y,z, taking in account
@@ -455,15 +472,17 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         vDandP[1] = new VectorO(coords[0], coords[1], coords[2]);
         // init direction vector, 2 cases, for plane projection and for globe projection
         if (JoglPanel.globals.globeRadius != -1) {// sphere
-            vDandP[0] = new VectorO(coords[0], coords[1], coords[2] - JoglPanel.globals.globeVirtualRadius + JoglPanel.globals.globeRadius);
+            vDandP[0] = new VectorO(coords[0], coords[1], (coords[2] - JoglPanel.globals.globeVirtualRadius)
+                    + JoglPanel.globals.globeRadius);
             vDandP[0].Normalize();
         } else {// plane
             vDandP[0] = new VectorO(0, 0, 1);
         }
         ;
         // set vectors for node
-        if (obj == null) // only for new node
+        if (obj == null) {
             hAttrs.put("PositioningVectors", vDandP);
+        }
     }
 
     /**
@@ -506,9 +525,11 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         // number of pixels that the radius will have when eye is normal to plane map,
         // at the intersection of eye direction with map
         double multiplicationFactor = 15;
-        if (JoglPanel.globals.mainPanel.monitor != null && JoglPanel.globals.mainPanel.monitor.main.bGridsClient)
+        if ((JoglPanel.globals.mainPanel.monitor != null) && JoglPanel.globals.mainPanel.monitor.main.bGridsClient) {
             multiplicationFactor = 10;
-        final int nRadiusPixels = (int) (multiplicationFactor * Math.pow(2, (JoglPanel.globals.nScaleFactor - 50) / 15.0));
+        }
+        final int nRadiusPixels = (int) (multiplicationFactor * Math.pow(2,
+                (JoglPanel.globals.nScaleFactor - 50) / 15.0));
         // System.out.println("scale factor: "+JoglPanel.globals.nScaleFactor+" nRadiusPixels: "+nRadiusPixels);
         float radius;
         // 1. compute depth
@@ -522,13 +543,14 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         // if depth greater than a certain value, don't modify radius to correspond to a number of pixels
         // so, let it be the same, so that the units will appear smaller
         // and already a radius is computed
-        if (zDepth > 30f && ((Hashtable) graphicalAttributes[0]).get("NodeRadius") != null)
+        if ((zDepth > 30f) && (((Hashtable) graphicalAttributes[0]).get("NodeRadius") != null)) {
             return;
+        }
         // 2. compute fx
         float fx;
-        fx = zDepth * (float) Math.tan(Globals.FOV_ANGLE / 2f * Math.PI / 180.0f);
+        fx = zDepth * (float) Math.tan(((Globals.FOV_ANGLE / 2f) * Math.PI) / 180.0f);
         // 3. radius
-        radius = nRadiusPixels * fx / JoglPanel.globals.width;
+        radius = (nRadiusPixels * fx) / JoglPanel.globals.width;
         // update the radius in graphicalAttributes
         ((Hashtable) graphicalAttributes[0]).put("NodeRadius", new Float(radius));
     }
@@ -537,6 +559,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
     /**
      * globe radius changed event
      */
+    @Override
     public void radiusChanged() {
         // boolean bInvalidateLinks = false;
         // synchronized(syncObject) {
@@ -554,6 +577,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
      */
     // private boolean linkAnimationStatus=false;
 
+    @Override
     public void radiusChangeStart() {
         // synchronized(syncObject) {
         ((Hashtable) graphicalAttributes[0]).put("InvalidateLinksStart", new Object());
@@ -564,6 +588,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         JoglPanel.globals.canvas.repaint();
     }
 
+    @Override
     public void radiusChangeFinish() {
         // synchronized(syncObject) {
         ((Hashtable) graphicalAttributes[0]).put("InvalidateLinksFinish", new Object());
@@ -575,13 +600,14 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         JoglPanel.globals.canvas.repaint();
     }
 
+    @Override
     public void optionPanelChanged(int event) {
         // synchronized(syncObject) {
-        if (event == DataRenderer.GLOBE_EVENT_PARAM_NODES_CHANGED)
+        if (event == DataRenderer.GLOBE_EVENT_PARAM_NODES_CHANGED) {
             ((Hashtable) graphicalAttributes[0]).put("RecomputeNodes", new Object());
-        else if (event == DataRenderer.GLOBE_EVENT_PARAM_LINKS_CHANGED)
+        } else if (event == DataRenderer.GLOBE_EVENT_PARAM_LINKS_CHANGED) {
             ((Hashtable) graphicalAttributes[0]).put("InvalidateLinks", new Object());
-        else if (event == DataRenderer.GLOBE_EVENT_PARAM_RENDERER_CHANGED) {
+        } else if (event == DataRenderer.GLOBE_EVENT_PARAM_RENDERER_CHANGED) {
             ((Hashtable) graphicalAttributes[0]).put("RecomputeNodes", new Object());
             ((Hashtable) graphicalAttributes[0]).put("InvalidateLinks", new Object());
         }
@@ -594,7 +620,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
 
     /**
      * selects nodes that are under the mouse cursor
-     * 
+     *
      * @param LONG
      * @param LAT
      * @return Returns list of nodes
@@ -608,11 +634,12 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
             Object obj;
             obj = ((Hashtable) graphicalAttributes[0]).get("NodeRadius");
             float radius = 0.01f;
-            if (obj != null)// no radius specified
+            if (obj != null) {
                 radius = ((Float) obj).floatValue();
+            }
 
-            float d_lat = 180 * radius / Globals.MAP_HEIGHT;
-            float d_long = 360 * radius / Globals.MAP_WIDTH;
+            float d_lat = (180 * radius) / Globals.MAP_HEIGHT;
+            float d_long = (360 * radius) / Globals.MAP_WIDTH;
             // System.out.println("mouse click coordinates: lat="+LAT+" long="+LONG+" radius:"+radius+" MAP_WIDTH="+Globals.MAP_WIDTH+" dx="+d_long+
             // " dy="+d_lat);
             for (Iterator it = ((HashMap) graphicalAttributes[1]).keySet().iterator(); it.hasNext();) {
@@ -644,15 +671,16 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
     /**
      * functions much like getSelectedNode<br>
      * only that returns a more standardized list, see @see getSelectedLinks
-     * 
+     *
      * @param LONG
      * @param LAT
      * @return
      */
     private ArrayList getSelectedNodes(int mouse_x, int mouse_y, ArrayList alSelectedObjects) {
         float[] map_coordinates = UserInputListener.getPointOnMap(mouse_x, mouse_y, null);
-        if (map_coordinates == null)
+        if (map_coordinates == null) {
             return alSelectedObjects;
+        }
         float LONG = map_coordinates[0], LAT = map_coordinates[1];
         // rcNode nSelNode = null;
         try {
@@ -661,11 +689,12 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
             Object obj;
             obj = ((Hashtable) graphicalAttributes[0]).get("NodeRadius");
             float radius = 0.01f;
-            if (obj != null)// no radius specified
+            if (obj != null) {
                 radius = ((Float) obj).floatValue();
+            }
 
-            float d_lat = 180 * radius / Globals.MAP_HEIGHT;
-            float d_long = 360 * radius / Globals.MAP_WIDTH;
+            float d_lat = (180 * radius) / Globals.MAP_HEIGHT;
+            float d_long = (360 * radius) / Globals.MAP_WIDTH;
             // System.out.println("mouse click coordinates: lat="+LAT+" long="+LONG+" radius:"+radius+" MAP_WIDTH="+Globals.MAP_WIDTH+" dx="+d_long+
             // " dy="+d_lat);
             for (Iterator it = ((HashMap) graphicalAttributes[1]).keySet().iterator(); it.hasNext();) {
@@ -683,14 +712,13 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                     // System.out.println("Checking node with lat="+n_lat+" long="+n_long);
                     if ((Math.abs(LAT - n_lat) < d_lat) && (Math.abs(LONG - n_long) < d_long)) {
                         // changed compared to getSelectedNode in order to standardize
-                        if (alSelectedObjects == null)
+                        if (alSelectedObjects == null) {
                             alSelectedObjects = new ArrayList();
+                        }
                         HashMap hObjAttrs = new HashMap();
-                        hObjAttrs.put("Position", new float[] {
-                                n_long, n_lat
-                        });
+                        hObjAttrs.put("Position", new float[] { n_long, n_lat });
                         hObjAttrs.put("Type", "node");
-                        NodesRendererInterface nri = (NodesRendererInterface) getActiveNodesRenderer();
+                        NodesRendererInterface nri = getActiveNodesRenderer();
                         nri.fillSelectedNodeInfo(n, hObjAttrs);
                         // TODO: put other attrs like ones available in vcf
                         alSelectedObjects.add(hObjAttrs);
@@ -711,7 +739,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
      * Position -> VectorO<br>
      * Type -> text<br>
      * Name and Position and Type should not miss from attributes as they are the most relevant attributes.<br>
-     * 
+     *
      * @param mouse_x
      * @param mouse_y
      * @param alSelectedObjects
@@ -738,63 +766,72 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
             Object obj;
             obj = ((Hashtable) graphicalAttributes[0]).get("NodeRadius");
             float radius = 0.01f;
-            if (obj != null)// no radius specified
+            if (obj != null) {
                 radius = ((Float) obj).floatValue();
+            }
             // check if a node's link from wconn was eliminated
             for (Iterator it = ((HashMap) graphicalAttributes[2]).keySet().iterator(); it.hasNext();) {
                 Object objLink = it.next();
                 hLinkAttrs = (HashMap) ((HashMap) graphicalAttributes[2]).get(objLink);
                 VectorO vPoint = (VectorO) hLinkAttrs.get("LinkArrowBase");
                 // System.out.println("show link at"+vPoint);
-                if (vPoint != null && Globals.sphereIntersection(vEye, vDirection, vPoint, radius / 2)) {
+                if ((vPoint != null) && Globals.sphereIntersection(vEye, vDirection, vPoint, radius / 2)) {
                     HashMap hObjAttrs = new HashMap();// create hashmap to put this link's attributes in it
                     // also set position and type by default
                     hObjAttrs.put("Position", vPoint);
                     hObjAttrs.put("Type", "link");
                     // give the possibility to change them
-                    NodesRendererInterface nri = (NodesRendererInterface) getActiveNodesRenderer();
+                    NodesRendererInterface nri = getActiveNodesRenderer();
                     if (!nri.fillSelectedLinkInfo(objLink, hLinkAttrs, hObjAttrs)) {// renderer is not filling
-                                                                                    // neccessary infos
+                        // neccessary infos
                         String sName = "Inet link ";// hLinkAttrs.get("LinkArrowBase");
                         rcNode nFrom = (rcNode) hLinkAttrs.get("fromNode");
-                        if (nFrom != null)
+                        if (nFrom != null) {
                             sName += nFrom.UnitName;
+                        }
                         rcNode nTo = (rcNode) hLinkAttrs.get("toNode");
-                        if (nTo != null)
+                        if (nTo != null) {
                             sName += "->" + nTo.UnitName;
+                        }
 
                         hObjAttrs.put("Name", sName);
                         StringBuilder sDesc = new StringBuilder();
-                        if (nFrom != null && nTo != null) {
+                        if ((nFrom != null) && (nTo != null)) {
                             sDesc.append("RTT: ");
-                            if (nFrom.connRTT(nTo) != -1)
+                            if (nFrom.connRTT(nTo) != -1) {
                                 sDesc.append(nFrom.connRTT(nTo));
-                            else
+                            } else {
                                 sDesc.append("??");
+                            }
                             sDesc.append(" ms\nLost Pkgs: ");
-                            if (nFrom.connLP(nTo) != -1)
+                            if (nFrom.connLP(nTo) != -1) {
                                 sDesc.append((nFrom.connLP(nTo) * 100));
-                            else
+                            } else {
                                 sDesc.append("??");
+                            }
                             sDesc.append(" %\nRTTime: ");
-                            if (nFrom.connPerformance(nTo) != -1)
+                            if (nFrom.connPerformance(nTo) != -1) {
                                 sDesc.append((int) nFrom.connPerformance(nTo));
-                            else
+                            } else {
                                 sDesc.append("??");
-                        } else
+                            }
+                        } else {
                             sDesc.append(objLink.toString());
+                        }
                         hObjAttrs.put("Description", sDesc.toString());
                     }
                     ;
-                    if (alSelectedObjects == null)
+                    if (alSelectedObjects == null) {
                         alSelectedObjects = new ArrayList();
+                    }
                     alSelectedObjects.add(hObjAttrs);
                 }
                 ;
             }
             // }
         } catch (Exception ex) {
-            logger.log(Level.INFO, "Exception checkin links that are selected given mouse_x and mouse_y: " + ex.getMessage());
+            logger.log(Level.INFO,
+                    "Exception checkin links that are selected given mouse_x and mouse_y: " + ex.getMessage());
             ex.printStackTrace();
         }
         return alSelectedObjects;
@@ -805,41 +842,51 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         Object obj;
         obj = ((Hashtable) graphicalAttributes[0]).get("NodeRadius");
         float radius = 0.01f;
-        if (obj != null)// no radius specified
+        if (obj != null) {
             radius = ((Float) obj).floatValue();
-        alSelectedObjects = getActiveNodesRenderer().getOtherSelectedObjects(vEye, vDirection, radius, alSelectedObjects);
-        if (alSelectedObjects == null)
+        }
+        alSelectedObjects = getActiveNodesRenderer().getOtherSelectedObjects(vEye, vDirection, radius,
+                alSelectedObjects);
+        if (alSelectedObjects == null) {
             // try to select cities if nothing else selected
             alSelectedObjects = getCitiesSelected(vEye, vDirection, alSelectedObjects);
+        }
         return alSelectedObjects;
     }
 
     private ArrayList getCitiesSelected(VectorO vEye, VectorO vDirection, ArrayList alSelectedObjects) {
-        if (JoglPanel.globals.mapAngle != 90 && JoglPanel.globals.mapAngle != 0)
+        if ((JoglPanel.globals.mapAngle != 90) && (JoglPanel.globals.mapAngle != 0)) {
             return alSelectedObjects;
+        }
         float[] coords = null;
         VectorO vPoint;
         NumberFormat nf = NumberFormat.getInstance();
         nf.setMaximumFractionDigits(2);
         nf.setMinimumFractionDigits(2);
-        float full_radius = Globals.MAP_WIDTH * .5f / (float) Math.PI;
-        float radius = full_radius / 360f * .5f;
+        float full_radius = (Globals.MAP_WIDTH * .5f) / (float) Math.PI;
+        float radius = (full_radius / 360f) * .5f;
         if (JoglPanel.globals.wcityGIS != null) {
             for (int i = 0; i < JoglPanel.globals.wcityGIS.getTotalNumber(); i++) {
-                coords = Globals.point2Dto3D(JoglPanel.globals.wcityGIS.fLat[i], JoglPanel.globals.wcityGIS.fLong[i], coords, 0.001f);
+                coords = Globals.point2Dto3D(JoglPanel.globals.wcityGIS.fLat[i], JoglPanel.globals.wcityGIS.fLong[i],
+                        coords, 0.001f);
                 vPoint = new VectorO(coords);
                 // System.out.println("show link at"+vPoint);
-                if (vPoint != null && Globals.sphereIntersection(vEye, vDirection, vPoint, radius)) {
+                if ((vPoint != null) && Globals.sphereIntersection(vEye, vDirection, vPoint, radius)) {
                     HashMap hObjAttrs = new HashMap();// create hashmap to put this link's attributes in it
                     // also set position and type by default
                     hObjAttrs.put("Position", vPoint);
                     hObjAttrs.put("Type", "city");
                     hObjAttrs.put("Name", JoglPanel.globals.wcityGIS.sNames[i]);
-                    hObjAttrs.put("Description",
-                                  "Country: " + JoglPanel.globals.wcityGIS.sCountries[i] + "\nCity: " + JoglPanel.globals.wcityGIS.sNames[i] + "\nLatitude: " + nf.format(JoglPanel.globals.wcityGIS.fLat[i]) + "\nLongitude: " + nf.format(JoglPanel.globals.wcityGIS.fLong[i]) + "\nLocal time: "
-                                          + Globals.getUTCHour(JoglPanel.globals.wcityGIS.sHour[i]));
-                    if (alSelectedObjects == null)
+                    hObjAttrs.put(
+                            "Description",
+                            "Country: " + JoglPanel.globals.wcityGIS.sCountries[i] + "\nCity: "
+                                    + JoglPanel.globals.wcityGIS.sNames[i] + "\nLatitude: "
+                                    + nf.format(JoglPanel.globals.wcityGIS.fLat[i]) + "\nLongitude: "
+                                    + nf.format(JoglPanel.globals.wcityGIS.fLong[i]) + "\nLocal time: "
+                                    + Globals.getUTCHour(JoglPanel.globals.wcityGIS.sHour[i]));
+                    if (alSelectedObjects == null) {
                         alSelectedObjects = new ArrayList();
+                    }
                     alSelectedObjects.add(hObjAttrs);
                 }
             }
@@ -848,11 +895,12 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         ;
         if (JoglPanel.globals.uscityGIS != null) {
             for (int i = 0; i < JoglPanel.globals.uscityGIS.getTotalNumber(); i++) {
-                coords = Globals.point2Dto3D(JoglPanel.globals.uscityGIS.fLat[i], JoglPanel.globals.uscityGIS.fLong[i], coords, 0.001f);
+                coords = Globals.point2Dto3D(JoglPanel.globals.uscityGIS.fLat[i], JoglPanel.globals.uscityGIS.fLong[i],
+                        coords, 0.001f);
                 vPoint = new VectorO(coords);
                 // System.out.println("show link at"+vPoint);
                 String sUS = "US", sCanada = "Canada";
-                if (vPoint != null && Globals.sphereIntersection(vEye, vDirection, vPoint, radius)) {
+                if ((vPoint != null) && Globals.sphereIntersection(vEye, vDirection, vPoint, radius)) {
                     HashMap hObjAttrs = new HashMap();// create hashmap to put this link's attributes in it
                     // also set position and type by default
                     hObjAttrs.put("Position", vPoint);
@@ -861,17 +909,23 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                     String sCountry, sState;
                     if (JoglPanel.globals.uscityGIS.sCountries[i].endsWith("; Canada")) {
                         sCountry = sCanada;
-                        sState = JoglPanel.globals.uscityGIS.sCountries[i].substring(0, JoglPanel.globals.uscityGIS.sCountries[i].length() - 8);
+                        sState = JoglPanel.globals.uscityGIS.sCountries[i].substring(0,
+                                JoglPanel.globals.uscityGIS.sCountries[i].length() - 8);
                     } else {
                         sCountry = sUS;
                         sState = JoglPanel.globals.uscityGIS.sCountries[i];
                     }
                     ;
-                    hObjAttrs.put("Description",
-                                  "Country: " + sCountry + "\nState: " + sState + "\nCity: " + JoglPanel.globals.uscityGIS.sNames[i] + "\nLatitude: " + nf.format(JoglPanel.globals.uscityGIS.fLat[i]) + "\nLongitude: " + nf.format(JoglPanel.globals.uscityGIS.fLong[i]) + "\nLocal time: "
-                                          + Globals.getUTCHour(JoglPanel.globals.uscityGIS.sHour[i]));
-                    if (alSelectedObjects == null)
+                    hObjAttrs.put(
+                            "Description",
+                            "Country: " + sCountry + "\nState: " + sState + "\nCity: "
+                                    + JoglPanel.globals.uscityGIS.sNames[i] + "\nLatitude: "
+                                    + nf.format(JoglPanel.globals.uscityGIS.fLat[i]) + "\nLongitude: "
+                                    + nf.format(JoglPanel.globals.uscityGIS.fLong[i]) + "\nLocal time: "
+                                    + Globals.getUTCHour(JoglPanel.globals.uscityGIS.sHour[i]));
+                    if (alSelectedObjects == null) {
                         alSelectedObjects = new ArrayList();
+                    }
                     alSelectedObjects.add(hObjAttrs);
                 }
             }
@@ -884,6 +938,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
     /**
      * user clicked on map so check if any node influenced
      */
+    @Override
     public void mouseClick(float LONG, float LAT) {
         String sNodesSelected = "";
 
@@ -891,16 +946,19 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         ArrayList alSelectedNodes = getSelectedNode(LONG, LAT);
         for (int i = 0; i < alSelectedNodes.size(); i++) {
             node = (rcNode) alSelectedNodes.get(i);
-            if (JoglPanel.globals.mainPanel.monitor != null && JoglPanel.globals.mainPanel.monitor.main.bGridsClient) {
+            if ((JoglPanel.globals.mainPanel.monitor != null) && JoglPanel.globals.mainPanel.monitor.main.bGridsClient) {
                 // if ( !JoglPanel.globals.mainPanel.monitor.main.bGridsClient )
                 // open web address
-                if (node.szOpticalSwitch_Name != null)
+                if (node.szOpticalSwitch_Name != null) {
                     BBBrowserLaunch.openURL(node.szOpticalSwitch_Name);
-            } else
+                }
+            } else {
                 node.client.setVisible(!node.client.isVisible());
+            }
             // System.out.println("node selected: "+n.UnitName);
-            if (sNodesSelected.compareTo("") != 0)
+            if (sNodesSelected.compareTo("") != 0) {
                 sNodesSelected += ",";
+            }
             sNodesSelected += node.UnitName;
         }
         JoglPanel.globals.mainPanel.status.setText("node(s) selected: " + sNodesSelected);
@@ -909,6 +967,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
     /**
      * user duble clicked on map so zoom to it
      */
+    @Override
     public void mouseDblClick(float LONG, float LAT) {
         rcNode node = null;
         ArrayList alSelectedNodes = getSelectedNode(LONG, LAT);
@@ -917,8 +976,9 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         // break;
         // }
         // substituted with below
-        if (alSelectedNodes.size() > 0)
+        if (alSelectedNodes.size() > 0) {
             node = (rcNode) alSelectedNodes.get(0);
+        }
         JoglPanel.globals.mainPanel.status.setText("node(s) selected: " + (node != null ? node.UnitName : ""));
         // set that eye come over the node
         if (node != null) {
@@ -932,17 +992,18 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
 
         private int nStep = 1;
 
-        private int nMaxSteps = 10;
+        private final int nMaxSteps = 10;
 
-        private rcNode nSelNode;
+        private final rcNode nSelNode;
 
-        private DataRenderer drThis;
+        private final DataRenderer drThis;
 
         public GoToNodeTimerTask(rcNode n, DataRenderer drThis) {
             nSelNode = n;
             this.drThis = drThis;
         }
 
+        @Override
         public void run() {
             Thread.currentThread().setName(" ( ML ) - JOGL - DataRenderer Go To Node Timer Thread");
             if (nSelNode != null) {
@@ -952,13 +1013,16 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                 // synchronized(drThis.syncObject) {
                 Object obj;
                 obj = ((HashMap) drThis.graphicalAttributes[1]).get(nSelNode);
-                if (obj == null)
+                if (obj == null) {
                     return;
+                }
                 obj = ((HashMap) obj).get("PositioningVectors");
-                if (obj == null)
+                if (obj == null) {
                     return;
-                if (!(obj instanceof VectorO[]))
+                }
+                if (!(obj instanceof VectorO[])) {
                     return;
+                }
                 vectors = (VectorO[]) obj;
                 // };
                 // 0 -> pos
@@ -987,19 +1051,22 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                 }
                 ;
                 JoglPanel.globals.canvas.repaint();
-            } else
+            } else {
                 this.cancel();
+            }
         }
     }
 
     /**
      * mouse moved so check to see if any node in range
-     * 
+     *
      * @see lia.Monitor.JiniClient.CommonGUI.Jogl.GlobeListener#mouseMove(float, float)
      */
+    @Override
     public void mouseMove(int mouse_x, int mouse_y) {// float LONG, float LAT) {
-        if (JoglPanel.globals.mainPanel.renderer.sr.IsInRotation())
+        if (JoglPanel.globals.mainPanel.renderer.sr.IsInRotation()) {
             return;
+        }
         // check to see if mouse over nodes and links
         ArrayList alSelectedObjects = null;
         // long lStart = NTPDate.currentTimeMillis();
@@ -1011,7 +1078,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         alSelectedObjects = getSelectedLinks(vEye, vDirection, alSelectedObjects);
         alSelectedObjects = getOtherSelectedObjects(vEye, vDirection, alSelectedObjects);
         // long lStart1 = NTPDate.currentTimeMillis();
-        if (alSelectedObjects != null && alSelectedObjects.size() > 0) {
+        if ((alSelectedObjects != null) && (alSelectedObjects.size() > 0)) {
             String sNodesSelected = "";
             // synchronized(syncObject) {
             ((Hashtable) graphicalAttributes[0]).put("MousePosition_X", Integer.valueOf(mouse_x));
@@ -1030,28 +1097,29 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                 // check to see if we hava correct name and position
                 boolean bObjOK = true;
                 sName = (String) objAttrs.get("Name");
-                if (sName == null || sName.length() == 0)
+                if ((sName == null) || (sName.length() == 0)) {
                     bObjOK = false;
-                else if (sType != null && sType.equals("node")) {
-                    if (sNodesSelected.compareTo("") != 0)
+                } else if ((sType != null) && sType.equals("node")) {
+                    if (sNodesSelected.compareTo("") != 0) {
                         sNodesSelected += ",";
+                    }
                     sNodesSelected += sName;
                 }
                 ;
                 objPos = objAttrs.get("Position");
                 if (objPos instanceof VectorO) {
                     VectorO vPos = (VectorO) objPos;
-                    objAttrs.put("Position", new float[] {
-                            vPos.getX(), vPos.getY(), vPos.getZ()
-                    });
-                } else if (objPos instanceof float[] && ((float[]) objPos).length == 2) {
+                    objAttrs.put("Position", new float[] { vPos.getX(), vPos.getY(), vPos.getZ() });
+                } else if ((objPos instanceof float[]) && (((float[]) objPos).length == 2)) {
                     float[] geo_coords = (float[]) objPos;
                     float[] pos3d = Globals.point2Dto3D(geo_coords[1], geo_coords[0], null);
                     objAttrs.put("Position", pos3d);
-                } else if (!(objPos instanceof float[] && ((float[]) objPos).length == 3))
+                } else if (!((objPos instanceof float[]) && (((float[]) objPos).length == 3))) {
                     bObjOK = false;
-                if (bObjOK)
+                }
+                if (bObjOK) {
                     alMOobjs.add(objAttrs);
+                }
             }
             ;
             if (alMOobjs.size() > 0) {
@@ -1066,7 +1134,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
             ((Hashtable) graphicalAttributes[0]).remove("MousePosition_X");
             ((Hashtable) graphicalAttributes[0]).remove("MousePosition_Y");
             Object obj = ((Hashtable) graphicalAttributes[0]).get("MouseOverObjects");
-            if (obj != null && ((ArrayList) obj).size() > 0) {
+            if ((obj != null) && (((ArrayList) obj).size() > 0)) {
                 ((ArrayList) obj).clear();
                 JoglPanel.globals.canvas.repaint();
             }
@@ -1076,15 +1144,17 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         // long lEnd1 = NTPDate.currentTimeMillis();
         // if ( lEnd1-lStart1>3 ) System.out.println("gathering of info about selections took "+(lEnd1-lStart1)+"ms");
         float[] map_coordinates = UserInputListener.getPointOnMap(mouse_x, mouse_y, null);
-        if (JoglPanel.globals.charPressed == 'L' && map_coordinates != null) {
+        if ((JoglPanel.globals.charPressed == 'L') && (map_coordinates != null)) {
             // NumberFormat
-            JoglPanel.globals.mainPanel.status.setText("Mouse at [" + ((float) ((int) (map_coordinates[0] * 10000))) / 10000f + " LONG," + ((float) ((int) (map_coordinates[1] * 10000f))) / 10000f + " LAT]");
+            JoglPanel.globals.mainPanel.status.setText("Mouse at [" + ((((int) (map_coordinates[0] * 10000))) / 10000f)
+                    + " LONG," + ((((int) (map_coordinates[1] * 10000f))) / 10000f) + " LAT]");
         }
-        if (JoglPanel.globals.charPressed == 'J' && map_coordinates != null) {
+        if ((JoglPanel.globals.charPressed == 'J') && (map_coordinates != null)) {
             // get
             String text_name = Texture.findAtCoords(map_coordinates[0], map_coordinates[1]);
-            if (text_name != null)
+            if (text_name != null) {
                 JoglPanel.globals.mainPanel.status.setText("texture at mouse position is " + text_name);
+            }
         }
     }
 
@@ -1119,16 +1189,19 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
      * ((HashMap)obj).clear(); JoglPanel.globals.canvas.repaint(); }; }; } }
      */
 
+    @Override
     public void display(GLAutoDrawable gLDrawable) {
 
         // TODO: check it out!
         long lCurrentTime = NTPDate.currentTimeMillis();
         JoglPanel.globals.lStartCanvasRepaint = lCurrentTime;
-        if (JoglPanel.globals.lLastRefreshTime != -1 && lCurrentTime < JoglPanel.globals.lLastRefreshTime + Globals.REFRESH_TIME)
+        if ((JoglPanel.globals.lLastRefreshTime != -1)
+                && (lCurrentTime < (JoglPanel.globals.lLastRefreshTime + Globals.REFRESH_TIME))) {
             return;
+        }
 
         super.displayBefore(gLDrawable);
-        final GL gl = gLDrawable.getGL();
+        final GL2 gl = gLDrawable.getGL().getGL2();
         // correct radius if zoom level changed
         computeRadius();
 
@@ -1147,30 +1220,38 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         boolean bRecomputeTime = false;
 
         // synchronized(syncObject) {
-        if (JoglPanel.globals.lLastRefreshTime == -1 || lCurrentTime > JoglPanel.globals.lLastRefreshTime + Globals.RECOMPUTE_NODES_TIME)
+        if ((JoglPanel.globals.lLastRefreshTime == -1)
+                || (lCurrentTime > (JoglPanel.globals.lLastRefreshTime + Globals.RECOMPUTE_NODES_TIME))) {
             bRecomputeTime = true;
-        if (JoglPanel.globals.mainPanel.monitor != null && JoglPanel.globals.mainPanel.monitor.main.bGridsClient)
+        }
+        if ((JoglPanel.globals.mainPanel.monitor != null) && JoglPanel.globals.mainPanel.monitor.main.bGridsClient) {
             bRecomputeTime = false;
-        if (((Hashtable) graphicalAttributes[0]).remove("RecomputeNodes") != null)
+        }
+        if (((Hashtable) graphicalAttributes[0]).remove("RecomputeNodes") != null) {
             bRecomputeTime = true;
-        if (((Hashtable) graphicalAttributes[0]).get("InvalidateLinksStart") != null)
+        }
+        if (((Hashtable) graphicalAttributes[0]).get("InvalidateLinksStart") != null) {
             if (((Hashtable) graphicalAttributes[0]).get("DetailLevel_ShowLinksOnChangeProjection") != null) {
                 ((Hashtable) graphicalAttributes[0]).put("InvalidateLinks", new Object());
-            } else
+            } else {
                 nShowLinks = 0;
-        else if (((Hashtable) graphicalAttributes[0]).remove("InvalidateLinksFinish") != null) {
+            }
+        } else if (((Hashtable) graphicalAttributes[0]).remove("InvalidateLinksFinish") != null) {
             ((Hashtable) graphicalAttributes[0]).put("InvalidateLinks", new Object());
-        } else if (bRecomputeTime)
+        } else if (bRecomputeTime) {
             nShowLinks = 2;
-        if (((Hashtable) graphicalAttributes[0]).get("InvalidateLinks") != null)
+        }
+        if (((Hashtable) graphicalAttributes[0]).get("InvalidateLinks") != null) {
             nShowLinks = 2;
-        if (((Hashtable) graphicalAttributes[0]).remove("RecomputeLinks") != null)
+        }
+        if (((Hashtable) graphicalAttributes[0]).remove("RecomputeLinks") != null) {
             nShowLinks = 2;
-        // };
+            // };
+        }
 
         // draw nodes with the current active nodes renderer
         NodesRendererInterface nri = null;
-        nri = (NodesRendererInterface) getActiveNodesRenderer();
+        nri = getActiveNodesRenderer();
         if (nri != null) {
             // gl.glDisable(GL.GL_COLOR_MATERIAL);
             // gl.glDisable(GL.GL_TEXTURE_2D);
@@ -1239,7 +1320,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         // draw tooltip
         // long lStart = NTPDate.currentTimeMillis();
         ArrayList alObjects = (ArrayList) ((Hashtable) graphicalAttributes[0]).get("MouseOverObjects");
-        if (alObjects != null && alObjects.size() > 0) {
+        if ((alObjects != null) && (alObjects.size() > 0)) {
             int mpx = 0, mpy = 0;
             try {
                 mpx = ((Integer) ((Hashtable) graphicalAttributes[0]).get("MousePosition_X")).intValue();
@@ -1251,17 +1332,20 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
             ;
             boolean bLeft2Right;
             boolean bTop2Bottom;
-            if (mpx < JoglPanel.globals.width / 2)
+            if (mpx < (JoglPanel.globals.width / 2)) {
                 bLeft2Right = true;
-            else
+            } else {
                 bLeft2Right = false;
-            if (mpy < JoglPanel.globals.height / 2)
+            }
+            if (mpy < (JoglPanel.globals.height / 2)) {
                 bTop2Bottom = true;
-            else
+            } else {
                 bTop2Bottom = false;
+            }
             float[] coords;
 
-            boolean bTransparentTooltip = (AppConfig.getProperty("ml_client.jogl.transparent_tooltip", "true").equals("true"));
+            boolean bTransparentTooltip = (AppConfig.getProperty("ml_client.jogl.transparent_tooltip", "true")
+                    .equals("true"));
             if (bTransparentTooltip) {
                 gl.glEnable(GL.GL_BLEND);
                 // source is what is in front, destination is what already is there
@@ -1283,10 +1367,11 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                 objAttrs = (HashMap) alObjects.get(i);
                 // substitute mouse positions with farm positions
                 sType = (String) objAttrs.get("Type");
-                if (sType.equals("city"))
+                if (sType.equals("city")) {
                     ip.setActiveColorSet(2);
-                else
+                } else {
                     ip.setActiveColorSet(1);
+                }
                 coords = (float[]) objAttrs.get("Position");
                 sName = (String) objAttrs.get("Name");
                 sDesc = (String) objAttrs.get("Description");
@@ -1321,14 +1406,16 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                 ;
                 // TODO: create a display list with text to speed up drawing for same text
                 // drawTextFrom( gl, sName, coords);
-                if (sDesc != null)
+                if (sDesc != null) {
                     ip.doInfoBox(600, 300, true, true, sName, sDesc, nTTID, nTTw, nTTh, coords);
-                else
+                } else {
                     ip.doInfoBox(600, 300, true, true, sType, sName, nTTID, nTTw, nTTh, coords);
+                }
             }
 
-            if (bTransparentTooltip)
+            if (bTransparentTooltip) {
                 gl.glDisable(GL.GL_BLEND);
+            }
         }
         // long lEnd = NTPDate.currentTimeMillis();
         // if ( lEnd-lStart>3 ) System.out.println("draw selected objects took "+(lEnd-lStart)+"ms");
@@ -1381,13 +1468,14 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
     /**
      * init data related variables for each node renderer
      */
+    @Override
     public void init(GLAutoDrawable gLDrawable) {
         super.init(gLDrawable);
         // should these be here??
         // JoglPanel.globals.lLastRefreshTime = -1;
         ((Hashtable) graphicalAttributes[0]).put("RecomputeNodes", new Object());
         // ((Hashtable)graphicalAttributes[0]).put("InvalidateLinks", new Object());
-        final GL gl = gLDrawable.getGL();
+        final GL2 gl = gLDrawable.getGL().getGL2();
         // System.out.println("gl_init="+gl);
         initNodesRenderers(gl);
     }
@@ -1396,8 +1484,9 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
         try {
             // for each node in global hash
             for (final rcNode node : JoglPanel.dglobals.snodes.values()) {
-                if (node != null && node.IPaddress != null && node.IPaddress.compareTo(ip) == 0)
+                if ((node != null) && (node.IPaddress != null) && (node.IPaddress.compareTo(ip) == 0)) {
                     return node;
+                }
             }
         } catch (Exception ex) {
             logger.log(Level.WARNING, "Exception identifying a to link's node: " + ex.getMessage());
@@ -1407,7 +1496,7 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
     }
 
     private rcNode getNodeBasedOnSID(ServiceID sid) {
-        return (rcNode) JoglPanel.dglobals.snodes.get(sid);
+        return JoglPanel.dglobals.snodes.get(sid);
         // rcNode node;
         // try {
         // //for each node in global hash
@@ -1425,17 +1514,21 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
 
     // TODO: this 3 methods should be synchronized
     public static void addGlobeListener(GlobeListener gl) {
-        for (int i = 0; i < globeListenersList.size(); i++)
-            if ((GlobeListener) globeListenersList.get(i) == gl)
+        for (int i = 0; i < globeListenersList.size(); i++) {
+            if ((GlobeListener) globeListenersList.get(i) == gl) {
                 return;// already added
+            }
+        }
         // else add this new nodes renderer
         globeListenersList.add(gl);
     }
 
     public static void addGlobeListener(int position, GlobeListener gl) {
-        for (int i = 0; i < globeListenersList.size(); i++)
-            if ((GlobeListener) globeListenersList.get(i) == gl)
+        for (int i = 0; i < globeListenersList.size(); i++) {
+            if ((GlobeListener) globeListenersList.get(i) == gl) {
                 return;// already added
+            }
+        }
         // else add this new nodes renderer
         globeListenersList.add(position, gl);
     }
@@ -1451,25 +1544,27 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
     // private static long delayMouseMoveTime=1000;
     // informes listeners of an globe event
     public static void sendGlobeEvent(int event, Object params) {
-        for (int i = 0; i < globeListenersList.size(); i++)
-            if (event == GLOBE_RADIUS_CHANGED)// radius changed
+        for (int i = 0; i < globeListenersList.size(); i++) {
+            if (event == GLOBE_RADIUS_CHANGED) {
                 ((GlobeListener) globeListenersList.get(i)).radiusChanged();
-            else if (event == GLOBE_RADIUS_CHANGE_START)
+            } else if (event == GLOBE_RADIUS_CHANGE_START) {
                 ((GlobeListener) globeListenersList.get(i)).radiusChangeStart();
-            else if (event == GLOBE_RADIUS_CHANGE_FINISH) {
+            } else if (event == GLOBE_RADIUS_CHANGE_FINISH) {
                 ((GlobeListener) globeListenersList.get(i)).radiusChangeFinish();
-            } else if (event == GLOBE_MOUSE_CLICK || event == GLOBE_MOUSE_DBLCLICK) {
+            } else if ((event == GLOBE_MOUSE_CLICK) || (event == GLOBE_MOUSE_DBLCLICK)) {
                 if (params instanceof float[]) {
                     float[] coords = (float[]) params;
-                    if (coords != null && coords.length == 2)
-                        if (event == GLOBE_MOUSE_CLICK)
+                    if ((coords != null) && (coords.length == 2)) {
+                        if (event == GLOBE_MOUSE_CLICK) {
                             ((GlobeListener) globeListenersList.get(i)).mouseClick(coords[0], coords[1]);
-                        else if (event == GLOBE_MOUSE_DBLCLICK)
+                        } else if (event == GLOBE_MOUSE_DBLCLICK) {
                             ((GlobeListener) globeListenersList.get(i)).mouseDblClick(coords[0], coords[1]);
+                        }
+                    }
                 }
                 ;
             } else if (event == GLOBE_OPTION_PANEL_CHANGE) {
-                if (params instanceof Integer && params != null) {
+                if ((params instanceof Integer) && (params != null)) {
                     ((GlobeListener) globeListenersList.get(i)).optionPanelChanged(((Integer) params).intValue());
                 }
             } else if (event == GLOBE_MOUSE_MOVE) {
@@ -1480,15 +1575,17 @@ public class DataRenderer extends ZoomMapRenderer implements GlobeListener {
                 // System.out.println("curTime="+curTime);
                 // lastMouseMoveTime=curTime;
                 int[] coords = (int[]) params;
-                if (coords != null && coords.length == 2)
+                if ((coords != null) && (coords.length == 2)) {
                     ((GlobeListener) globeListenersList.get(i)).mouseMove(coords[0], coords[1]);
-                else
+                } else {
                     ((GlobeListener) globeListenersList.get(i)).mouseMove(-1, -1);// 400, 200);//this dimensions expand
-                                                                                  // beyond the limits of longitude and
-                                                                                  // latitude => removes the tooltip
-                // };
-                // };
+                    // beyond the limits of longitude and
+                    // latitude => removes the tooltip
+                    // };
+                    // };
+                }
             }
+        }
         ;
     }
 

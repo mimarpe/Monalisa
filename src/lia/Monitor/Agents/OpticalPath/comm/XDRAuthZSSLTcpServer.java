@@ -8,15 +8,10 @@ import lia.util.security.RSSF;
 
 public class XDRAuthZSSLTcpServer extends XDRTcpServer {
 
-    /** Logger used by this class 
-     * private static final transient Logger logger =
-     * Logger.getLogger("lia.Monitor.Agents.OpticalPath.comm.XDRAuthZSSLTcpServer");
-     */
-
     private volatile boolean hasToRun;
-    private int port;
-  
-    private AuthZManager authzManager;
+    private final int port;
+
+    private final AuthZManager authzManager;
 
     /**
      * @param port -
@@ -27,19 +22,19 @@ public class XDRAuthZSSLTcpServer extends XDRTcpServer {
      * @throws Exception
      */
     public XDRAuthZSSLTcpServer(int port, XDRMessageNotifier notifier) throws Exception {
-    	super("( ML ) XDRAuthZTcpServer :- Listening on port [ " + port + " ] ",
-    	      new RSSF().createServerSocket(port,AppConfig.getProperty("lia.Monitor.OS.SKeyStore"),RSSF.DEFAULT_TM), 
-    	      notifier);
-        
+        super("( ML ) XDRAuthZTcpServer :- Listening on port [ " + port + " ] ", new RSSF().createServerSocket(port,
+                AppConfig.getProperty("lia.Monitor.OS.SKeyStore"), RSSF.DEFAULT_TM), notifier);
+
         this.port = port;
         //* we are not using static configuration for authroziation services anymore - get them from jini *// 
         //String authzService = AppConfig.getProperty("lia.Monitor.Agents.OpticalPath.comm.tcp_authz", "ui.rogrid.pub.ro");
         //this.authzManager = new AuthZManager(authzService);
-        this.authzManager = new AuthZManager(new String[] {AuthZManager.OSDAEMONS_GROUP});
+        this.authzManager = new AuthZManager(new String[] { AuthZManager.OSDAEMONS_GROUP });
         //start listening
         this.hasToRun = true;
     }
 
+    @Override
     public void run() {
         authzManager.start();
         System.out.println("XDRAuthZSSLTcpServer entering main loop ... listening on port " + port);
@@ -69,7 +64,7 @@ public class XDRAuthZSSLTcpServer extends XDRTcpServer {
      * @param args
      * @throws Exception
      */
-    public static void main(String[] args) throws Exception {       
+    public static void main(String[] args) throws Exception {
         new XDRAuthZSSLTcpServer(9323, null).start();
     }
 

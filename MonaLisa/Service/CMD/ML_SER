@@ -1,12 +1,14 @@
 #!/bin/bash
 
 #
-# ML Script Version:13.02.061
+# ML Script Version:13.11.042
 #
 
 #
 # Comments and suggestions: support@monalisa.cern.ch
 # 
+# 01/Aug/14 : Option to disable crontab management (set NO_CRONTAB_MANAGEMENT="true" in ml_env)
+# 04/Nov/13 : Fixed awk parsing
 # 07/May/12 : Crontab fixes for RHEL systems
 # 1/Apr/11 : Added condrestart
 # 19/Nov/10: Added crontab 
@@ -75,7 +77,7 @@ case "`uname -s`" in
 esac
 
 # Check if the current user is the same as the one defined in ml_env
-CRT_USER=`id | awk -F\( "{print \\\$2}" | awk -F\) "{print \\\$1}"`
+CRT_USER=`id | cut -d\( -f2 | cut -d\) -f1`
 if [ -z "$MONALISA_USER" ]; then
 	echo "Please set MONALISA_USER in $ML_ENV_FILE"
 	echo "e.g MONALISA_USER=$CRT_USER"
@@ -149,7 +151,7 @@ CMD_START_ML="$JAVA_HOME/bin/java \
 	$JAVA_OPTS -jar $MonaLisa_HOME/Service/lib/JFarmMonitor.jar $FARM_NAME $FARM_CONF_FILE"
 
 # Command to determine the PID of a possibly running ML, started with the same FARM_HOME
-CMD_GET_ML_PID="$CMD_PS | $CMD_GREP_ML | grep -v grep | awk '{if(\$2 == 1){print \$1}}'"
+CMD_GET_ML_PID="$CMD_PS | $CMD_GREP_ML | grep -v grep | awk '{if(\$2 != \"\"){print \$1}}'"
 
 # Just start ML, don't do any other checks
 fast_start() {
@@ -250,18 +252,22 @@ checked_stop_eDB(){
 }
 
 # install the crontab entries
-cron(){                                                                                                                                                                            
-    (                                                                                                                                                                              
-        crontab -l 2>/dev/null | grep -v "$FULLPRGDIR/"                                                                                                                                           
-        echo "@reboot $FULLPRGDIR/ML_SER start &>/dev/null"                                                                                                             
-        echo "0,5,10,15,20,25,30,35,40,45,50,55 * * * * $FULLPRGDIR/CHECK_UPDATE &>/dev/null"  
-    ) | crontab -                                                                                                                                                                  
-}                                                                                                                                                                                  
-              
-# clear the MLSensor-related crontab entries                                                                                                                                                                     
-clearcron(){                                                                                                                                                                       
-    crontab -l 2>/dev/null | grep -v "$PRGDIR/" | crontab - 2>/dev/null                                                                                                                                   
-}       
+cron(){
+    if [ -z "$NO_CRONTAB_MANAGEMENT" ]; then
+	(
+	    crontab -l 2>/dev/null | grep -v "$FULLPRGDIR/"
+	    echo "@reboot $FULLPRGDIR/ML_SER start &>/dev/null"
+	    echo "0,5,10,15,20,25,30,35,40,45,50,55 * * * * $FULLPRGDIR/CHECK_UPDATE &>/dev/null"
+	) | crontab -
+    fi
+}
+
+# clear the MLSensor-related crontab entries
+clearcron(){
+    if [ -z "$NO_CRONTAB_MANAGEMENT" ]; then
+	crontab -l 2>/dev/null | grep -v "$FULLPRGDIR/" | crontab - 2>/dev/null
+    fi
+}
 
 # Do a full stop for a given service
 full_stop(){

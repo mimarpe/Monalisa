@@ -1,9 +1,8 @@
 /*
- * $Id: ConfVerifier.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: ConfVerifier.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.Farm.Conf;
 
-import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
@@ -28,7 +27,7 @@ import lia.util.Utils;
 public class ConfVerifier extends Thread implements AppConfigChangeListener {
 
     /** The Logger */
-    private static final Logger logger = Logger.getLogger("lia.Monitor.Farm.Conf");
+    private static final Logger logger = Logger.getLogger(ConfVerifier.class.getName());
 
     private final AtomicBoolean hasToRun = new AtomicBoolean(true);
 
@@ -36,12 +35,12 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
 
     private final MFarm farm;
     private final ConcurrentMap<String, CCluster> clustersTimeoutMap;
-    
+
     private final DelayQueue<AbstractConfigTimeoutItem> timeoutQueue = new DelayQueue<AbstractConfigTimeoutItem>();
 
-    private AtomicBoolean internalMonitoringThreadRunning = new AtomicBoolean(false);
+    private final AtomicBoolean internalMonitoringThreadRunning = new AtomicBoolean(false);
 
-    private AtomicLong takeCount = new AtomicLong(0);
+    private final AtomicLong takeCount = new AtomicLong(0);
 
     private final class ConfVerifierInternalMonitoring extends Thread {
 
@@ -49,6 +48,7 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
             setName("(ML) ConfVerifierInternalMonitoring");
         }
 
+        @Override
         public void run() {
             while (internalMonitoringThreadRunning.get()) {
                 try {
@@ -60,11 +60,12 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
 
                 StringBuilder sb = new StringBuilder();
                 if (logger.isLoggable(Level.FINER)) {
-                    sb.append("[ ConfVerifier ] [ WAITQUEUE ] { Head: ").append(timeoutQueue.peek()).append("\n Queue Size: ").append(timeoutQueue.size());
+                    sb.append("[ ConfVerifier ] [ WAITQUEUE ] { Head: ").append(timeoutQueue.peek())
+                            .append("\n Queue Size: ").append(timeoutQueue.size());
                     if (logger.isLoggable(Level.FINEST)) {
                         sb.append("\n The Queue: \n");
-                        for (final Iterator<AbstractConfigTimeoutItem> it = timeoutQueue.iterator(); it.hasNext();) {
-                            sb.append("\n").append(it.next());
+                        for (AbstractConfigTimeoutItem abstractConfigTimeoutItem : timeoutQueue) {
+                            sb.append("\n").append(abstractConfigTimeoutItem);
                         }
                     }
                     sb.append("\n The current config : \n").append(MFarmConfigUtils.getMFarmDump(farm));
@@ -74,7 +75,8 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
         }
     }
 
-    public static final ConfVerifier initInstance(final MFarm farm, final ConcurrentMap<String, CCluster> clustersTimeoutMap) {
+    public static final ConfVerifier initInstance(final MFarm farm,
+            final ConcurrentMap<String, CCluster> clustersTimeoutMap) {
         synchronized (ConfVerifier.class) {
             if (_thisInstance == null) {
                 _thisInstance = new ConfVerifier(farm, clustersTimeoutMap);
@@ -103,6 +105,7 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
         return this.timeoutQueue.size();
     }
 
+    @Override
     public void run() {
         logger.log(Level.INFO, " [ ConfVerifier ] Config verifier thread started ");
         while (hasToRun.get()) {
@@ -115,7 +118,9 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
                     logger.log(Level.WARNING, " [ ConfVerifier ] [ HANDLED ] Conf verifier thread was interrupted", ie);
                     Thread.interrupted();
                 } catch (Throwable t) {
-                    logger.log(Level.WARNING, " [ ConfVerifier ] [ HANDLED ] Conf verifier thread got general exception while sleeping", t);
+                    logger.log(Level.WARNING,
+                            " [ ConfVerifier ] [ HANDLED ] Conf verifier thread got general exception while sleeping",
+                            t);
                 }
 
                 takeCount.incrementAndGet();
@@ -133,7 +138,10 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
                         try {
                             item.timedOut();
                         } catch (Throwable t) {
-                            logger.log(Level.WARNING, " [ ConfVerifier ] [ HANDLED ] got exception notifying timeout to the item " + item, t);
+                            logger.log(
+                                    Level.WARNING,
+                                    " [ ConfVerifier ] [ HANDLED ] got exception notifying timeout to the item " + item,
+                                    t);
                         }
 
                     } else {
@@ -154,12 +162,13 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
     void removeCluster(CCluster cc) {
 
         final String clusterName = cc.name;
-        
+
         try {
-            if(logger.isLoggable(Level.FINER)) {
+            if (logger.isLoggable(Level.FINER)) {
                 StringBuilder sb = new StringBuilder();
-                sb.append("[ ConfVerifier ] [ removeCluster ] Cluster : ").append(clusterName).append(" expired. Clusters list before remove: ").append(farm.getClusters());
-                if(logger.isLoggable(Level.FINEST)) {
+                sb.append("[ ConfVerifier ] [ removeCluster ] Cluster : ").append(clusterName)
+                        .append(" expired. Clusters list before remove: ").append(farm.getClusters());
+                if (logger.isLoggable(Level.FINEST)) {
                     sb.append("\n Farm dump before remove: ").append(MFarmConfigUtils.getMFarmDump(farm)).append("\n");
                 }
                 logger.log(Level.FINER, sb.toString());
@@ -167,20 +176,25 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
 
             final boolean bRemoveCluster = farm.removeCluster(clusterName);
 
-            logger.log(Level.INFO, "[ ConfVerifier ] [ removeCluster ] Cluster : " + clusterName + " expired. remove code: " + bRemoveCluster);
+            logger.log(Level.INFO, "[ ConfVerifier ] [ removeCluster ] Cluster : " + clusterName
+                    + " expired. remove code: " + bRemoveCluster);
 
             if (logger.isLoggable(Level.FINE)) {
                 // eResult with null was sent before
                 StringBuilder sb = new StringBuilder();
                 if (!bRemoveCluster) {
-                    sb.append("[ ConfVerifier ] [ removeCluster ] [ HANDLED ]: No such cluster [ ").append(clusterName).append(" ] in real MFarm conf...Just in cache");
+                    sb.append("[ ConfVerifier ] [ removeCluster ] [ HANDLED ]: No such cluster [ ").append(clusterName)
+                            .append(" ] in real MFarm conf...Just in cache");
                     if (logger.isLoggable(Level.FINER)) {
-                        sb.append("\nReal Config after not removing Cluster: ").append(clusterName).append(":\n\n").append(MFarmConfigUtils.getMFarmDump(farm)).append("\n\n");
+                        sb.append("\nReal Config after not removing Cluster: ").append(clusterName).append(":\n\n")
+                                .append(MFarmConfigUtils.getMFarmDump(farm)).append("\n\n");
                     }
                 } else {
-                    sb.append("[ ConfVerifier ] [ removeCluster ] Removed cluster [ ").append(clusterName).append(" ] from real MFarm conf");
+                    sb.append("[ ConfVerifier ] [ removeCluster ] Removed cluster [ ").append(clusterName)
+                            .append(" ] from real MFarm conf");
                     if (logger.isLoggable(Level.FINER)) {
-                        sb.append("\nReal Config after removing Cluster: ").append(clusterName).append(":\n\n").append(MFarmConfigUtils.getMFarmDump(farm)).append("\n\n");
+                        sb.append("\nReal Config after removing Cluster: ").append(clusterName).append(":\n\n")
+                                .append(MFarmConfigUtils.getMFarmDump(farm)).append("\n\n");
                     }
                 }
                 logger.log(Level.FINE, sb.toString());
@@ -194,39 +208,49 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
         final String nodeName = cn.name;
         final CCluster cc = cn.cCluster;
         final String clusterName = cc.name;
-        
+
         try {
 
             final MCluster mc = farm.getCluster(clusterName);
-            if(mc == null) {
-                logger.log(Level.INFO, " [ ConfVerifier ] [ removeNode ] The cluster: " + clusterName + " is already removed. Had to remove Cluster/Node: " + clusterName + "/" + nodeName);
+            if (mc == null) {
+                logger.log(Level.INFO, " [ ConfVerifier ] [ removeNode ] The cluster: " + clusterName
+                        + " is already removed. Had to remove Cluster/Node: " + clusterName + "/" + nodeName);
                 return;
             }
-            
-            if(logger.isLoggable(Level.FINER)) {
+
+            if (logger.isLoggable(Level.FINER)) {
                 StringBuilder sb = new StringBuilder();
-                sb.append("[ ConfVerifier ] [ removeNode ] Node: ").append(nodeName).append(" | Cluster : ").append(clusterName).append(" expired. Nodes list before remove: ").append(mc.getNodes());
-                if(logger.isLoggable(Level.FINEST)) {
+                sb.append("[ ConfVerifier ] [ removeNode ] Node: ").append(nodeName).append(" | Cluster : ")
+                        .append(clusterName).append(" expired. Nodes list before remove: ").append(mc.getNodes());
+                if (logger.isLoggable(Level.FINEST)) {
                     sb.append("\n Farm dump before remove: ").append(MFarmConfigUtils.getMFarmDump(farm)).append("\n");
                 }
                 logger.log(Level.FINER, sb.toString());
             }
 
             boolean bRemoveNode = mc.removeNode(nodeName);
-            logger.log(Level.INFO, "[ ConfVerifier ] [ removeNode ] Node: " + nodeName + " | Cluster : " + clusterName + " expired. remove code: " + bRemoveNode);
+            logger.log(Level.INFO, "[ ConfVerifier ] [ removeNode ] Node: " + nodeName + " | Cluster : " + clusterName
+                    + " expired. remove code: " + bRemoveNode);
 
             if (logger.isLoggable(Level.FINE)) {
                 // eResult with null was sent before
                 StringBuilder sb = new StringBuilder();
                 if (!bRemoveNode) {
-                    sb.append(" [ ConfVerifier ] [ removeNode ] [ Handled ]: No such Node [ ").append(nodeName).append(" ] Cluster [ ").append(clusterName).append(" ] in real MFarm conf...Just in cache");
+                    sb.append(" [ ConfVerifier ] [ removeNode ] [ Handled ]: No such Node [ ").append(nodeName)
+                            .append(" ] Cluster [ ").append(clusterName)
+                            .append(" ] in real MFarm conf...Just in cache");
                     if (logger.isLoggable(Level.FINER)) {
-                        sb.append("\nReal Config after not removing Node [ ").append(nodeName).append(" ] Cluster [ ").append(clusterName).append("]:\n\n").append(MFarmConfigUtils.getMFarmDump(farm)).append("\n\n");
+                        sb.append("\nReal Config after not removing Node [ ").append(nodeName).append(" ] Cluster [ ")
+                                .append(clusterName).append("]:\n\n").append(MFarmConfigUtils.getMFarmDump(farm))
+                                .append("\n\n");
                     }
                 } else {
-                    sb.append(" [ ConfVerifier ] [ removeNode ] Removed Node [ ").append(nodeName).append(" ] Cluster [ ").append(clusterName).append(" ] removed from real MFarm conf");
+                    sb.append(" [ ConfVerifier ] [ removeNode ] Removed Node [ ").append(nodeName)
+                            .append(" ] Cluster [ ").append(clusterName).append(" ] removed from real MFarm conf");
                     if (logger.isLoggable(Level.FINER)) {
-                        sb.append("\nReal Config after removing Node [ ").append(nodeName).append(" ] Cluster [ ").append(clusterName).append("]:\n\n").append(MFarmConfigUtils.getMFarmDump(farm)).append("\n\n");
+                        sb.append("\nReal Config after removing Node [ ").append(nodeName).append(" ] Cluster [ ")
+                                .append(clusterName).append("]:\n\n").append(MFarmConfigUtils.getMFarmDump(farm))
+                                .append("\n\n");
                     }
                 }
                 logger.log(Level.FINE, sb.toString());
@@ -250,40 +274,55 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
 
         try {
             final MCluster mc = farm.getCluster(clusterName);
-            if(mc == null) {
-                logger.log(Level.INFO, " [ ConfVerifier ] [ removeParam ] The cluster: " + clusterName + " is already removed. Had to remove Cluster/Node/Param: " + clusterName + "/" + nodeName + "/" + paramName);
+            if (mc == null) {
+                logger.log(Level.INFO, " [ ConfVerifier ] [ removeParam ] The cluster: " + clusterName
+                        + " is already removed. Had to remove Cluster/Node/Param: " + clusterName + "/" + nodeName
+                        + "/" + paramName);
                 return;
             }
-            
+
             final MNode mn = mc.getNode(nodeName);
-            if(mn == null) {
-                logger.log(Level.INFO, " [ ConfVerifier ] [ removeParam ] The node: " + nodeName + " is already removed. Had to remove Cluster/Node/Param: " + clusterName + "/" + nodeName + "/" + paramName);
+            if (mn == null) {
+                logger.log(Level.INFO, " [ ConfVerifier ] [ removeParam ] The node: " + nodeName
+                        + " is already removed. Had to remove Cluster/Node/Param: " + clusterName + "/" + nodeName
+                        + "/" + paramName);
                 return;
             }
-            
+
             final Vector<String> plist = mn.getParameterList();
-            if(logger.isLoggable(Level.FINER)) {
+            if (logger.isLoggable(Level.FINER)) {
                 StringBuilder sb = new StringBuilder();
-                sb.append("[ ConfVerifier ] [ removeParam ] Param: ").append(paramName).append("  Node: ").append(nodeName).append(" | Cluster : ").append(clusterName).append(" expired. Params list before remove: ").append(plist);
-                if(logger.isLoggable(Level.FINEST)) {
+                sb.append("[ ConfVerifier ] [ removeParam ] Param: ").append(paramName).append("  Node: ")
+                        .append(nodeName).append(" | Cluster : ").append(clusterName)
+                        .append(" expired. Params list before remove: ").append(plist);
+                if (logger.isLoggable(Level.FINEST)) {
                     sb.append("\n Farm dump before remove: ").append(MFarmConfigUtils.getMFarmDump(farm)).append("\n");
                 }
                 logger.log(Level.FINER, sb.toString());
             }
             final boolean bRemoveParam = plist.remove(paramName);
-            logger.log(Level.INFO, "[ ConfVerifier ] [ removeParam ] Param: " + paramName + "  Node: " + nodeName + " | Cluster : " + clusterName + " expired. remove code: " + bRemoveParam);
+            logger.log(Level.INFO, "[ ConfVerifier ] [ removeParam ] Param: " + paramName + "  Node: " + nodeName
+                    + " | Cluster : " + clusterName + " expired. remove code: " + bRemoveParam);
 
             if (logger.isLoggable(Level.FINE)) {
                 StringBuilder sb = new StringBuilder();
                 if (!bRemoveParam) {
-                    sb.append(" [ ConfVerifier ] [ removeParam ] [ Handled ]: No such Param [ ").append(paramName).append(" ] Node [ ").append(nodeName).append(" ] Cluster [ ").append(clusterName).append(" ] in real MFarm conf...Just in cache");
+                    sb.append(" [ ConfVerifier ] [ removeParam ] [ Handled ]: No such Param [ ").append(paramName)
+                            .append(" ] Node [ ").append(nodeName).append(" ] Cluster [ ").append(clusterName)
+                            .append(" ] in real MFarm conf...Just in cache");
                     if (logger.isLoggable(Level.FINER)) {
-                        sb.append("\nReal Config after not removing Param [ ").append(paramName).append(" ] Node [ ").append(nodeName).append(" ] Cluster [ ").append(clusterName).append("]:\n\n").append(MFarmConfigUtils.getMFarmDump(farm)).append("\n\n");
+                        sb.append("\nReal Config after not removing Param [ ").append(paramName).append(" ] Node [ ")
+                                .append(nodeName).append(" ] Cluster [ ").append(clusterName).append("]:\n\n")
+                                .append(MFarmConfigUtils.getMFarmDump(farm)).append("\n\n");
                     }
                 } else {
-                    sb.append(" [ ConfVerifier ] [ removeParam ] [ Handled ] Removed Param [ ").append(paramName).append(" ] Node [ ").append(nodeName).append(" ] Cluster [ ").append(clusterName).append(" ] from real MFarm conf");
+                    sb.append(" [ ConfVerifier ] [ removeParam ] [ Handled ] Removed Param [ ").append(paramName)
+                            .append(" ] Node [ ").append(nodeName).append(" ] Cluster [ ").append(clusterName)
+                            .append(" ] from real MFarm conf");
                     if (logger.isLoggable(Level.FINER)) {
-                        sb.append("\nReal Config after not removing Param [ ").append(paramName).append(" ] Node [ ").append(nodeName).append(" ] Cluster [ ").append(clusterName).append("]:\n\n").append(MFarmConfigUtils.getMFarmDump(farm)).append("\n\n");
+                        sb.append("\nReal Config after not removing Param [ ").append(paramName).append(" ] Node [ ")
+                                .append(nodeName).append(" ] Cluster [ ").append(clusterName).append("]:\n\n")
+                                .append(MFarmConfigUtils.getMFarmDump(farm)).append("\n\n");
                     }
                 }
                 logger.log(Level.FINE, sb.toString());
@@ -291,7 +330,7 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
         } finally {
             cn.cParams.remove(paramName);
         }
-        
+
     }
 
     public final void reschedule(final AbstractConfigTimeoutItem item) {
@@ -302,6 +341,7 @@ public class ConfVerifier extends Thread implements AppConfigChangeListener {
         timeoutQueue.offer(item);
     }
 
+    @Override
     public void notifyAppConfigChanged() {
         final String sLevel = AppConfig.getProperty("lia.Monitor.Farm.Conf.level");
         Level loggingLevel = null;

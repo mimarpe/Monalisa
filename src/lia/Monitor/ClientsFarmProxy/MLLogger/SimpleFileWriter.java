@@ -1,5 +1,5 @@
 /*
- * $Id: SimpleFileWriter.java 6865 2010-10-10 10:03:16Z ramiro $
+ * $Id: SimpleFileWriter.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 
 package lia.Monitor.ClientsFarmProxy.MLLogger;
@@ -23,16 +23,17 @@ import lia.util.logging.comm.MLLogMsg;
  */
 public class SimpleFileWriter {
 
-    private static final transient Logger logger = Logger.getLogger(SimpleFileWriter.class.getName());
+    private static final Logger logger = Logger.getLogger(SimpleFileWriter.class.getName());
 
     private static final SimpleFileWriter _theInstance = new SimpleFileWriter();
 
     private static final ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+        @Override
         public Thread newThread(Runnable r) {
             return new Thread("(ML) SimpeFileWriter logger thread");
         }
     });
-    
+
     String cDate;
 
     final Calendar calendar = Calendar.getInstance();
@@ -46,15 +47,16 @@ public class SimpleFileWriter {
     int iDay;
 
     private static final class SimpleTaskPublisher implements Runnable {
-        
+
         final BufferedWriter writer;
         final MLLogMsg msg;
-        
+
         private SimpleTaskPublisher(BufferedWriter br, MLLogMsg msg) {
             this.writer = br;
             this.msg = msg;
         }
-        
+
+        @Override
         public void run() {
             try {
                 StringBuilder recordToWrite = new StringBuilder(16384);
@@ -64,12 +66,12 @@ public class SimpleFileWriter {
                 recordToWrite.append("\n============> END Rlog @ ").append(new Date()).append(" <================\n");
                 writer.write(recordToWrite.toString());
                 writer.flush();
-            } catch(Throwable t) {
+            } catch (Throwable t) {
                 logger.log(Level.WARNING, " [ SimpleTaskPublisher ] got exception publishing: " + msg + ". Cause: ", t);
             }
         }
     }
-    
+
     SimpleFileWriter() {
         iDay = 0;
         // initialize tha path
@@ -101,8 +103,9 @@ public class SimpleFileWriter {
             return true;
         }
 
-        if (cDate.equals(sb.toString()))
+        if (cDate.equals(sb.toString())) {
             return false;
+        }
 
         cDate = sb.toString();
         return true;
@@ -127,14 +130,14 @@ public class SimpleFileWriter {
 
     public void publishRecord(final MLLogMsg m) {
         try {
-            if (br == null || checkDate()) {
+            if ((br == null) || checkDate()) {
                 rotate();
             }
-        }catch(Throwable t) {
+        } catch (Throwable t) {
             logger.log(Level.WARNING, " [ SimpleFileWriter ] Exception checking BufferedReader. Cause: ", t);
         }
-        
-        if(br != null) {
+
+        if (br != null) {
             executor.submit(new SimpleTaskPublisher(br, m));
             return;
         }

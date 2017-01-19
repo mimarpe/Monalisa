@@ -62,7 +62,7 @@ import com.telescent.afox.msg.AFOXGetInputRFIDRetMsg;
 public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements OSAdminInterface {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(AFOXAgent.class.getName());
+    private static final Logger logger = Logger.getLogger(AFOXAgent.class.getName());
 
     /**
      * 
@@ -77,18 +77,20 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
 
     private static final int AFOX_PORT = AppConfig.geti("AFOX_PORT", -1);
 
-    private static final boolean shouldStartAdminInterface = AppConfig.getb("lia.net.topology.agents.AFOXAgent.startAdminInterface", true);
+    private static final boolean shouldStartAdminInterface = AppConfig.getb(
+            "lia.net.topology.agents.AFOXAgent.startAdminInterface", true);
 
     private volatile OpticalSwitch os;
-    
+
     private final transient OSAdminInterface localAdminInterface;
 
     private final AtomicReference<OpticalSwitch> osStateRef = new AtomicReference<OpticalSwitch>();
-    
+
     private final AtomicBoolean shouldReloadConfig = new AtomicBoolean(false);
 
     private final class AFOXStateFetcher implements Runnable {
 
+        @Override
         public void run() {
             try {
                 updateState();
@@ -103,7 +105,7 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
             }
 
             try {
-                if(!SIMULATED) {
+                if (!SIMULATED) {
                     updateRFID();
                 }
             } catch (Throwable t) {
@@ -138,11 +140,12 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
                 os = null;
             }
             final MLAFOXConfig mlAFOXConfig = this.config;
-            if(SIMULATED) {
+            if (SIMULATED) {
                 System.out.println(mlAFOXConfig.toString());
             }
-            os = (SIMULATED)?MLTranslation.fromAfoxConfig(mlAFOXConfig):MLTranslation.fromConfigAndMsg(fullState.get(), rfidState, mlAFOXConfig);
-            logger.log(Level.INFO, " AfoxAgent: " + os +" reloaded config: \n X-Conns: " + os.getCrossConnSet());
+            os = (SIMULATED) ? MLTranslation.fromAfoxConfig(mlAFOXConfig) : MLTranslation.fromConfigAndMsg(
+                    fullState.get(), rfidState, mlAFOXConfig);
+            logger.log(Level.INFO, " AfoxAgent: " + os + " reloaded config: \n X-Conns: " + os.getCrossConnSet());
         } catch (Throwable t) {
             logger.log(Level.WARNING, " AfoxAgent got exception update state", t);
         }
@@ -150,7 +153,9 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
     }
 
     private final void updateStateFromSwitch() throws UnknownHostException, IOException {
-        if(SIMULATED) return;
+        if (SIMULATED) {
+            return;
+        }
         AFOXConnection afoxConn = new AFOXConnection(AFOX_HOST, AFOX_PORT);
         final AFOXFullUpdateRequestMsg reqMsg = new AFOXFullUpdateRequestMsg("", 0, 0);
         final byte[] respBMsg = afoxConn.sendAndReceive(reqMsg.ToFlatSer(), 5, TimeUnit.SECONDS);
@@ -189,13 +194,13 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
     private final void populateCrossConnects(OpticalSwitch os) {
         try {
             final OpticalSwitch osState = osStateRef.get();
-            if(osState == null) {
+            if (osState == null) {
                 logger.log(Level.WARNING, " OS internal state (still) null ");
                 return;
             }
             GenericEntity.clearIDFromCache(os.getCrossConnects());
             os.clearCross();
-            if(SIMULATED) {
+            if (SIMULATED) {
                 os.addCrossConnSet(osState.getCrossConnSet());
                 return;
             }
@@ -203,7 +208,9 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
             final Set<OSPort> osPorts = os.getPortSet();
             for (OSPort port : osPorts) {
                 AFOXOSPort mlPort = (AFOXOSPort) port;
-                SM_InOrOut_CurAndPending afxPort = (mlPort.type() == PortType.INPUT_PORT) ? cAFOXState.SMCurrentIns[mlPort.getRow() - 1][mlPort.getColumn() - 1] : cAFOXState.SMCurrentOuts[mlPort.getRow() - 1][mlPort.getColumn() - 1];
+                SM_InOrOut_CurAndPending afxPort = (mlPort.type() == PortType.INPUT_PORT) ? cAFOXState.SMCurrentIns[mlPort
+                        .getRow() - 1][mlPort.getColumn() - 1] : cAFOXState.SMCurrentOuts[mlPort.getRow() - 1][mlPort
+                        .getColumn() - 1];
                 if (afxPort.Current != null) {
                     SMConnectedTo afxConnTo = afxPort.Current;
                     int sRow = mlPort.getRow();
@@ -212,13 +219,15 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
                     int dRow = afxConnTo.ConnectedToRow;
                     int dCol = afxConnTo.ConnectedToCol;
 
-                    PortType dPType = (mlPort.type() == PortType.INPUT_PORT) ? PortType.OUTPUT_PORT : PortType.INPUT_PORT;
+                    PortType dPType = (mlPort.type() == PortType.INPUT_PORT) ? PortType.OUTPUT_PORT
+                            : PortType.INPUT_PORT;
 
                     boolean bFound = false;
                     OSPort foundPort = null;
                     for (OSPort dMLPort : osPorts) {
                         AFOXOSPort dAfoxPort = (AFOXOSPort) dMLPort;
-                        if (dAfoxPort.type() == dPType && dAfoxPort.getColumn() == dCol && dAfoxPort.getRow() == dRow) {
+                        if ((dAfoxPort.type() == dPType) && (dAfoxPort.getColumn() == dCol)
+                                && (dAfoxPort.getRow() == dRow)) {
                             bFound = true;
                             foundPort = dMLPort;
                             break;
@@ -226,7 +235,8 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
                     }
 
                     if (!bFound) {
-                        logger.log(Level.WARNING, " Unable to det port. Not in my map ?? for: " + sRow + "," + cRow + " _ " + mlPort.type() + "  ----> " + dRow + ", " + dCol);
+                        logger.log(Level.WARNING, " Unable to det port. Not in my map ?? for: " + sRow + "," + cRow
+                                + " _ " + mlPort.type() + "  ----> " + dRow + ", " + dCol);
                     } else {
                         Link[] ccross = os.getCrossConnects();
                         boolean bFoundLink = false;
@@ -251,6 +261,7 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
 
     private static final class ResultMonitorTask implements Runnable {
 
+        @Override
         public void run() {
             // nothing for the moment
         }
@@ -258,6 +269,7 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
 
     private final class ConfigPublisherTask implements Runnable {
 
+        @Override
         public void run() {
             try {
                 if (shouldReloadConfig.compareAndSet(true, false)) {
@@ -283,7 +295,7 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
             final AFOXRawPort rawPort = entry.getKey();
             for (final OSPort osPort : allPorts) {
                 AFOXRawPort cRawPort = ((AFOXOSPort) osPort).rawPort();
-                if (cRawPort != null && cRawPort.equals(rawPort)) {
+                if ((cRawPort != null) && cRawPort.equals(rawPort)) {
                     pMap.put(osPort.id(), entry.getValue());
                     break;
                 }
@@ -329,23 +341,25 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
         logger.log(Level.INFO, " [ ] OS still null.");
         return null;
     }
+
     public AFOXAgent(String agentName, String agentGroup, String farmID) {
         super(agentName, agentGroup, farmID, getLocalConfig());
-        OSAdminInterface  tmpAdmin = null;
+        OSAdminInterface tmpAdmin = null;
         if (shouldStartAdminInterface) {
             try {
                 tmpAdmin = new AFOXAdminImpl(this);
-                logger.log(Level.INFO, "Afox Admin Interface started on [ " + RMIRangePortExporter.getPort(tmpAdmin) + " ]");
+                logger.log(Level.INFO, "Afox Admin Interface started on [ " + RMIRangePortExporter.getPort(tmpAdmin)
+                        + " ]");
             } catch (Throwable t) {
                 tmpAdmin = null;
                 logger.log(Level.WARNING, "Cannot start the admin interface", t);
             }
         }
-        
+
         localAdminInterface = tmpAdmin;
-        
+
         try {
-            if(!SIMULATED) {
+            if (!SIMULATED) {
                 updateStateFromSwitch();
                 updateRFID();
             }
@@ -355,6 +369,7 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
             throw new InstantiationError("Unable to load AFOX agent");
         }
     }
+
     private static final MLAFOXConfig getLocalConfig() {
         MLAFOXConfig mlAFOXConfig = null;
         try {
@@ -366,10 +381,10 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
         }
     }
 
-
     /**
      * @param r
      */
+    @Override
     public void addNewResult(Object r) {
         // TODO Auto-generated method stub
 
@@ -377,8 +392,9 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
 
     private void deliverResults2ML(Object o) {
 
-        if (STANDALONE)
+        if (STANDALONE) {
             return;
+        }
         if (o != null) {
             if (logger.isLoggable(Level.FINER)) {
                 logger.log(Level.FINER, " [ AFOXAgent ] delivering results to ML! " + o);
@@ -405,8 +421,8 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
             } else if (o instanceof Result[]) {// notify an Array of
                 // ResultS...but not a Vector
                 Result[] rez = (Result[]) o;
-                for (int i = 0; i < rez.length; i++) {
-                    notifResults.add(rez[i]);
+                for (Result element : rez) {
+                    notifResults.add(element);
                 }
             } else {// notify anything else
                 notifResults.add(o);
@@ -457,9 +473,11 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
         new AFOXAgent("Test", "Test", UUID.randomUUID().toString()).doWork();
     }
 
+    @Override
     public void notifyConfig(RawConfigInterface<AFOXRawPort> oldConfig, RawConfigInterface<AFOXRawPort> newConfig) {
         StringBuilder sb = new StringBuilder();
-        sb.append("\n\n old config \n\n ").append(oldConfig).append("\n\n new config \n\n").append(newConfig).append("\n\n");
+        sb.append("\n\n old config \n\n ").append(oldConfig).append("\n\n new config \n\n").append(newConfig)
+                .append("\n\n");
         shouldReloadConfig.compareAndSet(false, true);
         logger.log(Level.INFO, sb.toString());
     }
@@ -490,36 +508,41 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
      * @throws RemoteException 
      */
     @Override
-    public String connectPorts(String sPort, String dPort, String connParams, boolean fullDuplex) throws RemoteException {
-        logger.log(Level.INFO, "[ AFOXAgent ]  [ connectPorts ] sPort=" + sPort + ", dPort=" + dPort + ", connParams='" + connParams + "', fdx: " + fullDuplex);
-        if(sPort == null || dPort == null) {
+    public String connectPorts(String sPort, String dPort, String connParams, boolean fullDuplex)
+            throws RemoteException {
+        logger.log(Level.INFO, "[ AFOXAgent ]  [ connectPorts ] sPort=" + sPort + ", dPort=" + dPort + ", connParams='"
+                + connParams + "', fdx: " + fullDuplex);
+        if ((sPort == null) || (dPort == null)) {
             logger.log(Level.WARNING, " sPort or dPort null");
             return "OK";
         }
-        if(sPort.trim().length() == 0 || dPort.trim().length() == 0) {
+        if ((sPort.trim().length() == 0) || (dPort.trim().length() == 0)) {
             logger.log(Level.WARNING, " sPort or dPort are zero length");
             return "OK";
         }
-        
+
         final MLAFOXConfig mlAFOXConfig = this.config;
         final ConcurrentMap<AFOXRawPort, AFOXRawPort> sConnsMap = mlAFOXConfig.crossConnMap();
-        
+
         final AFOXRawPort sRawPort = AFOXRawPort.valueOf(sPort + ":INPUT_PORT");
         final AFOXRawPort dRawPort = AFOXRawPort.valueOf(dPort + ":OUTPUT_PORT");
         final boolean bAdded = sConnsMap.putIfAbsent(sRawPort, dRawPort) == null;
         logger.log(Level.INFO, "[ AFOXAgent ] [ connectPorts ] connected first pair: " + sRawPort + " -> " + dRawPort);
-        if(fullDuplex && bAdded) {
+        if (fullDuplex && bAdded) {
             final AFOXRawPort sRawFDXPort = AFOXRawPort.valueOf(dPort + ":INPUT_PORT");
             final AFOXRawPort dRawFDXPort = AFOXRawPort.valueOf(sPort + ":OUTPUT_PORT");
             final boolean bAddedFDX = sConnsMap.put(sRawFDXPort, dRawFDXPort) == null;
-            if(!bAddedFDX) {
-                logger.log(Level.WARNING, "[ AFOXAgent ] [ connectPorts ] Unable to add second FDX conn " + sRawFDXPort + " -> " + dRawFDXPort + " ... removing first conn");
+            if (!bAddedFDX) {
+                logger.log(Level.WARNING, "[ AFOXAgent ] [ connectPorts ] Unable to add second FDX conn " + sRawFDXPort
+                        + " -> " + dRawFDXPort + " ... removing first conn");
                 final boolean bRemove = sConnsMap.remove(sRawPort, dRawPort);
-                if(!bRemove) {
-                    logger.log(Level.WARNING, "[ AFOXAgent ] [ connectPorts ] Unable to DELETE FIRST FDX conn " + sRawPort + " -> " + sRawPort + " ... removing first conn");
+                if (!bRemove) {
+                    logger.log(Level.WARNING, "[ AFOXAgent ] [ connectPorts ] Unable to DELETE FIRST FDX conn "
+                            + sRawPort + " -> " + sRawPort + " ... removing first conn");
                 }
             } else {
-                logger.log(Level.INFO, "[ AFOXAgent ] [ connectPorts ] connected second pair: " + sRawFDXPort + " -> " + dRawFDXPort);
+                logger.log(Level.INFO, "[ AFOXAgent ] [ connectPorts ] connected second pair: " + sRawFDXPort + " -> "
+                        + dRawFDXPort);
             }
         }
         updateState();
@@ -537,15 +560,18 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
      * @throws RemoteException 
      */
     @Override
-    public String disconnectPorts(String sPort, String dPort, String connParams, boolean fullDuplex) throws RemoteException {
-        logger.log(Level.INFO, " [ AFOXAgent ]  disconnectPorts sPort=" + sPort + ", dPort=" + dPort + ", connParams='" + connParams + "', fdx: " + fullDuplex);
-        
-        logger.log(Level.INFO, " [ AFOXAgent ]  connectPorts sPort=" + sPort + ", dPort=" + dPort + ", connParams='" + connParams + "', fdx: " + fullDuplex);
-        if(sPort == null || dPort == null) {
+    public String disconnectPorts(String sPort, String dPort, String connParams, boolean fullDuplex)
+            throws RemoteException {
+        logger.log(Level.INFO, " [ AFOXAgent ]  disconnectPorts sPort=" + sPort + ", dPort=" + dPort + ", connParams='"
+                + connParams + "', fdx: " + fullDuplex);
+
+        logger.log(Level.INFO, " [ AFOXAgent ]  connectPorts sPort=" + sPort + ", dPort=" + dPort + ", connParams='"
+                + connParams + "', fdx: " + fullDuplex);
+        if ((sPort == null) || (dPort == null)) {
             logger.log(Level.WARNING, " sPort or dPort null");
             return "OK";
         }
-        if(sPort.trim().length() == 0 || dPort.trim().length() == 0) {
+        if ((sPort.trim().length() == 0) || (dPort.trim().length() == 0)) {
             logger.log(Level.WARNING, " sPort or dPort are zero length");
             return "OK";
         }
@@ -556,19 +582,23 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
         final AFOXRawPort sRawPort = AFOXRawPort.valueOf(sPort + ":INPUT_PORT");
         final AFOXRawPort dRawPort = AFOXRawPort.valueOf(dPort + ":OUTPUT_PORT");
         final boolean bFirstRemove = sConnsMap.remove(sRawPort, dRawPort);
-        if(bFirstRemove) {
-            logger.log(Level.INFO, "[ AFOXAgent ] [ connectPorts ] disconnected first pair: " + sRawPort + " -> " + dRawPort);
+        if (bFirstRemove) {
+            logger.log(Level.INFO, "[ AFOXAgent ] [ connectPorts ] disconnected first pair: " + sRawPort + " -> "
+                    + dRawPort);
         } else {
-            logger.log(Level.WARNING, "[ AFOXAgent ] [ connectPorts ] UNABLE to DISCONNECT first pair: " + sRawPort + " -> " + dRawPort);
+            logger.log(Level.WARNING, "[ AFOXAgent ] [ connectPorts ] UNABLE to DISCONNECT first pair: " + sRawPort
+                    + " -> " + dRawPort);
         }
-        if(fullDuplex && bFirstRemove) {
+        if (fullDuplex && bFirstRemove) {
             final AFOXRawPort sRawFDXPort = AFOXRawPort.valueOf(dPort + ":INPUT_PORT");
             final AFOXRawPort dRawFDXPort = AFOXRawPort.valueOf(sPort + ":OUTPUT_PORT");
 
-            if(sConnsMap.remove(sRawFDXPort, dRawFDXPort)) {
-                logger.log(Level.INFO, "[ AFOXAgent ] [ connectPorts ] disconnected second pair: " + sRawFDXPort + " -> " + dRawFDXPort);
+            if (sConnsMap.remove(sRawFDXPort, dRawFDXPort)) {
+                logger.log(Level.INFO, "[ AFOXAgent ] [ connectPorts ] disconnected second pair: " + sRawFDXPort
+                        + " -> " + dRawFDXPort);
             } else {
-                logger.log(Level.WARNING, "[ AFOXAgent ] [ connectPorts ] UNABLE to DISCONNECT second pair: " + sRawFDXPort + " -> " + dRawFDXPort);
+                logger.log(Level.WARNING, "[ AFOXAgent ] [ connectPorts ] UNABLE to DISCONNECT second pair: "
+                        + sRawFDXPort + " -> " + dRawFDXPort);
             }
         }
         updateState();
@@ -608,7 +638,8 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
      * @throws RemoteException 
      */
     @Override
-    public String changeRSVP(String msgRetryInvl, String ntfRetryInvl, String grInvl, String grcInvl) throws RemoteException {
+    public String changeRSVP(String msgRetryInvl, String ntfRetryInvl, String grInvl, String grcInvl)
+            throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -627,7 +658,9 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
      * @throws RemoteException 
      */
     @Override
-    public String addCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj, String helloInvl, String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin, String deadInvlMax) throws RemoteException {
+    public String addCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj, String helloInvl,
+            String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin, String deadInvlMax)
+            throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -655,7 +688,9 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
      * @throws RemoteException 
      */
     @Override
-    public String changeCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj, String helloInvl, String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin, String deadInvlMax) throws RemoteException {
+    public String changeCtrlCh(String name, String remoteIP, String remoteRid, String port, String adj,
+            String helloInvl, String helloInvlMin, String helloInvlMax, String deadInvl, String deadInvlMin,
+            String deadInvlMax) throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -673,7 +708,8 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
      * @throws RemoteException  
      */
     @Override
-    public String addAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric, String ospfAdj, String adjType, String rsvpRRFlag, String rsvpGRFlag, String ntfProc) throws RemoteException {
+    public String addAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric, String ospfAdj,
+            String adjType, String rsvpRRFlag, String rsvpGRFlag, String ntfProc) throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -700,7 +736,9 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
      * @throws RemoteException 
      */
     @Override
-    public String changeAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric, String ospfAdj, String adjType, String rsvpRRFlag, String rsvpGRFlag, String ntfProc) throws RemoteException {
+    public String changeAdj(String name, String ctrlCh, String remoteRid, String ospfArea, String metric,
+            String ospfAdj, String adjType, String rsvpRRFlag, String rsvpGRFlag, String ntfProc)
+            throws RemoteException {
         return "Not implemented yet!";
     }
 
@@ -742,7 +780,9 @@ public class AFOXAgent extends TopoAgent<MLAFOXConfig, AFOXRawPort> implements O
      * @throws RemoteException 
      */
     @Override
-    public String changeLink(String name, String localIP, String remoteIP, String linkType, String adj, String wdmAdj, String remoteIf, String wdmRemoteIf, String lmpVerify, String fltDetect, String metric, String port) throws RemoteException {
+    public String changeLink(String name, String localIP, String remoteIP, String linkType, String adj, String wdmAdj,
+            String remoteIf, String wdmRemoteIf, String lmpVerify, String fltDetect, String metric, String port)
+            throws RemoteException {
         return "Not implemented yet!";
     }
 

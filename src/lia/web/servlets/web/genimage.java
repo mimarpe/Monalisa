@@ -423,7 +423,7 @@ public class genimage extends ThreadedPage {
       
       System.err.println("map ("+gets("page")+"), ip: "+getHostName()+", took "+(System.currentTimeMillis()-lStart)+"ms to complete");
       
-      Utils.logRequest("genimage", (int)(System.currentTimeMillis()-lStart), request, false);
+      Utils.logRequest("genimage", (int)(System.currentTimeMillis()-lStart), request, false, System.currentTimeMillis() - lStart);
       
       bAuthOK = true;
     }

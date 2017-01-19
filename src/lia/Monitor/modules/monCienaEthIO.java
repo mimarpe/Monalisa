@@ -1,5 +1,5 @@
 /*
- * Created on Oct 4, 2007 $Id: monCienaEthIO.java 7210 2011-12-05 10:28:09Z ramiro $
+ * Created on Oct 4, 2007 $Id: monCienaEthIO.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.modules;
 
@@ -54,7 +54,7 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
     private static final long serialVersionUID = 1526888675110369851L;
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(monCienaEthIO.class.getName());
+    private static final Logger logger = Logger.getLogger(monCienaEthIO.class.getName());
 
     private static final String TL1_CTAG = "mettp";
 
@@ -81,15 +81,18 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
 
     private final SimpleDateFormat dateParserTL1 = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
 
-    private static final AtomicBoolean shouldMonitorPerformance = new AtomicBoolean(AppConfig.getb("lia.Monitor.modules.monCienaEthIO.shouldMonitorPerformance", false));
+    private static final AtomicBoolean shouldMonitorPerformance = new AtomicBoolean(AppConfig.getb(
+            "lia.Monitor.modules.monCienaEthIO.shouldMonitorPerformance", false));
 
     private static volatile String portNameSuffix = "";
-    
+
     static {
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
-                shouldMonitorPerformance.set(AppConfig.getb("lia.Monitor.modules.monCienaEthIO.shouldMonitorPerformance", false));
+                shouldMonitorPerformance.set(AppConfig.getb(
+                        "lia.Monitor.modules.monCienaEthIO.shouldMonitorPerformance", false));
             }
         });
     }
@@ -116,11 +119,12 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
-            builder.append("TL1CmdStat [tl1Cmd=").append(tl1Cmd).append(", lastTimestampNTP=").append(lastTimestampNTP).append(", lastTimestampNE=").append(lastTimestampNE).append(", lastExecDuration=").append(lastExecDuration).append(", lastNEDate=").append(lastNEDate).append("]");
+            builder.append("TL1CmdStat [tl1Cmd=").append(tl1Cmd).append(", lastTimestampNTP=").append(lastTimestampNTP)
+                    .append(", lastTimestampNE=").append(lastTimestampNE).append(", lastExecDuration=")
+                    .append(lastExecDuration).append(", lastNEDate=").append(lastNEDate).append("]");
             return builder.toString();
         }
-        
-        
+
     }
 
     public monCienaEthIO() {
@@ -128,6 +132,7 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
         isRepetitive = true;
     }
 
+    @Override
     public MonModuleInfo init(MNode Node, String args) {
         info = new MonModuleInfo();
         info.name = TaskName;
@@ -135,12 +140,15 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
 
         if (args == null) {
             logger.log(Level.SEVERE, "[ monCienaEthIO ] Null params in init. The module is unable to monitor the CD/CI");
-            throw new IllegalArgumentException("[ monCienaEthIO ] Null params in init. The module is unable to monitor the CD/CI");
+            throw new IllegalArgumentException(
+                    "[ monCienaEthIO ] Null params in init. The module is unable to monitor the CD/CI");
         }
 
         if (args.length() == 0) {
-            logger.log(Level.SEVERE, "[ monCienaEthIO ] The args list is empty. The module is unable to monitor the CD/CI");
-            throw new IllegalArgumentException("[ monCienaEthIO ] The args list is empty. The module is unable to monitor the CD/CI");
+            logger.log(Level.SEVERE,
+                    "[ monCienaEthIO ] The args list is empty. The module is unable to monitor the CD/CI");
+            throw new IllegalArgumentException(
+                    "[ monCienaEthIO ] The args list is empty. The module is unable to monitor the CD/CI");
         }
 
         if (args.startsWith("\"")) {
@@ -152,27 +160,33 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
         }
 
         final String[] argsTokens = args.split("(\\s)*;(\\s)*");
-        if (argsTokens != null && argsTokens.length > 0) {
-            for (int i = 0; i < argsTokens.length; i++) {
+        if ((argsTokens != null) && (argsTokens.length > 0)) {
+            for (String argsToken : argsTokens) {
                 try {
-                    final String argT = argsTokens[i].trim();
+                    final String argT = argsToken.trim();
                     if (argT.startsWith("ettpConfFile")) {
                         String[] fileTks = argT.split("(\\s)*=(\\s)*");
-                        if (fileTks == null || fileTks.length != 2) {
-                            logger.log(Level.SEVERE, "[ monCienaEthIO ] cannot parse ettpConfFile param [ " + argT + " ]  ... ");
-                            throw new IllegalArgumentException("[ monCienaEthIO ] cannot parse ettpListConfFile param [ " + argT + " ]  ... ");
+                        if ((fileTks == null) || (fileTks.length != 2)) {
+                            logger.log(Level.SEVERE, "[ monCienaEthIO ] cannot parse ettpConfFile param [ " + argT
+                                    + " ]  ... ");
+                            throw new IllegalArgumentException(
+                                    "[ monCienaEthIO ] cannot parse ettpListConfFile param [ " + argT + " ]  ... ");
                         }
 
                         ettpConfFile = new File(fileTks[1]);
 
                         if (!ettpConfFile.exists()) {
-                            logger.log(Level.SEVERE, "[ monCienaEthIO ] The ettpConfFile [ " + ettpConfFile + " ] does not exist");
-                            throw new IllegalArgumentException("[ monCienaEthIO ] The ettpConfFile [ " + ettpConfFile + " ] does not exist");
+                            logger.log(Level.SEVERE, "[ monCienaEthIO ] The ettpConfFile [ " + ettpConfFile
+                                    + " ] does not exist");
+                            throw new IllegalArgumentException("[ monCienaEthIO ] The ettpConfFile [ " + ettpConfFile
+                                    + " ] does not exist");
                         }
 
                         if (!ettpConfFile.canRead()) {
-                            logger.log(Level.SEVERE, "[ monCienaEthIO ] The ettpConfFile [ " + ettpConfFile + " ] does not have read access");
-                            throw new IllegalArgumentException("[ monCienaEthIO ] The ettpConfFile [ " + ettpConfFile + " ] does not have read access");
+                            logger.log(Level.SEVERE, "[ monCienaEthIO ] The ettpConfFile [ " + ettpConfFile
+                                    + " ] does not have read access");
+                            throw new IllegalArgumentException("[ monCienaEthIO ] The ettpConfFile [ " + ettpConfFile
+                                    + " ] does not have read access");
                         }
 
                     }
@@ -181,13 +195,17 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
                 }
             }
         } else {
-            logger.log(Level.SEVERE, "[ monCienaEthIO ] Unable to determine the arguments tokens. The module is unable to monitor the CD/CI");
-            throw new IllegalArgumentException("[ monCienaEthIO ] Unable to determine the arguments tokens. The module is unable to monitor the CD/CI");
+            logger.log(Level.SEVERE,
+                    "[ monCienaEthIO ] Unable to determine the arguments tokens. The module is unable to monitor the CD/CI");
+            throw new IllegalArgumentException(
+                    "[ monCienaEthIO ] Unable to determine the arguments tokens. The module is unable to monitor the CD/CI");
         }
 
         if (ettpConfFile == null) {
-            logger.log(Level.SEVERE, "[ monCienaEthIO ] Unable to determine ettpConfFile. The module is unable to monitor the CD/CI");
-            throw new IllegalArgumentException("[ monCienaEthIO ] Unable to determine ettpListConfFile. The module is unable to monitor the CD/CI");
+            logger.log(Level.SEVERE,
+                    "[ monCienaEthIO ] Unable to determine ettpConfFile. The module is unable to monitor the CD/CI");
+            throw new IllegalArgumentException(
+                    "[ monCienaEthIO ] Unable to determine ettpListConfFile. The module is unable to monitor the CD/CI");
         }
 
         // Just parse the conf file
@@ -195,7 +213,8 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
             reloadConf();
         } catch (Throwable t) {
             logger.log(Level.SEVERE, "[ monCienaEthIO ] Got exception parsing the conf files", t);
-            throw new IllegalArgumentException("[ monCienaEthIO ] Got exception parsing the conf files: " + t.getMessage());
+            throw new IllegalArgumentException("[ monCienaEthIO ] Got exception parsing the conf files: "
+                    + t.getMessage());
         }
 
         try {
@@ -209,10 +228,12 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
         return info;
     }
 
+    @Override
     public MonModuleInfo getInfo() {
         return info;
     }
 
+    @Override
     public String getOsName() {
         return "linux";
     }
@@ -252,11 +273,11 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
             final String ettpParamsIgnoreRate = p.getProperty("ettpParamsIgnoreRate");
             buildMap(ettpParamsIgnoreRate, newIgnoreParamsRate);
             final String tPortNameSuffix = p.getProperty("ettpPortNameSuffix", "");
-            if(tPortNameSuffix == null) {
+            if (tPortNameSuffix == null) {
                 monCienaEthIO.portNameSuffix = "";
             } else {
                 final String tPSFX = tPortNameSuffix.trim();
-                if(tPSFX.isEmpty()) {
+                if (tPSFX.isEmpty()) {
                     monCienaEthIO.portNameSuffix = "";
                 } else {
                     monCienaEthIO.portNameSuffix = tPSFX;
@@ -290,8 +311,8 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
         }
 
         // add the new ports
-        for (final Iterator<String> it = newPortList.iterator(); it.hasNext();) {
-            final String portName = it.next().trim();
+        for (String string : newPortList) {
+            final String portName = string.trim();
             if (portName.length() > 0) {
                 final String tl1Cmd = TL1_PREFIX_CMD + portName + ":" + TL1_CTAG + ";\n";
                 ettpTL1CmdParams.put(tl1Cmd, new TL1CmdStat(tl1Cmd));
@@ -335,10 +356,11 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
         return dateParserTL1.parse(TL1TimeLine.substring(TL1TimeLine.indexOf(" ") + 1)).getTime();
     }
 
+    @Override
     public Object doProcess() throws Exception {
 
         final String portNameSuffix = monCienaEthIO.portNameSuffix;
-        
+
         final long sPerfTime = Utils.nanoNow();
 
         // dt for all TL1 in ms
@@ -358,8 +380,9 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
             }
 
             now = NTPDate.currentTimeMillis();
-            if(logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, " NOW: " + now + " / " + new Date(now) + " lastRun: " + lastRun + " / " + new Date(lastRun));
+            if (logger.isLoggable(Level.FINE)) {
+                logger.log(Level.FINE, " NOW: " + now + " / " + new Date(now) + " lastRun: " + lastRun + " / "
+                        + new Date(lastRun));
             }
 
             long dt = now - lastRun;
@@ -458,21 +481,31 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
                                 if (!started) {
                                     if (line.startsWith("M ")) {
                                         if (lastLine == null) {
-                                            logger.log(Level.WARNING, " [ monCienaEthIO ] Cannot determine NE Date ?!? Line is null before line: " + line);
+                                            logger.log(Level.WARNING,
+                                                    " [ monCienaEthIO ] Cannot determine NE Date ?!? Line is null before line: "
+                                                            + line);
                                         } else {
                                             lastLine = lastLine.trim();
                                             cNETime = parseNETime(lastLine);
                                             if (logger.isLoggable(Level.FINER)) {
-                                                logger.log(Level.FINER, " [ monCienaEthIO ] Time for CMD: " + cmd + "; Date line: " + lastLine + "; millis: " + cNETime + "; Parsed Date: " + new Date(cNETime));
+                                                logger.log(Level.FINER, " [ monCienaEthIO ] Time for CMD: " + cmd
+                                                        + "; Date line: " + lastLine + "; millis: " + cNETime
+                                                        + "; Parsed Date: " + new Date(cNETime));
                                             }
 
                                             final long dtCD = cNETime - cmdStat.lastTimestampNE;
                                             devDT = dtCD - dt;
                                             absDevDT = Math.abs(devDT);
 
-                                            if (absDevDT < 0 || absDevDT > 4 * 1000) {
-                                                logger.log(Level.WARNING, " [ monCienaEthIO ] The time goes back in time or NTP diff to large. dtNE" + dtCD + " dtNTP: " + dt + " : currentNETime " + cNETime + "; Date: " + new Date(cNETime) + "; Line from NE: " + lastLine + " lastNETime: " + cmdStat.lastTimestampNE
-                                                        + "; Date: " + new Date(cmdStat.lastTimestampNE) + "; Last line from NE: " + cmdStat.lastNEDate);
+                                            if ((absDevDT < 0) || (absDevDT > (4 * 1000))) {
+                                                logger.log(Level.WARNING,
+                                                        " [ monCienaEthIO ] The time goes back in time or NTP diff to large. dtNE"
+                                                                + dtCD + " dtNTP: " + dt + " : currentNETime "
+                                                                + cNETime + "; Date: " + new Date(cNETime)
+                                                                + "; Line from NE: " + lastLine + " lastNETime: "
+                                                                + cmdStat.lastTimestampNE + "; Date: "
+                                                                + new Date(cmdStat.lastTimestampNE)
+                                                                + "; Last line from NE: " + cmdStat.lastNEDate);
                                             } else {
                                                 bUseCDTime = true;
                                                 dt = dtCD;
@@ -491,13 +524,13 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
                                     logger.log(Level.FINEST, " [ monCienaEthIO ] Processing line: [" + line + "]");
                                 }
 
-                                if (line.startsWith("\"") && line.endsWith("\"") && line.length() >= 2) {
+                                if (line.startsWith("\"") && line.endsWith("\"") && (line.length() >= 2)) {
                                     try {
 
                                         int idx = line.indexOf(":");
                                         int idx1 = line.indexOf(",");
 
-                                        if (idx <= 0 || idx1 > line.length() - 2) {
+                                        if ((idx <= 0) || (idx1 > (line.length() - 2))) {
                                             continue;
                                         }
 
@@ -534,27 +567,33 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
                                         }
 
                                         final boolean ignoreRate = ettpParamsListIgnoreRate.contains(param);
-                                        if (lastVal.longValue() > cVal && !ignoreRate) {
-                                            logger.log(Level.WARNING, "[ monCienaEthIO ] The counter [ " + cVal + " ] for line: " + line + " is smaller than lastVal: " + lastVal + " .... ignoring it");
+                                        if ((lastVal.longValue() > cVal) && !ignoreRate) {
+                                            logger.log(Level.WARNING, "[ monCienaEthIO ] The counter [ " + cVal
+                                                    + " ] for line: " + line + " is smaller than lastVal: " + lastVal
+                                                    + " .... ignoring it");
                                             hmParams.put(param, Long.valueOf(cVal));
                                             continue;
 
                                         }
 
                                         if (logger.isLoggable(Level.FINE)) {
-                                            logger.log(Level.FINE, " Node: " + r.NodeName + " Param: " + param + " currentVal: " + cVal + " lastVal: " + lastVal + " DT: " + dt);
+                                            logger.log(Level.FINE, " Node: " + r.NodeName + " Param: " + param
+                                                    + " currentVal: " + cVal + " lastVal: " + lastVal + " DT: " + dt);
                                         }
 
                                         if (!ignoreRate) {
                                             r.addSet(param, cVal);
-                                            r.addSet(param + "_MLRate", ((cVal - lastVal.longValue()) * 8D) / dt / 1000D);
+                                            r.addSet(param + "_MLRate", ((cVal - lastVal.longValue()) * 8D) / dt
+                                                    / 1000D);
                                         } else {
-                                            r.addSet(param, cVal * 8D / (1000000D));
+                                            r.addSet(param, (cVal * 8D) / (1000000D));
                                         }
                                         hmParams.put(param, Long.valueOf(cVal));
 
                                     } catch (Throwable t1) {
-                                        logger.log(Level.WARNING, "[ monCienaEthIO ] [ HANDLED ] Got exception processing line: " + line, t1);
+                                        logger.log(Level.WARNING,
+                                                "[ monCienaEthIO ] [ HANDLED ] Got exception processing line: " + line,
+                                                t1);
                                     }
 
                                 }// end if
@@ -573,7 +612,7 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
                         cmdStat.lastTimestampNTP = lastTimeStampNTP;
                     }
 
-                    if (r != null && r.param != null && r.param.length > 0) {
+                    if ((r != null) && (r.param != null) && (r.param.length > 0)) {
                         r.addSet("CDTimeStatus", (bUseCDTime) ? 0 : 1);
                         r.addSet("CDTimeNTPTime", devDT);
                         r.addSet("AbsCDTimeNTPTime", absDevDT);
@@ -626,6 +665,7 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
         return retV;
     }
 
+    @Override
     public void update(Observable o, Object arg) {
         try {
             reloadConf();
@@ -653,13 +693,14 @@ public class monCienaEthIO extends cmdExec implements MonitoringModule, Observer
         }
 
         System.out.println("Using hostname= " + host + " IPaddress=" + ad);
-        aa.init(new MNode(host, ad, new MCluster("CMap", null), null), "ettpListConfFile=/home/ramiro/ettpPortList ; ettpParamsConfFile = /home/ramiro/ettpParamList");
+        aa.init(new MNode(host, ad, new MCluster("CMap", null), null),
+                "ettpListConfFile=/home/ramiro/ettpPortList ; ettpParamsConfFile = /home/ramiro/ettpParamList");
 
         try {
             for (int k = 0; k < 10000; k++) {
                 System.out.println(" Long.MAX_VAL = " + Long.MAX_VALUE);
                 Collection<Result> bb = (Collection<Result>) aa.doProcess();
-                for (final Result r: bb) {
+                for (final Result r : bb) {
                     System.out.println(r);
                 }
 

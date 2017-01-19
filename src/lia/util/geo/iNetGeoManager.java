@@ -30,11 +30,8 @@ import lia.util.Utils;
 
 public class iNetGeoManager {
 
-    /** Logger name */
-    private static final transient String COMPONENT = "lia.util.geo";
-
     /** Logger used by this class */
-    static final transient Logger logger = Logger.getLogger(COMPONENT);
+    private static final Logger logger = Logger.getLogger(iNetGeoManager.class.getName());
 
     private static final int URL_CONNECT_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10);
 
@@ -62,6 +59,7 @@ public class iNetGeoManager {
 
             final AtomicLong l = new AtomicLong(0);
 
+            @Override
             public Thread newThread(Runnable r) {
                 final Thread t = new Thread(r, "(ML) iNetGeoClientWorker " + l.getAndIncrement());
                 t.setDaemon(true);
@@ -72,8 +70,9 @@ public class iNetGeoManager {
         final long defaultDelayMillis = TimeUnit.MINUTES.toMillis(30);
         long cfgDelayMillis = defaultDelayMillis;
         try {
-            cfgDelayMillis = TimeUnit.SECONDS.toMillis(AppConfig.getl("lia.util.geo.iNetGeoManager.update_delay_seconds",
-                                                                      TimeUnit.MILLISECONDS.toSeconds(defaultDelayMillis)));
+            cfgDelayMillis = TimeUnit.SECONDS.toMillis(AppConfig.getl(
+                    "lia.util.geo.iNetGeoManager.update_delay_seconds",
+                    TimeUnit.MILLISECONDS.toSeconds(defaultDelayMillis)));
 
             if (cfgDelayMillis <= 0) {
                 cfgDelayMillis = defaultDelayMillis;
@@ -82,7 +81,7 @@ public class iNetGeoManager {
         } catch (Throwable t) {
             cfgDelayMillis = defaultDelayMillis;
         }
-        
+
         UPDATE_TIME_MILLIS = cfgDelayMillis;
     }
 
@@ -104,14 +103,16 @@ public class iNetGeoManager {
 
     public boolean addURL(String url) {
 
-        if (url == null || url.length() == 0)
+        if ((url == null) || (url.length() == 0)) {
             return false;
+        }
         final String configFileAddr = AppConfig.getProperty("lia.util.geo.iNetGeoConfig", "");
         final String addresses[] = configFileAddr.split("(\\s)*,(\\s)*");
         if (addresses != null) {
-            for (int i = 0; i < addresses.length; i++) {
-                if (addresses[i].equals(url))
+            for (String addresse : addresses) {
+                if (addresse.equals(url)) {
                     return false;
+                }
             }
         }
         System.setProperty("lia.util.geo.iNetGeoConfig", configFileAddr + "," + url);
@@ -123,22 +124,25 @@ public class iNetGeoManager {
 
     public void removeURL(String url) {
 
-        if (url == null || url.length() == 0)
+        if ((url == null) || (url.length() == 0)) {
             return;
+        }
         String configFileAddr = AppConfig.getProperty("lia.util.geo.iNetGeoConfig", "");
         String addresses[] = configFileAddr.split(",");
         ArrayList<String> adr = new ArrayList<String>();
         if (addresses != null) {
-            for (int i = 0; i < addresses.length; i++) {
-                if (addresses[i].equals(url))
+            for (String addresse : addresses) {
+                if (addresse.equals(url)) {
                     continue;
-                adr.add(addresses[i]);
+                }
+                adr.add(addresse);
             }
         }
         StringBuilder buf = new StringBuilder();
         for (int i = 0; i < adr.size(); i++) {
-            if (i != 0)
+            if (i != 0) {
                 buf.append(",");
+            }
             buf.append(adr.get(i));
         }
         System.setProperty("lia.util.geo.iNetGeoConfig", buf.toString());
@@ -147,25 +151,25 @@ public class iNetGeoManager {
 
     public synchronized void updateConfig(String address, LinkedList<String> config) {
 
-        if (config == null || config.size() == 0 || bannedURLs.contains(address))
+        if ((config == null) || (config.size() == 0) || bannedURLs.contains(address)) {
             return;
+        }
         boolean linkMode = true;
         for (String line : config) {
             String name = null;
             QuotedStringTokenizer st = new QuotedStringTokenizer(line);
-            if (st.hasMoreTokens())
+            if (st.hasMoreTokens()) {
                 name = st.nextToken();
-            else
+            } else {
                 continue; // empty line
+            }
             if (name.equals("[Cities]")) {
                 linkMode = false;
                 continue;
             }
             if (linkMode) { // we still got a line regarding a specific link
                 if (!linkExists(name)) {
-                    linkData.add(new String[] {
-                            address, line
-                    });
+                    linkData.add(new String[] { address, line });
                     // System.out.println("added link "+name);
                 }
             } else { // we got a line concerning a city
@@ -190,9 +194,8 @@ public class iNetGeoManager {
                             name = st.nextToken();
                         } while (name.equals(""));
                         if (!nodeExists(name)) {
-                            nodeData.add(new String[] {
-                                    address, city + " " + country + " " + longitude + " " + latitude + " " + name
-                            });
+                            nodeData.add(new String[] { address,
+                                    city + " " + country + " " + longitude + " " + latitude + " " + name });
                         }
                     }
                 } catch (NoSuchElementException ex) {
@@ -223,10 +226,11 @@ public class iNetGeoManager {
             String line = linkData.get(i)[1];
             QuotedStringTokenizer st = new QuotedStringTokenizer(line);
             String name = null;
-            if (st.hasMoreTokens())
+            if (st.hasMoreTokens()) {
                 name = st.nextToken();
-            else
+            } else {
                 continue; // empty line
+            }
             if (name.equals(linkName)) {
                 found = true;
                 break;
@@ -242,18 +246,20 @@ public class iNetGeoManager {
             String line = nodeData.get(k)[1];
             QuotedStringTokenizer st = new QuotedStringTokenizer(line);
             String name = null;
-            if (st.hasMoreTokens())
+            if (st.hasMoreTokens()) {
                 name = st.nextToken();
-            else
+            } else {
                 continue; // empty line
+            }
 
             try {
                 // skip 3 fields (Country, Longitude, Latitude)
                 // first (City) is already skipped
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 3; i++) {
                     do {
                         name = st.nextToken();
                     } while (name.equals(""));
+                }
                 // search the source & destination IP among IP list
                 for (int i = 0;; i++) {
                     do {
@@ -265,10 +271,11 @@ public class iNetGeoManager {
                     }
                 }
             } catch (NoSuchElementException ex) {
-               // maybe next time...
+                // maybe next time...
             }
-            if (found)
+            if (found) {
                 break;
+            }
         }
         return found;
     }
@@ -282,8 +289,9 @@ public class iNetGeoManager {
      */
     public ILink getLink(String linkName) {
         Object objLink = iLinkCache.get(linkName);
-        if (objLink != null && !(objLink instanceof ILink))
+        if ((objLink != null) && !(objLink instanceof ILink)) {
             return null;
+        }
         ILink link;
         link = (ILink) objLink;
         if (link != null) {
@@ -301,8 +309,9 @@ public class iNetGeoManager {
             }
             iLinkCache.put(linkName, objLink); // add the found object to cache, but if not instance of link, don't
                                                // return it
-            if (objLink != null && !(objLink instanceof ILink))
+            if ((objLink != null) && !(objLink instanceof ILink)) {
                 return null;
+            }
             return (ILink) objLink;
         }
         return null;
@@ -322,8 +331,9 @@ public class iNetGeoManager {
             if (!(objLink instanceof ArrayList)) {
                 alLinks = new ArrayList();
                 alLinks.add(objLink);
-            } else
+            } else {
                 alLinks = (ArrayList) objLink;
+            }
             if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, linkName + " found in cache");
             }
@@ -341,8 +351,9 @@ public class iNetGeoManager {
             if (!(objLink instanceof ArrayList)) {
                 alLinks = new ArrayList();
                 alLinks.add(objLink);
-            } else
+            } else {
                 alLinks = (ArrayList) objLink;
+            }
             return alLinks;
         }
         // System.out.println("link e null");
@@ -364,15 +375,18 @@ public class iNetGeoManager {
         String name;
         QuotedStringTokenizer st;
         ArrayList alLinks = null;
-        // System.out.println("resolveLink "+linkName);
+        if (logger.isLoggable(Level.FINER)) {
+            logger.log(Level.FINER, "resolveLink " + linkName);
+        }
         synchronized (this) {
             for (int k = 0; k < linkData.size(); k++) {
                 line = linkData.get(k)[1];
                 st = new QuotedStringTokenizer(line);
-                if (st.hasMoreTokens())
+                if (st.hasMoreTokens()) {
                     name = st.nextToken();
-                else
+                } else {
                     continue; // empty line
+                }
                 if (name.equals(linkName)) {
                     link = new ILink(linkName);
                     // read source IP
@@ -436,8 +450,9 @@ public class iNetGeoManager {
                                     interLink.toLAT = 0;
                                     interLink.toLONG = 0;
                                 }
-                                if (alLinks == null)
+                                if (alLinks == null) {
                                     alLinks = new ArrayList();
+                                }
                                 alLinks.add(interLink);
                                 prevIP = interLink.toIP;
                                 prevFrom = interLink.to;
@@ -473,10 +488,12 @@ public class iNetGeoManager {
                 }
             }
         }
-        if (link == null)
+        if (link == null) {
             return null;
-        if (alLinks != null)
+        }
+        if (alLinks != null) {
             return alLinks;
+        }
         return link;
     }
 
@@ -494,24 +511,27 @@ public class iNetGeoManager {
             for (int k = 0; k < nodeData.size(); k++) {
                 line = nodeData.get(k)[1];
                 st = new QuotedStringTokenizer(line);
-                if (st.hasMoreTokens())
+                if (st.hasMoreTokens()) {
                     name = st.nextToken();
-                else
+                } else {
                     continue; // empty line
+                }
                 try {
                     // skip 3 fields (Country, Longitude, Latitude)
                     // first (City) is already skipped
-                    for (int i = 0; i < 3; i++)
+                    for (int i = 0; i < 3; i++) {
                         do {
                             name = st.nextToken();
                         } while (name.equals(""));
+                    }
                     // search the source & destination IP among IP list
                     for (;;) {
                         do {
                             name = st.nextToken();
                         } while (name.equals(""));
-                        if (ipAddress.startsWith(name))
+                        if (ipAddress.startsWith(name)) {
                             return setLocationData(line);
+                        }
                     }
                 } catch (NoSuchElementException ex) {
                     //WTF
@@ -568,6 +588,7 @@ public class iNetGeoManager {
 
     class iNetGeoPrincipal implements Runnable {
 
+        @Override
         public void run() {
             updateData();
         }
@@ -575,6 +596,7 @@ public class iNetGeoManager {
 
     class iNetGeoRefresher implements Runnable {
 
+        @Override
         public void run() {
             updateData();
         }
@@ -589,8 +611,9 @@ public class iNetGeoManager {
             this.configFileAddr = configFileAddr;
         }
 
+        @Override
         public void run() {
-            if (configFileAddr == null || configFileAddr.equals("")) {
+            if ((configFileAddr == null) || configFileAddr.equals("")) {
                 logger.log(Level.WARNING, "configFileAddr invalid");
                 return;
             }
@@ -599,7 +622,8 @@ public class iNetGeoManager {
             BufferedReader br = null;
 
             try {
-                final URL url = new URL(configFileAddr + "?cTime=" + System.currentTimeMillis() + "&nTime=" + System.nanoTime());
+                final URL url = new URL(configFileAddr + "?cTime=" + System.currentTimeMillis() + "&nTime="
+                        + System.nanoTime());
                 final URLConnection urlConnection = url.openConnection();
                 urlConnection.setConnectTimeout(URL_CONNECT_TIMEOUT);
                 urlConnection.setDefaultUseCaches(false);
@@ -614,8 +638,9 @@ public class iNetGeoManager {
                 while ((line = br.readLine()) != null) {
                     line = line.trim();
                     // skip comments and empty lines
-                    if (line.startsWith("#") || line.equals(""))
+                    if (line.startsWith("#") || line.equals("")) {
                         continue;
+                    }
                     configData.add(line);
                 }
                 Utils.closeIgnoringException(is);
@@ -635,10 +660,10 @@ public class iNetGeoManager {
             } finally {
                 Utils.closeIgnoringException(is);
                 Utils.closeIgnoringException(br);
-                if(logger.isLoggable(Level.FINE)) {
+                if (logger.isLoggable(Level.FINE)) {
                     long nEndAction = System.nanoTime();
-                    logger.log(Level.FINE, "Loaded iNetGeoManager config file " + configFileAddr + " in " + TimeUnit.NANOSECONDS.toMillis(nEndAction - nStartAction)
-                            + " miliseconds");
+                    logger.log(Level.FINE, "Loaded iNetGeoManager config file " + configFileAddr + " in "
+                            + TimeUnit.NANOSECONDS.toMillis(nEndAction - nStartAction) + " miliseconds");
                 }
             }
             executors.remove(configFileAddr);
@@ -646,9 +671,11 @@ public class iNetGeoManager {
     }
 
     public static void main(String args[]) throws SecurityException, IOException {
-        LogManager.getLogManager().readConfiguration(new ByteArrayInputStream(("handlers= java.util.logging.ConsoleHandler\n"
-                + "java.util.logging.ConsoleHandler.level = FINEST\n"
-                + "java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter\n" + "").getBytes()));
+        LogManager.getLogManager().readConfiguration(
+                new ByteArrayInputStream(("handlers= java.util.logging.ConsoleHandler\n"
+                        + "java.util.logging.ConsoleHandler.level = FINEST\n"
+                        + "java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter\n" + "")
+                        .getBytes()));
 
         //System.setProperty("lia.util.geo.iNetGeoConfig", "http://monalisa.cacr.caltech.edu/iNetGeoConfig");
         System.setProperty("lia.util.geo.iNetGeoConfig", "http://localhost/~ramiro/iNetGeoConfig");

@@ -6,6 +6,7 @@ import lia.Monitor.Store.Fast.CacheElement;
 import lia.Monitor.Store.Fast.WriterInterface;
 import lia.Monitor.monitor.ExtendedResult;
 import lia.Monitor.monitor.Result;
+import lia.Monitor.monitor.TimestampedResult;
 
 /**
  * @author costing
@@ -19,9 +20,9 @@ public final class DataCompacter implements WriterInterface {
 	 * @param lInterval compact interval, the minimum distance in ms between two consecutive points
 	 * @return the compacted data
 	 */
-	public static Vector<Object> compact(final Vector<?> v, final long lInterval) {
+	public static Vector<TimestampedResult> compact(final Vector<TimestampedResult> v, final long lInterval) {
 		if (v == null || v.size() < 2 || lInterval < 1)
-			return v!=null ? new Vector<Object>(v) : null;
+			return v!=null ? new Vector<TimestampedResult>(v) : null;
 
 		DataCompacter dc = null;
 		
@@ -37,7 +38,7 @@ public final class DataCompacter implements WriterInterface {
 		}
 		
 		if (dc==null)
-			return new Vector<Object>();
+			return new Vector<TimestampedResult>();
 		
 		Object o;
 		
@@ -55,7 +56,7 @@ public final class DataCompacter implements WriterInterface {
 	
 	private final CacheElement ce;
 	
-	private final Vector<Object> vResult = new Vector<Object>();
+	private final Vector<TimestampedResult> vResult = new Vector<TimestampedResult>();
 	
 	private DataCompacter(final long lCompactInterval, final Result r, final int iParam){
 		ce = new CacheElement(lCompactInterval, r, iParam, r.time, false, this);
@@ -94,7 +95,7 @@ public final class DataCompacter implements WriterInterface {
 	 * @param args
 	 */
 	public static void main(String args[]){
-		Vector<Object> v = new Vector<Object>();
+		Vector<TimestampedResult> v = new Vector<TimestampedResult>();
 		
 		v.add(produce(1000, 1));
 		

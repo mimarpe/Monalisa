@@ -21,21 +21,22 @@ import lia.util.DateFileWatchdog;
  * @author ramiro
  */
 public class RRDConfigManager implements Observer {
-    private static final transient Logger logger = Logger.getLogger(RRDConfigManager.class.getName());
+    private static final Logger logger = Logger.getLogger(RRDConfigManager.class.getName());
 
     private static final class InstanceHolder {
-        private static final RRDConfigManager theInstance; 
-        
+        private static final RRDConfigManager theInstance;
+
         static {
             final String cfgFile = AppConfig.getProperty("RRDConfigManager.config");
             RRDConfigManager cfg = null;
-            if(cfgFile == null) {
-                logger.log(Level.WARNING, " [ RRDConfigManager ] Unable to instantiate RRDConfigManager. Configuration file RRDConfigManager.config not defined");
+            if (cfgFile == null) {
+                logger.log(Level.WARNING,
+                        " [ RRDConfigManager ] Unable to instantiate RRDConfigManager. Configuration file RRDConfigManager.config not defined");
             }
-            
+
             try {
                 cfg = new RRDConfigManager(cfgFile.trim());
-            }catch(Throwable t) {
+            } catch (Throwable t) {
                 logger.log(Level.WARNING, " [ RRDConfigManager ] Unable to instantiate RRDConfigManager. Cause:", t);
                 cfg = null;
             }
@@ -76,12 +77,12 @@ public class RRDConfigManager implements Observer {
     }
 
     public static final RRDConfigManager getInstance() {
-        if(InstanceHolder.theInstance == null) {
+        if (InstanceHolder.theInstance == null) {
             throw new IllegalStateException("Config manager is not instantiated.");
         }
         return InstanceHolder.theInstance;
     }
-    
+
     private final void reloadConfig() {
         boolean bReload = true;
         FileInputStream fis = null;
@@ -92,26 +93,26 @@ public class RRDConfigManager implements Observer {
             bis = new BufferedInputStream(fis);
             p.load(bis);
             final String destDirProp = p.getProperty("rrd.directory");
-            
-            if(destDirProp == null || destDirProp.trim().length() == 0) {
+
+            if ((destDirProp == null) || (destDirProp.trim().length() == 0)) {
                 throw new IllegalArgumentException("rrd.directory not (correclty) defined");
             }
             rrdDirectory.set(destDirProp.trim());
 
             final String rrdExtProp = p.getProperty("rrd.file.extension", ".rrd");
-            
-            if(rrdExtProp == null) {
+
+            if (rrdExtProp == null) {
                 throw new IllegalArgumentException("rrd.file.extension not (correclty) defined");
             }
             rrdFileExtension.set(rrdExtProp.trim());
-            
+
             final String rrdToolProp = p.getProperty("rrd.tool.cmd", "/usr/bin/rrdtool");
-            
-            if(rrdToolProp == null) {
+
+            if (rrdToolProp == null) {
                 throw new IllegalArgumentException("rrd.tool.cmd not (correclty) defined");
             }
             rrdToolCmd.set(rrdToolProp.trim());
-            
+
             rraTemplatesRef.set(new RRATemplates(p));
             dsTemplatesRef.set(new DSTemplates(p));
             rrdTemplatesRef.set(new RRDTemplates(p, rraTemplatesRef.get(), dsTemplatesRef.get()));
@@ -146,19 +147,20 @@ public class RRDConfigManager implements Observer {
     public String rrdToolCmd() {
         return rrdToolCmd.get();
     }
-    
+
     public RRATemplates getRRATemplates() {
         return rraTemplatesRef.get();
     }
-    
+
     public DSTemplates getDSTemplates() {
         return dsTemplatesRef.get();
     }
-    
+
     public RRDTemplates getRRDTemplates() {
         return rrdTemplatesRef.get();
     }
-    
+
+    @Override
     public void update(Observable o, Object arg) {
         reloadConfig();
     }

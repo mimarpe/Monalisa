@@ -194,6 +194,8 @@ public class TransparentStoreFactory {
             System.setProperty("lia.Monitor.DatabasePort", portS.trim());
 
             DB db = new DB();
+            
+            db.setReadOnly(true);
 
             for (int i = 0; i < 20; i++) {
                 if (db.query("SELECT 1015 AS omiecinshpe;", true) && db.moveNext() && db.geti("omiecinshpe") == 1015) {
@@ -381,6 +383,8 @@ public class TransparentStoreFactory {
                 sleepTime = 5 * 1000;
             }
 
+            db.setReadOnly(true);
+            
             if (db.query("SELECT 1015 AS omiecinshpe;", false) && db.moveNext() && db.geti("omiecinshpe") == 1015) {
                 storeType = "epgsqldb";
                 logger.log(Level.INFO, " [ TransparentStoreFactory ] Emebdded PG Started successfully ... ");

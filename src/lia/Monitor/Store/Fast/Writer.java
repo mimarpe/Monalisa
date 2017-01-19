@@ -1,5 +1,5 @@
 /*
- * $Id: Writer.java 7128 2011-03-14 09:45:52Z costing $
+ * $Id: Writer.java 7541 2014-11-18 15:24:12Z costing $
  */
 package lia.Monitor.Store.Fast;
 
@@ -37,6 +37,8 @@ import lia.web.utils.Formatare;
  * @since forever
  */
 public abstract class Writer implements WriterInterface {
+    /** Logger used by this class */
+    private static final Logger logger = Logger.getLogger(Writer.class.getName());
 
     /**
      * Writer type
@@ -62,9 +64,6 @@ public abstract class Writer implements WriterInterface {
      * Whether or not this writer is active
      */
     protected AtomicBoolean online = new AtomicBoolean(false);
-
-    /** Logger used by this class */
-    private static final Logger logger = Logger.getLogger("lia.Monitor.Store.Fast.Writer");
 
     /**
      * Save some value in this structure
@@ -137,14 +136,15 @@ public abstract class Writer implements WriterInterface {
     private final ArrayList<monPredicate> alReject = new ArrayList<monPredicate>();
 
     static {
-        final boolean isMemOnly = (AppConfig.getb("lia.Monitor.memory_store_only", false) || AppConfig.geti("lia.Monitor.Store.TransparentStoreFast.web_writes", -1) <= 0);
+        final boolean isMemOnly = (AppConfig.getb("lia.Monitor.memory_store_only", false) || (AppConfig.geti(
+                "lia.Monitor.Store.TransparentStoreFast.web_writes", -1) <= 0));
         if (!isMemOnly) {
             logger.log(Level.INFO, "Loading settings table...");
             // make sure we have the settings table
             final DB db = new DB();
 
-            if (db.query("CREATE TABLE monitor_settings (tablename text, key text, value text);", true)) {
-                db.query("CREATE UNIQUE INDEX monitor_settings_pkey ON monitor_settings(tablename, key);");
+            if (db.syncUpdateQuery("CREATE TABLE monitor_settings (tablename text, key text, value text);", true)) {
+                db.syncUpdateQuery("CREATE UNIQUE INDEX monitor_settings_pkey ON monitor_settings(tablename, key);");
             }
             logger.log(Level.INFO, "Settings table loaded.");
         } else {
@@ -162,7 +162,10 @@ public abstract class Writer implements WriterInterface {
     public String getSetting(final String sKey) {
         final DB db = new DB();
 
-        db.query("SELECT value FROM monitor_settings WHERE tablename='" + e(this.sTableName) + "' AND key='" + e(sKey) + "';");
+        db.setReadOnly(true);
+        
+        db.query("SELECT value FROM monitor_settings WHERE tablename='" + e(this.sTableName) + "' AND key='" + e(sKey)
+                + "';");
 
         return db.gets(1);
     }
@@ -193,8 +196,9 @@ public abstract class Writer implements WriterInterface {
         try {
             return Long.parseLong(getSetting(sKey));
         } catch (NumberFormatException ne) {
-            if (bSetBackDefault)
+            if (bSetBackDefault) {
                 setSetting(sKey, lDefault);
+            }
 
             return lDefault;
         }
@@ -211,10 +215,13 @@ public abstract class Writer implements WriterInterface {
     public void setSetting(final String sKey, final String sValue) {
         final DB db = new DB();
 
-        db.query("UPDATE monitor_settings SET value='" + e(sValue) + "' WHERE tablename='" + e(this.sTableName) + "' AND key='" + e(sKey) + "';");
+        db.query("UPDATE monitor_settings SET value='" + e(sValue) + "' WHERE tablename='" + e(this.sTableName)
+                + "' AND key='" + e(sKey) + "';");
 
-        if (db.getUpdateCount() == 0)
-            db.query("INSERT INTO monitor_settings (tablename, key, value) VALUES ('" + e(this.sTableName) + "', '" + e(sKey) + "', '" + e(sValue) + "');");
+        if (db.getUpdateCount() == 0) {
+            db.query("INSERT INTO monitor_settings (tablename, key, value) VALUES ('" + e(this.sTableName) + "', '"
+                    + e(sKey) + "', '" + e(sValue) + "');");
+        }
     }
 
     /**
@@ -243,26 +250,28 @@ public abstract class Writer implements WriterInterface {
         try {
             this.alAccept.clear();
 
-            if (sAcceptConstraints != null && sAcceptConstraints.length() > 0) {
+            if ((sAcceptConstraints != null) && (sAcceptConstraints.length() > 0)) {
                 StringTokenizer st = new StringTokenizer(sAcceptConstraints, ",");
 
                 while (st.hasMoreTokens()) {
                     monPredicate pred = Formatare.toPred(st.nextToken());
 
-                    if (pred != null)
+                    if (pred != null) {
                         this.alAccept.add(pred);
+                    }
                 }
             }
 
             this.alReject.clear();
-            if (sRejectConstraints != null && sRejectConstraints.length() > 0) {
+            if ((sRejectConstraints != null) && (sRejectConstraints.length() > 0)) {
                 StringTokenizer st = new StringTokenizer(sRejectConstraints, ",");
 
                 while (st.hasMoreTokens()) {
                     monPredicate pred = Formatare.toPred(st.nextToken());
 
-                    if (pred != null)
+                    if (pred != null) {
                         this.alReject.add(pred);
+                    }
                 }
             }
         } finally {
@@ -277,8 +286,9 @@ public abstract class Writer implements WriterInterface {
      *            object to store
      */
     public final void addSample(final Object o) {
-        if (o == null)
+        if (o == null) {
             return;
+        }
 
         this.configReadLock.lock();
 
@@ -287,14 +297,15 @@ public abstract class Writer implements WriterInterface {
 
             if (oTemp != null) {
                 if (this.bIgnore) {
-                    if (this.bIgnoreResult && oTemp instanceof Result)
+                    if (this.bIgnoreResult && (oTemp instanceof Result)) {
                         return;
-                    else if (this.bIgnoreEResult && oTemp instanceof eResult)
+                    } else if (this.bIgnoreEResult && (oTemp instanceof eResult)) {
                         return;
-                    else if (this.bIgnoreExtResult && oTemp instanceof ExtResult)
+                    } else if (this.bIgnoreExtResult && (oTemp instanceof ExtResult)) {
                         return;
-                    else if (this.bIgnoreAccountingResult && oTemp instanceof AccountingResult)
+                    } else if (this.bIgnoreAccountingResult && (oTemp instanceof AccountingResult)) {
                         return;
+                    }
                 }
 
                 storeData(oTemp);
@@ -359,14 +370,18 @@ public abstract class Writer implements WriterInterface {
     public int setIgnoreDataFlags(final int flags) {
         int iOldFlags = 0;
         if (this.bIgnore) {
-            if (this.bIgnoreResult)
+            if (this.bIgnoreResult) {
                 iOldFlags |= FLAGS_RESULT;
-            if (this.bIgnoreEResult)
+            }
+            if (this.bIgnoreEResult) {
                 iOldFlags |= FLAGS_ERESULT;
-            if (this.bIgnoreExtResult)
+            }
+            if (this.bIgnoreExtResult) {
                 iOldFlags |= FLAGS_EXTRESULT;
-            if (this.bIgnoreAccountingResult)
+            }
+            if (this.bIgnoreAccountingResult) {
                 iOldFlags |= FLAGS_ACCOUNTINGRESULT;
+            }
         }
 
         this.bIgnoreResult = (flags & FLAGS_RESULT) != 0;
@@ -374,7 +389,8 @@ public abstract class Writer implements WriterInterface {
         this.bIgnoreExtResult = (flags & FLAGS_EXTRESULT) != 0;
         this.bIgnoreAccountingResult = (flags & FLAGS_ACCOUNTINGRESULT) != 0;
 
-        this.bIgnore = this.bIgnoreResult || this.bIgnoreEResult || this.bIgnoreExtResult || this.bIgnoreAccountingResult;
+        this.bIgnore = this.bIgnoreResult || this.bIgnoreEResult || this.bIgnoreExtResult
+                || this.bIgnoreAccountingResult;
 
         return iOldFlags;
     }
@@ -505,7 +521,7 @@ public abstract class Writer implements WriterInterface {
             oos.flush();
             oos.close();
 
-            iOldArraySize = iOldArraySize / 4 + baos.size() / 2 + baos.getAllocatedSize() / 4;
+            iOldArraySize = (iOldArraySize / 4) + (baos.size() / 2) + (baos.getAllocatedSize() / 4);
 
             return baos;
         } catch (Throwable t) {
@@ -525,8 +541,9 @@ public abstract class Writer implements WriterInterface {
         try {
             byte vb[] = serializeToBytes(o);
 
-            if (vb.length == 0)
+            if (vb.length == 0) {
                 return null;
+            }
 
             char vc[];
 
@@ -541,7 +558,7 @@ public abstract class Writer implements WriterInterface {
                 baos.close();
 
                 vb = baos.toByteArray();
-                vc = new char[vb.length * 2 + 1];
+                vc = new char[(vb.length * 2) + 1];
 
                 vc[vb.length * 2] = 'X';
             } else {
@@ -553,7 +570,7 @@ public abstract class Writer implements WriterInterface {
 
                 k += 128;
                 vc[i * 2] = (char) ((k / 16) + 'A');
-                vc[i * 2 + 1] = (char) ((k % 16) + 'A');
+                vc[(i * 2) + 1] = (char) ((k % 16) + 'A');
             }
 
             return new String(vc);
@@ -603,20 +620,20 @@ public abstract class Writer implements WriterInterface {
      */
     public static final Object deserializeFromString(final String s, final boolean bLog) {
         try {
-            if (s != null && s.length() > 0) {
+            if ((s != null) && (s.length() > 0)) {
                 int l = s.length() / 2;
 
                 byte[] vb2 = new byte[l];
                 char[] vc2 = s.toCharArray();
 
                 for (int i = 0; i < l; i++) {
-                    int k = (vc2[i * 2] - 'A') * 16 + (vc2[i * 2 + 1] - 'A');
+                    int k = ((vc2[i * 2] - 'A') * 16) + (vc2[(i * 2) + 1] - 'A');
 
                     vb2[i] = (byte) k;
                     vb2[i] -= 128;
                 }
 
-                if (s.length() % 2 != 0) {
+                if ((s.length() % 2) != 0) {
                     final ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     final byte[] buff = new byte[10240];
 
@@ -635,8 +652,9 @@ public abstract class Writer implements WriterInterface {
                 return deserializeFromBytes(vb2);
             }
 
-            if (bLog)
+            if (bLog) {
                 logger.log(Level.INFO, "Writer Deserializer: initial string was empty");
+            }
 
             return null;
         } catch (Throwable t) {
@@ -648,18 +666,21 @@ public abstract class Writer implements WriterInterface {
     }
 
     @Override
-	public final boolean insert(final long rectime, final Result r, final int iParam, final double mval, final double mmin, final double mmax) {
-        if (Double.isNaN(mval) || Double.isNaN(mmin) || Double.isNaN(mmax) || Double.isInfinite(mval) || Double.isInfinite(mmin) || Double.isInfinite(mmax)) {
+    public final boolean insert(final long rectime, final Result r, final int iParam, final double mval,
+            final double mmin, final double mmax) {
+        if (Double.isNaN(mval) || Double.isNaN(mmin) || Double.isNaN(mmax) || Double.isInfinite(mval)
+                || Double.isInfinite(mmin) || Double.isInfinite(mmax)) {
             logger.log(Level.FINE, " [Writer] ** Skipping : (" + iParam + ") " + r);
             logger.log(Level.FINE, " [Writer] ** Because  : " + mval + ", " + mmin + ", " + mmax);
             return false;
         }
 
-        if (this.iWriteMode == 0 || this.iWriteMode == 1) {
+        if ((this.iWriteMode == 0) || (this.iWriteMode == 1)) {
             BatchProcessor.add(this.sTableName, rectime, r, r.param_name[iParam], mval, mmin, mmax);
-        } else if (this.iWriteMode == 3 || this.iWriteMode == 4) {
+        } else if ((this.iWriteMode == 3) || (this.iWriteMode == 4)) {
             ((MemWriter) this).addData(rectime, r, r.param_name[iParam], mval, mmin, mmax);
-        } else if ((this.iWriteMode >= 5 && this.iWriteMode <= 8) || this.iWriteMode == 11 || this.iWriteMode == 12) {
+        } else if (((this.iWriteMode >= 5) && (this.iWriteMode <= 8)) || (this.iWriteMode == 11)
+                || (this.iWriteMode == 12)) {
             final Integer id = IDGenerator.getId(r, iParam);
 
             if (id == null) {
@@ -670,12 +691,14 @@ public abstract class Writer implements WriterInterface {
 
             IDGenerator.updateLastSeen(id, rectime, mval);
 
-            if (this.iWriteMode == 5 || this.iWriteMode == 6)
+            if ((this.iWriteMode == 5) || (this.iWriteMode == 6)) {
                 BatchProcessor.add(this.sTableName, rectime, id.intValue(), mval, mmin, mmax);
-            else if (this.iWriteMode == 7 || this.iWriteMode == 8)
+            } else if ((this.iWriteMode == 7) || (this.iWriteMode == 8)) {
                 BatchProcessor.add(this.sTableName + "_" + id, (int) (rectime / 1000), mval, mmin, mmax);
-            else
-                BatchProcessor.add(this.sTableName + "_" + nameTransform(r.param_name[iParam]), (int) (rectime / 1000), id.intValue(), mval, mmin, mmax);
+            } else {
+                BatchProcessor.add(this.sTableName + "_" + nameTransform(r.param_name[iParam]), (int) (rectime / 1000),
+                        id.intValue(), mval, mmin, mmax);
+            }
         }
 
         return true;
@@ -689,8 +712,9 @@ public abstract class Writer implements WriterInterface {
      * @return table name suffix
      */
     public static final String nameTransform(final String sName) {
-        if (sName == null || sName.length() == 0)
+        if ((sName == null) || (sName.length() == 0)) {
             return sName;
+        }
 
         final char[] vc = sName.trim().toLowerCase().toCharArray();
 
@@ -698,14 +722,16 @@ public abstract class Writer implements WriterInterface {
 
         char c;
 
-        for (int i = 0; i < vc.length; i++) {
-            c = vc[i];
+        for (char element : vc) {
+            c = element;
 
-            if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')
+            if (((c >= 'a') && (c <= 'z')) || ((c >= '0') && (c <= '9')) || (c == '_')) {
                 sb.append(c);
+            }
 
-            if (sb.length() == sb.capacity())
+            if (sb.length() == sb.capacity()) {
                 return sb.toString();
+            }
         }
 
         return sb.toString();
@@ -718,8 +744,9 @@ public abstract class Writer implements WriterInterface {
      *            cleanup interval
      */
     public final void cleanHash(final long lInterval) {
-        if (this.m == null)
+        if (this.m == null) {
             return;
+        }
 
         synchronized (this.mLock) {
             final long now = NTPDate.currentTimeMillis();
@@ -734,11 +761,12 @@ public abstract class Writer implements WriterInterface {
 
                 ce = me.getValue();
 
-                if (ce.lLastUpdate < now - 2 * lInterval) {
+                if (ce.lLastUpdate < (now - (2 * lInterval))) {
                     ce.checkFlush(now);
 
-                    if (!ce.bSomeData)
+                    if (!ce.bSomeData) {
                         it.remove();
+                    }
                 }
             }
         }
@@ -747,44 +775,32 @@ public abstract class Writer implements WriterInterface {
     /**
      * How to escape a slash
      */
-    private static final char[] ESC_SLASH = new char[] {
-            '\\', '\\'
-    };
+    private static final char[] ESC_SLASH = new char[] { '\\', '\\' };
 
     /**
      * Quote
      */
-    private static final char[] ESC_QUOTE = new char[] {
-            '\'', '\''
-    };
+    private static final char[] ESC_QUOTE = new char[] { '\'', '\'' };
 
     /**
      * Double quote
      */
-    private static final char[] ESC_DQUOTE = new char[] {
-            '\\', '"'
-    };
+    private static final char[] ESC_DQUOTE = new char[] { '\\', '"' };
 
     /**
      * \n
      */
-    private static final char[] ESC_N = new char[] {
-            '\\', 'n'
-    };
+    private static final char[] ESC_N = new char[] { '\\', 'n' };
 
     /**
      * \r
      */
-    private static final char[] ESC_R = new char[] {
-            '\\', '0'
-    };
+    private static final char[] ESC_R = new char[] { '\\', '0' };
 
     /**
      * char(0)
      */
-    private static final char[] ESC_0 = new char[] {
-            '\\', '0'
-    };
+    private static final char[] ESC_0 = new char[] { '\\', '0' };
 
     /**
      * Make a SQL-safe string out of the given parameter
@@ -804,26 +820,26 @@ public abstract class Writer implements WriterInterface {
         for (int i = 0; i < l; i++) {
             c = vc[i];
             switch (c) {
-                case '\\':
-                    sb.append(ESC_SLASH);
-                    break;
-                case '\'':
-                    sb.append(ESC_QUOTE);
-                    break;
-                case '\"':
-                    sb.append(ESC_DQUOTE);
-                    break;
-                case '\n':
-                    sb.append(ESC_N);
-                    break;
-                case '\r':
-                    sb.append(ESC_R);
-                    break;
-                case (char) 0:
-                    sb.append(ESC_0);
-                    break;
-                default:
-                    sb.append(c);
+            case '\\':
+                sb.append(ESC_SLASH);
+                break;
+            case '\'':
+                sb.append(ESC_QUOTE);
+                break;
+            case '\"':
+                sb.append(ESC_DQUOTE);
+                break;
+            case '\n':
+                sb.append(ESC_N);
+                break;
+            case '\r':
+                sb.append(ESC_R);
+                break;
+            case (char) 0:
+                sb.append(ESC_0);
+                break;
+            default:
+                sb.append(c);
             }
         }
 
@@ -838,7 +854,8 @@ public abstract class Writer implements WriterInterface {
      * @param mData
      *            data to write
      */
-    protected static final void savePrevData(final String sTableName, final HashMap<? extends Object, CacheElement> mData) {
+    protected static final void savePrevData(final String sTableName,
+            final HashMap<? extends Object, CacheElement> mData) {
         // TODO : is it still worth to do this ?
     }
 

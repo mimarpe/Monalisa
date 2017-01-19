@@ -1,5 +1,5 @@
 /*
- * $Id: Utils.java 7296 2012-07-12 16:46:09Z ramiro $
+ * $Id: Utils.java 7444 2013-12-21 23:29:53Z ramiro $
  */
 package lia.util;
 
@@ -18,6 +18,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.Socket;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +50,7 @@ import net.jini.core.lookup.ServiceItem;
 public final class Utils {
 
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(Utils.class.getName());
+    private static final Logger logger = Logger.getLogger(Utils.class.getName());
 
     /**
      * A list separated by , or ;
@@ -66,8 +67,9 @@ public final class Utils {
      * @return - The same nice(r) output :) as t.printStackTrace()
      */
     public static final String getStackTrace(Throwable t) {
-        if (t == null)
+        if (t == null) {
             return "Null Stacktrace??";
+        }
 
         final StringWriter sw = new StringWriter();
         t.printStackTrace(new PrintWriter(sw));
@@ -88,6 +90,16 @@ public final class Utils {
         }
     }
 
+    public static final void closeIgnoringException(final Socket s) {
+        if (s != null) {
+            try {
+                s.close();
+            } catch (Throwable ignore) {
+                // ignore
+            }
+        }
+    }
+
     public static final void cancelFutureIgnoreException(Future<?> future, boolean mayInterruptIfRunning) {
         if (future != null) {
             try {
@@ -99,6 +111,113 @@ public final class Utils {
 
     }
 
+    public static final String formatDuration(final long duration, TimeUnit unit) {
+        return formatDuration(duration, unit, false);
+    }
+
+    /**
+     * @param duration
+     * @param unit
+     * @param fractionsOfSecond
+     * @return the time span formatted
+     */
+    public static final String formatDuration(final long duration, TimeUnit unit, boolean fractionsOfSecond) {
+        long nanos = TimeUnit.NANOSECONDS.convert(duration, unit);
+
+        if (nanos <= 0L) {
+            return "0.0 seconds";
+        }
+
+        final StringBuilder sb = new StringBuilder(128);
+        final long days = TimeUnit.NANOSECONDS.toDays(nanos);
+        boolean bAppend = false;
+
+        if (days > 0) {
+            bAppend = true;
+            if (days == 1L) {
+                sb.append("1 day");
+            } else {
+                sb.append(days).append(" days");
+            }
+            nanos -= TimeUnit.DAYS.toNanos(days);
+        }
+
+        if (nanos <= 0) {
+            return (bAppend) ? sb.toString() : "0.0 seconds";
+        }
+
+        final long hours = TimeUnit.NANOSECONDS.toHours(nanos);
+        if (hours > 0) {
+            if (bAppend) {
+                sb.append(" ");
+            }
+            if (hours == 1L) {
+                sb.append("1 hour");
+            } else {
+                sb.append(hours).append(" hours");
+            }
+            bAppend = true;
+            nanos -= TimeUnit.HOURS.toNanos(hours);
+        } else {
+            if (bAppend) {
+                sb.append(" 0 hours");
+            }
+        }
+
+        if (nanos <= 0) {
+            return (bAppend) ? sb.toString() : "0.0 seconds";
+        }
+
+        final long minutes = TimeUnit.NANOSECONDS.toMinutes(nanos);
+        if (minutes > 0) {
+            if (bAppend) {
+                sb.append(" ");
+            }
+            bAppend = true;
+            if (minutes == 1L) {
+                sb.append("1 minute");
+            } else {
+                sb.append(minutes).append(" minutes");
+            }
+            nanos -= TimeUnit.MINUTES.toNanos(minutes);
+        } else {
+            if (bAppend) {
+                sb.append(" 0 minutes");
+            }
+        }
+
+        if (nanos <= 0) {
+            return (bAppend) ? sb.toString() : "0.0 seconds";
+        }
+
+        final long seconds = TimeUnit.NANOSECONDS.toSeconds(nanos);
+        if (seconds >= 0) {
+            if (bAppend) {
+                sb.append(" ");
+            }
+            bAppend = true;
+            sb.append(seconds);
+        }
+
+        if (nanos <= 0) {
+            return (bAppend) ? sb.append((seconds == 1L) ? " second" : " seconds").toString() : "0.0 seconds";
+        }
+
+        if (fractionsOfSecond) {
+            if (!bAppend) {
+                sb.append("0");
+            }
+            bAppend = true;
+            nanos -= TimeUnit.SECONDS.toNanos(seconds);
+            final long millis = TimeUnit.NANOSECONDS.toMillis(nanos);
+
+            sb.append(".").append(millis);
+        }
+
+        return (bAppend) ? sb.append(((seconds == 1L) && !fractionsOfSecond) ? " second" : " seconds").toString()
+                : "0.0 seconds";
+    }
+
     /**
      * Helper function to get the fileds from a comma separated list
      * "corcodil, veverita , bursuc" ===> {"crocodil", "veverita", "bursuc"}
@@ -107,18 +226,20 @@ public final class Utils {
      * @return The fields from a comma separated "record" (list)
      */
     public static final String[] getSplittedListFields(final String list) {
-        if (list == null)
+        if (list == null) {
             return null;
+        }
         String[] pTokens = LIST_SPLIT_PATTERN.split(list);
-        if (pTokens == null || pTokens.length == 0)
+        if ((pTokens == null) || (pTokens.length == 0)) {
             return null;
+        }
 
         // strip blank fields
         // e.g cioara, ; varza ; capra ===> cioara varza capra
         ArrayList<String> nTokens = new ArrayList<String>(pTokens.length);
-        for (int i = 0; i < pTokens.length; i++) {
-            if (pTokens[i] != null && pTokens[i].trim().length() > 0) {
-                nTokens.add(pTokens[i].trim());
+        for (String pToken : pTokens) {
+            if ((pToken != null) && (pToken.trim().length() > 0)) {
+                nTokens.add(pToken.trim());
             }
         }
 
@@ -140,16 +261,18 @@ public final class Utils {
 
         final Map<String, String> ret = new TreeMap<String, String>();
 
-        if (tokens == null || tokens.length == 0)
+        if ((tokens == null) || (tokens.length == 0)) {
             return ret;
+        }
 
         for (final String s : tokens) {
             final int idx = s.indexOf('=');
 
-            if (idx < 0)
+            if (idx < 0) {
                 ret.put(s, s);
-            else
+            } else {
                 ret.put(s.substring(0, idx).trim(), s.substring(idx + 1).trim());
+            }
         }
 
         return ret;
@@ -158,14 +281,13 @@ public final class Utils {
     public static final LookupLocator[] getLUDSs(String lusList) {
         String[] tokens = getSplittedListFields(lusList);
 
-        if (tokens == null || tokens.length < 1) {
+        if ((tokens == null) || (tokens.length < 1)) {
             return null;
         }
 
         ArrayList<LookupLocator> locators = new ArrayList<LookupLocator>(tokens.length);
 
-        for (int i = 0; i < tokens.length; i++) {
-            String host = tokens[i];
+        for (String host : tokens) {
             try {
                 locators.add(new LookupLocator("jini://" + host));
             } catch (java.net.MalformedURLException e) {
@@ -183,15 +305,17 @@ public final class Utils {
     }
 
     public static final <T> T getEntry(final ServiceItem si, final Class<T> entryClass) {
-        if (si == null)
+        if (si == null) {
             return null;
+        }
         final Entry[] attrs = si.attributeSets;
         if (attrs == null) {
             return null;
         }
-        for (int x = 0; x < attrs.length; x++) {
-            if (attrs[x].getClass() == entryClass)
-                return entryClass.cast(attrs[x]);
+        for (Entry attr : attrs) {
+            if (attr.getClass() == entryClass) {
+                return entryClass.cast(attr);
+            }
         }
         return null;
     }
@@ -200,10 +324,11 @@ public final class Utils {
      * returns a char corresponding to the hex digit of the supplied integer.
      */
     private static char charFromHexDigit(int digit) {
-        if ((digit >= 0) && (digit <= 9))
+        if ((digit >= 0) && (digit <= 9)) {
             return (char) (digit + '0');
+        }
 
-        return (char) (digit - 10 + 'a');
+        return (char) ((digit - 10) + 'a');
     }
 
     /**
@@ -227,14 +352,16 @@ public final class Utils {
                 rez.append(charFromHexDigit(i / 16));
                 rez.append(charFromHexDigit(i % 16));
                 rez.append(' ');
-                if (x == 7)
+                if (x == 7) {
                     rez.append(' ');
+                }
             }
             // add padding for last line, if needed
-            for (int x = 0; x < 16 - count; x++) {
+            for (int x = 0; x < (16 - count); x++) {
                 rez.append("   ");
-                if ((x == 7) && (count != 8))
+                if ((x == 7) && (count != 8)) {
                     rez.append(' ');
+                }
             }
             // print ascii
             rez.append(" |");
@@ -313,7 +440,8 @@ public final class Utils {
         final long sTimeNanos = System.nanoTime();
 
         try {
-            sb.append("\n[ Utils ] START [ ExecProc ] @ System Time: ").append(new Date()).append(" / NTPDate Time: ").append(new Date(ntpDate));
+            sb.append("\n[ Utils ] START [ ExecProc ] @ System Time: ").append(new Date()).append(" / NTPDate Time: ")
+                    .append(new Date(ntpDate));
             pro = MLProcess.exec(procs, env, 3 * 60 * 1000);
 
             out = pro.getInputStream();
@@ -325,36 +453,34 @@ public final class Utils {
 
             sb.append("\n\nSTDOUT:\n");
             String line;
-            while (brin.ready() && (line = brin.readLine()) != null) {
+            while (brin.ready() && ((line = brin.readLine()) != null)) {
                 sb.append(line).append("\n");
             }
 
             pro.waitFor();
 
             sb.append("\n\nSTDERR:\n");
-            while (brerr.ready() && (line = brerr.readLine()) != null) {
+            while (brerr.ready() && ((line = brerr.readLine()) != null)) {
                 sb.append(line).append("\n");
             }
             long finishDate = NTPDate.currentTimeMillis();
             sb.append("\n[ Utils ] END [ ExecProc ] dt = [ ")
-              .append(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - sTimeNanos))
-              .append(" ] ms @ System Time: ")
-              .append(new Date())
-              .append(" / NTPDate Time: ")
-              .append(new Date(finishDate));
+                    .append(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - sTimeNanos))
+                    .append(" ] ms @ System Time: ").append(new Date()).append(" / NTPDate Time: ")
+                    .append(new Date(finishDate));
         } catch (Throwable t) {
             long finishTime = NTPDate.currentTimeMillis();
             sb.append("\n[ Utils ] END [ ExecProc ] dt = [ ")
-              .append(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - sTimeNanos))
-              .append(" ] ms @ System Time: ")
-              .append(new Date())
-              .append(" / NTPDate Time: ")
-              .append(new Date(finishTime));
-            sb.append("\n\nGot Exception executing ext command ").append(command).append("\n").append(Utils.getStackTrace(t));
+                    .append(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - sTimeNanos))
+                    .append(" ] ms @ System Time: ").append(new Date()).append(" / NTPDate Time: ")
+                    .append(new Date(finishTime));
+            sb.append("\n\nGot Exception executing ext command ").append(command).append("\n")
+                    .append(Utils.getStackTrace(t));
         } finally {
             try {
-                if (pro != null)
+                if (pro != null) {
                     pro.destroy();
+                }
             } catch (Throwable ignore) {
                 // we could not care less
             }
@@ -368,8 +494,9 @@ public final class Utils {
     }
 
     public static final void addFileContentToStringBuilder(String fileName, StringBuilder sb) {
-        if (sb == null || fileName == null)
+        if ((sb == null) || (fileName == null)) {
             return;
+        }
 
         FileReader fr = null;
         BufferedReader br = null;
@@ -380,8 +507,9 @@ public final class Utils {
             br = new BufferedReader(fr);
             for (;;) {
                 String lin = br.readLine();
-                if (lin == null)
+                if (lin == null) {
                     break;
+                }
                 sb.append(lin + "\n");
             }
             sb.append("\n ####### END File CONTENT for file [ ").append(fileName).append(" ] #######\n");
@@ -475,10 +603,12 @@ public final class Utils {
         int[] ivBase = splitVersion(base);
         int[] ivProbe = splitVersion(probe);
         for (int i = 0; i < Math.min(ivBase.length, ivProbe.length); i++) {
-            if (ivProbe[i] > ivBase[i])
+            if (ivProbe[i] > ivBase[i]) {
                 return 1;
-            if (ivProbe[i] < ivBase[i])
+            }
+            if (ivProbe[i] < ivBase[i]) {
                 return -1;
+            }
         }
         return (ivProbe.length > ivBase.length ? 1 : (ivProbe.length < ivBase.length ? -1 : 0));
     }
@@ -506,9 +636,7 @@ public final class Utils {
         Process p = null;
 
         try {
-            p = MLProcess.exec(new String[] {
-                    "/bin/bash", "-c", command
-            }, 1000 * 100);
+            p = MLProcess.exec(new String[] { "/bin/bash", "-c", command }, 1000 * 100);
 
             p.getOutputStream().close();
 
@@ -568,8 +696,9 @@ public final class Utils {
             final long ss = srcChannel.size();
             final long ds = dstChannel.size();
 
-            if (ss != ds || ss != tr) {
-                throw new IOException("Cannot copy SourceFileSize [ " + ss + " ] DestinationFileSize [ " + ds + " ] Transferred [ " + tr + " ] ");
+            if ((ss != ds) || (ss != tr)) {
+                throw new IOException("Cannot copy SourceFileSize [ " + ss + " ] DestinationFileSize [ " + ds
+                        + " ] Transferred [ " + tr + " ] ");
             }
 
             // set the update time
@@ -591,8 +720,9 @@ public final class Utils {
      *            Result, eResult or a collection of them
      */
     public static void dumpResults(final Object o) {
-        if (o == null)
+        if (o == null) {
             System.err.println("null");
+        }
 
         if (o instanceof Collection<?>) {
             for (Object o2 : (Collection<?>) o) {
@@ -603,29 +733,31 @@ public final class Utils {
         if (o instanceof Result) {
             final Result r = (Result) o;
 
-            System.err.println("Result: " + r.FarmName + " / " + r.ClusterName + " / " + r.NodeName + " @ " + r.time + " ("
-                    + (new Date(r.time) + ")"));
+            System.err.println("Result: " + r.FarmName + " / " + r.ClusterName + " / " + r.NodeName + " @ " + r.time
+                    + " (" + (new Date(r.time) + ")"));
 
-            if (r.param != null && r.param_name != null) {
+            if ((r.param != null) && (r.param_name != null)) {
                 for (int i = 0; i < r.param.length; i++) {
                     System.err.println("  " + r.param_name[i] + "\t=\t" + r.param[i]);
                 }
-            } else
+            } else {
                 System.err.println("  <null param or param_name>");
+            }
         }
 
         if (o instanceof eResult) {
             final eResult r = (eResult) o;
 
-            System.err.println("eResult: " + r.FarmName + " / " + r.ClusterName + " / " + r.NodeName + " @ " + r.time + " ("
-                    + (new Date(r.time) + ")"));
+            System.err.println("eResult: " + r.FarmName + " / " + r.ClusterName + " / " + r.NodeName + " @ " + r.time
+                    + " (" + (new Date(r.time) + ")"));
 
-            if (r.param != null && r.param_name != null) {
+            if ((r.param != null) && (r.param_name != null)) {
                 for (int i = 0; i < r.param.length; i++) {
                     System.err.println("  " + r.param_name[i] + "\t=\t " + r.param[i]);
                 }
-            } else
+            } else {
                 System.err.println("  <null param or param_name>");
+            }
         }
     }
 
@@ -634,7 +766,7 @@ public final class Utils {
         if (a == b) {
             return true;
         }
-        if (a == null || b == null) {
+        if ((a == null) || (b == null)) {
             return false;
         }
         return a.equals(b);
@@ -674,20 +806,21 @@ public final class Utils {
     // args [ 3 ] = ;;; ; ; ;; , cioara, ; varza ; capra ===> [ 3 ] tokens ===>
     // cioara varza capra
     public static final void main(String args[]) {
-        if (args == null || args.length == 0)
+        if ((args == null) || (args.length == 0)) {
             return;
+        }
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < args.length; i++) {
             sb.append("\n");
             sb.append(" args [ ").append(i).append(" ] = ").append(args[i]).append(" ===> ");
             String[] tokens = getSplittedListFields(args[i]);
-            if (tokens == null || tokens.length == 0) {
+            if ((tokens == null) || (tokens.length == 0)) {
                 sb.append(" !!! No tokens !!!! ");
             } else {
                 sb.append(" [ ").append(tokens.length).append(" ] tokens ===> ");
-                for (int j = 0; j < tokens.length; j++) {
-                    sb.append("\t").append(tokens[j]);
+                for (String token : tokens) {
+                    sb.append("\t").append(token);
                 }
             }// else
         }// for ( i )

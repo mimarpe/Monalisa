@@ -1,5 +1,5 @@
 /*
- * $Id: CienaSNCFilter.java 7210 2011-12-05 10:28:09Z ramiro $
+ * $Id: CienaSNCFilter.java 7419 2013-10-16 12:56:15Z ramiro $
  */
 package lia.Monitor.ciena.circuits;
 
@@ -26,7 +26,7 @@ public class CienaSNCFilter extends GenericMLFilter {
      */
     private static final long serialVersionUID = 1428818528174717140L;
     /** Logger used by this class */
-    private static final transient Logger logger = Logger.getLogger(CienaSNCFilter.class.getName());
+    private static final Logger logger = Logger.getLogger(CienaSNCFilter.class.getName());
     /**
      * execution rate in ms
      */
@@ -34,6 +34,7 @@ public class CienaSNCFilter extends GenericMLFilter {
 
     static {
         AppConfig.addNotifier(new AppConfigChangeListener() {
+            @Override
             public void notifyAppConfigChanged() {
                 reloadConf();
             }
@@ -56,15 +57,18 @@ public class CienaSNCFilter extends GenericMLFilter {
         super(farmName);
     }
 
+    @Override
     public String getName() {
         // TODO Auto-generated method stub
         return "CienaSNCFilter";
     }
 
+    @Override
     public long getSleepTime() {
         return SLEEP_TIME.get();
     }
 
+    @Override
     public monPredicate[] getFilterPred() {
         return null;
     }
@@ -72,15 +76,18 @@ public class CienaSNCFilter extends GenericMLFilter {
     /**
      * @param o  
      */
+    @Override
     public void notifyResult(Object o) {
         //not used
     }
 
+    @Override
     public Object expressResults() {
         CircuitsFetcherTask.getInstance();
 
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, " [ CienaSNCFilter ] [ expressResults ] All nodes ... " + CircuitsHolder.getInstance().getAllNodeNames());
+            logger.log(Level.FINER, " [ CienaSNCFilter ] [ expressResults ] All nodes ... "
+                    + CircuitsHolder.getInstance().getAllNodeNames());
         }
 
         byte[] ret = null;
@@ -88,11 +95,15 @@ public class CienaSNCFilter extends GenericMLFilter {
         try {
             long t1 = System.nanoTime();
             ret = Utils.writeCompressedObject(CircuitsHolder.getInstance().getAllTL1Circuits());
-            if(logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, "[ OsrpTopoFilter ] writeCompressedObject sncs. DT = " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t1));
+            if (logger.isLoggable(Level.FINE)) {
+                logger.log(
+                        Level.FINE,
+                        "[ OsrpTopoFilter ] writeCompressedObject sncs. DT = "
+                                + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t1));
             }
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ OsrpTopoFilter ] [ expressResults ] exception trying to fetch the OsrpTL1Topo", t);
+            logger.log(Level.WARNING,
+                    " [ OsrpTopoFilter ] [ expressResults ] exception trying to fetch the OsrpTL1Topo", t);
         }
 
         return ret;
@@ -100,4 +111,3 @@ public class CienaSNCFilter extends GenericMLFilter {
     }
 
 }
-

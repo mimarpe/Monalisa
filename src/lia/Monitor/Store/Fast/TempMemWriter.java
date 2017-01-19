@@ -1,5 +1,5 @@
 /*
- * $Id: TempMemWriter.java 7128 2011-03-14 09:45:52Z costing $
+ * $Id: TempMemWriter.java 7533 2014-09-09 14:29:58Z costing $
  */
 package lia.Monitor.Store.Fast;
 
@@ -14,6 +14,7 @@ import lia.Monitor.Store.DataSplitter;
 import lia.Monitor.monitor.AppConfig;
 import lia.Monitor.monitor.ExtendedResult;
 import lia.Monitor.monitor.Result;
+import lia.Monitor.monitor.TimestampedResult;
 import lia.util.ntp.NTPDate;
 import lia.util.threads.MonALISAExecutors;
 
@@ -26,7 +27,7 @@ public final class TempMemWriter extends Writer implements TempMemWriterInterfac
 	/**
 	 * Actual data
 	 */
-	List<Object>		lData;
+	List<TimestampedResult>		lData;
 
 	/**
 	 * Smallest timestamp
@@ -67,7 +68,7 @@ public final class TempMemWriter extends Writer implements TempMemWriterInterfac
 	 * 
 	 */
 	public TempMemWriter() {
-		lData = new LinkedList<Object>();
+		lData = new LinkedList<TimestampedResult>();
 
 		lMinTime = lMaxTime = NTPDate.currentTimeMillis();
 
@@ -123,9 +124,9 @@ public final class TempMemWriter extends Writer implements TempMemWriterInterfac
 	/**
 	 * @return all values
 	 */
-	public final Vector<Object> getDataAsVector() {
+	public final Vector<TimestampedResult> getDataAsVector() {
 		synchronized (lData) {
-			final Vector<Object> v = new Vector<Object>(lData.size());
+			final Vector<TimestampedResult> v = new Vector<TimestampedResult>(lData.size());
 			v.addAll(lData);
 			lServedRequests++;
 			return v;

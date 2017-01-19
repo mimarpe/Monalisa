@@ -24,14 +24,17 @@ import lia.util.ntp.NTPDate;
 
 public class monIDS1 extends cmdExec implements MonitoringModule {
 
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 7688347007276621253L;
+
+    /** The Logger */
+    private static final Logger logger = Logger.getLogger(monIDS1.class.getName());
+
     private static final String LOW_ATTACKS = "LowLevelAttacks";
     private static final String MEDIUM_ATACKS = "MediumLevelAtacks";
     private static final String HIGH_ATTACKS = "HighLevelAttacks";
-    /** Logger Name */
-    private static final String COMPONENT = "lia.Monitor.modules.monIDS1";
-
-    /** The Logger */
-    private static final Logger logger = Logger.getLogger(COMPONENT);
 
     static public String ModuleName = "monIDS1";
 
@@ -43,9 +46,9 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
 
     //Snort stats stuff
     private String pgrepCmd;
-    private String psSnortCmd; 
+    private String psSnortCmd;
     private String snortPID;
-    private static final int dtSnortPIDUpdate = 1*60*60*1000;//3h
+    private static final int dtSnortPIDUpdate = 1 * 60 * 60 * 1000;//3h
     private long lastSnortPIDUpdate;
 
     //last time this module was called
@@ -55,12 +58,11 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
 
     private static String localAddress;
     private long logOffset;
-    
 
     static {
         localAddress = AppConfig.getProperty("lia.Monitor.useIPaddress", "127.0.0.1");
 
-        if (localAddress == null || localAddress.length() == 0) {
+        if ((localAddress == null) || (localAddress.length() == 0)) {
             try {
                 localAddress = InetAddress.getLocalHost().getHostAddress();
             } catch (Throwable t) {
@@ -76,10 +78,11 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
         info.setState(0);
         lastCall = NTPDate.currentTimeMillis();
         info.lastMeasurement = lastCall;
-        this.lastSnortPIDUpdate=lastCall;
+        this.lastSnortPIDUpdate = lastCall;
         isRepetitive = true;
     }
-    
+
+    @Override
     public MonModuleInfo init(MNode Node, String arg) {
         this.Node = Node;
         //init module arguments 
@@ -93,40 +96,45 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
      * Try to find the snort porcess PID in order to report memory/cpu usage data
      */
     private void init_snortstats() {
-        
+
         //init to null, in case the PID is to be re-read
         this.snortPID = null;
-        
+
         String mlHome = null;
         StringBuilder pgrepCmd = new StringBuilder();
         //FIXME - o more reliable rule for detecting snort process PID
         pgrepCmd.append("pgrep -x -f \".*snort.*-A fast.*\"");
 
         mlHome = AppConfig.getProperty("MonaLisa_HOME", null);
-        if (mlHome == null || mlHome.length() == 0) {
+        if ((mlHome == null) || (mlHome.length() == 0)) {
             logger.log(Level.WARNING, "monIDS Could not determine MonaLisa_HOME.Try to use *pgrep* from $PATH");
-        } else
+        } else {
             pgrepCmd.insert(0, mlHome + "/bin/");
+        }
 
         this.pgrepCmd = pgrepCmd.toString();
         BufferedReader buff = procOutput(this.pgrepCmd);
 
-        if (logger.isLoggable(Level.FINEST))
+        if (logger.isLoggable(Level.FINEST)) {
             logger.log(Level.FINEST, "Execute *pgrep* cmd: " + this.pgrepCmd);
+        }
 
         if (buff != null) {
             try {
                 //just  first PID is of interest
                 snortPID = buff.readLine();
                 //anything else on output?
-                while (buff.readLine() != null)
+                while (buff.readLine() != null) {
                     ;
+                }
                 //be gentle and wait for process to finish
                 int exitValue = pro.waitFor();
-                if (logger.isLoggable(Level.FINEST))
+                if (logger.isLoggable(Level.FINEST)) {
                     logger.log(Level.FINEST, " pgrep exitvalue: " + exitValue);
-                if (exitValue != 0)
+                }
+                if (exitValue != 0) {
                     throw new Exception("pgrep non-zero exitValue=" + exitValue);
+                }
             } catch (Throwable t) {
                 //Oh,no.. WTF
             }
@@ -135,7 +143,7 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
 
         if (snortPID == null) {
             //severe init error, cannot continue..
-            psSnortCmd=null;
+            psSnortCmd = null;
             logger.log(Level.SEVERE, "Cannot find the snort PID. Is it running?");
             info.addErrorCount();
             info.setState(1); // error
@@ -148,16 +156,18 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
     }
 
     private void init_args(String list) {
-        if (list == null || list.length() == 0)
+        if ((list == null) || (list.length() == 0)) {
             return;
+        }
         String params[] = list.split("(\\s)*,(\\s)*");
-        if (params == null || params.length == 0)
+        if ((params == null) || (params.length == 0)) {
             return;
+        }
 
-        for (int i = 0; i < params.length; i++) {
-            int itmp = params[i].indexOf("SnortAlerts");
+        for (String param : params) {
+            int itmp = param.indexOf("SnortAlerts");
             if (itmp != -1) {
-                String tmp = params[i].substring(itmp + "SnortAlerts".length()).trim();
+                String tmp = param.substring(itmp + "SnortAlerts".length()).trim();
                 int iq = tmp.indexOf("=");
                 alertfile = tmp.substring(iq + 1).trim();
             }
@@ -174,9 +184,7 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
         File f = new File(alertfile);
         if (!f.isFile() || !f.canRead()) {
             //severe init error, cannot continue..
-            logger
-                    .log(Level.SEVERE,
-                            "Snort alerts log-file could not be found or is not readable by monalisa user ...");
+            logger.log(Level.SEVERE, "Snort alerts log-file could not be found or is not readable by monalisa user ...");
             cmd = null;
             info.addErrorCount();
             info.setState(1); // error
@@ -189,20 +197,22 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
 
     }
 
-    
-
+    @Override
     public String[] ResTypes() {
         return info.ResTypes;
     }
 
+    @Override
     public String getOsName() {
         return OsName;
     }
 
+    @Override
     public MonModuleInfo getInfo() {
         return info;
     }
 
+    @Override
     public Object doProcess() throws Exception {
 
         // can't run this module, init failed
@@ -211,8 +221,9 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
         }
 
         long ls = NTPDate.currentTimeMillis();
-        if (ls <= lastCall)
+        if (ls <= lastCall) {
             return null;
+        }
 
         /*
          * report Snort alerts
@@ -227,11 +238,13 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
             info.setErrorDesc("Cannot get last alerts" + t);
         }
 
-        if (o == null || !(o instanceof Hashtable))
+        if ((o == null) || !(o instanceof Hashtable)) {
             return null;
+        }
         Hashtable allAlerts = (Hashtable) o;
-        if (allAlerts.size() == 0)
+        if (allAlerts.size() == 0) {
             return null;
+        }
 
         Vector retV = new Vector();
         //Iterate over the priorities
@@ -240,12 +253,14 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
             // Get priority
             String priority = (String) it.next();
             o = allAlerts.get(priority);
-            if (o == null || !(o instanceof Hashtable))
+            if ((o == null) || !(o instanceof Hashtable)) {
                 return null;
+            }
 
             Hashtable alerts = (Hashtable) o;
-            if (alerts.size() == 0)
+            if (alerts.size() == 0) {
                 continue;
+            }
 
             //Iterate over the values in the map
             Iterator iter = alerts.keySet().iterator();
@@ -266,7 +281,7 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
                 r.time = ls;
                 double dt = (ls - lastCall) / 1000;
                 //attacks/s
-                r.addSet("Rate", (double) count / dt);
+                r.addSet("Rate", count / dt);
                 retV.add(r);
             }
         }
@@ -276,14 +291,14 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
          */
         //snort cpu,mem stats
         double[] snortPMstats;
-        
+
         // if alert file is log-rotated, the snort process changes its PID, so
         // we need to grep it again
-        if (ls - lastSnortPIDUpdate > dtSnortPIDUpdate) {
+        if ((ls - lastSnortPIDUpdate) > dtSnortPIDUpdate) {
             init_snortstats();
             lastSnortPIDUpdate = ls;
         }
-        
+
         if (psSnortCmd == null) {
             info.addErrorCount();
             info.setState(1); // error
@@ -294,10 +309,11 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
             }
             try {
                 BufferedReader buff1 = procOutput(psSnortCmd);
-                
+
                 if (buff1 == null) {
-                    if (pro != null)
+                    if (pro != null) {
                         pro.destroy();
+                    }
                     if (logger.isLoggable(Level.FINE)) {
                         logger.log(Level.FINE, "monIDS Exception while processing the buffer! Buffer is NULL!");
                     }
@@ -326,7 +342,7 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
         if (logger.isLoggable(Level.FINEST)) {
             logger.log(Level.FINEST, retV.toString());
         }
-        if (retV != null && retV.size() > 0) {
+        if ((retV != null) && (retV.size() > 0)) {
             return retV;
         }
         return null;
@@ -403,13 +419,15 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
             logOffset = raf.getFilePointer();
             raf.close();
         } else if (length < logOffset) {
-            if (logger.isLoggable(Level.WARNING))
+            if (logger.isLoggable(Level.WARNING)) {
                 logger.log(Level.WARNING, "[Log file truncated or log-rotated. Restarting ]");
+            }
             logOffset = 0;
         }
 
-        if (logger.isLoggable(Level.FINEST))
+        if (logger.isLoggable(Level.FINEST)) {
             logger.log(Level.FINEST, "LogOffset:" + logOffset);
+        }
         //else  logOffset = length;                
         return pr;
     }
@@ -417,7 +435,7 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
     private static String getLocalIP() {
         String localAddress = AppConfig.getProperty("lia.Monitor.useIPaddress", null);
 
-        if (localAddress == null || localAddress.length() == 0) {
+        if ((localAddress == null) || (localAddress.length() == 0)) {
             try {
                 localAddress = InetAddress.getLocalHost().getHostAddress();
             } catch (Throwable t) {
@@ -446,41 +464,49 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
                 // not a normal EOS
                 return null;
             }
-            if (line == null)
+            if (line == null) {
                 break;
+            }
             StringTokenizer st = new StringTokenizer(line, " \t");
 
             // time
-            if (!st.hasMoreTokens())
+            if (!st.hasMoreTokens()) {
                 continue;
+            }
             String ETIME = st.nextToken();
-            if (ETIME == null || ETIME.length() == 0)
+            if ((ETIME == null) || (ETIME.length() == 0)) {
                 continue;
+            }
             long crtETime = ParseTime(ETIME);
-            if (retETime < crtETime)
+            if (retETime < crtETime) {
                 retETime = crtETime;
+            }
 
             if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, "MAX ETime " + retETime);
             }
 
             // time
-            if (!st.hasMoreTokens())
+            if (!st.hasMoreTokens()) {
                 continue;
+            }
             String TIME = st.nextToken();
-            if (TIME == null || TIME.length() == 0)
+            if ((TIME == null) || (TIME.length() == 0)) {
                 continue;
+            }
             timeSum += ParseTime(TIME);
             if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, "Sum CPU_Time " + timeSum);
             }
 
             //          pmem, read it only once
-            if (!st.hasMoreTokens() || pMem > 0)
+            if (!st.hasMoreTokens() || (pMem > 0)) {
                 continue;
+            }
             String sPMEM = st.nextToken();
-            if (sPMEM == null || sPMEM.length() == 0)
+            if ((sPMEM == null) || (sPMEM.length() == 0)) {
                 continue;
+            }
             pMem = Double.valueOf(sPMEM).doubleValue();
             if (logger.isLoggable(Level.FINEST)) {
                 logger.log(Level.FINEST, "%MEM " + pMem);
@@ -497,8 +523,9 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
 
     //days-hh:mm:ss
     private long ParseTime(String timeS) {
-        if (timeS == null || timeS.length() == 0)
+        if ((timeS == null) || (timeS.length() == 0)) {
             return 0;
+        }
 
         long sum = 0;
 
@@ -522,7 +549,8 @@ public class monIDS1 extends cmdExec implements MonitoringModule {
                 logger.log(Level.FINEST, "monIDS1 ParseTime = [ " + sDays + " - " + sHours + ":" + sMinutes + ":"
                         + sSeconds + " ]");
             }
-            sum = lDays * 24 * 60 * 60 * 1000 + lHours * 60 * 60 * 1000 + lMinutes * 60 * 1000 + lSeconds * 1000;
+            sum = (lDays * 24 * 60 * 60 * 1000) + (lHours * 60 * 60 * 1000) + (lMinutes * 60 * 1000)
+                    + (lSeconds * 1000);
 
         }
         return sum;
