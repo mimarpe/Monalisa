@@ -46,29 +46,12 @@ import lia.Monitor.Farm.Conf.CCluster;
 import lia.Monitor.Farm.Conf.CNode;
 import lia.Monitor.Farm.Conf.CParam;
 import lia.Monitor.Farm.Conf.ConfVerifier;
-import lia.Monitor.Filters.AliEnFilter;
 import lia.Monitor.Filters.ApacheWatcher;
-import lia.Monitor.Filters.CMSFilter;
-import lia.Monitor.Filters.CienaAlarmTrigger;
-import lia.Monitor.Filters.CrabFilter;
-import lia.Monitor.Filters.DC04Filter;
-import lia.Monitor.Filters.FDTFilter;
-import lia.Monitor.Filters.LisaFDTFilter;
-import lia.Monitor.Filters.LocalMonitorFilter;
-import lia.Monitor.Filters.MFilter2;
-import lia.Monitor.Filters.MLMemWatcher;
-import lia.Monitor.Filters.MLPingWatcher;
-import lia.Monitor.Filters.MemoryLeakProducer;
 import lia.Monitor.Filters.RepositoryWatcher;
-import lia.Monitor.Filters.TriggerAgent;
-import lia.Monitor.Filters.VrvsRestartTrigger;
 import lia.Monitor.JiniSerFarmMon.RegFarmMonitor;
 import lia.Monitor.Store.TransparentStoreFactory;
-import lia.Monitor.ciena.circuits.CienaSNCFilter;
 import lia.Monitor.ciena.eflow.EFlowStatsConsumer;
 import lia.Monitor.ciena.eflow.EFlowStatsMgr;
-import lia.Monitor.ciena.eflow.VCGServiceCheckFilter;
-import lia.Monitor.ciena.osrp.OsrpTopoFilter;
 import lia.Monitor.monitor.AccountingResult;
 import lia.Monitor.monitor.AppConfig;
 import lia.Monitor.monitor.AppConfigChangeListener;
@@ -125,12 +108,13 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             user = System.getProperty("user.name");
         } catch (Throwable t) {
             user = "user.name";
-            logger.log(Level.SEVERE, "[ FarmMonitor ] [ HANDLED ] Unable to fetch user.name from env variables. Cause:", t);
+            logger.log(Level.SEVERE,
+                    "[ FarmMonitor ] [ HANDLED ] Unable to fetch user.name from env variables. Cause:", t);
         }
 
         username = user;
     }
-    
+
     public static String hostname = "localhost";
 
     public static final String MON_UNKOWN_NAME = "monUNKNOWN";
@@ -206,10 +190,12 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
     SimpleAxisServer sas;
 
-    public static final String EXTENDED_CMD_STATUS = Utils.getPromptLikeBinShCmd("env") + Utils.getPromptLikeBinShCmd("set")
-            + Utils.getPromptLikeBinShCmd("pwd") + Utils.getPromptLikeBinShCmd("hostname") + Utils.getPromptLikeBinShCmd("hostname -f")
-            + Utils.getPromptLikeBinShCmd("hostname -i") + Utils.getPromptLikeBinShCmd("free -t -m") + Utils.getPromptLikeBinShCmd("uname -a")
-            + Utils.getPromptLikeBinShCmd("uptime") + Utils.getPromptLikeBinShCmd("/sbin/ifconfig");
+    public static final String EXTENDED_CMD_STATUS = Utils.getPromptLikeBinShCmd("env")
+            + Utils.getPromptLikeBinShCmd("set") + Utils.getPromptLikeBinShCmd("pwd")
+            + Utils.getPromptLikeBinShCmd("hostname") + Utils.getPromptLikeBinShCmd("hostname -f")
+            + Utils.getPromptLikeBinShCmd("hostname -i") + Utils.getPromptLikeBinShCmd("free -t -m")
+            + Utils.getPromptLikeBinShCmd("uname -a") + Utils.getPromptLikeBinShCmd("uptime")
+            + Utils.getPromptLikeBinShCmd("/sbin/ifconfig");
 
     // it should be synch if data receivers may be added automagically .... keep it simple and faster as possible
     private DataReceiver[] receivers;
@@ -237,7 +223,10 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 bIsVRVS = true;
             }
         } catch (Throwable t) {
-            logger.log(Level.INFO, " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if running in EVO/VRVS environment", t);
+            logger.log(
+                    Level.INFO,
+                    " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if running in EVO/VRVS environment",
+                    t);
             bIsVRVS = false;
         }
 
@@ -247,15 +236,20 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                     bIsVRVS = true;
                 }
             } catch (Throwable t) {
-                logger.log(Level.INFO, " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if running in EVO/VRVS environment", t);
+                logger.log(
+                        Level.INFO,
+                        " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if running in EVO/VRVS environment",
+                        t);
                 bIsVRVS = false;
             }
         }
 
         try {
-            bShouldExportRMIInterface = AppConfig.getb("lia.Monitor.Farm.FarmMonitor.shouldExportRMIInterface", bIsVRVS);
+            bShouldExportRMIInterface = AppConfig
+                    .getb("lia.Monitor.Farm.FarmMonitor.shouldExportRMIInterface", bIsVRVS);
         } catch (Throwable t) {
-            logger.log(Level.INFO, " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if shouldExportRMIInterface", t);
+            logger.log(Level.INFO,
+                    " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if shouldExportRMIInterface", t);
             bShouldExportRMIInterface = false;
         }
 
@@ -263,7 +257,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         try {
             bdisableConfVerifier = AppConfig.getb("lia.Monitor.Farm.FarmMonitor.disableConfVerifier", false);
         } catch (Throwable t) {
-            logger.log(Level.INFO, " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if disableConfVerifier", t);
+            logger.log(Level.INFO,
+                    " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if disableConfVerifier", t);
             bdisableConfVerifier = false;
         }
 
@@ -272,7 +267,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         isVRVSFarm = bIsVRVS;
         shouldExportRMIInterface = bShouldExportRMIInterface;
 
-        logger.log(Level.INFO, " [ FarmMonitor ] shouldExportRMIInterface: " + shouldExportRMIInterface + " EVO env: " + isVRVSFarm);
+        logger.log(Level.INFO, " [ FarmMonitor ] shouldExportRMIInterface: " + shouldExportRMIInterface + " EVO env: "
+                + isVRVSFarm);
     }
 
     private final AtomicBoolean shouldUpdate = new AtomicBoolean(false);
@@ -283,7 +279,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
     private static final BlockingQueue<Object> rtResults;
 
     /* Other dbStores from where to gather data */
-    private Vector<dbStore> other_dbStores = new Vector<dbStore>();
+    private final Vector<dbStore> other_dbStores = new Vector<dbStore>();
 
     public static String MLStatFile = null;
 
@@ -302,7 +298,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         }
 
         if (serviceHome == null) {
-            System.err.println("[ FarmMonitor ] Cannot determine lia.Monitor.Farm.HOME env variable ... ML_SER script broken?");
+            System.err
+                    .println("[ FarmMonitor ] Cannot determine lia.Monitor.Farm.HOME env variable ... ML_SER script broken?");
             System.exit(2);
         }
 
@@ -334,19 +331,23 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         super(new RCSF(), new RSSF(), shouldExportRMIInterface);
 
         final String prevWrapConvigValue = AppConfig.setProperty("lia.util.MLProcess.doNotUseWrapper", "true");
-        logger.log(Level.INFO, "Trying check for new versions of scripts ... prevVal for lia.util.MLProcess.doNotUseWrapper = " + prevWrapConvigValue);
+        logger.log(Level.INFO,
+                "Trying check for new versions of scripts ... prevVal for lia.util.MLProcess.doNotUseWrapper = "
+                        + prevWrapConvigValue);
         if (!compareScriptVersion(CMD_WRAPPER_SCRIPT_NAME)) {
             logger.log(Level.INFO, "Updating script: " + CMD_WRAPPER_SCRIPT_NAME);
             try {
                 final boolean success = ServiceUpdaterHelper.updateScript(CMD_WRAPPER_SCRIPT_NAME);
                 if (success) {
-                    logger.log(Level.INFO, "[ FarmMonitor ] The script: " + CMD_WRAPPER_SCRIPT_NAME + " was udpated succesfully");
+                    logger.log(Level.INFO, "[ FarmMonitor ] The script: " + CMD_WRAPPER_SCRIPT_NAME
+                            + " was udpated succesfully");
                 } else {
                     logger.log(Level.WARNING, "[ FarmMonitor ] Unable to update the script: " + CMD_WRAPPER_SCRIPT_NAME);
                 }
             } catch (Throwable t) {
                 AppConfig.setProperty("lia.util.MLProcess.doNotUseWrapper", "true");
-                logger.log(Level.WARNING, "Unable to update script: " + CMD_WRAPPER_SCRIPT_NAME + ". Will not use this wrapper. Cause:", t);
+                logger.log(Level.WARNING, "Unable to update script: " + CMD_WRAPPER_SCRIPT_NAME
+                        + ". Will not use this wrapper. Cause:", t);
             }
         } else {
             if (logger.isLoggable(Level.FINE)) {
@@ -375,13 +376,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         // since 1.4.0
         // ************************
         try {
-            PropertiesUtil.addModifyPropertyFile(new File(Farm_home + File.separator + "ml.properties"),
-                                                 new File(Farm_home),
-                                                 "lia.Monitor.use_epgsqldb",
-                                                 "true",
-                                                 "# Use embedded PostgreSQL",
-                                                 false,
-                                                 true);
+            PropertiesUtil.addModifyPropertyFile(new File(Farm_home + File.separator + "ml.properties"), new File(
+                    Farm_home), "lia.Monitor.use_epgsqldb", "true", "# Use embedded PostgreSQL", false, true);
         } catch (Throwable t) {
         }
 
@@ -408,8 +404,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             cfgFiles.add(args[i]);
         }
 
-        logger.log(Level.INFO, "\n\nServiceName: " + FarmName + "\nMonaLisa Version: " + MonaLisa_version + " [ " + MonaLisa_vdate + " ]"
-                + "\nMonaLisa_HOME=" + MonaLisa_home + "\n");
+        logger.log(Level.INFO, "\n\nServiceName: " + FarmName + "\nMonaLisa Version: " + MonaLisa_version + " [ "
+                + MonaLisa_vdate + " ]" + "\nMonaLisa_HOME=" + MonaLisa_home + "\n");
 
         final String forceIP = AppConfig.getProperty("lia.Monitor.useIPaddress");
 
@@ -427,7 +423,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             FileWriter fw = null;
 
             try {
-                if (MLStatFile != null && MLStatFile.length() > 0) {
+                if ((MLStatFile != null) && (MLStatFile.length() > 0)) {
                     fw = new FileWriter(MLStatFile);
                     bw = new BufferedWriter(fw);
 
@@ -435,7 +431,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                     status.append("\nMonALISA_Version = ").append(MonaLisa_version);
                     status.append("\nMonALISA_VDate = ").append(MonaLisa_vdate);
                     status.append("VoModulesDir = ").append(VoModulesDir);
-                    status.append("tcpServer_Port = ").append((Cache.server != null) ? "" + Cache.server.lis_port : "N/A");
+                    status.append("tcpServer_Port = ").append(
+                            (Cache.server != null) ? "" + Cache.server.lis_port : "N/A");
                     status.append("storeType = ").append(TransparentStoreFactory.getStoreType());
 
                     bw.write(status.toString());
@@ -443,7 +440,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                     logger.log(Level.WARNING, "Could not write tcpServer_Port to MLStatFile [ " + MLStatFile + " ]");
                 }
             } catch (Throwable tml) {
-                logger.log(Level.WARNING, "Could not write current status to MLStatFile: " + MLStatFile + " Cause:", tml);
+                logger.log(Level.WARNING, "Could not write current status to MLStatFile: " + MLStatFile + " Cause:",
+                        tml);
             } finally {
                 if (bw != null) {
                     try {
@@ -496,9 +494,9 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
             try {
                 String subjToAdd = getStandardEmailSubject();
-                MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch", new String[] {
-                    "mlstatus@monalisa.cern.ch"
-                }, " [ usr_code update status ] @ " + subjToAdd, mailBody.toString());
+                MailFactory.getMailSender().sendMessage("mlstatus@monalisa.cern.ch",
+                        new String[] { "mlstatus@monalisa.cern.ch" }, " [ usr_code update status ] @ " + subjToAdd,
+                        mailBody.toString());
             } catch (Throwable t1) {
             }
 
@@ -550,9 +548,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             // AXIS
             boolean wsStarted = true;
             try {
-                startSimpleAxisServer(new String[] {
-                        "-p", wsdl_port
-                });
+                startSimpleAxisServer(new String[] { "-p", wsdl_port });
                 // sas.setDoThreads (false);
             } catch (Throwable t) {
                 wsStarted = false;
@@ -568,12 +564,12 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                     final ClassLoader classLoader = getClass().getClassLoader();
                     final URL url = classLoader.getResource("lia/Monitor/Farm/deploy.wsdd");
                     AdminClient adm = new AdminClient();
-                    adm.process(new Options(new String[] {
-                            "-p", wsdl_port, "-h", cache.getIPAddress()
-                    }), url.openStream());
+                    adm.process(new Options(new String[] { "-p", wsdl_port, "-h", cache.getIPAddress() }),
+                            url.openStream());
                 } catch (Throwable t) {
                     wsDeployed = false;
-                    logger.log(Level.WARNING, " Deploy [ " + cache.getIPAddress() + ":" + wsdl_port + " ] FAILED! Error: ", t);
+                    logger.log(Level.WARNING, " Deploy [ " + cache.getIPAddress() + ":" + wsdl_port
+                            + " ] FAILED! Error: ", t);
                 }
 
                 if (wsDeployed) {
@@ -585,16 +581,18 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
                     try {
 
-                        if (MLStatFile != null && MLStatFile.length() > 0) {
+                        if ((MLStatFile != null) && (MLStatFile.length() > 0)) {
                             fw = new FileWriter(MLStatFile, true);
                             bw = new BufferedWriter(fw);
                             bw.write("wsdl_Port = " + wsdl_port + "\n");
                         } else {
-                            logger.log(Level.WARNING, " [ Start Axis Server ] [ HANDLED ] Could not write wsdl_Port to MLStatFile [ " + MLStatFile
-                                    + " ]");
+                            logger.log(Level.WARNING,
+                                    " [ Start Axis Server ] [ HANDLED ] Could not write wsdl_Port to MLStatFile [ "
+                                            + MLStatFile + " ]");
                         }
                     } catch (Throwable tml) {
-                        logger.log(Level.WARNING, " [ Start Axis Server ] Could not write wsdl_Port to MLStatFile [ " + MLStatFile + " ]", tml);
+                        logger.log(Level.WARNING, " [ Start Axis Server ] Could not write wsdl_Port to MLStatFile [ "
+                                + MLStatFile + " ]", tml);
                     } finally {
                         if (bw != null) {
                             try {
@@ -647,9 +645,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
                     try {
                         // use the fully qualified class name here to be free to not include Tomcat in the distribution
-                        org.apache.catalina.startup.Bootstrap.main(new String[] {
-                            "start"
-                        });
+                        org.apache.catalina.startup.Bootstrap.main(new String[] { "start" });
                     } catch (Throwable t) {
                         logger.log(Level.WARNING, " [ FarmMonitor ] Cannot start Tomcat", t);
                     }
@@ -668,10 +664,11 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             }
         }
 
-        if (!disableConfVerifier && modulesTimeoutConfig.size() > 0) {
+        if (!disableConfVerifier && (modulesTimeoutConfig.size() > 0)) {
             try {
-                logger.log(Level.INFO, " [ FarmMonitor ] There are " + modulesTimeoutConfig.size() + " timeout modules [ "
-                        + modulesTimeoutConfig.keySet().toString() + " ] configured; will start ConfVerifier");
+                logger.log(Level.INFO, " [ FarmMonitor ] There are " + modulesTimeoutConfig.size()
+                        + " timeout modules [ " + modulesTimeoutConfig.keySet().toString()
+                        + " ] configured; will start ConfVerifier");
                 confVerifier = ConfVerifier.initInstance(this.farm, clustersTimeoutMap);
             } catch (Throwable t1) {
                 logger.log(Level.WARNING, " [ FarmMonitor ] Got Exception while starting ConfVerifier Thread", t1);
@@ -732,13 +729,9 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                     logger.log(Level.FINEST, "Initiating internal filter: " + fullClassName + " ...");
                 }
                 Class<?> cf = Class.forName(fullClassName);
-                Class<?> params[] = new Class[] {
-                    String.class
-                };
+                Class<?> params[] = new Class[] { String.class };
                 final Constructor<?> ct = cf.getConstructor(params);
-                final String[] argList = new String[] {
-                    FarmName
-                };
+                final String[] argList = new String[] { FarmName };
                 final MonitorFilter zdaFilter = (MonitorFilter) ct.newInstance((Object[]) argList);
                 initMonitorFilter(zdaFilter);
                 logger.log(Level.INFO, "Internal filter " + fullClassName + " instantiated");
@@ -748,7 +741,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 logger.log(Level.FINER, fullClassName + " disabled in config");
             }
         } catch (Throwable t) {
-            logger.log(Level.WARNING, "[ FarmMonitor ] [ HANDLED ] Unable to instantiate internal filter (" + fullClassName + ")! Cause:", t);
+            logger.log(Level.WARNING, "[ FarmMonitor ] [ HANDLED ] Unable to instantiate internal filter ("
+                    + fullClassName + ")! Cause:", t);
         }
         return null;
     }
@@ -781,19 +775,23 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         // Apache Filter
         try {
             String sApache = AppConfig.getProperty("lia.Monitor.Filters.ApacheWatcher", "");
-            if (sApache != null && sApache.trim().length() > 0) {
+            if ((sApache != null) && (sApache.trim().length() > 0)) {
                 StringTokenizer st = new StringTokenizer(sApache, " ");
 
                 while (st.hasMoreTokens()) {
                     String s = st.nextToken();
 
                     if (s.indexOf(":") > 0) {
-                        initMonitorFilter(new ApacheWatcher(s.substring(0, s.indexOf(":")), s.substring(s.indexOf(":") + 1)));
+                        initMonitorFilter(new ApacheWatcher(s.substring(0, s.indexOf(":")),
+                                s.substring(s.indexOf(":") + 1)));
                     }
                 }
             }
         } catch (Throwable t) {
-            logger.log(Level.WARNING, "[ FarmMonitor ] [ HANDLED ] Unable to instantiate internal filter (lia.Monitor.Filters.ApacheWatcher)! Cause:", t);
+            logger.log(
+                    Level.WARNING,
+                    "[ FarmMonitor ] [ HANDLED ] Unable to instantiate internal filter (lia.Monitor.Filters.ApacheWatcher)! Cause:",
+                    t);
         }
 
         // AliEnFilter
@@ -819,7 +817,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
         // VCGServiceCheckFilter - did I mention how happy I am
         try {
-            final EFlowStatsConsumer f = (EFlowStatsConsumer) initInternalFilter("lia.Monitor.ciena.eflow.VCGServiceCheckFilter", false);
+            final EFlowStatsConsumer f = (EFlowStatsConsumer) initInternalFilter(
+                    "lia.Monitor.ciena.eflow.VCGServiceCheckFilter", false);
             if (f != null) {
                 EFlowStatsMgr.getInstance().registerConsumer(f);
             }
@@ -838,25 +837,29 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
         try {
             final String sRepository = AppConfig.getProperty("lia.Monitor.Filters.RepositoryWatcher", "");
-            if (sRepository != null && sRepository.trim().length() > 0) {
+            if ((sRepository != null) && (sRepository.trim().length() > 0)) {
                 StringTokenizer st = new StringTokenizer(sRepository, " ");
 
                 while (st.hasMoreTokens()) {
                     String s = st.nextToken();
 
                     if (s.indexOf(":") > 0) {
-                        initMonitorFilter(new RepositoryWatcher(s.substring(0, s.indexOf(":")), s.substring(s.indexOf(":") + 1)));
+                        initMonitorFilter(new RepositoryWatcher(s.substring(0, s.indexOf(":")), s.substring(s
+                                .indexOf(":") + 1)));
                     }
                 }
             }
         } catch (Throwable t) {
-            logger.log(Level.WARNING, "[ FarmMonitor ] [ HANDLED ] Unable to instantiate internal filter (lia.Monitor.Filters.RepositoryWatcher)! Cause:", t);
+            logger.log(
+                    Level.WARNING,
+                    "[ FarmMonitor ] [ HANDLED ] Unable to instantiate internal filter (lia.Monitor.Filters.RepositoryWatcher)! Cause:",
+                    t);
         }
 
         // activates the Alerts-Actions Manager
         try {
             final String sActionsManager = AppConfig.getProperty("lia.util.actions.base_folder");
-            if (sActionsManager != null && sActionsManager.trim().length() > 0) {
+            if ((sActionsManager != null) && (sActionsManager.trim().length() > 0)) {
                 DataReceiver dr = null;
                 try {
                     dr = ActionsManager.getInstance();
@@ -870,21 +873,20 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 }
             }
         } catch (Throwable t) {
-            logger.log(Level.WARNING, "[ FarmMonitor ] [ HANDLED ] Unable to instantiate internal ActionsManager filter! Cause:", t);
+            logger.log(Level.WARNING,
+                    "[ FarmMonitor ] [ HANDLED ] Unable to instantiate internal ActionsManager filter! Cause:", t);
         }
     }
 
     // add filters defined in usr_code
     public void addExternalFilters() {
         String[] externalFilters = AppConfig.getVectorProperty("lia.Monitor.ExternalFilters");
-        if (externalFilters == null || externalFilters.length == 0) {
+        if ((externalFilters == null) || (externalFilters.length == 0)) {
             logger.log(Level.INFO, "[ addExternalFilters ] No External Filters defined");
             return;
         }
 
-        for (int i = 0; i < externalFilters.length; i++) {
-            final String filterName = externalFilters[i];
-
+        for (final String filterName : externalFilters) {
             logger.log(Level.INFO, "[addExternalFilters ] Trying to instantiate External Filter " + filterName);
 
             MonitorFilter extFilter = null;
@@ -892,19 +894,16 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 if (externalClassLoader != null) {
                     Class<?> pfilter = externalClassLoader.loadClass(filterName);
                     Class<?> superClass = pfilter.getSuperclass();
-                    if (superClass == null || !superClass.getName().equals("lia.Monitor.Filters.GenericMLFilter")) {
-                        logger.log(Level.WARNING, "\n\nFilter " + filterName + " MUST have lia.Monitor.Filters.GenericMLFilter as it's superclass!!"
+                    if ((superClass == null) || !superClass.getName().equals("lia.Monitor.Filters.GenericMLFilter")) {
+                        logger.log(Level.WARNING, "\n\nFilter " + filterName
+                                + " MUST have lia.Monitor.Filters.GenericMLFilter as it's superclass!!"
                                 + "\nIt will NOT be instantiated!!\n");
                         continue;
                     }
 
-                    final Class<?>[] cParams = new Class[] {
-                        String.class
-                    };
+                    final Class<?>[] cParams = new Class[] { String.class };
                     final Constructor<?> cons = pfilter.getConstructor(cParams);
-                    Object[] params = new Object[] {
-                        FarmName
-                    };
+                    Object[] params = new Object[] { FarmName };
                     extFilter = (MonitorFilter) cons.newInstance(params);
                     initMonitorFilter(extFilter);
                     logger.log(Level.INFO, "[ addExternalFilters ] Started an External Filter [ " + filterName + " ]");
@@ -913,7 +912,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 logger.log(Level.WARNING, "[addExternalFilters ] Cannot instantiate EXTERNAL Filter " + filterName, t);
             }
 
-            logger.log(Level.INFO, "[addExternalFilters ] Finished loading External Filter " + filterName + " [ " + extFilter + " ] ");
+            logger.log(Level.INFO, "[addExternalFilters ] Finished loading External Filter " + filterName + " [ "
+                    + extFilter + " ] ");
         }
     }
 
@@ -961,13 +961,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 final File mlPropFile = new File(Farm_home + File.separator + "ml.properties");
                 final File farmHomeFile = new File(Farm_home);
 
-                PropertiesUtil.addModifyPropertyFile(mlPropFile,
-                                                     farmHomeFile,
-                                                     "lia.Monitor.memory_store_only",
-                                                     "true",
-                                                     "# Use only in memory DB",
-                                                     false,
-                                                     true);
+                PropertiesUtil.addModifyPropertyFile(mlPropFile, farmHomeFile, "lia.Monitor.memory_store_only", "true",
+                        "# Use only in memory DB", false, true);
 
                 // ////////////////////////////
                 // commented since ML 1.8.10
@@ -1002,10 +997,11 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 mlPropUpdated = true;
             } catch (Throwable t) {
                 mlPropUpdated = false;
-                sb.append("\n" + new Date() + " / " + new Date(NTPDate.currentTimeMillis()) + "Updating ml.properties EXCEPTION!" + t);
+                sb.append("\n" + new Date() + " / " + new Date(NTPDate.currentTimeMillis())
+                        + "Updating ml.properties EXCEPTION!" + t);
             }
-            sb.append("\n" + new Date() + " / " + new Date(NTPDate.currentTimeMillis()) + "Updating ml.properties FINISHED [ mlPropUpdated = "
-                    + mlPropUpdated + " ]\n\n ");
+            sb.append("\n" + new Date() + " / " + new Date(NTPDate.currentTimeMillis())
+                    + "Updating ml.properties FINISHED [ mlPropUpdated = " + mlPropUpdated + " ]\n\n ");
 
             if (mlPropUpdated) {
                 try {
@@ -1020,9 +1016,9 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
             try {
                 String subjToAdd = getStandardEmailSubject();
-                MailFactory.getMailSender().sendMessage(FarmMonitor.realFromAddress, "ramiro@monalisa.cern.ch", new String[] {
-                    "ramiro@monalisa.cern.ch"
-                }, " [ MLVRVS UPDATE STATUS ] @ " + subjToAdd, sb.toString());
+                MailFactory.getMailSender().sendMessage(FarmMonitor.realFromAddress, "ramiro@monalisa.cern.ch",
+                        new String[] { "ramiro@monalisa.cern.ch" }, " [ MLVRVS UPDATE STATUS ] @ " + subjToAdd,
+                        sb.toString());
             } catch (Throwable t1) {
             }
         }
@@ -1098,8 +1094,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         if (recs == null) {
             return;
         }
-        for (int i = 0; i < recs.length; i++) {
-            addDataReceiver(recs[i]);
+        for (String rec : recs) {
+            addDataReceiver(rec);
         }
     }
 
@@ -1109,9 +1105,11 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         URLClassLoader urlCL = null;
         if (usr_code_base != null) {
             try {
-                urlCL = new URLClassLoader(usr_code_base, Class.forName("lia.Monitor.Farm.FarmMonitor").getClassLoader());
+                urlCL = new URLClassLoader(usr_code_base, Class.forName("lia.Monitor.Farm.FarmMonitor")
+                        .getClassLoader());
             } catch (Throwable t) {
-                logger.log(Level.WARNING, " [ checkAndLoadLocalEnvironment ] Cannot instantiate external ClassLoader", t);
+                logger.log(Level.WARNING, " [ checkAndLoadLocalEnvironment ] Cannot instantiate external ClassLoader",
+                        t);
             }
         } else {
             logger.log(Level.INFO, " [ checkAndLoadLocalEnvironment ] No external URLs defined!");
@@ -1149,7 +1147,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             addDataReceiver(dr);
             return;
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ addDataReceiver ] Failed to load Data Receiver ClassName= " + cl + " Cause: \n", t);
+            logger.log(Level.WARNING, " [ addDataReceiver ] Failed to load Data Receiver ClassName= " + cl
+                    + " Cause: \n", t);
         }
 
     }
@@ -1159,17 +1158,19 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
         try {
             String[] strURL = AppConfig.getVectorProperty("lia.Monitor.CLASSURLs");
-            if (strURL != null && strURL.length != 0) {
+            if ((strURL != null) && (strURL.length != 0)) {
 
-                for (int i = 0; i < strURL.length; i++) {
+                for (String element : strURL) {
                     try {
-                        _returnURLs.add(new URL(strURL[i]));
+                        _returnURLs.add(new URL(element));
                     } catch (MalformedURLException ex) {
-                        logger.log(Level.INFO, " [ FarmMonitor ] [ get_usr_URLs ] [ HANDLED ] Got MalformedURLException adding URL [ " + strURL[i]
-                                + " ] to the class loader. This URL will be ignored", ex);
+                        logger.log(Level.INFO,
+                                " [ FarmMonitor ] [ get_usr_URLs ] [ HANDLED ] Got MalformedURLException adding URL [ "
+                                        + element + " ] to the class loader. This URL will be ignored", ex);
                     } catch (Throwable t) {
-                        logger.log(Level.INFO, " [ FarmMonitor ] [ get_usr_URLs ] [ HANDLED ] Got exception adding URL [ " + strURL[i]
-                                + " ] to the class loader. This URL will be ignored!", t);
+                        logger.log(Level.INFO,
+                                " [ FarmMonitor ] [ get_usr_URLs ] [ HANDLED ] Got exception adding URL [ " + element
+                                        + " ] to the class loader. This URL will be ignored!", t);
                     }
                 }
             }
@@ -1190,7 +1191,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
      * @throws java.rmi.RemoteException
      */
     @Override
-    synchronized public String ConfigAdd(String cluster, String node, String module, long time) throws java.rmi.RemoteException {
+    synchronized public String ConfigAdd(String cluster, String node, String module, long time)
+            throws java.rmi.RemoteException {
         if (cluster == null) {
             return "  Error >>>  cluster can not be null ";
         }
@@ -1213,8 +1215,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 return " Error >>> No Module fullfilled the criteria ";
 
             }
-            for (int i = 0; i < nns.length; i++) {
-                taskManager.changeRepTime(nns[i], module, time);
+            for (MNode nn : nns) {
+                taskManager.changeRepTime(nn, module, time);
             }
             return " >>>> Successful in chaging repetation time for the module";
 
@@ -1226,8 +1228,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         boolean moduleFlag = false;
         boolean wrongIP = false;
 
-        for (int i = 0; i < nns.length; i++) {
-            MNode nn = nns[i];
+        for (MNode nn : nns) {
             if (nn.getIPaddress() == null) {
                 taskManager.getIPaddress(nn, true);
                 if (nn.getIPaddress() == null) {
@@ -1280,10 +1281,10 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             return "Cannot update because vrvsUpdateURL == null!";
         }
         String msgToReturn = "\nUsing vrvsUpdateURL = " + vrvsUpdateURL + "\n";
-        String[] args = {
-                "-jnlps", vrvsUpdateURL, "-cachedir", MonaLisa_home + "/VRVS_CACHE_JNLP", "-destdir", MonaLisa_home + "/VRVS_CACHE_JAR"
-        };
-        msgToReturn += "Reflector " + FarmName + " Updated Status@ Local Time: " + new java.util.Date() + "\n" + VRVSUpdater.updateVRVS(args);
+        String[] args = { "-jnlps", vrvsUpdateURL, "-cachedir", MonaLisa_home + "/VRVS_CACHE_JNLP", "-destdir",
+                MonaLisa_home + "/VRVS_CACHE_JAR" };
+        msgToReturn += "Reflector " + FarmName + " Updated Status@ Local Time: " + new java.util.Date() + "\n"
+                + VRVSUpdater.updateVRVS(args);
         logger.log(Level.INFO, "\n updateReflector STATUS: " + msgToReturn + "\n");
         return msgToReturn;
     }
@@ -1324,9 +1325,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 return false;
             }
             if (logger.isLoggable(Level.FINEST)) {
-                logger.log(Level.FINEST,
-                           scriptName + ": localVersion: " + localVersion + " && jarVersion: " + jarVersion + " [ "
-                                   + jarVersion.compareToIgnoreCase(localVersion) + " ]");
+                logger.log(Level.FINEST, scriptName + ": localVersion: " + localVersion + " && jarVersion: "
+                        + jarVersion + " [ " + jarVersion.compareToIgnoreCase(localVersion) + " ]");
             }
 
             return (jarVersion.compareToIgnoreCase(localVersion) == 0);
@@ -1368,7 +1368,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         StringBuilder sb = new StringBuilder(128 * 1024);// 128k
 
         try {
-            sb.append("\n\n MonaLisa Version: ").append(MonaLisa_version).append(" [ ").append(MonaLisa_vdate).append(" ] ");
+            sb.append("\n\n MonaLisa Version: ").append(MonaLisa_version).append(" [ ").append(MonaLisa_vdate)
+                    .append(" ] ");
             sb.append(" ==> Using MonaLisa_HOME=").append(MonaLisa_home);
 
             sb.append("\n\n ******** Last Update Log ******* \n\n");
@@ -1411,12 +1412,13 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
             sb.append("\n\n ******** MonALISA Configuration Files ******* \n\n");
             Utils.addFileContentToStringBuilder(MLStatFile, sb);
-            Utils.addFileContentToStringBuilder(MonaLisa_home + File.separator + "Service" + File.separator + "CMD" + File.separator + "ml_env"
-                    + ((isVRVSFarm) ? ".VRVS" : ""), sb);
-            Utils.addFileContentToStringBuilder(MonaLisa_home + File.separator + "Service" + File.separator + "CMD" + File.separator + "site_env", sb);
+            Utils.addFileContentToStringBuilder(MonaLisa_home + File.separator + "Service" + File.separator + "CMD"
+                    + File.separator + "ml_env" + ((isVRVSFarm) ? ".VRVS" : ""), sb);
+            Utils.addFileContentToStringBuilder(MonaLisa_home + File.separator + "Service" + File.separator + "CMD"
+                    + File.separator + "site_env", sb);
             Utils.addFileContentToStringBuilder(Farm_home + File.separator + "ml.properties", sb);
             Utils.addFileContentToStringBuilder(MLStatFile, sb);
-            if (cfgFiles != null && cfgFiles.size() > 0) {
+            if ((cfgFiles != null) && (cfgFiles.size() > 0)) {
                 for (int ci = 0; ci < cfgFiles.size(); ci++) {
                     Utils.addFileContentToStringBuilder(new URL(cfgFiles.get(ci)).getPath(), sb);
                 }
@@ -1424,25 +1426,20 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             sb.append("\n\n ******** End MonALISA Configuration Files ******* \n\n");
 
             sb.append("\n\n ******** Local ENV MonALISA user ******* \n\n");
-            Utils.appendExternalProcessStatus(new String[] {
-                    "/bin/sh", "-c", Utils.getPromptLikeBinShCmd("crontab -l")
-            }, sb);
-            Utils.appendExternalProcessStatus(new String[] {
-                    "/bin/sh", "-c", EXTENDED_CMD_STATUS
-            }, sb);
-            Utils.appendExternalProcessStatus(new String[] {
-                    "/bin/sh", "-c", Utils.getPromptLikeBinShCmd("mount")
-            }, sb);
-            Utils.appendExternalProcessStatus(new String[] {
-                    "/bin/sh", "-c", Utils.getPromptLikeBinShCmd("df -h")
-            }, sb);
+            Utils.appendExternalProcessStatus(
+                    new String[] { "/bin/sh", "-c", Utils.getPromptLikeBinShCmd("crontab -l") }, sb);
+            Utils.appendExternalProcessStatus(new String[] { "/bin/sh", "-c", EXTENDED_CMD_STATUS }, sb);
+            Utils.appendExternalProcessStatus(new String[] { "/bin/sh", "-c", Utils.getPromptLikeBinShCmd("mount") },
+                    sb);
+            Utils.appendExternalProcessStatus(new String[] { "/bin/sh", "-c", Utils.getPromptLikeBinShCmd("df -h") },
+                    sb);
             sb.append("\n\n ******** End Local ENV MonALISA user ******* \n\n");
 
             try {
                 if (AppConfig.getb("lia.Monitor.notifyCrontab", true)) {
-                    MailFactory.getMailSender().sendMessage(realFromAddress, "mlcrontab@monalisa.cern.ch", new String[] {
-                        "mlcrontab@monalisa.cern.ch"
-                    }, " [ Update && Startup STATUS ] @ " + subjToAdd, sb.toString());
+                    MailFactory.getMailSender().sendMessage(realFromAddress, "mlcrontab@monalisa.cern.ch",
+                            new String[] { "mlcrontab@monalisa.cern.ch" },
+                            " [ Update && Startup STATUS ] @ " + subjToAdd, sb.toString());
                 }
             } catch (Throwable te) {
                 if (logger.isLoggable(Level.FINEST)) {
@@ -1457,7 +1454,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
     }
 
     private static final void appendToStatusBuffer(StringBuilder sb, String entryToAppend) {
-        sb.append("\n [ ").append(new Date(NTPDate.currentTimeMillis())).append(" ] => ").append(entryToAppend).append(" <= \n");
+        sb.append("\n [ ").append(new Date(NTPDate.currentTimeMillis())).append(" ] => ").append(entryToAppend)
+                .append(" <= \n");
     }
 
     private String update_usr_code(String fileName, String dir) {
@@ -1486,7 +1484,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             src = new BufferedInputStream(jarIS);
             dst = new FileOutputStream(MonaLisa_home + "/Service/usr_code/" + fileName, false);
 
-            appendToStatusBuffer(sb, " Trying to copy [ " + jarURL.toString() + " ] ===> [ " + MonaLisa_home + "/Service/usr_code/" + fileName);
+            appendToStatusBuffer(sb, " Trying to copy [ " + jarURL.toString() + " ] ===> [ " + MonaLisa_home
+                    + "/Service/usr_code/" + fileName);
 
             try {
                 for (;;) {
@@ -1497,8 +1496,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                     dst.write(buff, 0, bNO);
                 }
             } catch (Throwable t) {
-                appendToStatusBuffer(sb, "Cannot copy  [ " + jarURL.toString() + " ] ===> [ " + MonaLisa_home + "/Service/usr_code/" + fileName
-                        + "\n Cause: \n" + Utils.getStackTrace(t));
+                appendToStatusBuffer(sb, "Cannot copy  [ " + jarURL.toString() + " ] ===> [ " + MonaLisa_home
+                        + "/Service/usr_code/" + fileName + "\n Cause: \n" + Utils.getStackTrace(t));
                 return sb.toString();
             } finally {
                 try {
@@ -1511,16 +1510,15 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             }
 
         } catch (Throwable t) {
-            appendToStatusBuffer(sb, "Got General Exception updating " + fileName + "\n Cause: \n" + Utils.getStackTrace(t));
+            appendToStatusBuffer(sb,
+                    "Got General Exception updating " + fileName + "\n Cause: \n" + Utils.getStackTrace(t));
             return sb.toString();
         }
 
         String cmd = "cd " + MonaLisa_home + "/Service/usr_code" + "; gunzip < " + fileName + " | tar xvf - ";
         appendToStatusBuffer(sb, " Trying exec: [ " + cmd + " ]");
         try {
-            Process pro = MLProcess.exec(new String[] {
-                    "/bin/sh", "-c", cmd
-            });
+            Process pro = MLProcess.exec(new String[] { "/bin/sh", "-c", cmd });
             appendToStatusBuffer(sb, "Waiting for process to finish!");
             pro.waitFor();
             appendToStatusBuffer(sb, "Finished Waiting!");
@@ -1537,8 +1535,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 appendToStatusBuffer(sb, MonaLisa_home + "/Service/usr_code/" + fileName + " CAN NOT BE DELETED");
             }
         } catch (Throwable tt) {
-            appendToStatusBuffer(sb,
-                                 "Got Exception deleting: " + MonaLisa_home + "/Service/usr_code/" + fileName + "\nExc:\n" + Utils.getStackTrace(tt));
+            appendToStatusBuffer(sb, "Got Exception deleting: " + MonaLisa_home + "/Service/usr_code/" + fileName
+                    + "\nExc:\n" + Utils.getStackTrace(tt));
         }
 
         appendToStatusBuffer(sb, " usr_code/" + dir + " finished update!");
@@ -1567,7 +1565,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         // MUST BE REDONE !!! Asif made a horible job HERE ! cil
 
         // This is stupid ... but we have to use the same interface ... that's the problem
-        if (cluster != null && node != null && module != null) {
+        if ((cluster != null) && (node != null) && (module != null)) {
             if (cluster.equals("VRVS_REMOVE_TOKEN_MDA") && module.equals("VRVS_REMOVE_TOKEN_MDA")) {
                 return sendCMDToReflector(node);
             }
@@ -1589,11 +1587,10 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         // + " removed from the configuration";
         // }
         // if we want to remove a cluster
-        if (cluster != null && node == null && module == null) {
+        if ((cluster != null) && (node == null) && (module == null)) {
             try {
                 MNode[] n = ed.getOrCreate(cluster, "*");
-                for (int i = 0; i < n.length; i++) {
-                    MNode nod = n[i];
+                for (MNode nod : n) {
                     Vector<String> moduleList = nod.getModuleList();
                     for (final String modName : moduleList) {
                         taskManager.deleteModule(modName, nod);
@@ -1609,7 +1606,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             return " >>>> Removed cluster " + cluster + " on Farm  " + farm.toString();
 
         } // removing a node and all its modules
-        else if (cluster != null && node != null && module == null) {
+        else if ((cluster != null) && (node != null) && (module == null)) {
             try {
                 MNode[] n = ed.getOrCreate(cluster, node);
                 if (n == null) {
@@ -1629,7 +1626,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             return ">>>>  Removed Node  " + node + "  from  Cluster  " + cluster;
 
         } // if we want to stop a module for a node
-        else if (cluster != null && node != null && module != null) {
+        else if ((cluster != null) && (node != null) && (module != null)) {
             try {
                 MNode[] n = ed.getOrCreate(cluster, node);
                 if (n == null) {
@@ -1711,7 +1708,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 while (checkStatus()) {
                     try {
                         if (br.ready()) {
-                            while (br.ready() && (line = br.readLine()) != null) {
+                            while (br.ready() && ((line = br.readLine()) != null)) {
                                 dst.append(prefix).append(line).append("\n");
                             }
                         } else {
@@ -1727,7 +1724,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
                 // last feed
                 try {
-                    while (br.ready() && (line = br.readLine()) != null) {
+                    while (br.ready() && ((line = br.readLine()) != null)) {
                         dst.append(prefix).append(line).append("\n");
                     }
                 } catch (Throwable t) {
@@ -1757,7 +1754,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
     private String sendCMDToReflector(String cmdName) throws java.rmi.RemoteException {
         if (cmdName == null) {
             throw new RemoteException("No Action Specified");
-        } else if (!cmdName.equals("start") && !cmdName.equals("stop") && !cmdName.equals("status") && !cmdName.equals("restart")) {
+        } else if (!cmdName.equals("start") && !cmdName.equals("stop") && !cmdName.equals("status")
+                && !cmdName.equals("restart")) {
             throw new RemoteException("No SUCH Action ... Should be either stop | start | status | restart");
         }
 
@@ -1792,8 +1790,10 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             InputStream is = procVrvs.getInputStream();
             InputStream es = procVrvs.getErrorStream();
 
-            StreamReader stdout = new StreamReader(" STDOUT for " + cmd, new BufferedReader(new InputStreamReader(is)), "STDOUT > ");
-            StreamReader stderr = new StreamReader(" STDERR for " + cmd, new BufferedReader(new InputStreamReader(es)), "STDERR > ");
+            StreamReader stdout = new StreamReader(" STDOUT for " + cmd, new BufferedReader(new InputStreamReader(is)),
+                    "STDOUT > ");
+            StreamReader stderr = new StreamReader(" STDERR for " + cmd, new BufferedReader(new InputStreamReader(es)),
+                    "STDERR > ");
 
             stdout.start();
             stderr.start();
@@ -1836,7 +1836,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             }
 
             if (!rtResults.offer(r)) {
-                logger.log(Level.WARNING, "[ FarmMonitor ] [ addResult ] The result " + r + " was ignored .... Queue is FULL!");
+                logger.log(Level.WARNING, "[ FarmMonitor ] [ addResult ] The result " + r
+                        + " was ignored .... Queue is FULL!");
             }
         }
     }
@@ -1844,9 +1845,10 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
     private void notifyReceiver(final DataReceiver rcv, Object o) throws Exception {
         if (o instanceof Result) {
             final Result r = (Result) o;
-            if (r.Module == null || r.Module.trim().length() == 0) {
+            if ((r.Module == null) || (r.Module.trim().length() == 0)) {
                 if (logger.isLoggable(Level.FINE)) {
-                    logger.log(Level.FINE, " [ FarmMonitor ] [ notifyReceiver ] setting module name to: " + MON_UNKOWN_NAME + " for r: " + r);
+                    logger.log(Level.FINE, " [ FarmMonitor ] [ notifyReceiver ] setting module name to: "
+                            + MON_UNKOWN_NAME + " for r: " + r);
                 }
                 r.Module = MON_UNKOWN_NAME;
                 UNK_RESULTS_MODULE_COUNT.incrementAndGet();
@@ -1866,8 +1868,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             rcv.addResult((AccountingResult) o);
         } else if (o instanceof Collection<?>) {
             final Collection<?> c = (Collection<?>) o;
-            for (final Iterator<?> it = c.iterator(); it.hasNext();) {
-                final Object r = it.next();
+            for (Object r : c) {
                 if (r != null) {
                     notifyReceiver(rcv, r);
                 }
@@ -1883,9 +1884,9 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             return;
         }
 
-        for (int i = 0; i < receivers.length; i++) {
+        for (DataReceiver receiver : receivers) {
             try {
-                notifyReceiver(receivers[i], o);
+                notifyReceiver(receiver, o);
             } catch (Throwable t) {
                 logger.log(Level.INFO, "FarmMonitor: error notifying receiver", t);
             }
@@ -1912,52 +1913,56 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                     // the remove code should alwayes be true ...
                     // we already took the farm.getConfLock() ...
                     final boolean bRemove = farm.removeCluster(mc);
-                    logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] removing cluster: " + er.ClusterName + " from config [ Received: "
-                            + er + " ]. Remove code: " + bRemove);
+                    logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] removing cluster: " + er.ClusterName
+                            + " from config [ Received: " + er + " ]. Remove code: " + bRemove);
                 } else {
-                    logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] removing cluster: " + er.ClusterName + " from config [ Received: "
-                            + er + " ]. Cluster no longer in conf.");
+                    logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] removing cluster: " + er.ClusterName
+                            + " from config [ Received: " + er + " ]. Cluster no longer in conf.");
                 }
 
                 return true;
             }
 
             if (mc == null) {
-                if (er.NodeName != null && er.param != null && er.param_name != null) {
+                if ((er.NodeName != null) && (er.param != null) && (er.param_name != null)) {
                     return false;
                 }
 
-                logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] config result ( " + er + " ) but Cluster: " + er.ClusterName
-                        + " no longer in conf.");
+                logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] config result ( " + er + " ) but Cluster: "
+                        + er.ClusterName + " no longer in conf.");
                 return true;
             }
 
             final MNode mn = mc.getNode(er.NodeName);
-            if (er.param_name == null || er.param == null) {
+            if ((er.param_name == null) || (er.param == null)) {
                 if (mn != null) {
                     final boolean bRemove = mc.removeNode(mn);
-                    logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] removing Node: " + er.NodeName + " / Cluster: " + er.ClusterName
-                            + " from config [ Received: " + er + " ]. Remove code: " + bRemove);
+                    logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] removing Node: " + er.NodeName
+                            + " / Cluster: " + er.ClusterName + " from config [ Received: " + er + " ]. Remove code: "
+                            + bRemove);
                 } else {
-                    logger.log(Level.INFO, " [ FarmMonitor ] [ checkResultConf ] removing node: " + er.NodeName + " / Cluster: " + er.ClusterName
-                            + " [ Received: " + er + " ]. Node in no longer in the config");
+                    logger.log(Level.INFO, " [ FarmMonitor ] [ checkResultConf ] removing node: " + er.NodeName
+                            + " / Cluster: " + er.ClusterName + " [ Received: " + er
+                            + " ]. Node in no longer in the config");
                 }
                 return true;
             }
 
             if (mn == null) {
-                if (er.param != null && er.param_name != null) {
+                if ((er.param != null) && (er.param_name != null)) {
                     return false;
                 }
 
-                logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] config result ( " + er + " ) but node: " + er.NodeName + " /cluster: "
-                        + er.ClusterName + " no longer in conf.");
+                logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] config result ( " + er + " ) but node: "
+                        + er.NodeName + " /cluster: " + er.ClusterName + " no longer in conf.");
                 return true;
             }
 
             if (er.param.length != er.param_name.length) {
-                logger.log(Level.WARNING, "[ FarmMonitor ] [ checkResultConf ] config result ( " + er + " ) param_name.len != param.len");
-                throw new Exception("[ FarmMonitor ] [ checkResultConf ] config result ( " + er + " ) param_name.len != param.len");
+                logger.log(Level.WARNING, "[ FarmMonitor ] [ checkResultConf ] config result ( " + er
+                        + " ) param_name.len != param.len");
+                throw new Exception("[ FarmMonitor ] [ checkResultConf ] config result ( " + er
+                        + " ) param_name.len != param.len");
             }
 
             retb = false;
@@ -1970,8 +1975,9 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 }
                 if (er.param[i] == null) {
                     boolean bRemove = params.remove(ParamName);
-                    logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] removing Param: " + ParamName + " /Node: " + er.NodeName
-                            + " / Cluster: " + er.ClusterName + " from config [ Received: " + er + " ]. Remove code: " + bRemove);
+                    logger.log(Level.INFO, "[ FarmMonitor ] [ checkResultConf ] removing Param: " + ParamName
+                            + " /Node: " + er.NodeName + " / Cluster: " + er.ClusterName + " from config [ Received: "
+                            + er + " ]. Remove code: " + bRemove);
                     retb = true;
                 }
             }
@@ -1983,7 +1989,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
     private boolean checkSize(Result r) {
 
         if (r.ClusterName.length() > MAX_CLUSTERNAME_LEN) {
-            logger.log(Level.WARNING, " The ClusterName " + r.ClusterName + " is too big. Max size is " + MAX_CLUSTERNAME_LEN);
+            logger.log(Level.WARNING, " The ClusterName " + r.ClusterName + " is too big. Max size is "
+                    + MAX_CLUSTERNAME_LEN);
             return false;
         }
 
@@ -1992,9 +1999,10 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             return false;
         }
 
-        for (int i = 0; i < r.param_name.length; i++) {
-            if (r.param_name[i] != null && r.param_name[i].length() > MAX_PARAMNAME_LEN) {
-                logger.log(Level.WARNING, " The param_name " + r.param_name[i] + " is too big. Max size is " + MAX_PARAMNAME_LEN);
+        for (String element : r.param_name) {
+            if ((element != null) && (element.length() > MAX_PARAMNAME_LEN)) {
+                logger.log(Level.WARNING, " The param_name " + element + " is too big. Max size is "
+                        + MAX_PARAMNAME_LEN);
                 return false;
             }
         }
@@ -2003,8 +2011,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
     }
 
     public void addResults(Collection<?> c) {
-        for (Iterator<?> it = c.iterator(); it.hasNext();) {
-            addChecked(it.next());
+        for (Object name : c) {
+            addChecked(name);
         }
     }
 
@@ -2048,7 +2056,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                 }
             }
 
-            boolean bConfResult = (er.NodeName == null || er.param == null || er.param_name == null);
+            boolean bConfResult = ((er.NodeName == null) || (er.param == null) || (er.param_name == null));
 
             if (bConfResult) {
                 addResult(o);
@@ -2058,20 +2066,20 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             r = new Result(FarmName, er.ClusterName, er.NodeName, er.Module, er.param_name);
         } else if (o instanceof AccountingResult) {
             AccountingResult ar = (AccountingResult) o;
-            r = new Result(FarmName, ar.sGroup, ar.sUser, "Accounting", new String[] {
-                "job accounting"
-            });
+            r = new Result(FarmName, ar.sGroup, ar.sUser, "Accounting", new String[] { "job accounting" });
         }
 
-        if (r.ClusterName == null || r.NodeName == null || r.param == null || r.param_name == null) {
-            logger.log(Level.WARNING, " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! Null elements in Result:\n " + r.toString()
-                    + "\n Stack trace: ", new Throwable());
+        if ((r.ClusterName == null) || (r.NodeName == null) || (r.param == null) || (r.param_name == null)) {
+            logger.log(Level.WARNING, " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! Null elements in Result:\n "
+                    + r.toString() + "\n Stack trace: ", new Throwable());
             return;
         }
 
-        if (r.ClusterName.trim().length() == 0 || r.NodeName.trim().length() == 0) {
-            logger.log(Level.WARNING, " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! Cluster or Node name in Result:\n " + r.toString()
-                    + "\n is blank. Stack trace: ", new Throwable());
+        if ((r.ClusterName.trim().length() == 0) || (r.NodeName.trim().length() == 0)) {
+            logger.log(
+                    Level.WARNING,
+                    " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! Cluster or Node name in Result:\n "
+                            + r.toString() + "\n is blank. Stack trace: ", new Throwable());
             return;
         }
 
@@ -2079,24 +2087,26 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         final int paramLen = r.param.length;
 
         if (paramNameLen != paramLen) {
-            logger.log(Level.WARNING, " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! Different len for r.param ( " + paramLen
-                    + " ) and r.param_name ( " + paramNameLen + " ):\n " + r.toString() + "\n Stack trace: ", new Throwable());
+            logger.log(Level.WARNING,
+                    " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! Different len for r.param ( " + paramLen
+                            + " ) and r.param_name ( " + paramNameLen + " ):\n " + r.toString() + "\n Stack trace: ",
+                    new Throwable());
             return;
         }
 
-        if (paramNameLen <= 0 || paramLen <= 0) {
-            logger.log(Level.WARNING, " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! The len cannot be zero. for r.param ( " + paramLen
-                    + " ) and r.param_name ( " + paramNameLen + " ):\n " + r.toString() + "\n Stack trace: ", new Throwable());
+        if ((paramNameLen <= 0) || (paramLen <= 0)) {
+            logger.log(Level.WARNING,
+                    " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! The len cannot be zero. for r.param ( "
+                            + paramLen + " ) and r.param_name ( " + paramNameLen + " ):\n " + r.toString()
+                            + "\n Stack trace: ", new Throwable());
             return;
         }
 
         for (int i = 0; i < paramNameLen; i++) {
             final String pName = r.param_name[i];
             if (pName.trim().length() == 0) {
-                logger.log(Level.WARNING,
-                           " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! The r.param_name[ " + i + " ] is blank \n " + r.toString()
-                                   + "\n Stack trace: ",
-                           new Throwable());
+                logger.log(Level.WARNING, " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! The r.param_name[ " + i
+                        + " ] is blank \n " + r.toString() + "\n Stack trace: ", new Throwable());
                 return;
             }
         }
@@ -2121,9 +2131,10 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         }
         r.FarmName = FarmName;
 
-        if (r.Module == null || r.Module.trim().length() == 0) {
+        if ((r.Module == null) || (r.Module.trim().length() == 0)) {
             if (logger.isLoggable(Level.FINE)) {
-                logger.log(Level.FINE, " [ FarmMonitor ] [ addChecked ] setting module name to: " + MON_UNKOWN_NAME + " for r: " + r);
+                logger.log(Level.FINE, " [ FarmMonitor ] [ addChecked ] setting module name to: " + MON_UNKOWN_NAME
+                        + " for r: " + r);
             }
             r.Module = MON_UNKOWN_NAME;
             UNK_RESULTS_MODULE_COUNT.incrementAndGet();
@@ -2146,8 +2157,9 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
                 for (final String paramName : r.param_name) {
                     if (paramName == null) {
-                        logger.log(Level.WARNING, " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! null param name :\n " + r.toString()
-                                + "\n Stack trace: ", new Throwable());
+                        logger.log(Level.WARNING,
+                                " [ FarmMonitor ] [ addExternal ] IGNORED RESULT! null param name :\n " + r.toString()
+                                        + "\n Stack trace: ", new Throwable());
                         return;
                     }
                     n.addParamIfAbsent(paramName);
@@ -2235,8 +2247,7 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                             }
 
                             if (cn != null) {
-                                for (int kp = 0; kp < r.param_name.length; kp++) {
-                                    final String paramName = r.param_name[kp];
+                                for (final String paramName : r.param_name) {
                                     if (paramName == null) {
                                         continue;
                                     }
@@ -2244,7 +2255,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                                     if (cp == null) {
                                         if (paramTimeout > 0) {
                                             if (logger.isLoggable(Level.FINER)) {
-                                                logger.log(Level.FINER, " [ FarmMonitor ] creating CParam: " + paramName);
+                                                logger.log(Level.FINER, " [ FarmMonitor ] creating CParam: "
+                                                        + paramName);
                                             }
                                             cp = new CParam(cn, paramName, paramTimeout);
                                             final CParam tmpCParam = cn.cParams.putIfAbsent(paramName, cp);
@@ -2254,7 +2266,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
                                                 cp.renew();
                                             } else {
                                                 if (logger.isLoggable(Level.FINE)) {
-                                                    logger.log(Level.FINE, " [ FarmMonitor ] [ CREATE CParam ] " + paramName);
+                                                    logger.log(Level.FINE, " [ FarmMonitor ] [ CREATE CParam ] "
+                                                            + paramName);
                                                 }
                                                 confVerifier.reschedule(cp);
                                             }
@@ -2273,7 +2286,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
             }// sync
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ FarmMonitor ] [ HANDLED ] Got exception matching result with current config", t);
+            logger.log(Level.WARNING, " [ FarmMonitor ] [ HANDLED ] Got exception matching result with current config",
+                    t);
         }
 
         addResult(o);
@@ -2286,8 +2300,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
     }
 
     public static final boolean ignoreResultForConfig(final Result r) {
-        if (ignoreSomeConfModules && r.Module != null && ignoredConfModules.contains(r.Module)) {
-            if (r.ClusterName != null && !r.ClusterName.equals("MonaLisa")) {
+        if (ignoreSomeConfModules && (r.Module != null) && ignoredConfModules.contains(r.Module)) {
+            if ((r.ClusterName != null) && !r.ClusterName.equals("MonaLisa")) {
                 if (logger.isLoggable(Level.FINER)) {
                     logger.log(Level.FINER, "\n\n\n [ FarmMonitor ] Adding hidden result " + r);
                 }
@@ -2299,8 +2313,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
     }
 
     public static final boolean ignoreResultForConfig(final eResult er) {
-        if (ignoreSomeConfModules && er.Module != null && ignoredConfModules.contains(er.Module)) {
-            if (er.ClusterName != null && !er.ClusterName.equals("MonaLisa")) {
+        if (ignoreSomeConfModules && (er.Module != null) && ignoredConfModules.contains(er.Module)) {
+            if ((er.ClusterName != null) && !er.ClusterName.equals("MonaLisa")) {
                 if (logger.isLoggable(Level.FINER)) {
                     logger.log(Level.FINER, "\n\n\n [ FarmMonitor ] Adding hidden eResult " + er);
                 }
@@ -2369,8 +2383,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
     public void initJModules() {
         // finds the modules in the jar file
 
-        JarFinder finder = new JarFinder("lia.Monitor.monitor.MonitoringModule", MonaLisa_home + File.separator + "Service" + File.separator + "lib"
-                + File.separator + "FarmMonitor.jar");
+        JarFinder finder = new JarFinder("lia.Monitor.monitor.MonitoringModule", MonaLisa_home + File.separator
+                + "Service" + File.separator + "lib" + File.separator + "FarmMonitor.jar");
         availableModules = finder.searchForClasses("lia/Monitor/modules");
 
         if (logger.isLoggable(Level.FINE)) {
@@ -2387,7 +2401,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         farm.setAvModules(availableModules);
     }
 
-    public static final boolean sendMail(String from, String[] to, String subject, String message, boolean appendDefaultSubject) {
+    public static final boolean sendMail(String from, String[] to, String subject, String message,
+            boolean appendDefaultSubject) {
         String subj = null;
         if (FarmName != null) {
             subj = " [ " + FarmName + " ]";
@@ -2460,8 +2475,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             }
             final String[] hc = ignoredModulesProp.split("(\\s)*,(\\s)*");
             if (hc != null) {
-                for (int i = 0; i < hc.length; i++) {
-                    newSet.add(hc[i]);
+                for (String element : hc) {
+                    newSet.add(element);
                 }
             }
         } finally {
@@ -2471,7 +2486,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         }
 
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, " [ Hidden Modules ] : ignoreSomeConfModules ( " + ignoreSomeConfModules + " ) : " + ignoredConfModules);
+            logger.log(Level.FINER, " [ Hidden Modules ] : ignoreSomeConfModules ( " + ignoreSomeConfModules + " ) : "
+                    + ignoredConfModules);
         }
     }
 
@@ -2480,8 +2496,10 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
         try {
             final String hiddenClus = AppConfig.getProperty("lia.Monitor.Farm.HiddenClusters", null);
-            String hiddenOSWClusterName = AppConfig.getProperty("lia.Monitor.Farm.OSwConfigHiddenCluster", "OSwConfigHCluster");
-            String hiddenTopoClusterName = AppConfig.getProperty("lia.Monitor.Farm.TopoConfigHiddenCluster", "TopoConfigHCluster");
+            String hiddenOSWClusterName = AppConfig.getProperty("lia.Monitor.Farm.OSwConfigHiddenCluster",
+                    "OSwConfigHCluster");
+            String hiddenTopoClusterName = AppConfig.getProperty("lia.Monitor.Farm.TopoConfigHiddenCluster",
+                    "TopoConfigHCluster");
 
             Pattern p = null;
             if (hiddenOSWClusterName == null) {
@@ -2502,11 +2520,11 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
             if (hiddenClus != null) {
                 final String[] hc = hiddenClus.split("(\\s)*,(\\s)*");
-                if (hc != null && hc.length > 0) {
+                if ((hc != null) && (hc.length > 0)) {
 
-                    for (int ihc = 0; ihc < hc.length; ihc++) {
-                        if (hc[ihc] != null && hc[ihc].length() > 0) {
-                            newSet.add(Pattern.compile(hc[ihc]));
+                    for (String element : hc) {
+                        if ((element != null) && (element.length() > 0)) {
+                            newSet.add(Pattern.compile(element));
                         }
                     }
 
@@ -2556,7 +2574,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
         try {
             vrvsUpdateURL = null;
             try {
-                vrvsUpdateURL = AppConfig.getProperty("lia.Monitor.Farm.vrvsUpdateURL", "http://monalisa.cacr.caltech.edu/VRVS_UPDATE");
+                vrvsUpdateURL = AppConfig.getProperty("lia.Monitor.Farm.vrvsUpdateURL",
+                        "http://monalisa.cacr.caltech.edu/VRVS_UPDATE");
             } catch (Throwable t) {
                 vrvsUpdateURL = "http://monalisa.cacr.caltech.edu/VRVS_UPDATE";
             }
@@ -2565,11 +2584,13 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
             try {
                 notifyConfigeResults = AppConfig.getb("lia.Monitor.Farm.notifyConfigeResults", false);
                 if (logger.isLoggable(Level.FINER)) {
-                    logger.log(Level.FINER, " (RE)Loaded lia.Monitor.Farm.notifyConfigeResults = " + notifyConfigeResults);
+                    logger.log(Level.FINER, " (RE)Loaded lia.Monitor.Farm.notifyConfigeResults = "
+                            + notifyConfigeResults);
                 }
             } catch (Throwable t) {
                 notifyConfigeResults = false;
-                logger.log(Level.WARNING, " Exception (RE)Loading lia.Monitor.Farm.notifyConfigeResults = " + notifyConfigeResults, t);
+                logger.log(Level.WARNING, " Exception (RE)Loading lia.Monitor.Farm.notifyConfigeResults = "
+                        + notifyConfigeResults, t);
             }
 
             try {
@@ -2594,7 +2615,8 @@ public class FarmMonitor extends RangePortUnicastRemoteObject implements Monitor
 
             MAX_CLUSTERNAME_LEN = MAX_CFGSTR_LEN;
             try {
-                MAX_CLUSTERNAME_LEN = AppConfig.geti("lia.Monitor.Farm.FarmMonitor.MAX_CLUSTERNAME_LEN", MAX_CFGSTR_LEN);
+                MAX_CLUSTERNAME_LEN = AppConfig
+                        .geti("lia.Monitor.Farm.FarmMonitor.MAX_CLUSTERNAME_LEN", MAX_CFGSTR_LEN);
             } catch (Throwable t) {
                 MAX_CLUSTERNAME_LEN = MAX_CFGSTR_LEN;
             }

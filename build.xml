@@ -2,33 +2,48 @@
     <echo message="${line.separator}${line.separator} Using java ${java.version} ${line.separator}${line.separator} " />
     <!-- set global properties for this build -->
 
-    <property name="monalisa.major.version" value="13" />
-    <property name="monalisa.minor.version" value="02" />
-    <property name="monalisa.maintenance.version" value="061" />
-
-    <property name="updater.version" value="13.02.061" />
-
-
     <property name="epg.version" value="9.0.3" />
     <property name="epg.requpgrade.version" value="8.3+" />
     <property name="epg.noup.version" value="9.0+" />
-
+    <buildnumber/>
+    
     <tstamp>
         <format property="currentdate" pattern="yyyy-MM-dd" />
         <format property="extendedcurrentdate" timezone="UTC" pattern="yyyyMMddHHmm" />
         <format property="normaldate" pattern="yyyy-MM-dd HH:mm" />
     </tstamp>
 
-    <property file="buildNumber.properties" />
+    <tstamp>
+        <format property="monalisa.major.version" pattern="yy" />
+        <format property="monalisa.minor.version" pattern="MM" />
+    </tstamp>
+    
+    <!--
+        To append a maintenance version (e.g. two releasese within a month)
+        just uncomment the property below!
+        
+    -->
+    <property name="monalisa.maintenance.version" value="05" />
+    
+    
+    <condition property="monalisa.version.short" value="${monalisa.major.version}.${monalisa.minor.version}.${monalisa.maintenance.version}">
+        <isset property="monalisa.maintenance.version"/>
+    </condition>
+            
+   
     <property name="monalisa.dir.version" value="${monalisa.major.version}.${monalisa.minor.version}" />
-    <property name="monalisa.version.short" value="${monalisa.major.version}.${monalisa.minor.version}.${monalisa.maintenance.version}" />
-    <property name="monalisa.version" value="${monalisa.version.short}-${extendedcurrentdate}" />
+    <property name="monalisa.version.short" value="${monalisa.major.version}.${monalisa.minor.version}" />
+    <property name="monalisa.version" value="${monalisa.version.short}-b${extendedcurrentdate}" />
+    
+    
+    <property name="updater.version" value="${monalisa.version.short}" />
+    
     <property name="monalisa.vdate" value="${currentdate}" />
     <property name="VoModulesDir" value="VoModules-v0.38" />
     <property name="OsgVoModulesDir" value="OsgVoModules-v0.38" />
     <property name="PNModulesDir" value="PNModules-v0.22" />
 
-    <property name="monalisa.client.version" value="13.02.061" />
+    <property name="monalisa.client.version" value="${monalisa.version.short}-b${extendedcurrentdate}" />
     <property name="monalisa.client.date" value="${extendedcurrentdate}" />
 
     <property name="monalisa.servlets.monsit.version" value="1.3.1" />
@@ -89,7 +104,7 @@
         <filter token="mlversionshort" value="${monalisa.version.short}" />
         <filter token="mlbuildid" value="${extendedcurrentdate}" />
         <filter token="updaterVersion" value="${updater.version}" />
-        <filter token="updaterDate" value="${extendedcurrentdate}" />
+        <filter token="updaterDate" value="b${build.number}" />
         <filter token="vdate" value="${monalisa.vdate}" />
         <filter token="ML_VoModulesDir" value="${VoModulesDir}" />
         <filter token="ML_OsgVoModulesDir" value="${OsgVoModulesDir}" />
@@ -159,11 +174,14 @@
     </target>
 
     <path id="compile.java.classpath">
+        <fileset dir="${catalina.home}/lib">
+            <include name="servlet-api.jar" />
+        </fileset>
         <fileset dir="${catalina.home}/bin">
             <include name="bootstrap.jar" />
         </fileset>
         <fileset dir="${jogl.path}">
-            <include name="jogl.jar" />
+            <include name="jar/jogl-all.jar" />
         </fileset>
         <fileset dir="${monalisa.home}/ProxyService/lib">
             <include name="apmon.jar" />
@@ -716,7 +734,7 @@
         <manifest file="${src.dir}/lia/util/update/Updater.manifest" mode="update">
             <attribute name="Built-By" value="${user.name}" />
             <attribute name="Release-Date" value="${normaldate}" />
-            <attribute name="MonALISA-Version" value="${monalisa.major.version}.${monalisa.minor.version}.${monalisa.maintenance.version}" />
+            <attribute name="MonALISA-Version" value="${monalisa.version.short}" />
             <attribute name="Implementation-Version" value="${monalisa.version}" />
         </manifest>
         <jar jarfile="${dist.dir.service}/update.jar" basedir="${build.dir}" manifest="${src.dir}/lia/util/update/Updater.manifest" update="false">
@@ -761,7 +779,7 @@
         <manifest file="${dist.dir.control}/MANIFEST.MF">
             <attribute name="Built-By" value="${user.name}" />
             <attribute name="Release-Date" value="${normaldate}" />
-            <attribute name="MonALISA-Version" value="${monalisa.major.version}.${monalisa.minor.version}.${monalisa.maintenance.version}" />
+            <attribute name="MonALISA-Version" value="${monalisa.version.short}" />
             <attribute name="Implementation-Version" value="${monalisa.version}" />
         </manifest>
         <jar jarfile="${dist.dir.control}/apache.jar" basedir="${build.dir}" manifest="${dist.dir.control}/MANIFEST.MF" update="false">
@@ -900,7 +918,7 @@
         <manifest file="${src.dir}/lia/Monitor/Farm/FarmMonitor.manifest" mode="update">
             <attribute name="Built-By" value="${user.name}" />
             <attribute name="Release-Date" value="${normaldate}" />
-            <attribute name="MonALISA-Version" value="${monalisa.major.version}.${monalisa.minor.version}.${monalisa.maintenance.version}" />
+            <attribute name="MonALISA-Version" value="${monalisa.version.short}" />
             <attribute name="Implementation-Version" value="${monalisa.version}" />
         </manifest>
         <jar jarfile="${dist.dir.service}/FarmMonitor.jar" basedir="${build.dir}" manifest="${src.dir}/lia/Monitor/Farm/FarmMonitor.manifest" update="false">
@@ -994,7 +1012,7 @@
         <manifest file="${src.dir}/lia/Monitor/control/manifest.mf" mode="update">
             <attribute name="Built-By" value="${user.name}" />
             <attribute name="Release-Date" value="${normaldate}" />
-            <attribute name="MonALISA-Version" value="${monalisa.major.version}.${monalisa.minor.version}.${monalisa.maintenance.version}" />
+            <attribute name="MonALISA-Version" value="${monalisa.version.short}" />
             <attribute name="Implementation-Version" value="${monalisa.version}" />
         </manifest>
         <jar jarfile="${dist.dir.service}/FarmControl.jar" basedir="${build.dir}" manifest="${src.dir}/lia/Monitor/control/manifest.mf" update="false">
@@ -1008,7 +1026,7 @@
         <manifest file="${src.dir}/lia/Monitor/JiniSerFarmMon/JFarmMonitor.manifest" mode="update">
             <attribute name="Built-By" value="${user.name}" />
             <attribute name="Release-Date" value="${normaldate}" />
-            <attribute name="MonALISA-Version" value="${monalisa.major.version}.${monalisa.minor.version}.${monalisa.maintenance.version}" />
+            <attribute name="MonALISA-Version" value="${monalisa.version.short}" />
             <attribute name="Implementation-Version" value="${monalisa.version}" />
         </manifest>
         <jar jarfile="${dist.dir.service}/JFarmMonitor.jar" basedir="${build.dir}" manifest="${src.dir}/lia/Monitor/JiniSerFarmMon/JFarmMonitor.manifest" update="false">
@@ -1118,6 +1136,7 @@
             <include name="lia/images/osgmap/**" />
             <include name="lia/images/groups/**" />
             <include name="lia/util/UUID*.class" />
+            <include name="lia/util/IPU*.class" />
             <include name="lia/util/JiniConfigProvider*.class" />
             <include name="lia/util/SecureContextExecutor*.class" />
             <include name="lia/util/StringFactory*.class" />
@@ -1151,7 +1170,77 @@
 			<include name="lia/Monitor/modules/monProcLoad*.class" />
 			<include name="lia/Monitor/modules/monProcStat.class" /> -->
         </jar>
-        <copy file="${dist.dir.clients}/JMonitorClient.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        
+        <copy file="${dist.dir.clients}/JMonitorClient.jar" tofile="${dist.dir.clients}/JMonitorClient-CERN.jar" filtering="false" overwrite="true"/>
+        <copy file="${dist.dir.clients}/JMonitorClient.jar" tofile="${dist.dir.clients}/JMonitorClient-CALTECH.jar" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient.jar" tofile="${dist.dir.clients}/JMonitorClient-CACR.jar" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient.jar" tofile="${dist.dir.clients}/JMonitorClient-No3D-CERN.jar" filtering="false" overwrite="true"/>
+        <copy file="${dist.dir.clients}/JMonitorClient.jar" tofile="${dist.dir.clients}/JMonitorClient-No3D-CALTECH.jar" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient.jar" tofile="${dist.dir.clients}/JMonitorClient-No3D-CACR.jar" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient.jar" tofile="${dist.dir.clients}/JMonitorClient-HI-CERN.jar" filtering="false" overwrite="true"/>
+        <copy file="${dist.dir.clients}/JMonitorClient.jar" tofile="${dist.dir.clients}/JMonitorClient-HI-CALTECH.jar" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient.jar" tofile="${dist.dir.clients}/JMonitorClient-HI-CACR.jar" filtering="false" />
+        
+        <mkdir dir="${dist.dir.clients}/JNLP-INF"/>
+
+        <!-- CERN JMonitorClient JARs (3D, No3D and HI res)  -->
+        <copy file="resources/jnlp/ML_Client_CERN.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/JMonitorClient-CERN.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+        
+        <copy file="resources/jnlp/ML_Client_No3D_CERN.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/JMonitorClient-No3D-CERN.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+
+        <copy file="resources/jnlp/ML_Client_HI_CERN.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/JMonitorClient-HI-CERN.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+            
+        <!-- CALTECH JMonitorClient JARs (3D and No3D) -->
+        <copy file="resources/jnlp/ML_Client_CALTECH.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/JMonitorClient-CALTECH.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+
+        <copy file="resources/jnlp/ML_Client_No3D_CALTECH.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/JMonitorClient-No3D-CALTECH.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+
+        <copy file="resources/jnlp/ML_Client_HI_CALTECH.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/JMonitorClient-HI-CALTECH.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+        
+        <!-- CACR JMonitorClient JARs (3D and No3D) -->
+        <copy file="resources/jnlp/ML_Client_CACR.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/JMonitorClient-CACR.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+
+        <copy file="resources/jnlp/ML_Client_No3D_CACR.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/JMonitorClient-No3D-CACR.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+
+        <copy file="resources/jnlp/ML_Client_HI_CACR.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/JMonitorClient-HI-CACR.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+        
+        <copy file="${dist.dir.clients}/JMonitorClient-CERN.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient-CALTECH.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient-CACR.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient-No3D-CERN.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient-No3D-CALTECH.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient-No3D-CACR.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient-HI-CERN.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient-HI-CALTECH.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        <copy file="${dist.dir.clients}/JMonitorClient-HI-CACR.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+            
         <echo message="Build vrvs3dJClient" />
         <jar jarfile="${dist.dir.clients}/vrvs3dJMonitorClient.jar" basedir="${build.dir}" manifest="${src.dir}/lia/Monitor/JiniClient/VRVS3D/JMonitorClient.manifest" update="false">
             <include name="lia/Monitor/JiniClient/*.class" />
@@ -1177,6 +1266,8 @@
             <include name="lia/images/grids/*" />
             <include name="lia/images/plot/*" />
             <include name="lia/images/osgmap/**" />
+            <include name="lia/util/UUID*.class" />
+            <include name="lia/util/IPU*.class" />
             <include name="lia/images/groups/**" />
             <include name="lia/Monitor/JiniClient/CommonGUI/plot/images/*" />
             <include name="lia/Monitor/ClientsFarmProxy/ProxyServiceI.class" />
@@ -1200,12 +1291,42 @@
             <include name="lia/util/DynamicThreadPoll/SchJob.class" />
             <include name="lia/util/ApMon/*.class" />
             <include name="lia/util/threads/**/*.class" />
+            <include name="lia/net/topology/**/*.class" />
             <include name="lia/Monitor/modules/monClientStats.class" />
             <!--            <include name="lia/Monitor/modules/monProcIO*.class" />
 			<include name="lia/Monitor/modules/monProcLoad*.class" />
 			<include name="lia/Monitor/modules/monProcStat.class" /> -->
         </jar>
         <copy file="${dist.dir.clients}/vrvs3dJMonitorClient.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        
+        <copy file="${dist.dir.clients}/vrvs3dJMonitorClient.jar" tofile="${dist.dir.clients}/vrvs3dJMonitorClient-CERN.jar" filtering="false" overwrite="true"/>
+        <copy file="${dist.dir.clients}/vrvs3dJMonitorClient.jar" tofile="${dist.dir.clients}/vrvs3dJMonitorClient-CALTECH.jar" filtering="false" />
+        <copy file="${dist.dir.clients}/vrvs3dJMonitorClient.jar" tofile="${dist.dir.clients}/vrvs3dJMonitorClient-CACR.jar" filtering="false" />
+        
+        <mkdir dir="${dist.dir.clients}/JNLP-INF"/>
+        
+        <!-- CERN vrvs3dJMonitorClient JAR  -->
+        <copy file="resources/jnlp/ML_Client_EVO_CERN.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/vrvs3dJMonitorClient-CERN.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+
+        <!-- CALTECH vrvs3dJMonitorClient JAR  -->
+        <copy file="resources/jnlp/ML_Client_EVO_CALTECH.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/vrvs3dJMonitorClient-CALTECH.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+        
+        <!-- CACR vrvs3dJMonitorClient JAR  -->
+        <copy file="resources/jnlp/ML_Client_EVO_CACR.jnlp" tofile="${dist.dir.clients}/JNLP-INF/APPLICATION.JNLP" filtering="false" overwrite="true"/>
+        <jar destfile="${dist.dir.clients}/vrvs3dJMonitorClient-CACR.jar" update="true" basedir="${dist.dir.clients}">
+            <include name="JNLP-INF/*" />
+        </jar>
+        
+        <copy file="${dist.dir.clients}/vrvs3dJMonitorClient-CERN.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        <copy file="${dist.dir.clients}/vrvs3dJMonitorClient-CALTECH.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+        <copy file="${dist.dir.clients}/vrvs3dJMonitorClient-CACR.jar" todir="${monalisa.home}/Clients/lib" filtering="false" />
+
         <echo message="Build JStoreClient" />
         <jar jarfile="${dist.dir.clients}/JStoreClient.jar" basedir="${build.dir}" manifest="${src.dir}/lia/Monitor/JiniClient/Store/JStoreClient.manifest" update="false">
             <include name="lia/Monitor/JiniClient/*.class" />
@@ -1348,7 +1469,7 @@
         <manifest file="${src.dir}/lia/Monitor/ClientsFarmProxy/ClientsFarmProxy.manifest" mode="update">
             <attribute name="Built-By" value="${user.name}" />
             <attribute name="Release-Date" value="${normaldate}" />
-            <attribute name="Proxy-Version" value="${monalisa.major.version}.${monalisa.minor.version}.${monalisa.maintenance.version}" />
+            <attribute name="Proxy-Version" value="${monalisa.version.short}" />
             <attribute name="Implementation-Version" value="${monalisa.version}" />
         </manifest>
         <jar jarfile="${dist.dir.proxy}/ClientsFarmProxy.jar" basedir="${build.dir}" manifest="${src.dir}/lia/Monitor/ClientsFarmProxy/ClientsFarmProxy.manifest" update="false">
@@ -1377,7 +1498,7 @@
         <manifest file="${src.dir}/lia/Monitor/ClientsFarmProxy/ClientsFarmProxy-dl.manifest" mode="update">
             <attribute name="Built-By" value="${user.name}" />
             <attribute name="Release-Date" value="${normaldate}" />
-            <attribute name="Proxy-Version" value="${monalisa.major.version}.${monalisa.minor.version}.${monalisa.maintenance.version}" />
+            <attribute name="Proxy-Version" value="${monalisa.version.short}" />
             <attribute name="Implementation-Version" value="${monalisa.version}" />
         </manifest>
         <jar jarfile="${dist.dir.proxy}/ClientsFarmProxy-dl.jar" basedir="${build.dir}" manifest="${src.dir}/lia/Monitor/ClientsFarmProxy/ClientsFarmProxy-dl.manifest" update="false">
@@ -1666,10 +1787,15 @@
     <target name="others_copy_sign">
         <copy file="${monalisa.home}/Clients/lib/plot.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
         <copy file="${monalisa.home}/Clients/lib/jfreechart-0.9.15.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/puretls.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
         <copy file="${monalisa.home}/Clients/lib/jcommon-0.9.0.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
         <copy file="${monalisa.home}/Clients/lib/jini-core.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
         <copy file="${monalisa.home}/Clients/lib/jini-ext.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
         <copy file="${monalisa.home}/Clients/lib/backport-util-concurrent.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/cog-jglobus.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/cryptix.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/jgsi.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+
         <signjar keystore="${keystore}" alias="${store.alias}" storepass="${store.pass}">
             <fileset dir="${sclients.update.dir}/jClient/lib">
                 <include name="plot.jar" />
@@ -1764,17 +1890,18 @@
 		target: copy_for_sign
 		================================= -->
     <target name="copy_for_sign" depends="dist_client">
-        <copy file="${monalisa.home}/Clients/lib/JMonitorClient.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
-        <copy file="${monalisa.home}/Clients/lib/vrvs3dJMonitorClient.jar" todir="${sclients.update.dir}/vrvsjClient/lib" filtering="false" />
-        <copy file="${monalisa.home}/Clients/lib/JReflRouterClient.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
-
-        <copy file="${lia.home}/lib/backport-util-concurrent.jar" todir="${sclients.update.dir}" filtering="false" />
-        <copy file="${lia.home}/lib/cog-jglobus.jar" todir="${sclients.update.dir}" filtering="false" />
-        <copy file="${lia.home}/lib/cryptix.jar" todir="${sclients.update.dir}" filtering="false" />
-        <copy file="${lia.home}/lib/jgsi.jar" todir="${sclients.update.dir}" filtering="false" />
-        <copy file="${lia.home}/lib/puretls.jar" todir="${sclients.update.dir}" filtering="false" />
-        <copy file="${lia.home}/lib/jini-core.jar" todir="${sclients.update.dir}" filtering="false" />
-        <copy file="${lia.home}/lib/jini-ext.jar" todir="${sclients.update.dir}" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/JMonitorClient-CERN.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/JMonitorClient-CALTECH.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/JMonitorClient-CACR.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/JMonitorClient-No3D-CERN.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/JMonitorClient-No3D-CALTECH.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/JMonitorClient-No3D-CACR.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/JMonitorClient-HI-CERN.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/JMonitorClient-HI-CALTECH.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/JMonitorClient-HI-CACR.jar" todir="${sclients.update.dir}/jClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/vrvs3dJMonitorClient-CERN.jar" todir="${sclients.update.dir}/vrvsjClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/vrvs3dJMonitorClient-CALTECH.jar" todir="${sclients.update.dir}/vrvsjClient/lib" filtering="false" />
+        <copy file="${monalisa.home}/Clients/lib/vrvs3dJMonitorClient-CACR.jar" todir="${sclients.update.dir}/vrvsjClient/lib" filtering="false" />
     </target>
 
     <!-- ================================= 
@@ -1784,25 +1911,24 @@
     <target name="sign" depends="copy_for_sign">
         <signjar keystore="${keystore}" alias="${store.alias}" storepass="${store.pass}">
             <fileset dir="${sclients.update.dir}/jClient/lib">
-                <include name="JMonitorClient.jar" />
+                <include name="JMonitorClient*.jar" />
             </fileset>
             <fileset dir="${sclients.update.dir}/vrvsjClient/lib">
-                <include name="vrvs3dJMonitorClient.jar" />
-            </fileset>
-            <fileset dir="${sclients.update.dir}">
-                <include name="backport-util-concurrent.jar" />
-                <include name="jini-core.jar" />
-                <include name="jini-ext.jar" />
-                <include name="cog-jglobus.jar" />
-                <include name="cryptix.jar" />
-                <include name="jgsi.jar" />
-                <include name="puretls.jar" />
-                <include name="jini-core.jar" />
-                <include name="jini-ext.jar" />
+                <include name="vrvs3dJMonitorClient*.jar" />
             </fileset>
         </signjar>
-        <copy file="${sclients.update.dir}/jClient/lib/JMonitorClient.jar" todir="${lia.home}/WEBS/WEB/jClient/lib" filtering="false" />
-        <copy file="${sclients.update.dir}/vrvsjClient/lib/vrvs3dJMonitorClient.jar" todir="${lia.home}/WEBS/WEB/vrvsjClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/jClient/lib/JMonitorClient-CERN.jar" todir="${lia.home}/WEBS/WEB/jClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/jClient/lib/JMonitorClient-CALTECH.jar" todir="${lia.home}/WEBS/WEB/jClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/jClient/lib/JMonitorClient-CACR.jar" todir="${lia.home}/WEBS/WEB/jClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/jClient/lib/JMonitorClient-No3D-CERN.jar" todir="${lia.home}/WEBS/WEB/jClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/jClient/lib/JMonitorClient-No3D-CALTECH.jar" todir="${lia.home}/WEBS/WEB/jClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/jClient/lib/JMonitorClient-No3D-CACR.jar" todir="${lia.home}/WEBS/WEB/jClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/jClient/lib/JMonitorClient-HI-CERN.jar" todir="${lia.home}/WEBS/WEB/jClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/jClient/lib/JMonitorClient-HI-CALTECH.jar" todir="${lia.home}/WEBS/WEB/jClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/jClient/lib/JMonitorClient-HI-CACR.jar" todir="${lia.home}/WEBS/WEB/jClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/vrvsjClient/lib/vrvs3dJMonitorClient-CERN.jar" todir="${lia.home}/WEBS/WEB/vrvsjClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/vrvsjClient/lib/vrvs3dJMonitorClient-CALTECH.jar" todir="${lia.home}/WEBS/WEB/vrvsjClient/lib" filtering="false" />
+        <copy file="${sclients.update.dir}/vrvsjClient/lib/vrvs3dJMonitorClient-CACR.jar" todir="${lia.home}/WEBS/WEB/vrvsjClient/lib" filtering="false" />
         <echo file="${lia.home}/WEBS/WEB/FARM_ML/version" append="false" message="${monalisa.version}" />
         <echo file="${lia.home}/WEBS/WEB/VRVS_ML/version" append="false" message="${monalisa.version}" />
     </target>
@@ -1823,7 +1949,7 @@
 
         <signjar keystore="${keystore}" alias="${store.alias}" storepass="${store.pass}">
             <fileset dir="${sclients.update.dir}/jClient/lib">
-                <include name="JMonitorClient.jar" />
+                <include name="JMonitorClient*.jar" />
             </fileset>
             <fileset dir="${sclients.update.dir}/vrvsjClient/lib">
                 <include name="vrvs3dJMonitorClient.jar" />

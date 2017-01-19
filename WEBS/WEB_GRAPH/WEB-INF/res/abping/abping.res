@@ -3,6 +3,8 @@
 	<title>
 	    ABPing configuration utility
 	</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    </head>
 	<body bgcolor=#FFFFFF>
 	    <form action=abping method=post>
 	    <table border=0 cellspacing=0 cellpadding=2 style="font-family:Helvetica,Verdana,Arial;font-size:10px">
@@ -30,5 +32,4 @@
 		<input type=submit name=submit value="ADD" class="input_submit">
 	    </form>
 	</body>
-    </head>
 </html>

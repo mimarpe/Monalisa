@@ -68,8 +68,9 @@ public class OldUpdater implements DownloadListener {
     private static final boolean DEBUG_UPDATER;
 
     private static final String getStackTrace(Throwable t) {
-        if (t == null)
+        if (t == null) {
             return "Null Stacktrace??";
+        }
 
         final StringWriter sw = new StringWriter();
         t.printStackTrace(new PrintWriter(sw));
@@ -91,13 +92,14 @@ public class OldUpdater implements DownloadListener {
     OldUpdater(String[] args) throws Exception {
         cacheDIR = getOption(args, "-cachedir");
         destDIR = getOption(args, "-destdir");
-        statusBuffer.append("\n").append(new Date()).append(" Updater [ Constructor ] DIRS: \ncacheDir = ").append(cacheDIR).append(" \ndestDir: ").append(destDIR).append("\n");
+        statusBuffer.append("\n").append(new Date()).append(" Updater [ Constructor ] DIRS: \ncacheDir = ")
+                .append(cacheDIR).append(" \ndestDir: ").append(destDIR).append("\n");
         init();
     }
 
     private static final boolean deleteFolder(File delFolder) throws IOException {
 
-        if (delFolder == null || !delFolder.exists() || !delFolder.isDirectory()) {
+        if ((delFolder == null) || !delFolder.exists() || !delFolder.isDirectory()) {
             throw new IOException("Specified path is not a valid folder.");
         }
         boolean delOk = true;
@@ -126,18 +128,23 @@ public class OldUpdater implements DownloadListener {
         statusBuffer.append("\n").append(new Date()).append(" Updater : Checking for previous errors ");
         File updateStatus = new File(cacheDIR + File.separator + "InvalidateCache");
         if (!updateStatus.exists()) {
-            statusBuffer.append("\n").append(new Date()).append(" Updater : No errors in previous updates ... Cache ok! ");
+            statusBuffer.append("\n").append(new Date())
+                    .append(" Updater : No errors in previous updates ... Cache ok! ");
         } else {
-            statusBuffer.append("\n").append(new Date()).append(" Updater : Errors in previous updates ... Trying to invalidate the cache! ");
+            statusBuffer.append("\n").append(new Date())
+                    .append(" Updater : Errors in previous updates ... Trying to invalidate the cache! ");
             boolean deleteOk = true;
             try {
                 deleteOk = deleteFolder(new File(cacheDIR));
             } catch (Throwable t) {
-                statusBuffer.append("\n").append(new Date()).append(" Updater : Errors while trying to delete cache folder [ ").append(cacheDIR).append(" ] ! \n");
+                statusBuffer.append("\n").append(new Date())
+                        .append(" Updater : Errors while trying to delete cache folder [ ").append(cacheDIR)
+                        .append(" ] ! \n");
                 statusBuffer.append(getStackTrace(t));
                 deleteOk = false;
             }
-            statusBuffer.append("\n").append(new Date()).append(" Updater : Delete Cache Folder [ ").append(cacheDIR).append(" ] ... ").append(deleteOk);
+            statusBuffer.append("\n").append(new Date()).append(" Updater : Delete Cache Folder [ ").append(cacheDIR)
+                    .append(" ] ... ").append(deleteOk);
         }
 
         try {
@@ -148,10 +155,13 @@ public class OldUpdater implements DownloadListener {
                 JNLPRuntime.setHeadless(true);
                 JNLPRuntime.initialize();
             } else {
-                statusBuffer.append("\n").append(new Date()).append(" Updater [ init ] JNLPRuntime.isInitialized() == ").append(JNLPRuntime.isInitialized());
+                statusBuffer.append("\n").append(new Date())
+                        .append(" Updater [ init ] JNLPRuntime.isInitialized() == ")
+                        .append(JNLPRuntime.isInitialized());
             }
         } catch (Throwable t) {
-            statusBuffer.append("\n").append(new Date()).append(" Updater [ init ] GOT EXCEPTION : ").append(getStackTrace(t));
+            statusBuffer.append("\n").append(new Date()).append(" Updater [ init ] GOT EXCEPTION : ")
+                    .append(getStackTrace(t));
             logger.log(Level.WARNING, " [ JNLPRuntime - initialize ] Got Exception ", t);
             throw new Exception(t);
         }
@@ -166,7 +176,7 @@ public class OldUpdater implements DownloadListener {
     private static String getOption(String[] args, String option) {
 
         for (int i = 0; i < args.length; i++) {
-            if (option.equals(args[i]) && args.length > i + 1) {
+            if (option.equals(args[i]) && (args.length > (i + 1))) {
                 return args[i + 1];
             }
         }
@@ -208,7 +218,8 @@ public class OldUpdater implements DownloadListener {
         }
 
         if (!fdir.isDirectory() || !fdir.canWrite()) {
-            throw new Exception(" The specified path " + dir + " is not a directory or there are no write permissions in it!");
+            throw new Exception(" The specified path " + dir
+                    + " is not a directory or there are no write permissions in it!");
         }
 
         return fdir;
@@ -217,10 +228,11 @@ public class OldUpdater implements DownloadListener {
     private static JNLPFile getJNLPFile(String location) throws Exception {
 
         URL url = null;
-        if (new File(location).exists())
+        if (new File(location).exists()) {
             url = new File(location).toURI().toURL();
-        else
+        } else {
             url = new URL(ServiceUtil.getBasicService().getCodeBase(), location);
+        }
 
         InputStream is = null;
         JNLPFile file = null;
@@ -270,9 +282,11 @@ public class OldUpdater implements DownloadListener {
     }
 
     private void copyFile2File(File s, File d, File dfin) throws Exception {
-        boolean sameSize = (dfin.exists() && s.length() == dfin.length() && s.lastModified() == dfin.lastModified());
+        boolean sameSize = (dfin.exists() && (s.length() == dfin.length()) && (s.lastModified() == dfin.lastModified()));
         if (!sameSize) {
-            statusBuffer.append("\n\n").append(new Date()).append(" START From: ").append(s.getPath()).append(" [ ").append(s.length()).append(" ]\n To: ").append(d.getPath()).append(" [ ").append(d.length()).append(" ]");
+            statusBuffer.append("\n\n").append(new Date()).append(" START From: ").append(s.getPath()).append(" [ ")
+                    .append(s.length()).append(" ]\n To: ").append(d.getPath()).append(" [ ").append(d.length())
+                    .append(" ]");
         }
         // Create channel on the source
         FileChannel srcChannel = new FileInputStream(s).getChannel();
@@ -286,9 +300,12 @@ public class OldUpdater implements DownloadListener {
         long ss = srcChannel.size();
         long ds = dstChannel.size();
 
-        if (ss != ds || ss != tr) {
-            statusBuffer.append("\n\nError copying from ").append(s.getPath()).append(" [ ").append(ss).append(" ] + to ").append(d.getPath()).append(" [ ").append(ds).append(" ] Total Bytes Transfered [ ").append(tr).append(" ]");
-            throw new Exception("Cannot copy SourceFileSize [ " + ss + " ] DestinationFileSize [ " + ds + " ] Transferred [ " + tr + " ] ");
+        if ((ss != ds) || (ss != tr)) {
+            statusBuffer.append("\n\nError copying from ").append(s.getPath()).append(" [ ").append(ss)
+                    .append(" ] + to ").append(d.getPath()).append(" [ ").append(ds)
+                    .append(" ] Total Bytes Transfered [ ").append(tr).append(" ]");
+            throw new Exception("Cannot copy SourceFileSize [ " + ss + " ] DestinationFileSize [ " + ds
+                    + " ] Transferred [ " + tr + " ] ");
         }
 
         // Close the channels
@@ -299,10 +316,13 @@ public class OldUpdater implements DownloadListener {
         try {
             setRWOwnerOnly(d, statusBuffer);
         } catch (Throwable ignoreInCaseOfJava5) {
-            statusBuffer.append("\n\n [ Caught ignored ... ] Cannot set RW only for :").append(d).append(" only for owner. Cause: ").append(ignoreInCaseOfJava5.getMessage());
+            statusBuffer.append("\n\n [ Caught ignored ... ] Cannot set RW only for :").append(d)
+                    .append(" only for owner. Cause: ").append(ignoreInCaseOfJava5.getMessage());
         }
         if (!sameSize) {
-            statusBuffer.append("\n").append(new Date()).append(" FINISHED\nFrom: ").append(s.getPath()).append(" [ ").append(ss).append(" ]\nTo: ").append(d.getPath()).append(" [ ").append(ds).append(" ]\n Transf [ ").append(tr).append(" ]\n");
+            statusBuffer.append("\n").append(new Date()).append(" FINISHED\nFrom: ").append(s.getPath()).append(" [ ")
+                    .append(ss).append(" ]\nTo: ").append(d.getPath()).append(" [ ").append(ds)
+                    .append(" ]\n Transf [ ").append(tr).append(" ]\n");
         }
     }
 
@@ -315,20 +335,24 @@ public class OldUpdater implements DownloadListener {
                 File f = new File(tmpJarsNames[i]);
                 File df = new File(dstJarName);
                 long srcLastModifiedTime = f.lastModified();
-                boolean sameSize = (df.exists() && f.length() == df.length() && srcLastModifiedTime == df.lastModified());
+                boolean sameSize = (df.exists() && (f.length() == df.length()) && (srcLastModifiedTime == df
+                        .lastModified()));
 
                 logger.log(Level.FINEST, " Renaming " + f + " to " + df);
                 if (!sameSize) {
                     retV = false;
-                    statusBuffer.append("\n").append(new Date()).append(" MOVE ").append(f.getPath()).append(" to ").append(df.getPath());
+                    statusBuffer.append("\n").append(new Date()).append(" MOVE ").append(f.getPath()).append(" to ")
+                            .append(df.getPath());
                 }
 
                 if (!f.renameTo(df)) {
-                    statusBuffer.append("\n\n").append(new Date()).append(" Cannot move ").append(f.getPath()).append(" to ").append(df.getPath());
+                    statusBuffer.append("\n\n").append(new Date()).append(" Cannot move ").append(f.getPath())
+                            .append(" to ").append(df.getPath());
                     logger.log(Level.SEVERE, " Cannot rename " + f + " to " + df);
                 } else {
                     if (!sameSize) {
-                        statusBuffer.append("\n").append(new Date()).append(" END MOVE ").append(f.getPath()).append(" to ").append(df.getPath());
+                        statusBuffer.append("\n").append(new Date()).append(" END MOVE ").append(f.getPath())
+                                .append(" to ").append(df.getPath());
                     }
                 }
                 // set the update time
@@ -337,7 +361,8 @@ public class OldUpdater implements DownloadListener {
                 try {
                     setRWOwnerOnly(df, statusBuffer);
                 } catch (Throwable ignoreInCaseOfJava5) {
-                    statusBuffer.append("\n\n [ Caught ignored ... ] Cannot set RW only for :").append(df).append(" only for owner. Cause: ").append(ignoreInCaseOfJava5.getMessage());
+                    statusBuffer.append("\n\n [ Caught ignored ... ] Cannot set RW only for :").append(df)
+                            .append(" only for owner. Cause: ").append(ignoreInCaseOfJava5.getMessage());
                 }
             }
         }
@@ -353,9 +378,11 @@ public class OldUpdater implements DownloadListener {
             // set the "right" permissions
             final boolean setRb = f.setReadable(true, false);
             final boolean setWb = f.setWritable(true, true);
-            statusBuffer.append("\n Setting Read-Only for: ").append(f).append("; setReadOwnerStatus:").append(setRb).append("setWriteOwnerStatus=").append(setWb).append("\n");
+            statusBuffer.append("\n Setting Read-Only for: ").append(f).append("; setReadOwnerStatus:").append(setRb)
+                    .append("setWriteOwnerStatus=").append(setWb).append("\n");
         } catch (Throwable ignoreInCaseOfJava5) {
-            statusBuffer.append("\n\n Cannot set RW only for :").append(f).append(" only for owner. Cause: ").append(ignoreInCaseOfJava5.getMessage());
+            statusBuffer.append("\n\n Cannot set RW only for :").append(f).append(" only for owner. Cause: ")
+                    .append(ignoreInCaseOfJava5.getMessage());
         }
     }
 
@@ -371,7 +398,13 @@ public class OldUpdater implements DownloadListener {
         for (int i = 0; i < jars.length; i++) {
             try {
                 File s = tracker.getCacheFile(jars[i].getLocation());
-                File dfin = new File(checkForDir(destDIR).getAbsolutePath() + "/" + jars[i].getLocation().toString().substring(jnlpf.getCodeBase().toString().length(), jars[i].getLocation().toString().length()));
+                File dfin = new File(checkForDir(destDIR).getAbsolutePath()
+                        + "/"
+                        + jars[i]
+                                .getLocation()
+                                .toString()
+                                .substring(jnlpf.getCodeBase().toString().length(),
+                                        jars[i].getLocation().toString().length()));
                 if ((!dfin.exists()) || (s.length() != dfin.length()) || (s.lastModified() != dfin.lastModified())) {
                     // if(dfin.getPath().indexOf("update.jar") > -1){
                     // continue; // for test purposes - skip updating of update.jar
@@ -392,26 +425,28 @@ public class OldUpdater implements DownloadListener {
                 try {
                     setRWOwnerOnly(dfin, statusBuffer);
                 } catch (Throwable ignoreInCaseOfJava5) {
-                    statusBuffer.append("\n\n [ Caught ignored ... ] Cannot set RW only for :").append(dfin).append(" only for owner. Cause: ").append(ignoreInCaseOfJava5.getMessage());
+                    statusBuffer.append("\n\n [ Caught ignored ... ] Cannot set RW only for :").append(dfin)
+                            .append(" only for owner. Cause: ").append(ignoreInCaseOfJava5.getMessage());
                 }
 
                 try {
                     setRWOwnerOnly(s, statusBuffer);
                 } catch (Throwable ignoreInCaseOfJava5) {
-                    statusBuffer.append("\n\n [ Caught ignored ... ] Cannot set RW only for :").append(s).append(" only for owner. Cause: ").append(ignoreInCaseOfJava5.getMessage());
+                    statusBuffer.append("\n\n [ Caught ignored ... ] Cannot set RW only for :").append(s)
+                            .append(" only for owner. Cause: ").append(ignoreInCaseOfJava5.getMessage());
                 }
             } catch (Throwable t) {
                 String fURL = jars[i].getLocation().getFile();
-                if (fURL == null || fURL.length() == 0) {
+                if ((fURL == null) || (fURL.length() == 0)) {
                     throw new Exception(t);
                 }
-                if (ignorePaths == null || ignorePaths.length == 0) {
+                if ((ignorePaths == null) || (ignorePaths.length == 0)) {
                     throw new Exception(t);
                 }
                 allOK = false;
                 boolean canIgnore = false;
                 for (int iIgnore = 0; iIgnore < ignorePaths.length; iIgnore++) {
-                    if (ignorePaths[iIgnore] != null && ignorePaths[iIgnore].length() > 0) {
+                    if ((ignorePaths[iIgnore] != null) && (ignorePaths[iIgnore].length() > 0)) {
                         if (fURL.indexOf(ignorePaths[iIgnore]) != -1) {
                             canIgnore = true;
                             break;
@@ -434,13 +469,15 @@ public class OldUpdater implements DownloadListener {
 
     private static String[] getURLs(String URLList) {
         String[] ret = null;
-        if (URLList == null || URLList.length() == 0)
+        if ((URLList == null) || (URLList.length() == 0)) {
             return null;
+        }
 
         StringTokenizer st = new StringTokenizer(URLList, ",");
         logger.log(Level.CONFIG, "URLList " + URLList + " url no : " + st.countTokens());
-        if (st == null || st.countTokens() == 0)
+        if ((st == null) || (st.countTokens() == 0)) {
             return null;
+        }
         ret = new String[st.countTokens()];
         StringBuffer sb = new StringBuffer();
         for (int i = 0; i <= st.countTokens(); i++) {
@@ -461,8 +498,9 @@ public class OldUpdater implements DownloadListener {
             String lastUpdateLogFile = UpdaterConfig.getProperty("lia.util.update.Updater.LAST_UDPDATELOG_FILE", null);
             if (lastUpdateLogFile == null) {
                 String FARM_HOME = UpdaterConfig.getGlobalEnvProperty("FARM_HOME", null);
-                if (FARM_HOME == null)
+                if (FARM_HOME == null) {
                     return;
+                }
                 lastUpdateLogFile = FARM_HOME + File.separator + "lastUpdate.log";
             }
 
@@ -478,7 +516,8 @@ public class OldUpdater implements DownloadListener {
             }
 
             BufferedWriter bw = new BufferedWriter(new FileWriter(lastUpdateLogFile));
-            bw.write("\n ===========  Update Status [ " + ((wasOK) ? "OK" : "NOT_OK") + " ] Updater version: " + MonaLisa_version + " ===========");
+            bw.write("\n ===========  Update Status [ " + ((wasOK) ? "OK" : "NOT_OK") + " ] Updater version: "
+                    + MonaLisa_version + " ===========");
             bw.write("\n <-> <-> Local Time: " + new Date());
             bw.write("\n <-> <-> Hostname: " + hostname);
             if (exc != null) {
@@ -500,14 +539,15 @@ public class OldUpdater implements DownloadListener {
             final boolean newUpdater = UpdaterConfig.checkJavaVersion("1.6+");
             final boolean useOldUpdater = UpdaterConfig.getb("lia.util.update.USE_OLD_UPDATER", false);
 
-            if(useOldUpdater) {
+            if (useOldUpdater) {
                 System.out.println("Using old updater because forced in app config");
             } else {
-                if(newUpdater) {
-                    throw new IllegalStateException(" [ OldUpdater ] Most likely a bug. We got in an illegal state. We do not support Java6+. Please contact support@monalisa.cern.ch");
+                if (newUpdater) {
+                    throw new IllegalStateException(
+                            " [ OldUpdater ] Most likely a bug. We got in an illegal state. We do not support Java6+. Please contact support@monalisa.cern.ch");
                 }
             }
-            
+
             //too bad - cannot update to the latest and greatest
             final boolean oldUpdater = UpdaterConfig.checkJavaVersion("1.4+");
             if (oldUpdater) {
@@ -530,13 +570,15 @@ public class OldUpdater implements DownloadListener {
                     logger.log(Level.INFO, "Cannot set timeouts for URLConnection", t);
                 }
 
-                if (getOption(args, "-jnlps") == null || getOption(args, "-cachedir") == null || getOption(args, "-destdir") == null) {
-                    System.out.println("Usage: " + " -cachedir <path_to_your_cache_dir> " + " -destdir <path_to_your_cache_dir>" + " -jnlps <URL_to_jnlp_file>");
+                if ((getOption(args, "-jnlps") == null) || (getOption(args, "-cachedir") == null)
+                        || (getOption(args, "-destdir") == null)) {
+                    System.out.println("Usage: " + " -cachedir <path_to_your_cache_dir> "
+                            + " -destdir <path_to_your_cache_dir>" + " -jnlps <URL_to_jnlp_file>");
                     System.exit(1);
                 }
 
                 versionNumber = getOption(args, "-useVersion");
-                if (versionNumber != null && versionNumber.length() == 0) {
+                if ((versionNumber != null) && (versionNumber.length() == 0)) {
                     versionNumber = null;
                 }
 
@@ -544,7 +586,7 @@ public class OldUpdater implements DownloadListener {
 
                 URLs = getURLs(getOption(args, "-jnlps"));
 
-                if (URLs == null || URLs.length == 0) {
+                if ((URLs == null) || (URLs.length == 0)) {
                     statusBuffer.append("\n").append(new Date()).append("Updater : [ main ] NO URLs defined! ");
                     writeStatusBuffer(false);
                     System.exit(1);
@@ -559,13 +601,17 @@ public class OldUpdater implements DownloadListener {
                         conn.setDefaultUseCaches(false);
                         conn.setUseCaches(false);
                         BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                        while (br.readLine() != null);
+                        while (br.readLine() != null) {
+                            ;
+                        }
                         statusOK = true;
                     } catch (Throwable t) {
-                        statusBuffer.append(" Got exc reading URL \n").append(URLs[i]).append("\n The Exc: \n").append(getStackTrace(t));
+                        statusBuffer.append(" Got exc reading URL \n").append(URLs[i]).append("\n The Exc: \n")
+                                .append(getStackTrace(t));
                     }
-                    if (statusOK)
+                    if (statusOK) {
                         break;
+                    }
                 }
 
                 if (!statusOK) {
@@ -578,7 +624,8 @@ public class OldUpdater implements DownloadListener {
                 try {
                     updater = new OldUpdater(args);
                 } catch (Throwable t) {
-                    statusBuffer.append("\n").append(new Date()).append("Updater : [ main ] Cannot instantiate updater...\nERROR: ");
+                    statusBuffer.append("\n").append(new Date())
+                            .append("Updater : [ main ] Cannot instantiate updater...\nERROR: ");
                     statusBuffer.append("\n").append(getStackTrace(t));
                     writeStatusBuffer(false);
                     logger.log(Level.SEVERE, "Cannot instantiate updater...", t);
@@ -589,25 +636,28 @@ public class OldUpdater implements DownloadListener {
                 boolean minorError = true;
                 boolean allSameSize = false;
                 statusBuffer.append("\n" + new Date() + " Updater : [ main ] Starting update ... ");
-                for (i = 0; i < URLs.length && error; i++) {
+                for (i = 0; (i < URLs.length) && error; i++) {
                     error = true;
                     minorError = true;
                     allSameSize = false;
-                    if (URLs[i] != null && URLs[i].length() > 0) {
+                    if ((URLs[i] != null) && (URLs[i].length() > 0)) {
                         try {
-                            statusBuffer.append("\n").append(new Date()).append(" Updater : [ main ] Trying to get JNLPFile from URL: ").append(URLs[i]).append(" ... ");
+                            statusBuffer.append("\n").append(new Date())
+                                    .append(" Updater : [ main ] Trying to get JNLPFile from URL: ").append(URLs[i])
+                                    .append(" ... ");
                             jnlpf = getJNLPFile(URLs[i]);
                             statusBuffer.append("OK");
-                            statusBuffer.append("\n").append(new Date()).append(" Updater : [ main ] Trying waitForJars() ... ");
+                            statusBuffer.append("\n").append(new Date())
+                                    .append(" Updater : [ main ] Trying waitForJars() ... ");
                             updater.waitForJars();
                             statusBuffer.append("OK");
-                            statusBuffer.append("\n").append(new Date()).append(" Updater : [ main ] Trying to copyLocal() ... ");
-                            String[] fURLs = updater.copyLocal(new String[] {
-                                "Control/lib"
-                            });
+                            statusBuffer.append("\n").append(new Date())
+                                    .append(" Updater : [ main ] Trying to copyLocal() ... ");
+                            String[] fURLs = updater.copyLocal(new String[] { "Control/lib" });
                             if (fURLs == null) {
                                 statusBuffer.append("OK");
-                                statusBuffer.append("\n").append(new Date()).append(" Updater : [ main ] Trying to moveLocal() ... ");
+                                statusBuffer.append("\n").append(new Date())
+                                        .append(" Updater : [ main ] Trying to moveLocal() ... ");
                                 allSameSize = updater.moveLocal();
                                 statusBuffer.append("OK");
                                 error = false;
@@ -623,7 +673,8 @@ public class OldUpdater implements DownloadListener {
                             }
                         } catch (Throwable t) {
                             minorError = false;
-                            statusBuffer.append("\n").append(new Date()).append(" Updater : [ main ] Got EXCEPTION for: ").append(URLs[i]);
+                            statusBuffer.append("\n").append(new Date())
+                                    .append(" Updater : [ main ] Got EXCEPTION for: ").append(URLs[i]);
                             statusBuffer.append("\n").append(getStackTrace(t));
                             logger.log(Level.WARNING, " UPDATE FROM " + URLs[i] + " FAILED! ", t);
                         }
@@ -632,14 +683,16 @@ public class OldUpdater implements DownloadListener {
 
                 new File(cacheDIR + File.separator + "InvalidateCache");
 
-                if (i == URLs.length && error && !minorError) {
-                    statusBuffer.append("\n\n").append(new Date()).append("Updater : [ main ] Cannot update from any of the URLs");
+                if ((i == URLs.length) && error && !minorError) {
+                    statusBuffer.append("\n\n").append(new Date())
+                            .append("Updater : [ main ] Cannot update from any of the URLs");
                     writeStatusBuffer(false);
                     System.exit(1);
                 }
 
                 if (!allSameSize) {
-                    statusBuffer.append("\n\n").append(new Date()).append(" Updater : [ main ] SUCCESSFUL UPDATE FROM: ").append(URLs[i - 1]);
+                    statusBuffer.append("\n\n").append(new Date())
+                            .append(" Updater : [ main ] SUCCESSFUL UPDATE FROM: ").append(URLs[i - 1]);
                     logger.log(Level.INFO, " UPDATE COMPLETE! ");
                 } else {
                     statusBuffer.append("\n\n").append(new Date()).append(" Updater : [ main ] SUCCESSFUL RESTART ");
@@ -650,33 +703,39 @@ public class OldUpdater implements DownloadListener {
                 System.exit(0);
 
             } else {
-                System.err.println(" [ Updater ] Unable to determine the updater protocol to use. ML needs at least Java 1.4+ and is highly recommended to use at least Java6! Java Version: " + UpdaterConfig.getJavaVersion());
+                System.err
+                        .println(" [ Updater ] Unable to determine the updater protocol to use. ML needs at least Java 1.4+ and is highly recommended to use at least Java6! Java Version: "
+                                + UpdaterConfig.getJavaVersion());
             }
         } catch (Throwable genexc) {
-            statusBuffer.append("\n\n").append(new Date()).append("Updater : [ main ] Cannot update from any of the URLs\n\n");
+            statusBuffer.append("\n\n").append(new Date())
+                    .append("Updater : [ main ] Cannot update from any of the URLs\n\n");
             statusBuffer.append(getStackTrace(genexc));
             writeStatusBuffer(false);
             logger.log(Level.WARNING, "General Ex", genexc);
             System.exit(1);
         }
     }
-    
+
     public static final void main(String[] args) throws Exception {
         updateML(args);
     }
 
     public void updateStarted(DownloadEvent downloadEvent) {
-        if (downloadEvent == null)
+        if (downloadEvent == null) {
             return;
+        }
     }
 
     public void downloadStarted(DownloadEvent downloadEvent) {
-        if (downloadEvent == null)
+        if (downloadEvent == null) {
             return;
+        }
     }
 
     public void downloadCompleted(DownloadEvent downloadEvent) {
-        if (downloadEvent == null)
+        if (downloadEvent == null) {
             return;
+        }
     }
 }

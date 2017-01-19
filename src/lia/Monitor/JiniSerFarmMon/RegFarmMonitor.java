@@ -88,7 +88,7 @@ import net.jini.lookup.entry.Name;
 public class RegFarmMonitor extends BasicService implements Runnable, DataStore, ShutdownReceiver {
 
     /** The Logger */
-    private static final transient Logger logger = Logger.getLogger(RegFarmMonitor.class.getName());
+    private static final Logger logger = Logger.getLogger(RegFarmMonitor.class.getName());
 
     // remember the uptime :) ... hope you will have a long and happy life
     private static volatile long ML_START_TIME;
@@ -160,18 +160,18 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         }
 
         final List<URL> urls = new LinkedList<URL>();
-        if (updateURLs == null || updateURLs.length == 0) {
+        if ((updateURLs == null) || (updateURLs.length == 0)) {
             shouldUPDATE = false;
         } else {
             shouldUPDATE = false;
-            for (int i = 0; i < updateURLs.length; i++) {
-                if (updateURLs[i] != null) {
+            for (String updateURL : updateURLs) {
+                if (updateURL != null) {
                     try {
-                        urls.add(new URL(updateURLs[i]));
+                        urls.add(new URL(updateURL));
                         shouldUPDATE = true;
                     } catch (Throwable t) {
                         if (logger.isLoggable(Level.FINE)) {
-                            logger.log(Level.FINE, " Unable to parse url: " + updateURLs[i]);
+                            logger.log(Level.FINE, " Unable to parse url: " + updateURL);
                         }
                     }
                 }
@@ -197,7 +197,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         }
 
         try {
-            final long tmpVal = AppConfig.getl("lia.Monitor.JiniSerFarmMon.JINIMGR_RESTART_DELAY", ((isVRVS) ? 1 : (4 * 60))) * 60 * 1000;
+            final long tmpVal = AppConfig.getl("lia.Monitor.JiniSerFarmMon.JINIMGR_RESTART_DELAY", ((isVRVS) ? 1
+                    : (4 * 60))) * 60 * 1000;
             JINIMGR_RESTART_DELAY.set(tmpVal);
         } catch (Throwable t) {
             JINIMGR_RESTART_DELAY.set(((isVRVS) ? 1 : (4 * 60)) * 60 * 1000);
@@ -220,14 +221,17 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             final boolean tmpVal = AppConfig.getb("lia.Monitor.JiniSerFarmMon.CHECK_JINI", true);
             bVerifyLUS.set(tmpVal);
         } catch (Throwable t) {
-            logger.log(Level.WARNING, " [ RegFarmMonitor ] Unable to determine lia.Monitor.JiniSerFarmMon.CHECK_JINI; cause:", t);
+            logger.log(Level.WARNING,
+                    " [ RegFarmMonitor ] Unable to determine lia.Monitor.JiniSerFarmMon.CHECK_JINI; cause:", t);
             bVerifyLUS.set(false);
         }
 
         if (logger.isLoggable(Level.FINE)) {
             logger.log(Level.FINE, "[ RegFarmMonitor ]  lia.Monitor.JiniSerFarmMon.CHECK_JINI = " + bVerifyLUS.get()
-                    + "; lia.Monitor.JiniSerFarmMon.JINIMGR_RESTART_DELAY=" + JINIMGR_RESTART_DELAY.get() / (60 * 1000) + " min"
-                    + "; lia.Monitor.JiniSerFarmMon.LUS_VERIFY_DELAY=" + LUS_VERIFY_DELAY.get() / (60 * 1000) + " min");
+                    + "; lia.Monitor.JiniSerFarmMon.JINIMGR_RESTART_DELAY="
+                    + (JINIMGR_RESTART_DELAY.get() / (60 * 1000)) + " min"
+                    + "; lia.Monitor.JiniSerFarmMon.LUS_VERIFY_DELAY=" + (LUS_VERIFY_DELAY.get() / (60 * 1000))
+                    + " min");
         }
 
         final String sLevel = AppConfig.getProperty("lia.Monitor.JiniSerFarmMon.RegFarmMonitor.level");
@@ -264,9 +268,9 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                 sb.append("#restart ML from java script").append("\n");
                 sb.append("#\n");
                 sb.append("sleep 5\n");
-                sb.append(MonaLisa_HOME + File.separator + "Service" + File.separator + "CMD" + File.separator + "ML_SER ")
-                  .append("restart ")
-                  .append(" 0<&- 1>&- 2>&-");
+                sb.append(
+                        MonaLisa_HOME + File.separator + "Service" + File.separator + "CMD" + File.separator
+                                + "ML_SER ").append("restart ").append(" 0<&- 1>&- 2>&-");
                 sb.append("\n");
                 final File f = File.createTempFile("MonALISA_restart", ".sh");
                 f.deleteOnExit();
@@ -294,7 +298,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                 Utils.closeIgnoringException(restartProc.getInputStream());
                 Utils.closeIgnoringException(restartProc.getOutputStream());
                 Utils.closeIgnoringException(restartProc.getErrorStream());
-                logger.log(Level.INFO, "[ Restarting ML for update ] cmd sent; all process I/O streams closed ... waiting for restart");
+                logger.log(Level.INFO,
+                        "[ Restarting ML for update ] cmd sent; all process I/O streams closed ... waiting for restart");
                 return true;
             } catch (Throwable t) {
                 logger.log(Level.WARNING, "Exception restarting ML", t);
@@ -342,21 +347,22 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             }
 
             final String urls = AppConfig.getProperty("URL_LIST_UPDATE");
-            args = new String[] {
-                    "-cachedir", cacheDir.getAbsolutePath(), "-destdir", destDir.getAbsolutePath(), "-jnlps", urls
-            };
-            logger.log(Level.INFO, "UpdateVerifierTask - Using cacheDir:" + cacheDir.getAbsolutePath() + " destDir: " + destDir.getAbsolutePath()
-                    + " urls: " + urls);
+            args = new String[] { "-cachedir", cacheDir.getAbsolutePath(), "-destdir", destDir.getAbsolutePath(),
+                    "-jnlps", urls };
+            logger.log(Level.INFO, "UpdateVerifierTask - Using cacheDir:" + cacheDir.getAbsolutePath() + " destDir: "
+                    + destDir.getAbsolutePath() + " urls: " + urls);
         }
 
         private final void notifyUpdate() {
             try {
                 UPDATE_FILE.createNewFile();
             } catch (Throwable t) {
-                logger.log(Level.WARNING, "[ UpdateVerifier ] Failed to notify update. Unable to create file: " + UPDATE_FILE, t);
+                logger.log(Level.WARNING, "[ UpdateVerifier ] Failed to notify update. Unable to create file: "
+                        + UPDATE_FILE, t);
             }
         }
 
+        @Override
         public void run() {
             final long sTime = System.nanoTime();
             try {
@@ -378,23 +384,25 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                 AppRemoteURLUpdater urlUpdater = new AppRemoteURLUpdater(args, false);
                 AppProperties appProps = null;
                 try {
-                    appProps = urlUpdater.getRemoteAppProperties(AppConfig.getVectorProperty("URL_LIST_UPDATE"), cacheDir, "MLService");
+                    appProps = urlUpdater.getRemoteAppProperties(AppConfig.getVectorProperty("URL_LIST_UPDATE"),
+                            cacheDir, "MLService");
                     final String remoteVersion = appProps.appVersion;
                     final String remoteBuildID = appProps.appBuildID;
 
                     if (logger.isLoggable(Level.FINE)) {
-                        logger.log(Level.FINE, " Remote version " + remoteVersion + " myVersion " + MY_VERSION + " remotebuildID: " + remoteBuildID
-                                + " myBuildID: " + MY_BUILDID);
+                        logger.log(Level.FINE, " Remote version " + remoteVersion + " myVersion " + MY_VERSION
+                                + " remotebuildID: " + remoteBuildID + " myBuildID: " + MY_BUILDID);
                     }
-                    if (remoteVersion != null && MY_VERSION != null && remoteBuildID != null && MY_BUILDID != null) {
+                    if ((remoteVersion != null) && (MY_VERSION != null) && (remoteBuildID != null)
+                            && (MY_BUILDID != null)) {
                         if (remoteVersion.equals(MY_VERSION) && remoteBuildID.equals(MY_BUILDID)) {
                             if (logger.isLoggable(Level.FINEST)) {
                                 logger.log(Level.INFO, " Same version. No update needed");
                             }
                             return;
                         }
-                        logger.log(Level.INFO, " New update: Remote version " + remoteVersion + " myVersion " + MY_VERSION + " remotebuildID: "
-                                + remoteBuildID + " myBuildID: " + MY_BUILDID);
+                        logger.log(Level.INFO, " New update: Remote version " + remoteVersion + " myVersion "
+                                + MY_VERSION + " remotebuildID: " + remoteBuildID + " myBuildID: " + MY_BUILDID);
                     } else {
                         return;
                     }
@@ -412,7 +420,9 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                 }
             } finally {
                 if (logger.isLoggable(Level.FINE)) {
-                    logger.log(Level.FINE, " Updater task finished in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - sTime) + " ms");
+                    logger.log(Level.FINE,
+                            " Updater task finished in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - sTime)
+                                    + " ms");
                 }
             }
 
@@ -423,12 +433,16 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
 
         final File f = new File(FarmHOME + File.separator + "ALIVE");
 
+        @Override
         public void run() {
             try {
                 f.createNewFile();
             } catch (Throwable t) {
                 if (logger.isLoggable(Level.FINE)) {
-                    logger.log(Level.FINE, " [ RegFarmMonitor ] [ FarmAlive Task ] [ HANDLED ] FAILED TO ANNOUNCE ALIVE TO THE WRAPPER ", t);
+                    logger.log(
+                            Level.FINE,
+                            " [ RegFarmMonitor ] [ FarmAlive Task ] [ HANDLED ] FAILED TO ANNOUNCE ALIVE TO THE WRAPPER ",
+                            t);
                 }
             }
         }
@@ -463,13 +477,13 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         /** get the address(es) of the topology service(s) */
         public void getGeoServiceAddress() {
             ServiceItem[] si = MLLUSHelper.getInstance().getTopologyServices();
-            if (si == null || si.length == 0 || si[0].attributeSets.length == 0) {
+            if ((si == null) || (si.length == 0) || (si[0].attributeSets.length == 0)) {
                 logger.log(Level.INFO, "No Geo service was found (yet)");
                 topoServices.clear();
                 asResolverErrors++;
             } else {
-                for (int siIdx = 0; siIdx < si.length; siIdx++) {
-                    GenericMLEntry gmle = (GenericMLEntry) si[siIdx].attributeSets[0];
+                for (ServiceItem element : si) {
+                    GenericMLEntry gmle = (GenericMLEntry) element.attributeSets[0];
                     if (gmle.hash != null) {
                         final String baseUrl = (String) gmle.hash.get("URL");
                         if (!topoServices.contains(baseUrl)) {
@@ -483,7 +497,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
 
         /** Query the FindIP servlet of all available topology services to get AS and NET. */
         private void getASandNET(String ipAddress) {
-            for (Iterator<String> tsi = topoServices.iterator(); tsi.hasNext() && as == null;) {
+            for (Iterator<String> tsi = topoServices.iterator(); tsi.hasNext() && (as == null);) {
                 String allQuery = tsi.next() + "/FindIP?" + ipAddress;
                 if (logger.isLoggable(Level.FINE)) {
                     logger.log(Level.FINE, "Querying topo service to get AS and NET:\n" + allQuery);
@@ -503,10 +517,10 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                         // read data 'till end of file or empty line received
                         line = line.replaceAll("[ ]+", " ");
                         String key = line.substring(0, line.indexOf(":")).toLowerCase();
-                        if (as == null && key.equalsIgnoreCase("origin")) {
+                        if ((as == null) && key.equalsIgnoreCase("origin")) {
                             as = line.substring(line.indexOf("AS") + 2);
                         }
-                        if (net == null && key.equalsIgnoreCase("netname")) {
+                        if ((net == null) && key.equalsIgnoreCase("netname")) {
                             net = line.substring(line.indexOf(":") + 2);
                         }
                     }
@@ -527,8 +541,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
 
         /** Query the FindAS servlet of all available topology services to get the location data */
         private String getGeo(String as) {
-            for (Iterator<String> tsi = topoServices.iterator(); tsi.hasNext();) {
-                String allQuery = tsi.next() + "/FindAS?" + as;
+            for (String string : topoServices) {
+                String allQuery = string + "/FindAS?" + as;
                 if (logger.isLoggable(Level.FINE)) {
                     logger.log(Level.FINE, "Querying topo service to get Geographic data:\n" + allQuery);
                 }
@@ -583,6 +597,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             return geo.substring(i, j);
         }
 
+        @Override
         public void run() {
             try {
                 String IPAddress = dataStore.getIPAddress();
@@ -596,38 +611,42 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                     getASandNET(IPAddress);
                     if (as != null) {
                         String geo = getGeo(as);
-                        if (geo != null && geo.length() >= 5) {
+                        if ((geo != null) && (geo.length() >= 5)) {
                             country = getCountry(geo);
                             continent = getContinent(geo);
                             LONG = getLONG(geo);
                             LAT = getLAT(geo);
                         }
                         synchronized (gmle.hash) {
-                            if (as != null && as.length() > 0) {
+                            if ((as != null) && (as.length() > 0)) {
                                 gmle.hash.put("AS", as);
                             }
-                            if (net != null && net.length() > 0) {
+                            if ((net != null) && (net.length() > 0)) {
                                 gmle.hash.put("NET", net);
                             }
-                            if (country != null && country.length() > 0) {
+                            if ((country != null) && (country.length() > 0)) {
                                 gmle.hash.put("COUNTRY", country);
                             }
-                            if (continent != null && continent.length() > 0) {
+                            if ((continent != null) && (continent.length() > 0)) {
                                 gmle.hash.put("CONTINENT", continent);
                             }
-                            if (LONG != null && LONG.length() > 0) {
+                            if ((LONG != null) && (LONG.length() > 0)) {
                                 gmle.hash.put("LONG", LONG);
                             }
-                            if (LAT != null && LAT.length() > 0) {
+                            if ((LAT != null) && (LAT.length() > 0)) {
                                 gmle.hash.put("LAT", LAT);
                             }
 
                             if (!gmle.hash.isEmpty()) {
                                 try {
                                     GMLEPublisher.getInstance().publishNow(gmle.hash);
-                                    logger.log(Level.INFO, "Attr Published : [ AS = " + gmle.hash.get("AS") + " NET = " + gmle.hash.get("NET")
-                                            + " CONTINENT = " + gmle.hash.get("CONTINENT") + " COUNTRY = " + gmle.hash.get("COUNTRY") + " LONG = "
-                                            + gmle.hash.get("LONG") + " LAT = " + gmle.hash.get("LAT") + " ]");
+                                    logger.log(
+                                            Level.INFO,
+                                            "Attr Published : [ AS = " + gmle.hash.get("AS") + " NET = "
+                                                    + gmle.hash.get("NET") + " CONTINENT = "
+                                                    + gmle.hash.get("CONTINENT") + " COUNTRY = "
+                                                    + gmle.hash.get("COUNTRY") + " LONG = " + gmle.hash.get("LONG")
+                                                    + " LAT = " + gmle.hash.get("LAT") + " ]");
                                 } catch (Throwable t) {
                                     asResolverErrors++;
                                     logger.log(Level.WARNING, "Could not publish WHOIS Network Info in LUSs", t);
@@ -672,10 +691,12 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         return TimeUnit.NANOSECONDS.toMillis(Utils.nanoNow() - ML_START_TIME_NANO);
     }
 
+    @Override
     public String getIPAddress() throws java.rmi.RemoteException {
         return dataStore.getIPAddress();
     }
 
+    @Override
     public String getUnitName() throws java.rmi.RemoteException {
         return dataStore.getUnitName();
     }
@@ -684,12 +705,12 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         // debug =
         // Boolean.valueOf(AppConfig.getProperty("lia.Monitor.debug","false")).booleanValue();
 
-        if (args == null || args.length == 0) {
+        if ((args == null) || (args.length == 0)) {
             logger.log(Level.SEVERE, "[ RegFarmMonitor ] [<init>] Arguments cannot be null!");
             System.exit(1);
         }
 
-        if (args[0] == null || args[0].length() == 0) {
+        if ((args[0] == null) || (args[0].length() == 0)) {
             logger.log(Level.SEVERE, "[ RegFarmMonitor ] [<init>] The service name cannot be null");
             System.exit(1);
         }
@@ -714,11 +735,13 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
              * authenticate to LUSs
              */
 
+            @Override
             public Object run() {
-                MonALISAExecutors.getMLHelperExecutor().scheduleWithFixedDelay(new FarmAliveTask(), 0, verifDelta, TimeUnit.SECONDS);
+                MonALISAExecutors.getMLHelperExecutor().scheduleWithFixedDelay(new FarmAliveTask(), 0, verifDelta,
+                        TimeUnit.SECONDS);
                 if (SHOULD_UPDATE) {
-                    MonALISAExecutors.getMLHelperExecutor()
-                                     .scheduleWithFixedDelay(new UpdateVerifier(), 1, CHECK_FOR_UPDATES_DELAY, TimeUnit.MINUTES);
+                    MonALISAExecutors.getMLHelperExecutor().scheduleWithFixedDelay(new UpdateVerifier(), 1,
+                            CHECK_FOR_UPDATES_DELAY, TimeUnit.MINUTES);
                 }
                 GMLEPublisher.getInstance();
                 registerSdHook();
@@ -770,19 +793,20 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         return name;
     }
 
+    @Override
     public Entry[] getAttributes() {
 
         Name nameEntry = new Name(name);
 
         String gg = AppConfig.getProperty("lia.Monitor.group", "test");
-        if (gg == null || gg.length() == 0) {
+        if ((gg == null) || (gg.length() == 0)) {
             gg = "test";
         }
 
         String splitedGroups[] = Utils.getSplittedListFields(gg);
         StringBuilder sbg = new StringBuilder();
         for (int i = 0; i < splitedGroups.length; i++) {
-            sbg.append(splitedGroups[i]).append((i < splitedGroups.length - 1) ? "," : "");
+            sbg.append(splitedGroups[i]).append((i < (splitedGroups.length - 1)) ? "," : "");
         }
 
         logger.log(Level.INFO, "[ RegFMonitor ] Lookup groups: [" + sbg.toString() + "]");
@@ -848,7 +872,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         esie.localContactEMail = AppConfig.getProperty("MonaLisa.ContactEmail", "N/A");
 
         try {
-            esie.JVM_VERSION = "java.vm.version: " + System.getProperty("java.vm.version") + " java.version: " + System.getProperty("java.version");
+            esie.JVM_VERSION = "java.vm.version: " + System.getProperty("java.vm.version") + " java.version: "
+                    + System.getProperty("java.version");
         } catch (Throwable t) {
             // ignore if
         }
@@ -857,16 +882,14 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         BufferedReader br = null;
         Process pro = null;
         try {
-            pro = MLProcess.exec(new String[] {
-                    "ldd", "--version"
-            });
+            pro = MLProcess.exec(new String[] { "ldd", "--version" });
             out = pro.getInputStream();
             br = new BufferedReader(new InputStreamReader(out));
             String line = null;
 
             while ((line = br.readLine()) != null) {
                 int i = line.indexOf(" ");
-                if (i >= 0 && line.indexOf("ldd") >= 0) {
+                if ((i >= 0) && (line.indexOf("ldd") >= 0)) {
                     esie.LIBC_VERSION = line.substring(i + 1);
                 }
             }
@@ -894,7 +917,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         // try to see if the ml_env has the SHOULD_UPDATE flag set to true
         try {
             String MonaLisa_HOME = AppConfig.getProperty("MonaLisa_HOME", null);
-            String ml_env_dir = AppConfig.getGlobalEnvProperty("CONFDIR", MonaLisa_HOME + File.separator + "Service" + File.separator + "CMD");
+            String ml_env_dir = AppConfig.getGlobalEnvProperty("CONFDIR", MonaLisa_HOME + File.separator + "Service"
+                    + File.separator + "CMD");
             if (ml_env_dir != null) {
                 br = null;
                 FileReader fr = null;
@@ -912,7 +936,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                         int ds = line.indexOf("SHOULD_UPDATE");
                         int de = line.indexOf("=");
 
-                        if (ds != -1 && (dc == -1 || ds < dc)) {
+                        if ((ds != -1) && ((dc == -1) || (ds < dc))) {
                             if (de > ds) {
                                 String flag = line.substring(de + 1);
                                 readFlag = true;
@@ -934,17 +958,14 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         if (!readFlag) {
             esie.LIBC_VERSION += " N/A";
         }
-        asResolver = MonALISAExecutors.getMLHelperExecutor().scheduleWithFixedDelay(new AsResolverTask(), 5, 30, TimeUnit.SECONDS);
+        asResolver = MonALISAExecutors.getMLHelperExecutor().scheduleWithFixedDelay(new AsResolverTask(), 5, 30,
+                TimeUnit.SECONDS);
 
         if (abpe != null) {
-            return new Entry[] {
-                    nameEntry, mle, sie, esie, abpe, mlce, gmle
-            };
+            return new Entry[] { nameEntry, mle, sie, esie, abpe, mlce, gmle };
         }
 
-        return new Entry[] {
-                nameEntry, mle, sie, esie, mlce, gmle
-        };
+        return new Entry[] { nameEntry, mle, sie, esie, mlce, gmle };
     }
 
     private void forcedStop() {
@@ -968,8 +989,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
     // The problem is still there for "latest" version of Jini 2.1 :(
     //
     private void verifyLUSs() {
-        if (ltvLUS + TimeUnit.MILLISECONDS.toNanos(LUS_VERIFY_DELAY.get()) < Utils.nanoNow()) {// just do the
-                                                                                               // job :)
+        if ((ltvLUS + TimeUnit.MILLISECONDS.toNanos(LUS_VERIFY_DELAY.get())) < Utils.nanoNow()) {// just do the
+                                                                                                 // job :)
             verifyJMgrCount.incrementAndGet();
             long sTime = Utils.nanoNow();
             boolean foundMe = false;
@@ -977,7 +998,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             JoinManager jmngr = MLJiniManagersProvider.getJoinManager();
             LookupDiscoveryManager ldm = MLJiniManagersProvider.getLookupDiscoveryManager();
 
-            if (jmngr == null || ldm == null) {
+            if ((jmngr == null) || (ldm == null)) {
                 return;
             }
             StringBuilder sb = new StringBuilder(8192);
@@ -989,23 +1010,24 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                 // I am looking for what LUSs ?
                 LookupLocator[] ldmLL = ldm.getLocators();
 
-                if (jmgrSR != null && ldmSR != null && ldmLL != null) {
+                if ((jmgrSR != null) && (ldmSR != null) && (ldmLL != null)) {
 
-                    boolean deepFound = (jmgrSR.length > 0 && jmgrSR.length == ldmLL.length);
+                    boolean deepFound = ((jmgrSR.length > 0) && (jmgrSR.length == ldmLL.length));
 
                     if (deepFound) {
-                        for (int i = 0; i < jmgrSR.length; i++) {
+                        for (ServiceRegistrar element : jmgrSR) {
 
                             boolean found = false;
-                            for (int j = 0; j < ldmLL.length; j++) {
-                                if (jmgrSR[i].getLocator().toString().equals(ldmLL[j].toString())) {
+                            for (LookupLocator element2 : ldmLL) {
+                                if (element.getLocator().toString().equals(element2.toString())) {
                                     found = true;
                                     break;
                                 }
                             }// for()
 
                             if (!found) {
-                                sb.append("\n\n =======> The JoinManager's LL ").append(jmgrSR[i].getLocator().toString());
+                                sb.append("\n\n =======> The JoinManager's LL ")
+                                        .append(element.getLocator().toString());
                                 sb.append(" was not found though LDM LL's <=======\n\n");
                                 deepFound = false;
                                 break;
@@ -1015,7 +1037,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                         try {
                             for (int i = 0; i < 30; i++) {
                                 final ServiceItem[] sis = MLLUSHelper.getInstance().getServiceItemBySID(mySid);
-                                if (sis != null && sis.length > 0) {
+                                if ((sis != null) && (sis.length > 0)) {
                                     if (sis[0].serviceID.equals(mySid)) {
                                         foundMe = true;
                                         break;
@@ -1028,7 +1050,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
 
                             }
                         } catch (Throwable tfind) {
-                            sb.append("\n\n GENERAL EXC in verifyLUSs looking for myself in the LUSs: \n" + Utils.getStackTrace(tfind));
+                            sb.append("\n\n GENERAL EXC in verifyLUSs looking for myself in the LUSs: \n"
+                                    + Utils.getStackTrace(tfind));
                         } finally {
                             if (!foundMe) {
                                 try {
@@ -1037,13 +1060,15 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                                     // we'll retry in 1second
                                 }
                                 sb.append("\n Unable to find myself in the LUSs");
-                                if (lastJiniMgrRestart + TimeUnit.MILLISECONDS.toNanos(JINIMGR_RESTART_DELAY.get()) < Utils.nanoNow()) {
+                                if ((lastJiniMgrRestart + TimeUnit.MILLISECONDS.toNanos(JINIMGR_RESTART_DELAY.get())) < Utils
+                                        .nanoNow()) {
                                     sb.append("\n\n Restarting managers ... Unable to find myself in the lookup");
                                     String status = null;
                                     try {
                                         status = restartJiniManagers(proxy);
                                     } catch (Throwable ex) {
-                                        status = "\nCaught exception while REtrying to restartJiniManagers ex:\n" + Utils.getStackTrace(ex);
+                                        status = "\nCaught exception while REtrying to restartJiniManagers ex:\n"
+                                                + Utils.getStackTrace(ex);
                                     }
                                     sb.append("\n\n Restarting JiniManagers ... \n\n\n").append(status);
                                     lastJiniMgrRestart = Utils.nanoNow();
@@ -1052,7 +1077,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                                 }
 
                                 if (logger.isLoggable(Level.FINER)) {
-                                    logger.log(Level.FINER, "\n [ verifyLUSs ] -> Status ( !foundMe ) \n" + sb.toString());
+                                    logger.log(Level.FINER,
+                                            "\n [ verifyLUSs ] -> Status ( !foundMe ) \n" + sb.toString());
                                 }
 
                                 sendLUSMail(sb.toString());
@@ -1064,53 +1090,53 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                         lastJiniMgrRestart = Utils.nanoNow();
                         if (logger.isLoggable(Level.FINER)) {
                             sb.append("\nJoin Manager - Service Registrar(s):\n");
-                            for (int i = 0; i < jmgrSR.length; i++) {
-                                LookupLocator ll = jmgrSR[i].getLocator();
+                            for (ServiceRegistrar element : jmgrSR) {
+                                LookupLocator ll = element.getLocator();
                                 sb.append("\n " + ll.toString() + " [ " + ll.getHost() + ":" + ll.getPort() + " ]");
                             }
                             sb.append("\n");
-                            logger.log(Level.FINER, "[ verifyLUSs ] -> Status ( OK )\n" + sb.toString() + "\n foundMe ( " + foundMe + " ): " + mySid);
+                            logger.log(Level.FINER, "[ verifyLUSs ] -> Status ( OK )\n" + sb.toString()
+                                    + "\n foundMe ( " + foundMe + " ): " + mySid);
                         }
                         return;
                     }
                 }
 
-                if (jmgrSR == null || jmgrSR.length == 0) {
+                if ((jmgrSR == null) || (jmgrSR.length == 0)) {
                     sb.append("\n The service has no LUSs with which it is registered");
                 } else {
                     sb.append("\nJoin Manager - Service Registrar(s):\n");
-                    for (int i = 0; i < jmgrSR.length; i++) {
-                        LookupLocator ll = jmgrSR[i].getLocator();
+                    for (ServiceRegistrar element : jmgrSR) {
+                        LookupLocator ll = element.getLocator();
                         sb.append("\n " + ll.toString() + " [ " + ll.getHost() + ":" + ll.getPort() + " ]");
                     }
                     sb.append("\n");
                 }
 
-                if (ldmSR == null || ldmSR.length == 0) {
+                if ((ldmSR == null) || (ldmSR.length == 0)) {
                     sb.append("\n The Lookup Discovery Manager has no LUSs with which it is registered ( network failure ?)");
                 } else {
                     sb.append("\nLookup Discovery Manager - Service Registrar(s):\n");
-                    for (int i = 0; i < ldmSR.length; i++) {
-                        LookupLocator ll = ldmSR[i].getLocator();
+                    for (ServiceRegistrar element : ldmSR) {
+                        LookupLocator ll = element.getLocator();
                         sb.append("\n " + ll.toString() + " [ " + ll.getHost() + ":" + ll.getPort() + " ]");
                     }
                 }
 
-                if (ldmLL == null || ldmLL.length == 0) {
+                if ((ldmLL == null) || (ldmLL.length == 0)) {
                     sb.append("\n The Lookup Discovery Manager has no LUSs to search for!?!?? ( no LUS defined ! verify ml.properties )");
                 } else {
                     sb.append("\nLookup locator(s):\n");
-                    for (int i = 0; i < ldmLL.length; i++) {
-                        LookupLocator ll = ldmLL[i];
+                    for (LookupLocator ll : ldmLL) {
                         sb.append("\n " + ll.toString() + " [ " + ll.getHost() + ":" + ll.getPort() + " ]");
                     }
                 }
 
-                if (lastJiniMgrRestart + TimeUnit.MILLISECONDS.toNanos(JINIMGR_RESTART_DELAY.get()) < Utils.nanoNow()) {// I
-                                                                                                                        // should
-                                                                                                                        // restart
-                                                                                                                        // the
-                                                                                                                        // managers
+                if ((lastJiniMgrRestart + TimeUnit.MILLISECONDS.toNanos(JINIMGR_RESTART_DELAY.get())) < Utils.nanoNow()) {// I
+                                                                                                                          // should
+                                                                                                                          // restart
+                                                                                                                          // the
+                                                                                                                          // managers
 
                     lastJiniMgrRestart = Utils.nanoNow();
                     String status = null;
@@ -1136,7 +1162,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             } catch (NoSuchObjectException nsoe) {// this exception was a real problem ... do not know if still is!
 
                 sb.append("\n\n NoSuchObjectException EXC in verifyLUSs: " + Utils.getStackTrace(nsoe));
-                if (lastJiniMgrRestart + TimeUnit.MILLISECONDS.toNanos(JINIMGR_RESTART_DELAY.get()) < Utils.nanoNow()) {
+                if ((lastJiniMgrRestart + TimeUnit.MILLISECONDS.toNanos(JINIMGR_RESTART_DELAY.get())) < Utils.nanoNow()) {
                     String status = null;
                     try {
                         status = restartJiniManagers(proxy);
@@ -1170,7 +1196,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             } finally {
                 ltvLUS = Utils.nanoNow();
                 if (logger.isLoggable(Level.FINER)) {
-                    logger.log(Level.FINER, " [ verifyLUSs ] took " + TimeUnit.NANOSECONDS.toMillis(ltvLUS - sTime) + " ms\n\n ");
+                    logger.log(Level.FINER, " [ verifyLUSs ] took " + TimeUnit.NANOSECONDS.toMillis(ltvLUS - sTime)
+                            + " ms\n\n ");
                 }
             }// END - try {}catch
 
@@ -1178,17 +1205,17 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
     }
 
     private final void sendLUSMail(final String message) {
-        if (lastLUSErrorMailSent + LUS_MAIL_DELAY.get() < NTPDate.currentTimeMillis()) {
+        if ((lastLUSErrorMailSent + LUS_MAIL_DELAY.get()) < NTPDate.currentTimeMillis()) {
             try {
-                FarmMonitor.sendMail("mlstatus@monalisa.cern.ch", new String[] {
-                    "mlstatus@monalisa.cern.ch"
-                }, "[ LUS STATUS ] ", message, true);
+                FarmMonitor.sendMail("mlstatus@monalisa.cern.ch", new String[] { "mlstatus@monalisa.cern.ch" },
+                        "[ LUS STATUS ] ", message, true);
             } catch (Throwable t1) {
             }
             lastLUSErrorMailSent = NTPDate.currentTimeMillis();
         }
     }
 
+    @Override
     public void run() {
         ltvLUS = Utils.nanoNow();
         if (farmMonitor.shouldStop()) {
@@ -1231,16 +1258,17 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         String rawURLs = null;
         if (!isVRVS) {
             rawURLs = AppConfig.getProperty("lia.monitor.updateURLs",
-                                            "http://monalisa.cacr.caltech.edu/FARM_ML,http://monalisa.cern.ch/MONALISA/FARM_ML");
+                    "http://monalisa.cacr.caltech.edu/FARM_ML,http://monalisa.cern.ch/MONALISA/FARM_ML");
         } else {
             rawURLs = AppConfig.getProperty("lia.monitor.updateURLs",
-                                            "http://monalisa.cacr.caltech.edu/VRVS_ML,http://monalisa.cern.ch/MONALISA/VRVS_ML");
+                    "http://monalisa.cacr.caltech.edu/VRVS_ML,http://monalisa.cern.ch/MONALISA/VRVS_ML");
         }
 
         StringTokenizer st = new StringTokenizer(rawURLs, ",");
-        if (st != null && st.countTokens() > 0) {
-            while (st != null && st.hasMoreTokens()) {
-                codebase += (st.nextToken() + "/MLService/Service/ml_dl/farm_mon_dl.jar" + (st.hasMoreTokens() ? " " : ""));
+        if ((st != null) && (st.countTokens() > 0)) {
+            while ((st != null) && st.hasMoreTokens()) {
+                codebase += (st.nextToken() + "/MLService/Service/ml_dl/farm_mon_dl.jar" + (st.hasMoreTokens() ? " "
+                        : ""));
             }
         }
 
@@ -1269,13 +1297,13 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             codebase1 = startWeb(home + File.separator + "Service" + File.separator + "ml_dl");
         }
 
-        if (useFarmCodebase && codebase1 != null && codebase1.length() != 0) {
+        if (useFarmCodebase && (codebase1 != null) && (codebase1.length() != 0)) {
             codebase += (((codebase.length() == 0) ? "" : " ") + codebase1);
         }
 
         if (logger.isLoggable(Level.FINER)) {
-            logger.log(Level.FINER, "useExternalCodebase = " + useExternalCodebase + " useFarmCodebase == " + useFarmCodebase + "; codebase1 = "
-                    + codebase1 + " codebase: " + codebase);
+            logger.log(Level.FINER, "useExternalCodebase = " + useExternalCodebase + " useFarmCodebase == "
+                    + useFarmCodebase + "; codebase1 = " + codebase1 + " codebase: " + codebase);
         }
 
         // set security manager
@@ -1286,12 +1314,11 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         System.setProperty("java.rmi.server.codebase", codebase);
 
         if (logger.isLoggable(Level.FINE)) {
-            logger.log(Level.FINE, " [ RegFarmMonitor ] java.rmi.server.codebase: " + System.getProperty("java.rmi.server.codebase"));
+            logger.log(Level.FINE,
+                    " [ RegFarmMonitor ] java.rmi.server.codebase: " + System.getProperty("java.rmi.server.codebase"));
         }
 
-        myTemplate = new ServiceTemplate(null, new Class[] {
-            lia.Monitor.monitor.DataStore.class
-        }, null);
+        myTemplate = new ServiceTemplate(null, new Class[] { lia.Monitor.monitor.DataStore.class }, null);
 
         try {
             try {
@@ -1323,7 +1350,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                 }
 
                 if (!bDelete) {
-                    logger.log(Level.WARNING, " Unable to delete mlALIVE file: '" + aliveFileName + "' No reason given.");
+                    logger.log(Level.WARNING, " Unable to delete mlALIVE file: '" + aliveFileName
+                            + "' No reason given.");
                 }
                 logger.log(Level.SEVERE, " Failed to init FarmMonitor ! \n MonALISA will exit!", t);
                 System.exit(-1);
@@ -1338,35 +1366,39 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             } catch (Exception e) {
             }
             if (IPAddress == null) {
-                logger.log(Level.SEVERE, "\n\n MonALISA was not able to determine your IP address. Please set your IP in ml.properties");
+                logger.log(Level.SEVERE,
+                        "\n\n MonALISA was not able to determine your IP address. Please set your IP in ml.properties");
                 System.exit(1);
             }
 
             if (IPAddress.trim().startsWith("127.")) {
-                logger.log(Level.SEVERE,
-                           "\n\n MonALISA determine that your IP address starts with 127.x.x.x. Please set your IP in ml.properties or fix you local configuration");
+                logger.log(
+                        Level.SEVERE,
+                        "\n\n MonALISA determine that your IP address starts with 127.x.x.x. Please set your IP in ml.properties or fix you local configuration");
                 System.exit(1);
             }
 
             if (IPAddress.equals("0.0.0.0") || IPAddress.equals("255.255.255.255")) {
-                logger.log(Level.SEVERE,
-                           "\n\n MonALISA determine that your IP address starts is either 0.0.0.0, either 255.255.255.255. Please set your IP in ml.properties");
+                logger.log(
+                        Level.SEVERE,
+                        "\n\n MonALISA determine that your IP address starts is either 0.0.0.0, either 255.255.255.255. Please set your IP in ml.properties");
                 System.exit(1);
             }
 
             if (IPAddress.trim().startsWith("192.168.") || IPAddress.startsWith("10.")) { // ONLY
-                logger.log(Level.WARNING,
-                           "\n\n MonALISA WAS NOT Started on Public IP Address. If your machine has one, please set your public IP in ml.properties");
+                logger.log(
+                        Level.WARNING,
+                        "\n\n MonALISA WAS NOT Started on Public IP Address. If your machine has one, please set your public IP in ml.properties");
             }
-            proxy._key = farmMonitor.getMFarm().name + "&%&" + IPAddress + ":" + Cache.server.lis_port + " Date: " + System.currentTimeMillis();
+            proxy._key = farmMonitor.getMFarm().name + "&%&" + IPAddress + ":" + Cache.server.lis_port + " Date: "
+                    + System.currentTimeMillis();
 
             String status = restartJiniManagers(proxy);
             lastJiniMgrRestart = Utils.nanoNow();
 
             try {
-                FarmMonitor.sendMail("mlstatus@monalisa.cern.ch", new String[] {
-                    "mlstatus@monalisa.cern.ch"
-                }, "[ (Re)StartJiniManagers ] ", status, true);
+                FarmMonitor.sendMail("mlstatus@monalisa.cern.ch", new String[] { "mlstatus@monalisa.cern.ch" },
+                        "[ (Re)StartJiniManagers ] ", status, true);
             } catch (Throwable t1) {
             }
 
@@ -1382,53 +1414,62 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
     // RMI CODE REMOVED - since ML 1.8.0
     // /////////////////////////////////
 
+    @Override
     public void Register(MonitorClient c, monPredicate p) throws java.rmi.RemoteException {
         throw new RemoteException("Not available any more");
         // dataStore.Register(c, p);
     }
 
+    @Override
     public void unRegister(MonitorClient c) throws java.rmi.RemoteException {
         throw new RemoteException("Not available any more");
         // dataStore.unRegister(c);
     }
 
+    @Override
     public void unRegister(MonitorClient c, Integer i) throws java.rmi.RemoteException {
         throw new RemoteException("Not available any more");
         // dataStore.unRegister(c, i);
     }
 
+    @Override
     public MFarm confRegister(MonitorClient c) throws java.rmi.RemoteException {
         throw new RemoteException("Not available any more");
         // return dataStore.confRegister(c);
     }
 
+    @Override
     public String getLocalTime() throws java.rmi.RemoteException {
         throw new RemoteException("Not available any more");
         // return dataStore.getLocalTime();
     }
 
+    @Override
     public void addFilter(MonitorFilter mfliter) throws java.rmi.RemoteException {
         throw new RemoteException("Not available any more");
         // dataStore.addFilter(mfliter);
     }
 
+    @Override
     public String[] getFilterList() throws java.rmi.RemoteException {
         throw new RemoteException("Not available any more");
         // return dataStore.getFilterList();
     }
 
+    @Override
     public void Register(MonitorClient c, String filter) throws java.rmi.RemoteException {
         throw new RemoteException("Not available any more");
         // dataStore.Register(c, filter);
     }
 
+    @Override
     public void Shutdown() {
         if (isShutDown.compareAndSet(false, true)) {
             try {
                 // try a last 'Process Status'
-                Runtime.getRuntime().exec(new String[] {
-                        "/bin/sh", "-c", "/bin/sh -c \"date; ps aux; echo; ps -elf; echo; pstree\" &>lastShudownStatus &"
-                });
+                Runtime.getRuntime().exec(
+                        new String[] { "/bin/sh", "-c",
+                                "/bin/sh -c \"date; ps aux; echo; ps -elf; echo; pstree\" &>lastShudownStatus &" });
 
                 // stop the DB
                 String MonaLisa_HOME = "../..";
@@ -1436,28 +1477,32 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                     MonaLisa_HOME = AppConfig.getProperty("MonaLisa_HOME", null);
                 } catch (Throwable ignore) {
                 }
-                Runtime.getRuntime().exec(new String[] {
-                        "/bin/sh", "-c", "/bin/sh -c \"sleep 10; " + MonaLisa_HOME + "/Service/CMD/ML_SER stopedb\" &>/dev/null &"
-                });
+                Runtime.getRuntime().exec(
+                        new String[] {
+                                "/bin/sh",
+                                "-c",
+                                "/bin/sh -c \"sleep 10; " + MonaLisa_HOME
+                                        + "/Service/CMD/ML_SER stopedb\" &>/dev/null &" });
 
                 boolean shouldReastartFromHook = false;
                 try {
-                    shouldReastartFromHook = Boolean.valueOf(AppConfig.getProperty("lia.Monitor.JiniSerFarmMon.RegFarmMonitor.shouldReastartFromHook",
-                                                                                   "false"))
-                                                    .booleanValue();
+                    shouldReastartFromHook = Boolean.valueOf(
+                            AppConfig.getProperty("lia.Monitor.JiniSerFarmMon.RegFarmMonitor.shouldReastartFromHook",
+                                    "false")).booleanValue();
                 } catch (Throwable ignore) {
                     shouldReastartFromHook = false;
                 }
 
                 if (shouldReastartFromHook) {
-                    long checkDelay = verifDelta / 1000 + 10;
+                    long checkDelay = (verifDelta / 1000) + 10;
                     // try to restart ML ... if necessary
-                    Runtime.getRuntime().exec(new String[] {
-                            "/bin/sh",
-                            "-c",
-                            "/bin/sh -c \"sleep " + checkDelay + "; " + MonaLisa_HOME + "/Service/CMD/CHECK_UPDATE; sleep " + checkDelay + "; "
-                                    + MonaLisa_HOME + "/Service/CMD/CHECK_UPDATE\" &>/dev/null &"
-                    });
+                    Runtime.getRuntime().exec(
+                            new String[] {
+                                    "/bin/sh",
+                                    "-c",
+                                    "/bin/sh -c \"sleep " + checkDelay + "; " + MonaLisa_HOME
+                                            + "/Service/CMD/CHECK_UPDATE; sleep " + checkDelay + "; " + MonaLisa_HOME
+                                            + "/Service/CMD/CHECK_UPDATE\" &>/dev/null &" });
                 }
 
             } catch (Throwable t) {
@@ -1493,12 +1538,14 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             File f = new File(lockFSFile);
             if (f.exists()) {
                 if (!f.canRead()) {
-                    stopJVM(" The " + lockFSFile + " file is needed to read/write the service ID. It does not have read permissions.\n"
+                    stopJVM(" The " + lockFSFile
+                            + " file is needed to read/write the service ID. It does not have read permissions.\n"
                             + " Is MonALISA suppose to run from a different account?. The service will stop now");
                 }
 
                 if (!f.canWrite()) {
-                    stopJVM(" The " + lockFSFile + " file is needed to read/write the service ID. It does not have write permissions.\n"
+                    stopJVM(" The " + lockFSFile
+                            + " file is needed to read/write the service ID. It does not have write permissions.\n"
                             + " Is MonALISA suppose to run from a different account?. The service will stop now");
                 }
 
@@ -1506,7 +1553,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                 try {
                     f.createNewFile();
                 } catch (Throwable t) {
-                    stopJVM(" The " + lockFSFile + " file is needed to read/write the service ID. It seems that the file does not exists"
+                    stopJVM(" The " + lockFSFile
+                            + " file is needed to read/write the service ID. It seems that the file does not exists"
                             + " and cannot be created because: " + Utils.getStackTrace(t));
                 }
             }
@@ -1516,7 +1564,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                 theBigLockFC = theBigLockFile.getChannel();
                 tmpLock = theBigLockFC.tryLock();
 
-                if (tmpLock == null || !tmpLock.isValid()) {
+                if ((tmpLock == null) || !tmpLock.isValid()) {
                     stopJVM(getDefaultShutdownMsg(lockFSFile, null));
                 }
 
@@ -1529,9 +1577,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
 
             try {
 
-                Process p = MLProcess.exec(new String[] {
-                        "uname", "-a"
-                });
+                Process p = MLProcess.exec(new String[] { "uname", "-a" });
                 InputStream is = null;
                 String line = null;
                 BufferedReader br = null;
@@ -1573,9 +1619,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             }
 
             try {
-                Process p = MLProcess.exec(new String[] {
-                    "id"
-                });
+                Process p = MLProcess.exec(new String[] { "id" });
                 InputStream is = null;
                 String line = null;
                 BufferedReader br = null;
@@ -1629,7 +1673,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
 
         theBikeKernelLock = tmpLock;
 
-        if (theBikeKernelLock == null || !theBikeKernelLock.isValid()) {
+        if ((theBikeKernelLock == null) || !theBikeKernelLock.isValid()) {
             stopJVM(getDefaultShutdownMsg(lockFSFile, null));
         }
 
@@ -1732,7 +1776,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             // -->DEBUG
             for (int idbg = 0; idbg < entriesToModify.size(); idbg++) {
                 EmbeddedAppEntry dbg_eToMod = (EmbeddedAppEntry) entriesToModify.elementAt(idbg);
-                System.out.println("Entry to modify: " + dbg_eToMod.Name + ":" + dbg_eToMod.ConfigFile + ":" + dbg_eToMod.State);
+                System.out.println("Entry to modify: " + dbg_eToMod.Name + ":" + dbg_eToMod.ConfigFile + ":"
+                        + dbg_eToMod.State);
             }
             // <--DEBUG
         }
@@ -1748,7 +1793,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             // -->DEBUG
             for (int idbg = 0; idbg < entriesToDelete.size(); idbg++) {
                 EmbeddedAppEntry dbg_eToDel = (EmbeddedAppEntry) entriesToDelete.elementAt(idbg);
-                System.out.println("Entry to delete: " + dbg_eToDel.Name + ":" + dbg_eToDel.ConfigFile + ":" + dbg_eToDel.State);
+                System.out.println("Entry to delete: " + dbg_eToDel.Name + ":" + dbg_eToDel.ConfigFile + ":"
+                        + dbg_eToDel.State);
             }
             // <--DEBUG
         }
@@ -1766,7 +1812,7 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
 
         try {
             tmpLockFSFile = AppConfig.getProperty("lia.Monitor.JiniSerFarmMon.RegFarmMonitor.lockfile",
-                                                  "${lia.Monitor.Farm.HOME}" + File.separator + ".ml.lock").trim();
+                    "${lia.Monitor.Farm.HOME}" + File.separator + ".ml.lock").trim();
         } catch (Throwable t) {
             logger.log(Level.WARNING, " [ RegFarmMonitor ] Unable to determine the lock file. Cause: ", t);
             tmpLockFSFile = null;
@@ -1781,7 +1827,10 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                 bIsVRVS = true;
             }
         } catch (Throwable t) {
-            logger.log(Level.INFO, " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if running in EVO/VRVS environment", t);
+            logger.log(
+                    Level.INFO,
+                    " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if running in EVO/VRVS environment",
+                    t);
             bIsVRVS = false;
         }
 
@@ -1791,7 +1840,10 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                     bIsVRVS = true;
                 }
             } catch (Throwable t) {
-                logger.log(Level.INFO, " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if running in EVO/VRVS environment", t);
+                logger.log(
+                        Level.INFO,
+                        " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if running in EVO/VRVS environment",
+                        t);
                 bIsVRVS = false;
             }
         }
@@ -1799,9 +1851,11 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         isVRVS = bIsVRVS;
 
         try {
-            bShouldExportRMIInterface = AppConfig.getb("lia.Monitor.Farm.FarmMonitor.shouldExportRMIInterface", bIsVRVS);
+            bShouldExportRMIInterface = AppConfig
+                    .getb("lia.Monitor.Farm.FarmMonitor.shouldExportRMIInterface", bIsVRVS);
         } catch (Throwable t) {
-            logger.log(Level.INFO, " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if shouldExportRMIInterface", t);
+            logger.log(Level.INFO,
+                    " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine if shouldExportRMIInterface", t);
             bShouldExportRMIInterface = false;
         }
 
@@ -1809,11 +1863,13 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
 
         boolean bStartAdminInterface = false;
         try {
-            bStartAdminInterface = AppConfig.getb("lia.Monitor.Agents.OpticalPath.MLCopyAgent.startAdminInterface", false);
+            bStartAdminInterface = AppConfig.getb("lia.Monitor.Agents.OpticalPath.MLCopyAgent.startAdminInterface",
+                    false);
         } catch (Throwable t) {
-            logger.log(Level.INFO,
-                       " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine the property lia.Monitor.Agents.OpticalPath.MLCopyAgent.startAdminInterface",
-                       t);
+            logger.log(
+                    Level.INFO,
+                    " [ FarmMonitor ] [ HANDLED ] Got exception trying to determine the property lia.Monitor.Agents.OpticalPath.MLCopyAgent.startAdminInterface",
+                    t);
             bStartAdminInterface = false;
         }
 
@@ -1825,20 +1881,23 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         try {
             tmpHome = AppConfig.getProperty("lia.Monitor.Farm.HOME", null);
         } catch (Throwable t) {
-            logger.log(Level.SEVERE, " [ checkAndPoulateLocalEnvironment ] Got exception trying to determine lia.Monitor.Farm.HOME", t);
+            logger.log(Level.SEVERE,
+                    " [ checkAndPoulateLocalEnvironment ] Got exception trying to determine lia.Monitor.Farm.HOME", t);
             tmpHome = null;
         }
 
         FarmHOME = tmpHome;
 
         if (FarmHOME == null) {
-            logger.log(Level.SEVERE,
-                       " [ FarmMonitor ] [ SEVERE ] Unable to determine lia.Monitor.Farm.HOME environment variable ... ML Service will stop now ");
+            logger.log(
+                    Level.SEVERE,
+                    " [ FarmMonitor ] [ SEVERE ] Unable to determine lia.Monitor.Farm.HOME environment variable ... ML Service will stop now ");
             System.exit(1);
         }
 
         AppConfig.addNotifier(new AppConfigChangeListener() {
 
+            @Override
             public void notifyAppConfigChanged() {
                 reloadTimes();
             }
@@ -1851,8 +1910,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         final String MonaLisa_version = "@version@";
         final String MonaLisa_vdate = "@vdate@";
 
-        if (args != null && args.length == 1) {
-            if (args[0] != null && args[0].equals("-version")) {
+        if ((args != null) && (args.length == 1)) {
+            if ((args[0] != null) && args[0].equals("-version")) {
                 System.out.println("\nMonALISA Version: " + MonaLisa_version + " [ " + MonaLisa_vdate + " ]\n");
                 System.exit(0);
             }
@@ -1873,14 +1932,12 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         try {
             StringBuilder sb = new StringBuilder(4096);
             sb.append("\n\n -> MonALISA STARTED on: ").append(new Date());
-            sb.append("\n -> OS: ").append(System.getProperty("os.name")).append(" ").append(System.getProperty("os.version"));
+            sb.append("\n -> OS: ").append(System.getProperty("os.name")).append(" ")
+                    .append(System.getProperty("os.version"));
             sb.append("\n -> OS arch: ").append(System.getProperty("os.arch"));
-            sb.append("\n -> java version: ")
-              .append(System.getProperty("java.version"))
-              .append("; vm version: ")
-              .append(System.getProperty("java.vm.version"))
-              .append("; vm.info: ")
-              .append(System.getProperty("java.vm.info"));
+            sb.append("\n -> java version: ").append(System.getProperty("java.version")).append("; vm version: ")
+                    .append(System.getProperty("java.vm.version")).append("; vm.info: ")
+                    .append(System.getProperty("java.vm.info"));
             sb.append("\n -> user name: ").append(System.getProperty("user.name"));
             sb.append("\n -> user home: ").append(System.getProperty("user.home"));
             sb.append("\n -> user dir: ").append(System.getProperty("user.dir")).append("\n\n");
@@ -1894,7 +1951,8 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
         ML_START_TIME = NTPDate.currentTimeMillis();
 
         if (FarmHOME == null) {
-            System.err.println("\n\n Unable to determine lia.Monitor.Farm.HOME environment variable. MonALISA will stop now!");
+            System.err
+                    .println("\n\n Unable to determine lia.Monitor.Farm.HOME environment variable. MonALISA will stop now!");
             System.exit(1);
         }
 
@@ -1904,11 +1962,12 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
             System.out.println("\n\n Locking check is disabled \n\n");
         } else {
             if (lockFSFile == null) {
-                logger.log(Level.WARNING, " [ RegFarmMonitor ] the lock file is null. The lock chcking is disabled ....");
+                logger.log(Level.WARNING,
+                        " [ RegFarmMonitor ] the lock file is null. The lock chcking is disabled ....");
             } else {
                 checkLock();
 
-                if (theBikeKernelLock == null || !theBikeKernelLock.isValid()) {
+                if ((theBikeKernelLock == null) || !theBikeKernelLock.isValid()) {
                     stopJVM(getDefaultShutdownMsg(lockFSFile, null));
                 }
             }
@@ -2004,8 +2063,10 @@ public class RegFarmMonitor extends BasicService implements Runnable, DataStore,
                 logger.log(Level.FINER, " [ RegFarmMonitor ] lia.util.StringFactory.use_intern = " + sIntern);
             }
 
-            logger.log(Level.INFO,
-                       " [ RegFarmMonitor ] StringFactory useIntern() is " + AppConfig.getProperty("lia.util.StringFactory.use_intern", null));
+            logger.log(
+                    Level.INFO,
+                    " [ RegFarmMonitor ] StringFactory useIntern() is "
+                            + AppConfig.getProperty("lia.util.StringFactory.use_intern", null));
         } catch (Throwable t) {
             logger.log(Level.SEVERE, " [ RegFarmMonitor ] Unable to set lia.util.StringFactory.use_intern", t);
         }
